@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Property, PropertyImage, PropertyImageTag } from '../../types';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
-import { ArrowLeftIcon, MapPinIcon, BedIcon, BathIcon, SqftIcon, CalendarIcon, BuildingOfficeIcon, PhoneIcon, StarIcon, CubeIcon, VideoCameraIcon, UserCircleIcon, XMarkIcon } from '../../constants';
+import { ArrowLeftIcon, MapPinIcon, BedIcon, BathIcon, SqftIcon, CalendarIcon, BuildingOfficeIcon, PhoneIcon, StarIcon, CubeIcon, VideoCameraIcon, UserCircleIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon } from '../../constants';
 
 interface PropertyDetailsPageProps {
   property: Property;
@@ -31,6 +31,7 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property }) =
   const [mainImage, setMainImage] = useState<PropertyImage>(allImages[0]);
   const [isZoomModalOpen, setIsZoomModalOpen] = useState(false);
   const [activeTag, setActiveTag] = useState<PropertyImageTag | 'all'>('all');
+  const [currentZoomIndex, setCurrentZoomIndex] = useState(0);
 
   const uniqueTags = useMemo(() => ['all' as const, ...Array.from(new Set(allImages.map(img => img.tag)))], [allImages]);
   
@@ -42,7 +43,7 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property }) =
   useEffect(() => {
     if (filteredImages.length > 0 && !filteredImages.some(img => img.url === mainImage.url)) {
         setMainImage(filteredImages[0]);
-    } else if (filteredImages.length === 0) {
+    } else if (filteredImages.length === 0 && allImages.length > 0) {
         setMainImage(allImages[0]);
     }
   }, [filteredImages, allImages, mainImage.url]);
@@ -53,6 +54,22 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property }) =
 
   const handleTagClick = (tag: PropertyImageTag | 'all') => {
     setActiveTag(tag);
+  };
+  
+  const handleZoomOpen = (image: PropertyImage) => {
+    const index = filteredImages.findIndex(img => img.url === image.url);
+    setCurrentZoomIndex(index >= 0 ? index : 0);
+    setIsZoomModalOpen(true);
+  };
+
+  const handlePrevImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentZoomIndex(prev => (prev > 0 ? prev - 1 : prev));
+  };
+
+  const handleNextImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentZoomIndex(prev => (prev < filteredImages.length - 1 ? prev + 1 : prev));
   };
   
   return (
@@ -72,7 +89,7 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property }) =
                 <div className="lg:col-span-2 space-y-8">
                     {/* Image Gallery */}
                     <div className="space-y-4">
-                        <button onClick={() => setIsZoomModalOpen(true)} className="w-full h-[300px] md:h-[500px] rounded-lg overflow-hidden shadow-lg block relative group">
+                        <button onClick={() => handleZoomOpen(mainImage)} className="w-full h-[300px] md:h-[500px] rounded-lg overflow-hidden shadow-lg block relative group">
                             <img src={mainImage.url} alt={mainImage.tag} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="white" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" /></svg>
@@ -211,12 +228,46 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property }) =
       </div>
 
       {isZoomModalOpen && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={() => setIsZoomModalOpen(false)}>
-            <button className="absolute top-4 right-4 text-white hover:text-neutral-300 z-10">
+        <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-4 animate-fade-in" onClick={() => setIsZoomModalOpen(false)}>
+            <button className="absolute top-4 right-4 text-white hover:text-neutral-300 z-50">
                 <XMarkIcon className="w-8 h-8" />
             </button>
-            <div className="relative max-w-4xl max-h-[90vh]" onClick={e => e.stopPropagation()}>
-                <img src={mainImage.url} alt={mainImage.tag} className="w-full h-full object-contain rounded-lg" />
+            <div className="relative w-full h-full flex flex-col items-center justify-center" onClick={e => e.stopPropagation()}>
+                <div className="relative w-full max-w-5xl h-4/5 flex items-center justify-center">
+                    <button
+                        onClick={handlePrevImage}
+                        disabled={currentZoomIndex === 0}
+                        className="absolute left-0 sm:-left-4 md:-left-12 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 disabled:opacity-50 disabled:cursor-not-allowed rounded-full p-3 text-white z-50 transition-colors"
+                    >
+                        <ChevronLeftIcon className="w-6 h-6" />
+                    </button>
+                    
+                    {filteredImages.length > 0 && (
+                        <img src={filteredImages[currentZoomIndex].url} alt={filteredImages[currentZoomIndex].tag} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
+                    )}
+
+                    <button
+                        onClick={handleNextImage}
+                        disabled={currentZoomIndex === filteredImages.length - 1}
+                        className="absolute right-0 sm:-right-4 md:-right-12 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 disabled:opacity-50 disabled:cursor-not-allowed rounded-full p-3 text-white z-50 transition-colors"
+                    >
+                        <ChevronRightIcon className="w-6 h-6" />
+                    </button>
+                </div>
+                
+                <div className="w-full max-w-5xl mt-4 h-1/5 flex items-center justify-center">
+                    <div className="flex overflow-x-auto space-x-4 p-2">
+                        {filteredImages.map((image, index) => (
+                            <button
+                                key={`${image.url}-${index}-modal`}
+                                onClick={(e) => { e.stopPropagation(); setCurrentZoomIndex(index); }}
+                                className={`flex-shrink-0 w-32 h-20 rounded-lg overflow-hidden transition-all duration-300 transform hover:scale-105 ${currentZoomIndex === index ? 'ring-4 ring-white shadow-2xl' : 'opacity-60 hover:opacity-100'}`}
+                            >
+                                <img src={image.url} alt={image.tag} className="w-full h-full object-cover" />
+                            </button>
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
       )}
