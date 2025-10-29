@@ -1,3 +1,4 @@
+// FIX: Removed extraneous content from another file that was incorrectly appended, which was causing multiple import and export errors.
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Property, PropertyImage, PropertyImageTag } from '../../types';
 import { generateDescriptionFromImages, PropertyAnalysisResult } from '../../services/geminiService';
@@ -426,7 +427,7 @@ const SuccessStep: React.FC<{onStartOver: () => void}> = ({onStartOver}) => (
 
 
 const GeminiDescriptionGenerator: React.FC = () => {
-    const { dispatch } = useAppContext();
+    const { state, dispatch } = useAppContext();
     const [images, setImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [step, setStep] = useState<Step>('init');
@@ -441,7 +442,7 @@ const GeminiDescriptionGenerator: React.FC = () => {
         if (event.target.files) {
             const filesArray = Array.from(event.target.files);
             setImages(prev => [...prev, ...filesArray]);
-            const newPreviews = filesArray.map(file => URL.createObjectURL(file));
+            const newPreviews = filesArray.map((file: File) => URL.createObjectURL(file));
             setImagePreviews(prev => [...prev, ...newPreviews]);
         }
     };
@@ -456,6 +457,11 @@ const GeminiDescriptionGenerator: React.FC = () => {
     };
     
     const handleGenerate = async () => {
+        if (!state.isAuthenticated) {
+            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
+            return;
+        }
+
         if (images.length === 0) {
             setError('Please upload at least one image of your property.');
             return;
@@ -582,6 +588,7 @@ const GeminiDescriptionGenerator: React.FC = () => {
         
         dispatch({ type: 'ADD_PROPERTY', payload: newProperty });
         setStep('success');
+        dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: true } });
     };
     
     const handleStartOver = () => {

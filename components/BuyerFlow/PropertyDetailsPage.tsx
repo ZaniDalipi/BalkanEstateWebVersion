@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Property, PropertyImage, PropertyImageTag } from '../../types';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
-import { ArrowLeftIcon, MapPinIcon, BedIcon, BathIcon, SqftIcon, CalendarIcon, BuildingOfficeIcon, PhoneIcon, StarIcon, CubeIcon, VideoCameraIcon, UserCircleIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon } from '../../constants';
+import { ArrowLeftIcon, MapPinIcon, BedIcon, BathIcon, SqftIcon, CalendarIcon, ParkingIcon, PhoneIcon, StarIcon, CubeIcon, VideoCameraIcon, UserCircleIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon } from '../../constants';
 
 interface PropertyDetailsPageProps {
   property: Property;
@@ -123,51 +123,30 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property }) =
                     
                     {/* Key Stats Bar */}
                     <div className="bg-white p-4 rounded-lg shadow-md border border-neutral-200">
-                        <div className="flex justify-around items-center">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-4">
                             <div className="text-center px-2">
                                 <BedIcon className="w-7 h-7 text-primary mx-auto" />
                                 <p className="text-sm font-semibold text-neutral-700 mt-2"><span className="font-bold text-lg">{property.beds}</span> Beds</p>
                             </div>
-                            <div className="w-px h-10 bg-neutral-200"></div>
                             <div className="text-center px-2">
                                 <BathIcon className="w-7 h-7 text-primary mx-auto" />
                                 <p className="text-sm font-semibold text-neutral-700 mt-2"><span className="font-bold text-lg">{property.baths}</span> Baths</p>
                             </div>
-                            <div className="w-px h-10 bg-neutral-200"></div>
                             <div className="text-center px-2">
                                 <SqftIcon className="w-7 h-7 text-primary mx-auto" />
                                 <p className="text-sm font-semibold text-neutral-700 mt-2"><span className="font-bold text-lg">{property.sqft}</span> m²</p>
                             </div>
-                             <div className="w-px h-10 bg-neutral-200"></div>
                             <div className="text-center px-2">
-                                <BuildingOfficeIcon className="w-7 h-7 text-primary mx-auto" />
+                                <ParkingIcon className="w-7 h-7 text-primary mx-auto" />
                                 <p className="text-sm font-semibold text-neutral-700 mt-2"><span className="font-bold text-lg">{property.parking}</span> Parking</p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Consolidated Details Card */}
+                    {/* About this property */}
                     <div className="bg-white p-6 rounded-lg shadow-md border border-neutral-200">
                         <h2 className="text-2xl font-bold text-neutral-800 mb-4">About this property</h2>
                         <div className="prose max-w-none text-neutral-700 whitespace-pre-wrap">{property.description}</div>
-                        
-                        <hr className="my-8 border-t border-neutral-200" />
-                        
-                        <div className="space-y-6">
-                           <DetailItem icon={<CalendarIcon/>} label="Property Details">
-                                <p className="font-semibold">Built in {property.yearBuilt}</p>
-                           </DetailItem>
-                           <DetailItem icon={<StarIcon/>} label="Special Features">
-                                <ul className="list-disc list-inside space-y-1 font-semibold">
-                                    {property.specialFeatures.map((feature, i) => <li key={i}>{feature}</li>)}
-                                </ul>
-                           </DetailItem>
-                            <DetailItem icon={<CubeIcon/>} label="Materials">
-                                <ul className="list-disc list-inside space-y-1 font-semibold">
-                                    {property.materials.map((material, i) => <li key={i}>{material}</li>)}
-                                </ul>
-                           </DetailItem>
-                        </div>
                     </div>
                 </div>
 
@@ -210,6 +189,26 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property }) =
                                 Message Seller
                             </button>
                         </div>
+                        
+                         {/* Property Details Card */}
+                        <div className="bg-white p-6 rounded-lg shadow-md border border-neutral-200">
+                            <div className="space-y-6">
+                               <DetailItem icon={<CalendarIcon/>} label="Property Details">
+                                    <p className="font-semibold">Built in {property.yearBuilt}</p>
+                               </DetailItem>
+                               <DetailItem icon={<StarIcon/>} label="Special Features">
+                                    <ul className="list-disc list-inside space-y-1 font-semibold">
+                                        {property.specialFeatures.map((feature, i) => <li key={i}>{feature}</li>)}
+                                    </ul>
+                               </DetailItem>
+                                <DetailItem icon={<CubeIcon/>} label="Materials">
+                                    <ul className="list-disc list-inside space-y-1 font-semibold">
+                                        {property.materials.map((material, i) => <li key={i}>{material}</li>)}
+                                    </ul>
+                               </DetailItem>
+                            </div>
+                        </div>
+
                         {/* 3D Tour */}
                         {property.tourUrl && (
                             <div className="bg-white p-6 rounded-lg shadow-md border border-neutral-200">

@@ -1,10 +1,19 @@
-
 // FIX: Removed circular self-import of `UserRole`.
 export enum UserRole {
   UNDEFINED = 'UNDEFINED',
   BUYER = 'BUYER',
   SELLER = 'SELLER',
 }
+
+export type AppView = 'search' | 'saved-searches' | 'saved-homes' | 'loans' | 'inbox';
+
+export interface SavedSearch {
+    id: string;
+    name: string;
+    newPropertyCount: number;
+    properties: Property[];
+}
+
 
 export interface Seller {
   type: 'agent' | 'private';
@@ -47,16 +56,27 @@ export interface AppState {
   properties: Property[];
   isSubscriptionModalOpen: boolean;
   isPricingModalOpen: boolean;
+  isFirstLoginOffer: boolean;
+  isAuthModalOpen: boolean;
+  isAuthenticated: boolean;
   selectedProperty: Property | null;
+  activeView: AppView;
+  savedSearches: SavedSearch[];
 }
 
 export type AppAction =
   | { type: 'SET_USER_ROLE'; payload: UserRole }
   | { type: 'SET_PROPERTIES'; payload: Property[] }
   | { type: 'TOGGLE_SUBSCRIPTION_MODAL'; payload: boolean }
-  | { type: 'TOGGLE_PRICING_MODAL'; payload: boolean }
+  | { type: 'TOGGLE_PRICING_MODAL'; payload: { isOpen: boolean; isOffer?: boolean } }
+  | { type: 'TOGGLE_AUTH_MODAL'; payload: boolean }
+  | { type: 'SET_IS_AUTHENTICATED'; payload: boolean }
   | { type: 'SET_SELECTED_PROPERTY'; payload: Property | null }
-  | { type: 'ADD_PROPERTY'; payload: Property };
+  | { type: 'ADD_PROPERTY'; payload: Property }
+  | { type: 'SET_ACTIVE_VIEW'; payload: AppView }
+  | { type: 'ADD_SAVED_SEARCH'; payload: SavedSearch }
+  | { type: 'MARK_ALL_SEARCHES_VIEWED' };
+
 
 export interface ChatMessage {
   sender: 'user' | 'ai';

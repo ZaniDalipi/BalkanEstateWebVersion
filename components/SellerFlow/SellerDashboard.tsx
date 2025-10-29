@@ -2,16 +2,15 @@ import React from 'react';
 import Header from '../shared/Header';
 import { UserRole } from '../../types';
 import PropertyCalculator from './PropertyCalculator';
-import PricingPlans from './PricingPlans';
 import { useAppContext } from '../../context/AppContext';
 import GeminiDescriptionGenerator from './GeminiDescriptionGenerator';
 import { CurrencyDollarIcon, SparklesIcon } from '../../constants';
 
 const SellerDashboard: React.FC = () => {
-    const { state, dispatch } = useAppContext();
+    const { dispatch } = useAppContext();
 
     const handlePlansClick = () => {
-        dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: true });
+        dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: false } });
     };
 
   return (
@@ -51,7 +50,6 @@ const SellerDashboard: React.FC = () => {
             </div>
         </div>
       </main>
-      <PricingPlans isOpen={state.isPricingModalOpen} onClose={() => dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: false })} />
     </div>
   );
 };

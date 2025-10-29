@@ -4,13 +4,24 @@ import { UserRole } from './types';
 import Onboarding from './components/Onboarding';
 import SearchPage from './components/BuyerFlow/SearchPage';
 import SellerDashboard from './components/SellerFlow/SellerDashboard';
+import AuthModal from './components/auth/AuthModal';
+import PricingPlans from './components/SellerFlow/PricingPlans';
+import SavedSearchesPage from './components/BuyerFlow/SavedSearchesPage';
+import BottomNav from './components/shared/BottomNav';
 
 const AppContent: React.FC = () => {
   const { state } = useAppContext();
 
   switch (state.userRole) {
     case UserRole.BUYER:
-      return <SearchPage />;
+      // Simple router for buyer views
+      switch (state.activeView) {
+        case 'saved-searches':
+          return <SavedSearchesPage />;
+        case 'search':
+        default:
+          return <SearchPage />;
+      }
     case UserRole.SELLER:
       return <SellerDashboard />;
     default:
@@ -18,12 +29,26 @@ const AppContent: React.FC = () => {
   }
 };
 
+const MainLayout: React.FC = () => {
+  const { state, dispatch } = useAppContext();
+  return (
+    <div className="font-sans">
+      <AppContent />
+      <AuthModal />
+      <PricingPlans 
+        isOpen={state.isPricingModalOpen} 
+        onClose={() => dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: false } })}
+        isOffer={state.isFirstLoginOffer}
+      />
+      {state.isAuthenticated && state.userRole === UserRole.BUYER && <BottomNav />}
+    </div>
+  );
+};
+
 const App: React.FC = () => {
   return (
     <AppProvider>
-      <div className="font-sans">
-        <AppContent />
-      </div>
+      <MainLayout />
     </AppProvider>
   );
 };

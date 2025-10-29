@@ -4,167 +4,178 @@ import Header from '../shared/Header';
 import MapComponent from './MapComponent';
 import PropertyList from './PropertyList';
 import PropertyDetailsPage from './PropertyDetailsPage';
-import SubscriptionModal from './SubscriptionModal';
-import PricingPlans from '../SellerFlow/PricingPlans';
+import { SavedSearch, ChatMessage, AiSearchQuery } from '../../types';
 import { getAiChatResponse } from '../../services/geminiService';
-import { AiSearchQuery, ChatMessage } from '../../types';
+import SubscriptionModal from './SubscriptionModal';
+
+export type SellerType = 'any' | 'agent' | 'private';
+
+export interface Filters {
+    query: string;
+    minPrice: number | null;
+    maxPrice: number | null;
+    beds: number | null;
+    baths: number | null;
+    sortBy: string;
+    sellerType: SellerType;
+    propertyType: string;
+}
 
 const SearchPage: React.FC = () => {
     const { state, dispatch } = useAppContext();
-    const { properties, selectedProperty, isSubscriptionModalOpen, isPricingModalOpen } = state;
+    const { properties, selectedProperty, isAuthenticated } = state;
 
-    const [filters, setFilters] = useState({
+    const [filters, setFilters] = useState<Filters>({
         query: '',
         minPrice: null,
         maxPrice: null,
         beds: null,
         baths: null,
         sortBy: 'price_asc',
-        specialFeatures: [] as string[],
+        sellerType: 'any',
+        propertyType: 'any',
     });
     
-    const [searchMode, setSearchMode] = useState<'manual' | 'ai'>('manual');
-    const [chatHistory, setChatHistory] = useState<ChatMessage[]>([{
-        sender: 'ai',
-        text: "Hello! I'm your AI assistant. How can I help you find the perfect property today?"
-    }]);
-    const [isAiThinking, setIsAiThinking] = useState(false);
-    const [suggestedFilters, setSuggestedFilters] = useState<AiSearchQuery | null>(null);
+    const filteredProperties = useMemo(() => {
+        let sortedProperties = [...properties];
 
-    const handleFilterChange = useCallback((name: string, value: string | number | null) => {
-        const numericValue = (name === 'minPrice' || name === 'maxPrice' || name === 'beds' || name === 'baths') 
-            ? (value ? parseInt(value as string, 10) : null)
-            : value;
-        setFilters(prev => ({ ...prev, [name]: numericValue }));
+        // Sorting
+        switch (filters.sortBy) {
+            case 'price_asc':
+                sortedProperties.sort((a, b) => a.price - b.price);
+                break;
+            case 'price_desc':
+                sortedProperties.sort((a, b) => b.price - a.price);
+                break;
+            case 'beds_desc':
+                sortedProperties.sort((a, b) => b.beds - a.beds);
+                break;
+            default:
+                break;
+        }
+
+        return sortedProperties.filter(p => {
+            const queryMatch = filters.query ? 
+                p.address.toLowerCase().includes(filters.query.toLowerCase()) || 
+                p.city.toLowerCase().includes(filters.query.toLowerCase()) : true;
+            
+            const minPriceMatch = filters.minPrice ? p.price >= filters.minPrice : true;
+            const maxPriceMatch = filters.maxPrice ? p.price <= filters.maxPrice : true;
+            const bedsMatch = filters.beds ? p.beds >= filters.beds : true;
+            const bathsMatch = filters.baths ? p.baths >= filters.baths : true;
+            const sellerTypeMatch = filters.sellerType !== 'any' ? p.seller.type === filters.sellerType : true;
+
+            return queryMatch && minPriceMatch && maxPriceMatch && bedsMatch && bathsMatch && sellerTypeMatch;
+        });
+    }, [properties, filters]);
+
+    const handleFilterChange = useCallback((name: keyof Filters, value: string | number | null) => {
+        setFilters(prev => ({ ...prev, [name]: value }));
     }, []);
-    
+
     const handleSortChange = useCallback((value: string) => {
         setFilters(prev => ({ ...prev, sortBy: value }));
     }, []);
+    
+    const handleSaveSearch = useCallback(() => {
+        if (!isAuthenticated) {
+            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
+            return;
+        }
 
-    const applyAiSearchQuery = useCallback((query: AiSearchQuery) => {
-        setFilters(prev => ({
-            ...prev,
-            query: query.location || prev.query,
-            minPrice: query.minPrice || null,
-            maxPrice: query.maxPrice || null,
-            beds: query.beds || null,
-            baths: query.baths || null,
-            specialFeatures: query.features || [],
-        }));
-    }, []);
+        const newSearch: SavedSearch = {
+            id: `ss-${Date.now()}`,
+            name: filters.query || `Properties in ${filteredProperties.length > 0 ? filteredProperties[0].city : 'selected area'}`,
+            newPropertyCount: 0,
+            properties: filteredProperties.slice(0, 5),
+        };
+        dispatch({ type: 'ADD_SAVED_SEARCH', payload: newSearch });
+    }, [isAuthenticated, dispatch, filters, filteredProperties]);
+    
+    // AI Search logic
+    const [searchMode, setSearchMode] = useState<'manual' | 'ai'>('manual');
+    const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
+        { sender: 'ai', text: 'Hello! How can I help you find your perfect home today?' }
+    ]);
+    const [isAiThinking, setIsAiThinking] = useState(false);
+    const [suggestedFilters, setSuggestedFilters] = useState<AiSearchQuery | null>(null);
 
     const handleSendMessage = useCallback(async (message: string) => {
-        if (!message || isAiThinking) return;
-
-        const newUserMessage: ChatMessage = { sender: 'user', text: message };
-        const newHistory = [...chatHistory, newUserMessage];
+        const newHistory: ChatMessage[] = [...chatHistory, { sender: 'user', text: message }];
         setChatHistory(newHistory);
         setIsAiThinking(true);
         setSuggestedFilters(null);
 
         try {
             const aiResponse = await getAiChatResponse(newHistory, properties);
-            
-            const newAiMessage: ChatMessage = { sender: 'ai', text: aiResponse.responseMessage };
-            setChatHistory(currentHistory => [...currentHistory, newAiMessage]);
-
-            if (aiResponse.isFinalQuery && aiResponse.searchQuery) {
+            setChatHistory(prev => [...prev, { sender: 'ai', text: aiResponse.responseMessage }]);
+            if (aiResponse.searchQuery && aiResponse.isFinalQuery) {
                 setSuggestedFilters(aiResponse.searchQuery);
             }
-
         } catch (error) {
             console.error(error);
-            const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I encountered an error. Please try again or use the manual search." };
-            setChatHistory(currentHistory => [...currentHistory, errorMessage]);
+            setChatHistory(prev => [...prev, { sender: 'ai', text: "Sorry, I'm having trouble connecting right now. Please try again." }]);
         } finally {
             setIsAiThinking(false);
         }
-    }, [chatHistory, isAiThinking, properties]);
+    }, [chatHistory, properties]);
 
     const handleApplySuggestedFilters = useCallback(() => {
-        if (suggestedFilters) {
-            applyAiSearchQuery(suggestedFilters);
-            setSuggestedFilters(null);
-            setSearchMode('manual');
-        }
-    }, [suggestedFilters, applyAiSearchQuery]);
+        if (!suggestedFilters) return;
+
+        setFilters(prev => ({
+            ...prev,
+            query: suggestedFilters.location || prev.query,
+            minPrice: suggestedFilters.minPrice || null,
+            maxPrice: suggestedFilters.maxPrice || null,
+            beds: suggestedFilters.beds || null,
+            baths: suggestedFilters.baths || null,
+        }));
+        setSearchMode('manual');
+        setSuggestedFilters(null);
+    }, [suggestedFilters]);
 
     const handleClearSuggestedFilters = useCallback(() => {
         setSuggestedFilters(null);
     }, []);
-    
-    const filteredProperties = useMemo(() => {
-        let filtered = properties;
-
-        filtered = filtered.filter(prop => {
-            const queryLower = filters.query.toLowerCase();
-            const matchesQuery = !filters.query || prop.address.toLowerCase().includes(queryLower) || prop.city.toLowerCase().includes(queryLower);
-            const matchesMinPrice = filters.minPrice === null || prop.price >= filters.minPrice;
-            const matchesMaxPrice = filters.maxPrice === null || prop.price <= filters.maxPrice;
-            const matchesBeds = filters.beds === null || prop.beds >= filters.beds;
-            const matchesBaths = filters.baths === null || prop.baths >= filters.baths;
-            const matchesFeatures = filters.specialFeatures.length === 0 || 
-                filters.specialFeatures.every(feature => 
-                    prop.specialFeatures.some(propFeature => propFeature.toLowerCase().includes(feature.toLowerCase()))
-                );
-
-            return matchesQuery && matchesMinPrice && matchesMaxPrice && matchesBeds && matchesBaths && matchesFeatures;
-        });
-
-        filtered.sort((a, b) => {
-            switch (filters.sortBy) {
-                case 'price_desc':
-                    return b.price - a.price;
-                case 'beds_desc':
-                    return b.beds - a.beds;
-                case 'price_asc':
-                default:
-                    return a.price - b.price;
-            }
-        });
-        
-        return filtered;
-    }, [properties, filters]);
-
-    const handleSubscribeClick = () => {
-        dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true });
-    };
-
-    const handleCloseSubscriptionModal = () => {
-        dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: false });
-    };
-
-    const handleClosePricingModal = () => {
-        dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: false });
-    };
 
     if (selectedProperty) {
         return <PropertyDetailsPage property={selectedProperty} />;
     }
 
     return (
-        <div className="h-screen flex flex-col">
-            <Header userRole={state.userRole} dispatch={dispatch} onSubscribeClick={handleSubscribeClick} />
-            <div className="flex-grow flex relative overflow-hidden">
-                <MapComponent properties={filteredProperties} />
-                <PropertyList 
-                    properties={filteredProperties}
-                    filters={filters}
-                    onFilterChange={handleFilterChange}
-                    onSortChange={handleSortChange}
-                    searchMode={searchMode}
-                    onSearchModeChange={setSearchMode}
-                    chatHistory={chatHistory}
-                    onSendMessage={handleSendMessage}
-                    isAiThinking={isAiThinking}
-                    suggestedFilters={suggestedFilters}
-                    onApplySuggestedFilters={handleApplySuggestedFilters}
-                    onClearSuggestedFilters={handleClearSuggestedFilters}
-                />
-            </div>
-            <SubscriptionModal isOpen={isSubscriptionModalOpen} onClose={handleCloseSubscriptionModal} />
-            <PricingPlans isOpen={isPricingModalOpen} onClose={handleClosePricingModal} />
+        <div className="flex flex-col h-screen overflow-hidden">
+            <Header
+                userRole={state.userRole}
+                dispatch={dispatch}
+                onSubscribeClick={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true })}
+            />
+             <SubscriptionModal
+                isOpen={state.isSubscriptionModalOpen}
+                onClose={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: false })}
+            />
+            <main className="flex-grow flex flex-row overflow-hidden">
+                <div className="w-full md:w-2/3 h-full overflow-y-auto pb-20">
+                    <PropertyList 
+                        properties={filteredProperties}
+                        filters={filters}
+                        onFilterChange={handleFilterChange}
+                        onSortChange={handleSortChange}
+                        onSaveSearch={handleSaveSearch}
+                        searchMode={searchMode}
+                        onSearchModeChange={setSearchMode}
+                        chatHistory={chatHistory}
+                        onSendMessage={handleSendMessage}
+                        isAiThinking={isAiThinking}
+                        suggestedFilters={suggestedFilters}
+                        onApplySuggestedFilters={handleApplySuggestedFilters}
+                        onClearSuggestedFilters={handleClearSuggestedFilters}
+                    />
+                </div>
+                 <div className="relative hidden md:block w-1/3 h-full">
+                     <MapComponent properties={filteredProperties} />
+                </div>
+            </main>
         </div>
     );
 };

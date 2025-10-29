@@ -3,18 +3,24 @@ import { Property, ChatMessage, AiSearchQuery } from '../../types';
 import PropertyCard from './PropertyCard';
 import { SearchIcon, SparklesIcon, XMarkIcon } from '../../constants';
 
-interface PropertyListProps {
-  properties: Property[];
-  filters: {
+type SellerType = 'any' | 'agent' | 'private';
+
+interface Filters {
     query: string;
     minPrice: number | null;
     maxPrice: number | null;
     beds: number | null;
     baths: number | null;
     sortBy: string;
-  };
-  onFilterChange: (name: string, value: string | number | null) => void;
+    sellerType: SellerType;
+}
+
+interface PropertyListProps {
+  properties: Property[];
+  filters: Filters;
+  onFilterChange: (name: keyof Filters, value: string | number | null) => void;
   onSortChange: (value: string) => void;
+  onSaveSearch: () => void;
   searchMode: 'manual' | 'ai';
   onSearchModeChange: (mode: 'manual' | 'ai') => void;
   chatHistory: ChatMessage[];
@@ -24,6 +30,45 @@ interface PropertyListProps {
   onApplySuggestedFilters: () => void;
   onClearSuggestedFilters: () => void;
 }
+
+const FilterButton: React.FC<{
+  onClick: () => void;
+  isActive: boolean;
+  children: React.ReactNode;
+}> = ({ onClick, isActive, children }) => (
+  <button
+    onClick={onClick}
+    className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-300 flex-grow text-center ${
+      isActive
+        ? 'bg-white text-primary shadow'
+        : 'text-neutral-600 hover:bg-neutral-200'
+    }`}
+  >
+    {children}
+  </button>
+);
+
+const FilterButtonGroup: React.FC<{
+  label: string;
+  options: { value: string | number; label: string }[];
+  selectedValue: string | number | null;
+  onChange: (value: string | number | null) => void;
+}> = ({ label, options, selectedValue, onChange }) => (
+  <div>
+    <label className="block text-xs font-medium text-neutral-700 mb-1.5">{label}</label>
+    <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200">
+      {options.map(({ value, label: optionLabel }) => (
+        <FilterButton
+          key={value}
+          onClick={() => onChange(selectedValue === value ? null : value)}
+          isActive={selectedValue === value}
+        >
+          {optionLabel}
+        </FilterButton>
+      ))}
+    </div>
+  </div>
+);
 
 const SuggestedFilters: React.FC<{
     filters: AiSearchQuery;
@@ -82,26 +127,34 @@ const SuggestedFilters: React.FC<{
 
 
 const PropertyList: React.FC<PropertyListProps> = ({ 
-    properties, filters, onFilterChange, onSortChange, 
+    properties, filters, onFilterChange, onSortChange, onSaveSearch,
     searchMode, onSearchModeChange, 
     chatHistory, onSendMessage, isAiThinking,
     suggestedFilters, onApplySuggestedFilters, onClearSuggestedFilters
 }) => {
     
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        onFilterChange(e.target.name, e.target.value);
+        const { name, value, type } = e.target;
+        let finalValue: string | number | null = value;
+        if (type === 'number') {
+            finalValue = value === '' ? null : Number(value);
+        }
+        onFilterChange(name as keyof Filters, finalValue);
     }, [onFilterChange]);
     
-    const inputBaseClasses = "block w-full text-base bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors";
+    const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors";
     
     return (
-        <div className="bg-white/80 backdrop-blur-sm w-full md:w-[450px] flex-shrink-0 flex flex-col h-full border-l border-neutral-200">
-            <div className="p-4 border-b border-neutral-200">
-                <h2 className="text-xl font-bold text-neutral-800">Properties for Sale</h2>
-                <p className="text-sm text-neutral-500">{properties.length} of {properties.length} listings shown</p>
+        <div className="flex flex-col bg-white">
+            {/* Header */}
+            <div className="p-4 border-b border-neutral-200 flex-shrink-0">
+                <h2 className="text-lg font-bold text-neutral-800">Properties for Sale</h2>
+                <p className="text-xs text-neutral-500">{properties.length} results found</p>
             </div>
-            <div className="p-4 border-b border-neutral-200">
-                <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm mx-auto mb-4">
+
+            {/* Filters Section */}
+            <div className="p-4">
+                 <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm mx-auto mb-4">
                     <button
                         onClick={() => onSearchModeChange('manual')}
                         className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}
@@ -111,12 +164,11 @@ const PropertyList: React.FC<PropertyListProps> = ({
                         className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}
                     ><SparklesIcon className="w-4 h-4" /> AI Search</button>
                 </div>
-
-                {searchMode === 'manual' ? (
-                    <div className="space-y-4">
+                 {searchMode === 'manual' ? (
+                    <div className="space-y-3">
                         <div className="relative">
                             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                <SearchIcon className="h-5 w-5 text-neutral-400" />
+                                <SearchIcon className="h-4 w-4 text-neutral-400" />
                             </div>
                             <input
                                 type="text"
@@ -124,56 +176,75 @@ const PropertyList: React.FC<PropertyListProps> = ({
                                 placeholder="Search city, address..."
                                 value={filters.query}
                                 onChange={handleInputChange}
-                                className={`${inputBaseClasses} pl-10`}
+                                className={`${inputBaseClasses} pl-9`}
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                           <div className="relative">
-                               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                   <span className="text-neutral-500 text-sm">€</span>
-                               </div>
-                               <input
-                                   type="number"
-                                   name="minPrice"
-                                   placeholder="Min price"
-                                   value={filters.minPrice || ''}
-                                   onChange={handleInputChange}
-                                   className={`${inputBaseClasses} pl-7`}
-                               />
-                           </div>
-                           <div className="relative">
+                        <div className="relative">
+                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <span className="text-neutral-500 text-xs">€</span>
+                            </div>
+                            <input
+                                type="number"
+                                name="minPrice"
+                                placeholder="Min price"
+                                value={filters.minPrice || ''}
+                                onChange={handleInputChange}
+                                className={`${inputBaseClasses} pl-6`}
+                            />
+                        </div>
+                        <div className="relative">
                                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                   <span className="text-neutral-500 text-sm">€</span>
-                               </div>
-                               <input
-                                   type="number"
-                                   name="maxPrice"
-                                   placeholder="Max price"
-                                   value={filters.maxPrice || ''}
-                                   onChange={handleInputChange}
-                                   className={`${inputBaseClasses} pl-7`}
-                               />
-                           </div>
+                                <span className="text-neutral-500 text-xs">€</span>
+                            </div>
+                            <input
+                                type="number"
+                                name="maxPrice"
+                                placeholder="Max price"
+                                value={filters.maxPrice || ''}
+                                onChange={handleInputChange}
+                                className={`${inputBaseClasses} pl-6`}
+                            />
+                        </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-700 mb-1.5">Bedrooms</label>
+                                <input 
+                                    type="number" 
+                                    name="beds" 
+                                    placeholder="Any" 
+                                    value={filters.beds || ''} 
+                                    onChange={handleInputChange}
+                                    min="0"
+                                    className={inputBaseClasses}
+                                />
+                            </div>
+                             <div>
+                                <label className="block text-xs font-medium text-neutral-700 mb-1.5">Bathrooms</label>
+                                <input 
+                                    type="number" 
+                                    name="baths" 
+                                    placeholder="Any" 
+                                    value={filters.baths || ''} 
+                                    onChange={handleInputChange}
+                                    min="0"
+                                    className={inputBaseClasses}
+                                />
+                            </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <input
-                                type="number"
-                                name="beds"
-                                placeholder="Beds"
-                                value={filters.beds || ''}
-                                onChange={handleInputChange}
-                                className={inputBaseClasses}
-                            />
-                            <input
-                                type="number"
-                                name="baths"
-                                placeholder="Baths"
-                                value={filters.baths || ''}
-                                onChange={handleInputChange}
-                                className={inputBaseClasses}
-                            />
-                        </div>
+                        <FilterButtonGroup 
+                            label="Listing Type"
+                            options={[
+                                {value: 'any', label: 'Any'},
+                                {value: 'agent', label: 'Agent'},
+                                {value: 'private', label: 'Private'},
+                            ]}
+                            selectedValue={filters.sellerType}
+                            onChange={(value) => onFilterChange('sellerType', value as SellerType)}
+                        />
 
                         <div className="relative">
                             <select
@@ -190,6 +261,13 @@ const PropertyList: React.FC<PropertyListProps> = ({
                                 <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                             </div>
                         </div>
+
+                        <button 
+                            onClick={onSaveSearch} 
+                            className="w-full mt-2 py-2.5 px-4 border border-primary text-primary rounded-lg shadow-sm text-sm font-bold bg-primary-light/50 hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                        >
+                            Save Search
+                        </button>
                     </div>
                 ) : (
                     <div className="flex flex-col">
@@ -207,7 +285,7 @@ const PropertyList: React.FC<PropertyListProps> = ({
                             ))}
                             {isAiThinking && (
                                 <div className="flex justify-start">
-                                     <div className="max-w-xs lg:max-w-sm px-4 py-2 rounded-2xl bg-white text-neutral-800 border border-neutral-200 rounded-bl-lg">
+                                    <div className="max-w-xs lg:max-w-sm px-4 py-2 rounded-2xl bg-white text-neutral-800 border border-neutral-200 rounded-bl-lg">
                                         <div className="flex items-center space-x-2">
                                             <span className="h-2 w-2 bg-neutral-400 rounded-full animate-pulse [animation-delay:-0.3s]"></span>
                                             <span className="h-2 w-2 bg-neutral-400 rounded-full animate-pulse [animation-delay:-0.15s]"></span>
@@ -220,7 +298,7 @@ const PropertyList: React.FC<PropertyListProps> = ({
                         <div className="mt-4">
                             <ChatInput onSendMessage={onSendMessage} disabled={isAiThinking} />
                         </div>
-                         {suggestedFilters && (
+                        {suggestedFilters && (
                             <SuggestedFilters
                                 filters={suggestedFilters}
                                 onApply={onApplySuggestedFilters}
@@ -230,7 +308,9 @@ const PropertyList: React.FC<PropertyListProps> = ({
                     </div>
                 )}
             </div>
-            <div className="flex-grow overflow-y-auto p-4 space-y-4">
+
+            {/* Property Grid */}
+            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 {properties.map(prop => (
                     <PropertyCard key={prop.id} property={prop} />
                 ))}
