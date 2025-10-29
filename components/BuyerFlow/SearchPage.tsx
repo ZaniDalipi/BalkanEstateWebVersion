@@ -4,22 +4,10 @@ import Header from '../shared/Header';
 import MapComponent from './MapComponent';
 import PropertyList from './PropertyList';
 import PropertyDetailsPage from './PropertyDetailsPage';
-import { SavedSearch, ChatMessage, AiSearchQuery } from '../../types';
-import { getAiChatResponse } from '../../services/geminiService';
+import { SavedSearch, ChatMessage, AiSearchQuery, Filters } from '../../types';
+import { getAiChatResponse, generateSearchName } from '../../services/geminiService';
 import SubscriptionModal from './SubscriptionModal';
-
-export type SellerType = 'any' | 'agent' | 'private';
-
-export interface Filters {
-    query: string;
-    minPrice: number | null;
-    maxPrice: number | null;
-    beds: number | null;
-    baths: number | null;
-    sortBy: string;
-    sellerType: SellerType;
-    propertyType: string;
-}
+import Toast from '../shared/Toast';
 
 const SearchPage: React.FC = () => {
     const { state, dispatch } = useAppContext();
@@ -35,6 +23,13 @@ const SearchPage: React.FC = () => {
         sellerType: 'any',
         propertyType: 'any',
     });
+
+    const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+    const [isSaving, setIsSaving] = useState(false);
+
+    const showToast = (message: string, type: 'success' | 'error') => {
+        setToast({ show: true, message, type });
+    };
     
     const filteredProperties = useMemo(() => {
         let sortedProperties = [...properties];
@@ -77,21 +72,42 @@ const SearchPage: React.FC = () => {
         setFilters(prev => ({ ...prev, sortBy: value }));
     }, []);
     
-    const handleSaveSearch = useCallback(() => {
+    const handleSaveSearch = useCallback(async () => {
         if (!isAuthenticated) {
             dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
             return;
         }
 
-        const newSearch: SavedSearch = {
-            id: `ss-${Date.now()}`,
-            name: filters.query || `Properties in ${filteredProperties.length > 0 ? filteredProperties[0].city : 'selected area'}`,
-            newPropertyCount: 0,
-            properties: filteredProperties.slice(0, 5),
-        };
-        dispatch({ type: 'ADD_SAVED_SEARCH', payload: newSearch });
+        const isSearchMeaningful = filters.query.trim() !== '' || filters.minPrice || filters.maxPrice || filters.beds || filters.baths || filters.sellerType !== 'any';
+
+        if (!isSearchMeaningful) {
+            showToast("Cannot save an empty search. Please add some criteria.", 'error');
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            const searchName = await generateSearchName(filters);
+            const newSearch: SavedSearch = {
+                id: `ss-${Date.now()}`,
+                name: searchName,
+                newPropertyCount: 0,
+                properties: filteredProperties.slice(0, 5),
+            };
+            dispatch({ type: 'ADD_SAVED_SEARCH', payload: newSearch });
+            showToast("Search saved successfully!", 'success');
+        } catch (e) {
+            console.error("Failed to save search:", e);
+            showToast("Could not save search. AI might be busy.", 'error');
+        } finally {
+            setIsSaving(false);
+        }
     }, [isAuthenticated, dispatch, filters, filteredProperties]);
     
+    const handleGetAlerts = useCallback(() => {
+        dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true });
+    }, [dispatch]);
+
     // AI Search logic
     const [searchMode, setSearchMode] = useState<'manual' | 'ai'>('manual');
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
@@ -146,22 +162,29 @@ const SearchPage: React.FC = () => {
     return (
         <div className="flex flex-col h-screen overflow-hidden">
             <Header
-                userRole={state.userRole}
-                dispatch={dispatch}
                 onSubscribeClick={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true })}
+            />
+            <Toast 
+                show={toast.show} 
+                message={toast.message} 
+                type={toast.type} 
+                onClose={() => setToast({ ...toast, show: false })} 
             />
              <SubscriptionModal
                 isOpen={state.isSubscriptionModalOpen}
                 onClose={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: false })}
+                filters={filters}
             />
             <main className="flex-grow flex flex-row overflow-hidden">
-                <div className="w-full md:w-2/3 h-full overflow-y-auto pb-20">
+                <div className="w-full md:w-2/3 h-full overflow-y-auto">
                     <PropertyList 
                         properties={filteredProperties}
                         filters={filters}
                         onFilterChange={handleFilterChange}
                         onSortChange={handleSortChange}
                         onSaveSearch={handleSaveSearch}
+                        onGetAlerts={handleGetAlerts}
+                        isSaving={isSaving}
                         searchMode={searchMode}
                         onSearchModeChange={setSearchMode}
                         chatHistory={chatHistory}

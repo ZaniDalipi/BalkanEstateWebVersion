@@ -7,7 +7,7 @@ import SellerDashboard from './components/SellerFlow/SellerDashboard';
 import AuthModal from './components/auth/AuthModal';
 import PricingPlans from './components/SellerFlow/PricingPlans';
 import SavedSearchesPage from './components/BuyerFlow/SavedSearchesPage';
-import BottomNav from './components/shared/BottomNav';
+import SavedHomesPage from './components/BuyerFlow/SavedHomesPage';
 
 const AppContent: React.FC = () => {
   const { state } = useAppContext();
@@ -18,6 +18,8 @@ const AppContent: React.FC = () => {
       switch (state.activeView) {
         case 'saved-searches':
           return <SavedSearchesPage />;
+        case 'saved-homes':
+          return <SavedHomesPage />;
         case 'search':
         default:
           return <SearchPage />;
@@ -40,7 +42,6 @@ const MainLayout: React.FC = () => {
         onClose={() => dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: false } })}
         isOffer={state.isFirstLoginOffer}
       />
-      {state.isAuthenticated && state.userRole === UserRole.BUYER && <BottomNav />}
     </div>
   );
 };

@@ -29,8 +29,8 @@ const AuthModal: React.FC = () => {
         dispatch({ type: 'SET_IS_AUTHENTICATED', payload: true });
         handleClose();
         
-        // Show the limited time offer on first login/signup
-        dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: true } });
+        // REMOVED: No longer showing pricing plans on login.
+        // It now only shows after a user creates a new listing.
     };
 
     const floatingInputClasses = "block px-2.5 pb-2.5 pt-4 w-full text-base text-neutral-900 bg-white rounded-lg border border-neutral-300 appearance-none focus:outline-none focus:ring-0 focus:border-primary peer";

@@ -1,5 +1,5 @@
 import React, { createContext, useReducer, useContext, Dispatch } from 'react';
-import { AppState, AppAction, UserRole, SavedSearch, AppView } from '../types';
+import { AppState, AppAction, UserRole, SavedSearch, AppView, Property } from '../types';
 import { dummyProperties } from '../services/propertyService';
 
 const dummySavedSearches: SavedSearch[] = [
@@ -24,16 +24,17 @@ const dummySavedSearches: SavedSearch[] = [
 ];
 
 const initialState: AppState = {
-  userRole: UserRole.BUYER, // Default to buyer to show main app
+  userRole: UserRole.UNDEFINED, // Default to UNDEFINED to show onboarding screen
   properties: dummyProperties,
   isSubscriptionModalOpen: false,
   isPricingModalOpen: false,
   isFirstLoginOffer: false,
   isAuthModalOpen: false,
-  isAuthenticated: true, // Forcing login to see the new UI
+  isAuthenticated: false, // Start as unauthenticated
   selectedProperty: null,
   activeView: 'search', // Default to search page
   savedSearches: dummySavedSearches,
+  savedHomes: [],
 };
 
 const AppContext = createContext<{
@@ -58,6 +59,7 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
             isPricingModalOpen: action.payload.isOpen,
             isFirstLoginOffer: action.payload.isOffer || false
         };
+    // FIX: Corrected typo in action type from 'TOGGLE_AUTH_Modal' to 'TOGGLE_AUTH_MODAL' to match the type definition.
     case 'TOGGLE_AUTH_MODAL':
         return {...state, isAuthModalOpen: action.payload};
     case 'SET_IS_AUTHENTICATED':
@@ -75,6 +77,19 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
             ...state,
             savedSearches: state.savedSearches.map(s => ({...s, newPropertyCount: 0}))
         };
+    case 'TOGGLE_SAVED_HOME':
+      const isSaved = state.savedHomes.some(p => p.id === action.payload.id);
+      if (isSaved) {
+        return {
+          ...state,
+          savedHomes: state.savedHomes.filter(p => p.id !== action.payload.id),
+        };
+      } else {
+        return {
+          ...state,
+          savedHomes: [...state.savedHomes, action.payload],
+        };
+      }
     default:
       return state;
   }

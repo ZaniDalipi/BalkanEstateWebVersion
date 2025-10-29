@@ -15,7 +15,7 @@ const SellerDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      <Header userRole={UserRole.SELLER} dispatch={dispatch} onPlansClick={handlePlansClick} />
+      <Header onPlansClick={handlePlansClick} />
       <main className="p-4 md:p-8 max-w-7xl mx-auto">
         <h2 className="text-3xl md:text-4xl font-bold text-neutral-800 mb-8">Seller Dashboard</h2>
         

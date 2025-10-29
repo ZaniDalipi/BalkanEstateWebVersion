@@ -62,6 +62,7 @@ export interface AppState {
   selectedProperty: Property | null;
   activeView: AppView;
   savedSearches: SavedSearch[];
+  savedHomes: Property[];
 }
 
 export type AppAction =
@@ -75,7 +76,8 @@ export type AppAction =
   | { type: 'ADD_PROPERTY'; payload: Property }
   | { type: 'SET_ACTIVE_VIEW'; payload: AppView }
   | { type: 'ADD_SAVED_SEARCH'; payload: SavedSearch }
-  | { type: 'MARK_ALL_SEARCHES_VIEWED' };
+  | { type: 'MARK_ALL_SEARCHES_VIEWED' }
+  | { type: 'TOGGLE_SAVED_HOME'; payload: Property };
 
 
 export interface ChatMessage {
@@ -90,4 +92,17 @@ export interface AiSearchQuery {
   beds?: number;
   baths?: number;
   features?: string[];
+}
+
+export type SellerType = 'any' | 'agent' | 'private';
+
+export interface Filters {
+    query: string;
+    minPrice: number | null;
+    maxPrice: number | null;
+    beds: number | null;
+    baths: number | null;
+    sortBy: string;
+    sellerType: SellerType;
+    propertyType: string;
 }

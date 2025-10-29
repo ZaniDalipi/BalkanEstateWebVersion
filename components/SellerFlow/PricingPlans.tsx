@@ -12,66 +12,101 @@ const TickIcon: React.FC = () => (
     <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
 );
 
-const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer = false }) => {
-  const [timeLeft, setTimeLeft] = useState(30 * 60);
+const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer }) => {
+  const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes in seconds
 
   useEffect(() => {
-    if (!isOpen || !isOffer) {
-        setTimeLeft(30 * 60);
-        return;
-    };
-
-    const timer = setInterval(() => {
-        setTimeLeft(prevTime => {
-            if (prevTime <= 1) {
-                clearInterval(timer);
-                return 0;
-            }
-            return prevTime - 1;
+    if (isOpen && isOffer) {
+      setTimeLeft(30 * 60); // Reset timer every time the offer modal opens
+      const timer = setInterval(() => {
+        setTimeLeft((prevTime) => {
+          if (prevTime <= 1) {
+            clearInterval(timer);
+            onClose(); // Automatically close when time runs out
+            return 0;
+          }
+          return prevTime - 1;
         });
-    }, 1000);
+      }, 1000);
 
-    return () => clearInterval(timer);
-  }, [isOpen, isOffer]);
+      return () => clearInterval(timer); // Cleanup interval on unmount
+    }
+  }, [isOpen, isOffer, onClose]);
 
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
+  const handleCloseAttempt = () => {
+    if (isOffer) {
+      if (window.confirm('Are you sure? This is a one-time offer and will be lost if you close it.')) {
+        onClose();
+      }
+    } else {
+      onClose();
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+  };
+
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="5xl">
+    <Modal isOpen={isOpen} onClose={handleCloseAttempt} size="5xl">
         <div className="p-2 sm:p-4">
             {isOffer && (
-                 <div className="bg-red-500 text-white p-4 rounded-xl mb-6 text-center shadow-lg">
+                 <div className="mb-6 bg-red-600 text-white rounded-lg p-4 text-center shadow-lg">
                     <div className="flex items-center justify-center gap-3">
-                        <BoltIcon className="w-7 h-7" />
-                        <h3 className="text-xl font-bold">Limited Time Offer!</h3>
+                        <BoltIcon className="w-8 h-8 text-yellow-300" />
+                        <div className="text-left">
+                            <h3 className="font-extrabold text-xl">Limited Time Offer Ends In:</h3>
+                            <p className="font-mono text-2xl tracking-wider">{formatTime(timeLeft)}</p>
+                        </div>
                     </div>
-                    <p className="font-mono text-2xl mt-2 tracking-widest">{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}</p>
                 </div>
             )}
-            <div className="text-center mb-8">
-                <h2 className="text-3xl font-extrabold text-neutral-800 tracking-tight">Choose Your Selling Plan</h2>
-                <p className="mt-4 text-lg text-neutral-600">Get your property in front of thousands of potential buyers</p>
+            <div className="text-center mb-10">
+                {isOffer ? (
+                    <>
+                        <h2 className="text-3xl font-extrabold text-primary tracking-tight">Congratulations on Your Listing!</h2>
+                        <p className="mt-4 text-lg text-neutral-600">As a special thank you, enjoy this one-time discount on our selling plans.</p>
+                    </>
+                ) : (
+                    <>
+                        <h2 className="text-3xl font-extrabold text-neutral-800 tracking-tight">Choose Your Selling Plan</h2>
+                        <p className="mt-4 text-lg text-neutral-600">Get your property in front of thousands of potential buyers</p>
+                    </>
+                )}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start mt-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                 {/* Pro Yearly Plan */}
                 <div className="relative p-6 rounded-2xl border-2 border-green-400 bg-gradient-to-br from-green-50 to-cyan-50 shadow-lg lg:-translate-y-4 flex flex-col h-full">
-                    <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 flex gap-2">
-                        <span className="inline-block bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">MOST POPULAR</span>
-                        {isOffer && <span className="inline-block bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">60% OFF</span>}
+                    <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
+                        <span className="inline-block bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
+                            {isOffer ? '60% OFF' : 'MOST POPULAR'}
+                        </span>
                     </div>
-                    <div className="text-center">
+                    <div className="text-center pt-4">
                         <h3 className="text-2xl font-bold text-neutral-800">Pro Yearly</h3>
-                        <p className="mt-2">
-                            {isOffer && <span className="text-2xl font-semibold text-neutral-500 line-through mr-2">€200</span>}
-                            <span className="text-5xl font-extrabold text-neutral-900">{isOffer ? '€80' : '€200'}</span>
-                            <span className="text-xl font-semibold text-neutral-600">/year</span>
-                        </p>
-                        {isOffer && <p className="font-bold text-green-600 mt-2">Save €120 today!</p>}
+                        <div className="mt-2 h-20 flex flex-col items-center justify-center">
+                            {isOffer ? (
+                                <>
+                                    <div>
+                                        <span className="text-2xl font-semibold text-neutral-500 line-through">€200</span>
+                                        <span className="text-5xl font-extrabold text-red-600 ml-2">€80</span>
+                                        <span className="text-xl font-semibold text-neutral-600">/year</span>
+                                    </div>
+                                    <p className="mt-1 text-lg font-bold text-green-600">You save €120!</p>
+                                </>
+                            ) : (
+                                <p>
+                                    <span className="text-5xl font-extrabold text-neutral-900">€200</span>
+                                    <span className="text-xl font-semibold text-neutral-600">/year</span>
+                                </p>
+                            )}
+                        </div>
                     </div>
-                     {isOffer && <div className="my-6 text-center bg-green-500 text-white font-bold py-2 rounded-lg shadow-md">+ 15 DAYS FREE TRIAL</div>}
-                    <ul className={`${isOffer ? 'mt-0' : 'mt-8'} space-y-4 text-neutral-700 font-medium flex-grow`}>
+                    <ul className="mt-8 space-y-4 text-neutral-700 font-medium flex-grow">
                         <li className="flex items-center"><TickIcon /> Up to 10 active property ads</li>
                         <li className="flex items-center"><TickIcon /> Premium listing placement</li>
                         <li className="flex items-center"><TickIcon /> Advanced analytics dashboard</li>
@@ -80,25 +115,36 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer = 
                         <li className="flex items-center"><TickIcon /> Priority customer support</li>
                     </ul>
                     <button className="w-full mt-8 py-3.5 rounded-lg font-bold text-white bg-indigo-500 hover:bg-indigo-600 transition-colors shadow-md text-lg">
-                        Get Pro Annual - {isOffer ? '€80' : '€200'}/year
+                        {isOffer ? 'Get Pro Annual - €80/year' : 'Get Pro Annual - €200/year'}
                     </button>
                 </div>
 
                 {/* Pro Monthly Plan */}
-                <div className="p-6 rounded-2xl border border-neutral-200 bg-white flex flex-col h-full relative">
+                <div className="relative p-6 rounded-2xl border border-neutral-200 bg-white flex flex-col h-full">
                      {isOffer && (
                         <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
-                            <span className="inline-block bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">50% OFF</span>
+                             <span className="inline-block bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">50% OFF</span>
                         </div>
-                     )}
-                     <div className="text-center">
+                    )}
+                     <div className="text-center pt-4">
                         <h3 className="text-2xl font-bold text-neutral-800">Pro Monthly</h3>
-                        <p className="mt-2">
-                            {isOffer && <span className="text-2xl font-semibold text-neutral-500 line-through mr-2">€25</span>}
-                            <span className="text-5xl font-extrabold text-neutral-900">{isOffer ? '€12.50' : '€25'}</span>
-                            <span className="text-xl font-semibold text-neutral-600">/month</span>
-                        </p>
-                        {isOffer && <p className="font-bold text-green-600 mt-2">Save €12.50 monthly!</p>}
+                        <div className="mt-2 h-20 flex flex-col items-center justify-center">
+                            {isOffer ? (
+                                <>
+                                    <div>
+                                        <span className="text-2xl font-semibold text-neutral-500 line-through">€25</span>
+                                        <span className="text-5xl font-extrabold text-red-600 ml-2">€12.50</span>
+                                        <span className="text-xl font-semibold text-neutral-600">/month</span>
+                                    </div>
+                                    <p className="mt-1 text-lg font-bold text-green-600">You save €12.50!</p>
+                                </>
+                            ) : (
+                                <p>
+                                    <span className="text-5xl font-extrabold text-neutral-900">€25</span>
+                                    <span className="text-xl font-semibold text-neutral-600">/month</span>
+                                </p>
+                            )}
+                        </div>
                     </div>
                     <div className="mt-8 space-y-3 flex-grow flex flex-col">
                         <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-200">
@@ -123,27 +169,39 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer = 
                         </div>
                     </div>
                      <button className="w-full mt-8 py-3.5 rounded-lg font-bold bg-white border border-neutral-300 text-neutral-700 hover:bg-neutral-100 transition-colors shadow-sm text-lg">
-                        Get Pro Monthly - {isOffer ? '€12.50' : '€25'}/month
+                        {isOffer ? 'Get Pro Monthly - €12.50/month' : 'Get Pro Monthly - €25/month'}
                     </button>
                 </div>
 
                 {/* Enterprise Plan */}
-                <div className="relative p-6 rounded-2xl bg-neutral-800 text-white overflow-hidden flex flex-col h-full">
-                    <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 flex gap-2">
-                         <span className="inline-block bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">OFFER</span>
-                         {isOffer && <span className="inline-block bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">20% OFF</span>}
+                <div className="relative p-6 rounded-2xl bg-neutral-800 text-white flex flex-col h-full">
+                    <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
+                         <span className="inline-block bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
+                            {isOffer ? '20% OFF' : 'OFFER'}
+                         </span>
                     </div>
-                     <div className="text-center">
+                     <div className="text-center pt-4">
                         <div className="flex justify-center items-center gap-2">
                            <BuildingOfficeIcon className="w-8 h-8 text-amber-400" />
                            <h3 className="text-2xl font-bold">Enterprise Plan</h3>
                         </div>
-                        <p className="mt-2">
-                            {isOffer && <span className="text-xl font-semibold text-neutral-400 line-through mr-2">€1,000</span>}
-                            <span className="text-4xl font-extrabold">{isOffer ? '€800' : '€1,000'}</span>
-                            <span className="text-lg font-semibold text-neutral-300">/year</span>
-                        </p>
-                         {isOffer && <p className="font-bold text-green-400 mt-2">Save €200!</p>}
+                        <div className="mt-2 h-20 flex flex-col items-center justify-center">
+                            {isOffer ? (
+                                <>
+                                    <div>
+                                        <span className="text-2xl font-semibold text-neutral-400 line-through">€1,000</span>
+                                        <span className="text-4xl font-extrabold ml-2">€800</span>
+                                        <span className="text-lg font-semibold text-neutral-300">/year</span>
+                                    </div>
+                                    <p className="mt-1 text-lg font-bold text-green-500">You save €200!</p>
+                                </>
+                            ) : (
+                                <p>
+                                    <span className="text-4xl font-extrabold">€1,000</span>
+                                    <span className="text-lg font-semibold text-neutral-300">/year</span>
+                                </p>
+                            )}
+                        </div>
                     </div>
                     <div className="mt-8 space-y-4 flex-grow">
                         <div className="bg-neutral-700/50 p-4 rounded-lg">
@@ -160,12 +218,12 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer = 
                         </div>
                     </div>
                      <button className="w-full mt-8 py-3.5 rounded-lg font-bold bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-md text-lg">
-                        Perfect for Real Estate Companies
+                         {isOffer ? 'Contact Sales - €800/year' : 'Perfect for Real Estate Companies'}
                     </button>
                 </div>
             </div>
 
-            <div className="mt-10 pt-6 border-t border-neutral-200">
+            <div className="mt-12 pt-6 border-t border-neutral-200">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4 text-center">
                     <div className="flex items-center justify-center gap-2 text-neutral-600 font-medium">
                         <CurrencyDollarIcon className="w-6 h-6 text-green-500" />

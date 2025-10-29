@@ -32,7 +32,7 @@ const BottomNav: React.FC = () => {
   };
 
   return (
-    <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-30">
+    <nav className="fixed top-0 left-0 right-0 bg-white border-b border-neutral-200 shadow-sm z-30">
       <div className="flex justify-around max-w-lg mx-auto">
         <NavItem
           view="search"
@@ -70,7 +70,7 @@ const BottomNav: React.FC = () => {
           onClick={handleNavClick}
         />
       </div>
-    </footer>
+    </nav>
   );
 };
 

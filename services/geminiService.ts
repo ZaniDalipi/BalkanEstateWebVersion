@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { Property, PropertyImageTag, ChatMessage, AiSearchQuery } from '../types';
+import { Property, PropertyImageTag, ChatMessage, AiSearchQuery, Filters } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -237,4 +237,52 @@ export const getAiChatResponse = async (history: ChatMessage[], properties: Prop
             isFinalQuery: false,
         };
     }
+};
+
+export const generateSearchName = async (filters: Filters): Promise<string> => {
+    const relevantFilters: Partial<Filters> = {};
+    if (filters.query) relevantFilters.query = filters.query;
+    if (filters.minPrice) relevantFilters.minPrice = filters.minPrice;
+    if (filters.maxPrice) relevantFilters.maxPrice = filters.maxPrice;
+    if (filters.beds) relevantFilters.beds = filters.beds;
+    if (filters.baths) relevantFilters.baths = filters.baths;
+    if (filters.sellerType !== 'any') relevantFilters.sellerType = filters.sellerType;
+
+    const prompt = `
+        You are a helpful real estate assistant. Given the following JSON object of search filters, generate a concise, human-readable name for a saved search. The name should be a single, descriptive phrase.
+
+        - If there's a query (location), start with that.
+        - Describe price ranges like "€50k - €100k" or "over €200k" or "under €150k".
+        - Describe beds/baths like "3+ beds", "2+ baths".
+        - Mention the seller type if it's not 'any'.
+        - Combine these elements with commas.
+        - Be concise.
+
+        Example 1 Input:
+        { "query": "Bitola", "maxPrice": 100000, "sellerType": "agent", "beds": 3, "baths": 2 }
+        Example 1 Output:
+        Bitola, under €100k, by agent, 3+ beds, 2+ baths
+
+        Example 2 Input:
+        { "minPrice": 250000, "beds": 4 }
+        Example 2 Output:
+        Over €250k, 4+ beds
+
+        Example 3 Input:
+        { "query": "Belgrade", "sellerType": "private" }
+        Example 3 Output:
+        Belgrade, private listings
+
+        Now, generate a name for this filter object:
+        ${JSON.stringify(relevantFilters)}
+
+        Return only the generated name string, without any markdown or extra text.
+    `;
+
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+    });
+
+    return result.text.trim();
 };
