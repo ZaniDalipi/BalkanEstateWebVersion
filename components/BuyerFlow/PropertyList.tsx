@@ -115,6 +115,8 @@ const SuggestedFilters: React.FC<{
     );
 };
 
+const PRICE_RANGES = [50000, 75000, 100000, 125000, 150000, 175000, 200000, 250000, 300000, 400000, 500000, 750000, 1000000];
+const formatNumber = (num: number) => new Intl.NumberFormat('de-DE').format(num);
 
 const PropertyList: React.FC<PropertyListProps> = ({ 
     properties, filters, onFilterChange, onSortChange, onSaveSearch, onGetAlerts, isSaving,
@@ -124,11 +126,17 @@ const PropertyList: React.FC<PropertyListProps> = ({
 }) => {
     
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value, type } = e.target;
+        const { name, value } = e.target;
+        
         let finalValue: string | number | null = value;
-        if (type === 'number') {
+        
+        const isNumericSelect = e.target.nodeName === 'SELECT' && (name === 'minPrice' || name === 'maxPrice');
+        const isNumericInput = e.target.getAttribute('type') === 'number';
+
+        if (isNumericInput || isNumericSelect) {
             finalValue = value === '' ? null : Number(value);
         }
+        
         onFilterChange(name as keyof Filters, finalValue);
     }, [onFilterChange]);
     
@@ -170,32 +178,46 @@ const PropertyList: React.FC<PropertyListProps> = ({
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                        <div className="relative">
-                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                <span className="text-neutral-500 text-xs">€</span>
+                            <div>
+                                <label htmlFor="minPrice" className="block text-xs font-medium text-neutral-700 mb-1.5">Min Price</label>
+                                <div className="relative">
+                                    <select
+                                        id="minPrice"
+                                        name="minPrice"
+                                        value={filters.minPrice || ''}
+                                        onChange={handleInputChange}
+                                        className={`${inputBaseClasses} appearance-none`}
+                                    >
+                                        <option value="">Any</option>
+                                        {PRICE_RANGES.map(price => (
+                                            <option key={`min-${price}`} value={price}>€{formatNumber(price)}</option>
+                                        ))}
+                                    </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
+                                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                    </div>
+                                </div>
                             </div>
-                            <input
-                                type="number"
-                                name="minPrice"
-                                placeholder="Min price"
-                                value={filters.minPrice || ''}
-                                onChange={handleInputChange}
-                                className={`${inputBaseClasses} pl-6`}
-                            />
-                        </div>
-                        <div className="relative">
-                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                <span className="text-neutral-500 text-xs">€</span>
+                             <div>
+                                <label htmlFor="maxPrice" className="block text-xs font-medium text-neutral-700 mb-1.5">Max Price</label>
+                                <div className="relative">
+                                    <select
+                                        id="maxPrice"
+                                        name="maxPrice"
+                                        value={filters.maxPrice || ''}
+                                        onChange={handleInputChange}
+                                        className={`${inputBaseClasses} appearance-none`}
+                                    >
+                                        <option value="">Any</option>
+                                        {PRICE_RANGES.map(price => (
+                                            <option key={`max-${price}`} value={price}>€{formatNumber(price)}</option>
+                                        ))}
+                                    </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
+                                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                    </div>
+                                </div>
                             </div>
-                            <input
-                                type="number"
-                                name="maxPrice"
-                                placeholder="Max price"
-                                value={filters.maxPrice || ''}
-                                onChange={handleInputChange}
-                                className={`${inputBaseClasses} pl-6`}
-                            />
-                        </div>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4">
@@ -246,17 +268,35 @@ const PropertyList: React.FC<PropertyListProps> = ({
                                 <option value="price_asc">Sort by: Price (low-high)</option>
                                 <option value="price_desc">Sort by: Price (high-low)</option>
                                 <option value="beds_desc">Sort by: Beds (most)</option>
+                                <option value="newest">Sort by: Newest first</option>
                             </select>
                             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
                                 <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                             </div>
                         </div>
 
-                        <div className="flex space-x-2 mt-2">
+                        <div className="relative">
+                            <select
+                                name="propertyType"
+                                value={filters.propertyType}
+                                onChange={handleInputChange}
+                                className={`${inputBaseClasses} appearance-none`}
+                            >
+                                <option value="any">Property Type (Any)</option>
+                                <option value="apartment">Apartment</option>
+                                <option value="house">House</option>
+                                <option value="villa">Villa</option>
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
+                                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                            </div>
+                        </div>
+                        
+                        <div className="flex gap-4 pt-2">
                             <button 
                                 onClick={onSaveSearch} 
                                 disabled={isSaving}
-                                className="w-1/2 py-2.5 px-4 border border-primary text-primary rounded-lg shadow-sm text-sm font-bold bg-primary-light/50 hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-2"
+                                className="w-full py-2.5 px-4 border border-primary text-primary rounded-lg shadow-sm text-sm font-bold bg-white hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-2"
                             >
                                 {isSaving ? (
                                     <>
@@ -271,11 +311,11 @@ const PropertyList: React.FC<PropertyListProps> = ({
                                 )}
                             </button>
                              <button
-                                onClick={onGetAlerts}
-                                className="w-1/2 py-2.5 px-4 border border-transparent text-white rounded-lg shadow-sm text-sm font-bold bg-secondary hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary flex items-center justify-center gap-2"
+                                onClick={() => {}} // Search is live, so this is a visual affordance
+                                className="w-full py-2.5 px-4 border border-transparent text-white rounded-lg shadow-sm text-sm font-bold bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary flex items-center justify-center gap-2"
                             >
-                                <BellIcon className="w-4 h-4" />
-                                Get Alerts
+                                <SearchIcon className="w-4 h-4" />
+                                Search Now
                             </button>
                         </div>
                     </div>

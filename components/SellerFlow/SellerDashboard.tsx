@@ -16,12 +16,12 @@ const SellerDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-neutral-50">
       <Header onPlansClick={handlePlansClick} />
-      <main className="p-4 md:p-8 max-w-7xl mx-auto">
+      <main className="p-8 max-w-7xl mx-auto">
         <h2 className="text-3xl md:text-4xl font-bold text-neutral-800 mb-8">Seller Dashboard</h2>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-                 <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
+                 <div className="bg-white p-8 rounded-xl shadow-lg border border-neutral-200">
                     <div className="flex items-center gap-4 mb-4">
                         <div className="bg-primary-light p-3 rounded-full">
                             <SparklesIcon className="w-6 h-6 text-primary"/>
@@ -35,7 +35,7 @@ const SellerDashboard: React.FC = () => {
                 </div>
             </div>
             <div className="lg:col-span-1">
-                 <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200 h-full">
+                 <div className="bg-white p-8 rounded-xl shadow-lg border border-neutral-200 h-full">
                     <div className="flex items-center gap-4 mb-4">
                         <div className="bg-secondary/20 p-3 rounded-full">
                             <CurrencyDollarIcon className="w-6 h-6 text-secondary"/>

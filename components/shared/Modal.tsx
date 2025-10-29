@@ -1,4 +1,5 @@
 import React from 'react';
+import { XMarkIcon } from '../../constants';
 
 interface ModalProps {
   isOpen: boolean;
@@ -17,10 +18,12 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
 
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center" onClick={onClose}>
-      <div className={`bg-white rounded-lg shadow-xl p-6 md:p-8 w-11/12 ${sizeClass} relative`} onClick={(e) => e.stopPropagation()}>
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
-        {title && <h2 className="text-2xl font-bold text-gray-800 mb-4">{title}</h2>}
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-[5000] flex justify-center items-center p-4" onClick={onClose}>
+      <div className={`bg-white rounded-lg shadow-xl p-6 md:p-8 w-full ${sizeClass} relative`} onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-4 right-4 text-neutral-500 hover:text-neutral-800">
+          <XMarkIcon className="w-6 h-6" />
+        </button>
+        {title && <h2 className="text-2xl font-bold text-neutral-800 mb-4 text-center">{title}</h2>}
         <div>{children}</div>
       </div>
     </div>

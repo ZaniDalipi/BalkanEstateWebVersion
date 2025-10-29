@@ -1,13 +1,22 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import Header from '../shared/Header';
 import { Property } from '../../types';
 import PropertyCard from './PropertyCard';
 import { HeartIcon } from '../../constants';
+import ComparisonBar from './ComparisonBar';
+import ComparisonModal from './ComparisonModal';
+import Toast from '../shared/Toast';
 
 const SavedHomesPage: React.FC = () => {
-  const { state } = useAppContext();
-  const { savedHomes } = state;
+  const { state, dispatch } = useAppContext();
+  const { savedHomes, comparisonList, properties } = state;
+  const [isComparisonModalOpen, setComparisonModalOpen] = useState(false);
+  const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+      setToast({ show: true, message, type });
+  };
 
   // New nested grouping type for Country -> City -> Properties
   type GroupedHomes = Record<string, Record<string, Property[]>>;
@@ -24,10 +33,26 @@ const SavedHomesPage: React.FC = () => {
     return acc;
   }, {});
 
+  const selectedForComparison = useMemo(() => {
+    return comparisonList.map(id => properties.find(p => p.id === id)).filter((p): p is Property => p !== undefined);
+  }, [comparisonList, properties]);
+
+
   return (
     <div className="bg-neutral-50 min-h-screen">
       <Header />
-      <main className="py-8">
+      <Toast 
+          show={toast.show} 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast({ ...toast, show: false })} 
+      />
+      <ComparisonModal
+          isOpen={isComparisonModalOpen}
+          onClose={() => setComparisonModalOpen(false)}
+          properties={selectedForComparison}
+      />
+      <main className="py-8" style={{ paddingBottom: comparisonList.length > 0 ? '120px' : '0' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-neutral-900">Saved Homes</h1>
@@ -47,7 +72,12 @@ const SavedHomesPage: React.FC = () => {
                         <h3 className="text-xl font-semibold text-neutral-700 mb-4">{city}</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                           {properties.map((property) => (
-                            <PropertyCard key={property.id} property={property} />
+                            <PropertyCard 
+                                key={property.id} 
+                                property={property} 
+                                showCompareButton={true}
+                                showToast={showToast}
+                             />
                           ))}
                         </div>
                       </div>
@@ -65,6 +95,14 @@ const SavedHomesPage: React.FC = () => {
           )}
         </div>
       </main>
+      {comparisonList.length > 0 && (
+          <ComparisonBar
+              properties={selectedForComparison}
+              onCompareNow={() => setComparisonModalOpen(true)}
+              onRemove={(id) => dispatch({ type: 'REMOVE_FROM_COMPARISON', payload: id })}
+              onClear={() => dispatch({ type: 'CLEAR_COMPARISON' })}
+          />
+      )}
     </div>
   );
 };

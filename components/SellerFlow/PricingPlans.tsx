@@ -14,30 +14,32 @@ const TickIcon: React.FC = () => (
 
 const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer }) => {
   const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes in seconds
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   useEffect(() => {
-    if (isOpen && isOffer) {
-      setTimeLeft(30 * 60); // Reset timer every time the offer modal opens
-      const timer = setInterval(() => {
-        setTimeLeft((prevTime) => {
-          if (prevTime <= 1) {
-            clearInterval(timer);
-            onClose(); // Automatically close when time runs out
-            return 0;
-          }
-          return prevTime - 1;
-        });
-      }, 1000);
+    if (isOpen) {
+      setShowConfirmation(false); // Reset confirmation on open
+      if (isOffer) {
+        setTimeLeft(30 * 60); // Reset timer every time the offer modal opens
+        const timer = setInterval(() => {
+          setTimeLeft((prevTime) => {
+            if (prevTime <= 1) {
+              clearInterval(timer);
+              onClose(); // Automatically close when time runs out
+              return 0;
+            }
+            return prevTime - 1;
+          });
+        }, 1000);
 
-      return () => clearInterval(timer); // Cleanup interval on unmount
+        return () => clearInterval(timer); // Cleanup interval on unmount
+      }
     }
   }, [isOpen, isOffer, onClose]);
 
   const handleCloseAttempt = () => {
     if (isOffer) {
-      if (window.confirm('Are you sure? This is a one-time offer and will be lost if you close it.')) {
-        onClose();
-      }
+      setShowConfirmation(true);
     } else {
       onClose();
     }
@@ -52,7 +54,18 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer })
 
   return (
     <Modal isOpen={isOpen} onClose={handleCloseAttempt} size="5xl">
-        <div className="p-2 sm:p-4">
+        <div className="relative p-4 sm:p-8">
+            {showConfirmation && (
+                <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-10 flex flex-col justify-center items-center p-8 text-center rounded-2xl">
+                    <h3 className="text-2xl font-bold text-red-600">Are you sure?</h3>
+                    <p className="mt-2 text-neutral-700 max-w-sm">This is a one-time offer. If you leave now, you won't see this amazing discount again.</p>
+                    <div className="mt-6 flex gap-4">
+                        <button onClick={onClose} className="px-8 py-2.5 border border-red-600 text-red-600 font-semibold rounded-lg hover:bg-red-50 transition-colors">Leave Offer</button>
+                        <button onClick={() => setShowConfirmation(false)} className="px-8 py-2.5 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition-colors">Stay & Save!</button>
+                    </div>
+                </div>
+            )}
+
             {isOffer && (
                  <div className="mb-6 bg-red-600 text-white rounded-lg p-4 text-center shadow-lg">
                     <div className="flex items-center justify-center gap-3">
@@ -80,7 +93,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer })
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                 {/* Pro Yearly Plan */}
-                <div className="relative p-6 rounded-2xl border-2 border-green-400 bg-gradient-to-br from-green-50 to-cyan-50 shadow-lg lg:-translate-y-4 flex flex-col h-full">
+                <div className="relative p-8 rounded-2xl border-2 border-green-400 bg-gradient-to-br from-green-50 to-cyan-50 shadow-lg lg:-translate-y-4 flex flex-col h-full">
                     <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
                         <span className="inline-block bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
                             {isOffer ? '60% OFF' : 'MOST POPULAR'}
@@ -120,7 +133,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer })
                 </div>
 
                 {/* Pro Monthly Plan */}
-                <div className="relative p-6 rounded-2xl border border-neutral-200 bg-white flex flex-col h-full">
+                <div className="relative p-8 rounded-2xl border border-neutral-200 bg-white flex flex-col h-full">
                      {isOffer && (
                         <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
                              <span className="inline-block bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">50% OFF</span>
@@ -174,7 +187,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer })
                 </div>
 
                 {/* Enterprise Plan */}
-                <div className="relative p-6 rounded-2xl bg-neutral-800 text-white flex flex-col h-full">
+                <div className="relative p-8 rounded-2xl bg-neutral-800 text-white flex flex-col h-full">
                     <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
                          <span className="inline-block bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
                             {isOffer ? '20% OFF' : 'OFFER'}

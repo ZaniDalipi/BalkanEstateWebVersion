@@ -1,16 +1,20 @@
 import React, { useState, useMemo } from 'react';
 import { formatPrice } from '../../utils/currency';
-import { dummyProperties } from '../../services/propertyService';
+import { dummyProperties, CITY_DATA } from '../../services/propertyService';
 
 const PropertyCalculator: React.FC = () => {
   const [result, setResult] = useState<{value: number, country: string} | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const availableCountries = useMemo(() => Object.keys(CITY_DATA).sort(), []);
+  const [selectedCountry, setSelectedCountry] = useState(availableCountries[0]);
+
   const availableCities = useMemo(() => {
-    const cities = new Set(dummyProperties.map(p => p.city));
-    return Array.from(cities).sort();
-  }, []);
+    if (!selectedCountry || !CITY_DATA[selectedCountry]) return [];
+    return CITY_DATA[selectedCountry].map(city => city.name).sort();
+  }, [selectedCountry]);
+
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -25,6 +29,12 @@ const PropertyCalculator: React.FC = () => {
         const formData = new FormData(form); // Use the captured variable
         const city = formData.get('city') as string;
         const sqft = Number(formData.get('sqft'));
+
+        if (!city) {
+            setError('Please select a city.');
+            setLoading(false);
+            return;
+        }
 
         const propertiesInCity = dummyProperties.filter(p => p.city.toLowerCase() === city.toLowerCase());
 
@@ -41,7 +51,7 @@ const PropertyCalculator: React.FC = () => {
         // Add some variance to make it an "estimate"
         const estimatedValue = avgPricePerSqft * sqft * (Math.random() * 0.2 + 0.9);
 
-        const country = propertiesInCity[0].country;
+        const country = selectedCountry;
 
         setResult({
             value: Math.round(estimatedValue / 100) * 100, // Round to nearest 100
@@ -58,13 +68,37 @@ const PropertyCalculator: React.FC = () => {
   return (
     <div>
       <form onSubmit={handleSubmit}>
-        <div className="space-y-6">
+        <div className="space-y-8">
            <div className="relative">
              <input type="text" name="address" id="address" className={floatingInputClasses} placeholder=" " required />
              <label htmlFor="address" className={floatingLabelClasses}>Address / Suburb</label>
           </div>
+           <div className="relative">
+            <select 
+              id="country" 
+              name="country" 
+              value={selectedCountry} 
+              onChange={(e) => setSelectedCountry(e.target.value)} 
+              className={floatingInputClasses}
+            >
+              {availableCountries.map(country => (
+                  <option key={country} value={country}>{country}</option>
+              ))}
+            </select>
+             <label htmlFor="country" className={floatingSelectLabelClasses}>Country</label>
+             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+            </div>
+          </div>
           <div className="relative">
-            <select id="city" name="city" defaultValue={availableCities[0]} className={floatingInputClasses}>
+            <select 
+              id="city" 
+              name="city" 
+              key={selectedCountry} // Force re-render on country change
+              defaultValue={availableCities[0]} 
+              className={floatingInputClasses} 
+              disabled={!selectedCountry}
+            >
               {availableCities.map(city => (
                   <option key={city} value={city}>{city}</option>
               ))}

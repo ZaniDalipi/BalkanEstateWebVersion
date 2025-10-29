@@ -151,8 +151,8 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property }) =
                 </div>
 
                 {/* Right Column - Sticky Sidebar */}
-                <div className="lg:col-span-1">
-                     <div className="sticky top-24 space-y-8">
+                <div className="lg:col-span-1 self-start sticky top-24">
+                     <div className="space-y-8">
                         {/* Price & Location Card */}
                         <div className="bg-white p-6 rounded-lg shadow-md border border-neutral-200">
                              <p className="text-4xl font-extrabold text-primary">{formatPrice(property.price, property.country)}</p>

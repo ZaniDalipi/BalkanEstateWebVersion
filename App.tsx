@@ -8,6 +8,7 @@ import AuthModal from './components/auth/AuthModal';
 import PricingPlans from './components/SellerFlow/PricingPlans';
 import SavedSearchesPage from './components/BuyerFlow/SavedSearchesPage';
 import SavedHomesPage from './components/BuyerFlow/SavedHomesPage';
+import InboxPage from './components/BuyerFlow/InboxPage';
 
 const AppContent: React.FC = () => {
   const { state } = useAppContext();
@@ -20,6 +21,8 @@ const AppContent: React.FC = () => {
           return <SavedSearchesPage />;
         case 'saved-homes':
           return <SavedHomesPage />;
+        case 'inbox':
+          return <InboxPage />;
         case 'search':
         default:
           return <SearchPage />;

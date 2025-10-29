@@ -1,5 +1,5 @@
 import React, { createContext, useReducer, useContext, Dispatch } from 'react';
-import { AppState, AppAction, UserRole, SavedSearch, AppView, Property } from '../types';
+import { AppState, AppAction, UserRole, SavedSearch, AppView, Property, Conversation } from '../types';
 import { dummyProperties } from '../services/propertyService';
 
 const dummySavedSearches: SavedSearch[] = [
@@ -23,6 +23,35 @@ const dummySavedSearches: SavedSearch[] = [
     }
 ];
 
+const dummyConversations: Conversation[] = [
+    {
+        id: 'conv1',
+        propertyId: '1',
+        messages: [
+            { id: 'msg1', senderId: 'user', text: 'Hi, is this property still available?', timestamp: '2024-07-29T10:00:00Z', isRead: true },
+            { id: 'msg2', senderId: 'ana_kovacevic', text: "Hello! Yes, it is. Would you like to schedule a viewing?", timestamp: '2024-07-29T10:05:00Z', isRead: true },
+            { id: 'msg3', senderId: 'user', text: "Great! How about this Friday at 2 PM?", timestamp: '2024-07-29T10:06:00Z', isRead: true },
+            { id: 'msg4', senderId: 'ana_kovacevic', text: "Friday at 2 PM works perfectly. See you then!", timestamp: '2024-07-29T10:15:00Z', isRead: false },
+        ]
+    },
+    {
+        id: 'conv2',
+        propertyId: '8',
+        messages: [
+             { id: 'msg5', senderId: 'user', text: 'I love this villa in Split! Can you tell me more about the neighborhood?', timestamp: '2024-07-28T15:20:00Z', isRead: true },
+             { id: 'msg6', senderId: 'marko_horvat', text: "Of course! It's in a very quiet, prestigious area with great access to the beach and local restaurants. The view is spectacular.", timestamp: '2024-07-28T15:30:00Z', isRead: false },
+        ]
+    },
+    {
+        id: 'conv3',
+        propertyId: '3',
+        messages: [
+            { id: 'msg7', senderId: 'user', text: "Is the price for the Sarajevo apartment negotiable?", timestamp: '2024-07-27T18:00:00Z', isRead: true },
+        ]
+    }
+];
+
+
 const initialState: AppState = {
   userRole: UserRole.UNDEFINED, // Default to UNDEFINED to show onboarding screen
   properties: dummyProperties,
@@ -35,6 +64,8 @@ const initialState: AppState = {
   activeView: 'search', // Default to search page
   savedSearches: dummySavedSearches,
   savedHomes: [],
+  conversations: dummyConversations,
+  comparisonList: [],
 };
 
 const AppContext = createContext<{
@@ -90,6 +121,33 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
           savedHomes: [...state.savedHomes, action.payload],
         };
       }
+     case 'ADD_MESSAGE':
+      return {
+        ...state,
+        conversations: state.conversations.map(c => 
+          c.id === action.payload.conversationId 
+            ? { ...c, messages: [...c.messages, action.payload.message] }
+            : c
+        )
+      };
+    case 'MARK_CONVERSATION_AS_READ':
+      return {
+        ...state,
+        conversations: state.conversations.map(c => 
+          c.id === action.payload
+            ? { ...c, messages: c.messages.map(m => ({ ...m, isRead: true })) }
+            : c
+        )
+      };
+    case 'ADD_TO_COMPARISON':
+      if (state.comparisonList.includes(action.payload) || state.comparisonList.length >= 4) {
+          return state;
+      }
+      return { ...state, comparisonList: [...state.comparisonList, action.payload] };
+    case 'REMOVE_FROM_COMPARISON':
+      return { ...state, comparisonList: state.comparisonList.filter(id => id !== action.payload) };
+    case 'CLEAR_COMPARISON':
+      return { ...state, comparisonList: [] };
     default:
       return state;
   }

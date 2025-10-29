@@ -29,13 +29,17 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onSubscribeClick, onPlansClick }) => {
   const { state, dispatch } = useAppContext();
-  const { userRole, activeView } = state;
+  const { userRole, activeView, isAuthenticated } = state;
 
   const setRole = (role: UserRole) => {
     dispatch({ type: 'SET_USER_ROLE', payload: role });
   };
   
   const handleNavClick = (view: AppView) => {
+    if (view === 'inbox' && !isAuthenticated) {
+        dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
+        return;
+    }
     dispatch({ type: 'SET_ACTIVE_VIEW', payload: view });
   };
 

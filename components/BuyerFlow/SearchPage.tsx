@@ -45,6 +45,9 @@ const SearchPage: React.FC = () => {
             case 'beds_desc':
                 sortedProperties.sort((a, b) => b.beds - a.beds);
                 break;
+            case 'newest':
+                sortedProperties.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                break;
             default:
                 break;
         }
@@ -173,7 +176,6 @@ const SearchPage: React.FC = () => {
              <SubscriptionModal
                 isOpen={state.isSubscriptionModalOpen}
                 onClose={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: false })}
-                filters={filters}
             />
             <main className="flex-grow flex flex-row overflow-hidden">
                 <div className="w-full md:w-2/3 h-full overflow-y-auto">

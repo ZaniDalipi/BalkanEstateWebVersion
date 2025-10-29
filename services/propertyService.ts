@@ -168,7 +168,8 @@ export const dummyProperties: Property[] = [
     specialFeatures: ["Heated Pool", "Rooftop Terrace", "Smart Home System", "City View"],
     materials: ["Reinforced Concrete", "Hardwood Flooring", "Marble Countertops"],
     seller: sellers['ana_kovacevic'],
-    tourUrl: 'https://my.matterport.com/show/?m=u8t5v9o4p3K'
+    tourUrl: 'https://my.matterport.com/show/?m=u8t5v9o4p3K',
+    createdAt: new Date('2024-07-28T10:00:00Z').getTime(),
   },
   // Zagreb, Croatia
   {
@@ -189,7 +190,8 @@ export const dummyProperties: Property[] = [
     parking: 0,
     specialFeatures: ["Historic Building", "City View"],
     materials: ["Brick", "Wood"],
-    seller: sellers['marko_horvat']
+    seller: sellers['marko_horvat'],
+    createdAt: new Date('2024-07-27T12:30:00Z').getTime(),
   },
   // Sarajevo, Bosnia and Herzegovina
   {
@@ -210,7 +212,8 @@ export const dummyProperties: Property[] = [
     parking: 1,
     specialFeatures: ["Balcony"],
     materials: ['Concrete'],
-    seller: sellers['private_seller_1']
+    seller: sellers['private_seller_1'],
+    createdAt: new Date('2024-07-26T18:00:00Z').getTime(),
   },
   // Ljubljana, Slovenia
   {
@@ -231,7 +234,8 @@ export const dummyProperties: Property[] = [
     parking: 2,
     specialFeatures: ['Garden', 'Swimming Pool'],
     materials: ['Wood', 'Glass'],
-    seller: sellers['marko_horvat']
+    seller: sellers['marko_horvat'],
+    createdAt: new Date('2024-07-25T09:00:00Z').getTime(),
   },
   // Skopje, North Macedonia
   {
@@ -252,7 +256,8 @@ export const dummyProperties: Property[] = [
     parking: 1,
     specialFeatures: ["Balcony"],
     materials: ['Concrete'],
-    seller: sellers['ana_kovacevic']
+    seller: sellers['ana_kovacevic'],
+    createdAt: new Date('2024-07-29T11:00:00Z').getTime(),
   },
   // Podgorica, Montenegro
    {
@@ -273,7 +278,8 @@ export const dummyProperties: Property[] = [
     parking: 1,
     specialFeatures: [],
     materials: ['Brick'],
-    seller: sellers['private_seller_2']
+    seller: sellers['private_seller_2'],
+    createdAt: new Date('2024-07-24T15:00:00Z').getTime(),
   },
   // Novi Sad, Serbia
   {
@@ -294,7 +300,8 @@ export const dummyProperties: Property[] = [
     parking: 1,
     specialFeatures: ['Balcony', 'City View'],
     materials: ['Reinforced Concrete'],
-    seller: sellers['ana_kovacevic']
+    seller: sellers['ana_kovacevic'],
+    createdAt: new Date('2024-07-23T14:00:00Z').getTime(),
   },
   // Split, Croatia
   {
@@ -315,7 +322,8 @@ export const dummyProperties: Property[] = [
     parking: 2,
     specialFeatures: ['Swimming Pool', 'Sea View', 'Garden'],
     materials: ['Stone', 'Glass'],
-    seller: sellers['marko_horvat']
+    seller: sellers['marko_horvat'],
+    createdAt: new Date('2024-07-22T11:00:00Z').getTime(),
   },
   // Tirana, Albania
   {
@@ -336,7 +344,8 @@ export const dummyProperties: Property[] = [
     parking: 1,
     specialFeatures: ['Balcony'],
     materials: ['Brick'],
-    seller: sellers['private_seller_1']
+    seller: sellers['private_seller_1'],
+    createdAt: new Date('2024-07-21T10:00:00Z').getTime(),
   },
   // Sofia, Bulgaria
   {
@@ -357,7 +366,8 @@ export const dummyProperties: Property[] = [
     parking: 0,
     specialFeatures: ['City View', 'Historic Building'],
     materials: ['Brick'],
-    seller: sellers['marko_horvat']
+    seller: sellers['marko_horvat'],
+    createdAt: new Date('2024-07-20T16:00:00Z').getTime(),
   },
   // Thessaloniki, Greece
   {
@@ -378,7 +388,8 @@ export const dummyProperties: Property[] = [
     parking: 1,
     specialFeatures: ['Sea View', 'Balcony'],
     materials: ['Concrete', 'Glass'],
-    seller: sellers['marko_horvat']
+    seller: sellers['marko_horvat'],
+    createdAt: new Date('2024-07-19T13:00:00Z').getTime(),
   },
   // Banja Luka, Bosnia and Herzegovina
   {
@@ -399,7 +410,8 @@ export const dummyProperties: Property[] = [
     parking: 1,
     specialFeatures: [],
     materials: ['Concrete'],
-    seller: sellers['ana_kovacevic']
+    seller: sellers['ana_kovacevic'],
+    createdAt: new Date('2024-07-18T17:00:00Z').getTime(),
   },
   // Rijeka, Croatia
   {
@@ -420,7 +432,8 @@ export const dummyProperties: Property[] = [
     parking: 0,
     specialFeatures: ['Sea View'],
     materials: ['Stone'],
-    seller: sellers['marko_horvat']
+    seller: sellers['marko_horvat'],
+    createdAt: new Date('2024-07-17T12:00:00Z').getTime(),
   },
   // Niš, Serbia
   {
@@ -441,7 +454,8 @@ export const dummyProperties: Property[] = [
     parking: 0,
     specialFeatures: [],
     materials: ['Brick'],
-    seller: sellers['ana_kovacevic']
+    seller: sellers['ana_kovacevic'],
+    createdAt: new Date('2024-07-16T14:00:00Z').getTime(),
   },
   // Maribor, Slovenia
   {
@@ -462,7 +476,8 @@ export const dummyProperties: Property[] = [
     parking: 1,
     specialFeatures: ['City View'],
     materials: ['Concrete'],
-    seller: sellers['marko_horvat']
+    seller: sellers['marko_horvat'],
+    createdAt: new Date('2024-07-15T10:00:00Z').getTime(),
   },
   // ... continue generating properties
 ];
@@ -526,6 +541,7 @@ const generateRandomProperty = (id: number): Property => {
         specialFeatures,
         materials,
         seller: sellers[randomSellerKey],
+        createdAt: Date.now() - Math.floor(Math.random() * 1000 * 60 * 60 * 24 * 30), // Within the last 30 days
     };
 };
 

@@ -49,6 +49,21 @@ export interface Property {
   materials: string[];
   seller: Seller;
   tourUrl?: string;
+  createdAt?: number;
+}
+
+export interface Message {
+  id: string;
+  senderId: 'user' | string; // 'user' or seller's name for simplicity
+  text: string;
+  timestamp: string;
+  isRead: boolean;
+}
+
+export interface Conversation {
+  id: string;
+  propertyId: string;
+  messages: Message[];
 }
 
 export interface AppState {
@@ -63,6 +78,8 @@ export interface AppState {
   activeView: AppView;
   savedSearches: SavedSearch[];
   savedHomes: Property[];
+  conversations: Conversation[];
+  comparisonList: string[];
 }
 
 export type AppAction =
@@ -77,7 +94,12 @@ export type AppAction =
   | { type: 'SET_ACTIVE_VIEW'; payload: AppView }
   | { type: 'ADD_SAVED_SEARCH'; payload: SavedSearch }
   | { type: 'MARK_ALL_SEARCHES_VIEWED' }
-  | { type: 'TOGGLE_SAVED_HOME'; payload: Property };
+  | { type: 'TOGGLE_SAVED_HOME'; payload: Property }
+  | { type: 'ADD_MESSAGE'; payload: { conversationId: string; message: Message } }
+  | { type: 'MARK_CONVERSATION_AS_READ'; payload: string }
+  | { type: 'ADD_TO_COMPARISON'; payload: string }
+  | { type: 'REMOVE_FROM_COMPARISON'; payload: string }
+  | { type: 'CLEAR_COMPARISON' };
 
 
 export interface ChatMessage {

@@ -210,7 +210,7 @@ const InitStep: React.FC<{
 }> = ({ mode, onModeChange, language, onLanguageChange, onImageChange, imagePreviews, onRemoveImage, onGenerate, imagesCount, error }) => (
      <div className="space-y-6">
         <ModeToggle mode={mode} onModeChange={onModeChange} />
-        <div className="p-4 bg-primary-light border border-primary/20 rounded-lg">
+        <div className="p-6 bg-primary-light border border-primary/20 rounded-lg">
             <h3 className="text-md font-bold text-primary-dark">Tips for the Best AI Results</h3>
             <ul className="list-disc list-inside text-primary-dark/80 mt-2 text-sm space-y-1">
                 <li>Upload clear, well-lit photos of each main room.</li>
@@ -300,9 +300,9 @@ const FormStep: React.FC<{
             <ModeToggle mode={mode} onModeChange={onModeChange} />
             {mode === 'ai' && <p className="text-center text-neutral-600 -mt-4 mb-4">The AI has generated the details below. Review and edit as needed.</p>}
 
-            <fieldset className="space-y-4 rounded-lg border p-4">
+            <fieldset className="space-y-4 rounded-lg border p-6">
                 <legend className="text-lg font-semibold px-2 text-neutral-800">Location & Price</legend>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6 pt-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6 pt-4">
                     <div className="relative">
                          <select id="country" name="country" value={listingData.country} onChange={handleInputChange} className={`${floatingInputClasses} peer`} required>
                             <option value="" disabled>Select a country</option>
@@ -342,7 +342,7 @@ const FormStep: React.FC<{
                 </div>
             </fieldset>
 
-            <fieldset className="space-y-4 rounded-lg border p-4">
+            <fieldset className="space-y-4 rounded-lg border p-6">
                  <legend className="text-lg font-semibold px-2 text-neutral-800">Property Details</legend>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-x-6 gap-y-4">
                     <div><label htmlFor="bedrooms" className="block text-sm font-medium text-neutral-700 mb-1">Bedrooms</label><input type="number" id="bedrooms" name="bedrooms" value={listingData.bedrooms} onChange={handleInputChange} className={inputBaseClasses} /></div>
@@ -353,7 +353,7 @@ const FormStep: React.FC<{
                 </div>
             </fieldset>
             
-            <fieldset className="space-y-4 rounded-lg border p-4">
+            <fieldset className="space-y-4 rounded-lg border p-6">
                  <legend className="text-lg font-semibold px-2 text-neutral-800">Features & Materials</legend>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                     <ChipInput label="Special Features" items={listingData.specialFeatures} onItemsChange={onChipItemsChange} placeholder="e.g., Heated Pool"/>
@@ -406,7 +406,7 @@ const FormStep: React.FC<{
 };
     
 const FloorplanStep: React.FC<{onFinish: () => void}> = ({onFinish}) => (
-     <div className="space-y-6 pt-4 animate-fade-in text-center">
+     <div className="space-y-6 pt-8 animate-fade-in text-center">
         <h3 className="text-2xl font-bold text-neutral-800">Add a Floor Plan (Optional)</h3>
         <p className="text-neutral-600 mt-2 max-w-lg mx-auto">A floor plan can significantly increase buyer interest. This is a placeholder for a future feature.</p>
         <div className="flex justify-center gap-4 pt-6">
