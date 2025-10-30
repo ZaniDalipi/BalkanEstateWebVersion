@@ -26,47 +26,52 @@ const NavItem: React.FC<{
 
 const BottomNav: React.FC = () => {
   const { state, dispatch } = useAppContext();
+  const { activeView, isAuthenticated } = state;
 
   const handleNavClick = (view: AppView) => {
+    if (view === 'inbox' && !isAuthenticated) {
+        dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
+        return;
+    }
     dispatch({ type: 'SET_ACTIVE_VIEW', payload: view });
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 bg-white border-b border-neutral-200 shadow-sm z-30">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 shadow-[0_-2px_5px_rgba(0,0,0,0.06)] z-30">
       <div className="flex justify-around max-w-lg mx-auto">
         <NavItem
           view="search"
           label="Search"
           icon={<SearchIcon />}
-          activeView={state.activeView}
+          activeView={activeView}
           onClick={handleNavClick}
         />
         <NavItem
           view="saved-searches"
           label="Saved Search"
           icon={<MagnifyingGlassPlusIcon />}
-          activeView={state.activeView}
+          activeView={activeView}
           onClick={handleNavClick}
         />
         <NavItem
           view="saved-homes"
           label="Saved Homes"
           icon={<HeartIcon />}
-          activeView={state.activeView}
+          activeView={activeView}
           onClick={handleNavClick}
         />
         <NavItem
           view="loans"
           label="Home Loans"
           icon={<BuildingLibraryIcon />}
-          activeView={state.activeView}
+          activeView={activeView}
           onClick={handleNavClick}
         />
         <NavItem
           view="inbox"
           label="Inbox"
           icon={<EnvelopeIcon />}
-          activeView={state.activeView}
+          activeView={activeView}
           onClick={handleNavClick}
         />
       </div>

@@ -286,3 +286,39 @@ export const generateSearchName = async (filters: Filters): Promise<string> => {
 
     return result.text.trim();
 };
+
+export const getNeighborhoodInsights = async (lat: number, lng: number, city: string, country: string): Promise<string> => {
+    const prompt = `
+        You are a helpful local guide for the "Balkan Estate" real estate agency.
+        A user is looking at a property located in ${city}, ${country} at coordinates (latitude: ${lat}, longitude: ${lng}).
+
+        Based on these coordinates, generate a proximity-based summary of the neighborhood. Your response should be helpful for someone considering moving there. Structure your response as a short introductory paragraph followed by a bulleted list.
+
+        **Crucially, identify specific, named points of interest and describe how close they are.** Focus on:
+        - **Schools:** Name specific schools (e.g., "Ivan Gundulić Elementary School").
+        - **Parks:** Name specific parks (e.g., "Kalemegdan Park").
+        - **Public Transport:** Name specific train, tram, or bus stations.
+        - **Other Amenities:** Mention key markets, cafes, or cultural sites by name if they are significant landmarks.
+
+        Use phrases like "a short walk to...", "just 5 minutes from...", "conveniently close to...". Keep the tone friendly and informative. Do not mention the specific coordinates in your response. The response should be in markdown format.
+        
+        Example response format:
+        This property offers excellent connectivity and convenience, located in a well-established neighborhood. Everything you need is right on your doorstep.
+
+        *   **Education:** It is a 5-minute walk from the highly-regarded **"Sveti Sava" Primary School**.
+        *   **Recreation:** You'll be just around the corner from **Tašmajdan Park**, perfect for morning jogs or relaxing weekends.
+        *   **Transport:** The main **Vukov Spomenik train station** is conveniently located a 10-minute walk away, providing easy access across the city.
+        *   **Shopping:** The well-known **Kalenić Market** is also nearby for fresh, local produce.
+    `;
+
+    try {
+        const result = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+        return result.text.trim();
+    } catch (e) {
+        console.error("Error fetching neighborhood insights:", e);
+        throw new Error("Could not retrieve neighborhood insights at this time.");
+    }
+};

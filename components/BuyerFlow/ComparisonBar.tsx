@@ -13,7 +13,7 @@ const ComparisonBar: React.FC<ComparisonBarProps> = ({ properties, onCompareNow,
     const canCompare = propertyCount >= 2;
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-30 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.1)] p-4">
+        <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-30 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.1)] p-4">
             <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4 flex-grow">
                     <div className="flex -space-x-3">

@@ -9,6 +9,7 @@ import PricingPlans from './components/SellerFlow/PricingPlans';
 import SavedSearchesPage from './components/BuyerFlow/SavedSearchesPage';
 import SavedHomesPage from './components/BuyerFlow/SavedHomesPage';
 import InboxPage from './components/BuyerFlow/InboxPage';
+import BottomNav from './components/shared/BottomNav';
 
 const AppContent: React.FC = () => {
   const { state } = useAppContext();
@@ -36,8 +37,9 @@ const AppContent: React.FC = () => {
 
 const MainLayout: React.FC = () => {
   const { state, dispatch } = useAppContext();
+  const isBuyer = state.userRole === UserRole.BUYER;
   return (
-    <div className="font-sans">
+    <div className={`font-sans ${isBuyer ? 'pb-16 md:pb-0' : ''}`}>
       <AppContent />
       <AuthModal />
       <PricingPlans 
@@ -45,6 +47,7 @@ const MainLayout: React.FC = () => {
         onClose={() => dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: false } })}
         isOffer={state.isFirstLoginOffer}
       />
+      {isBuyer && <BottomNav />}
     </div>
   );
 };

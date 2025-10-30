@@ -47,7 +47,7 @@ const Header: React.FC<HeaderProps> = ({ onSubscribeClick, onPlansClick }) => {
     <header className="bg-white shadow-sm sticky top-0 z-20">
       <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
         {userRole === UserRole.BUYER && (
-             <div className="flex justify-center border-b border-neutral-200">
+             <div className="hidden md:flex justify-center border-b border-neutral-200">
                 <nav className="flex space-x-4 sm:space-x-8">
                      <NavItem
                       view="search"
@@ -139,6 +139,33 @@ const Header: React.FC<HeaderProps> = ({ onSubscribeClick, onPlansClick }) => {
             </button>
           </nav>
         </div>
+        
+        {/* Mobile-only switcher */}
+        <div className="md:hidden flex justify-center pb-3 border-b border-neutral-200">
+            <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm">
+                <button
+                  onClick={() => setRole(UserRole.BUYER)}
+                  className={`px-10 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 ${
+                    userRole === UserRole.BUYER
+                      ? 'bg-white text-primary shadow'
+                      : 'text-neutral-600'
+                  }`}
+                >
+                  Buy
+                </button>
+                <button
+                  onClick={() => setRole(UserRole.SELLER)}
+                  className={`px-10 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 ${
+                    userRole === UserRole.SELLER
+                      ? 'bg-white text-primary shadow'
+                      : 'text-neutral-600'
+                  }`}
+                >
+                  Sell
+                </button>
+            </div>
+        </div>
+
       </div>
     </header>
   );
