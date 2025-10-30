@@ -8,6 +8,7 @@ import { SavedSearch, ChatMessage, AiSearchQuery, Filters } from '../../types';
 import { getAiChatResponse, generateSearchName } from '../../services/geminiService';
 import SubscriptionModal from './SubscriptionModal';
 import Toast from '../shared/Toast';
+import L from 'leaflet';
 
 const SearchPage: React.FC = () => {
     const { state, dispatch } = useAppContext();
@@ -26,6 +27,9 @@ const SearchPage: React.FC = () => {
 
     const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
     const [isSaving, setIsSaving] = useState(false);
+    const [searchOnMove, setSearchOnMove] = useState(true);
+    const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
+    const [recenterMap, setRecenterMap] = useState(true);
 
     const showToast = (message: string, type: 'success' | 'error') => {
         setToast({ show: true, message, type });
@@ -52,7 +56,7 @@ const SearchPage: React.FC = () => {
                 break;
         }
 
-        return sortedProperties.filter(p => {
+        const manualFiltered = sortedProperties.filter(p => {
             const queryMatch = filters.query ? 
                 p.address.toLowerCase().includes(filters.query.toLowerCase()) || 
                 p.city.toLowerCase().includes(filters.query.toLowerCase()) : true;
@@ -65,14 +69,30 @@ const SearchPage: React.FC = () => {
 
             return queryMatch && minPriceMatch && maxPriceMatch && bedsMatch && bathsMatch && sellerTypeMatch;
         });
-    }, [properties, filters]);
+
+        if (searchOnMove && mapBounds) {
+            return manualFiltered.filter(p => mapBounds.contains([p.lat, p.lng]));
+        }
+
+        return manualFiltered;
+
+    }, [properties, filters, searchOnMove, mapBounds]);
 
     const handleFilterChange = useCallback((name: keyof Filters, value: string | number | null) => {
         setFilters(prev => ({ ...prev, [name]: value }));
+        setRecenterMap(true);
     }, []);
 
     const handleSortChange = useCallback((value: string) => {
         setFilters(prev => ({ ...prev, sortBy: value }));
+        // Sorting shouldn't recenter the map, just re-order the list
+        setRecenterMap(false);
+    }, []);
+
+    const handleBoundsChange = useCallback((bounds: L.LatLngBounds) => {
+        setMapBounds(bounds);
+        // User moved the map, so we disable automatic recentering
+        setRecenterMap(false);
     }, []);
     
     const handleSaveSearch = useCallback(async () => {
@@ -152,6 +172,7 @@ const SearchPage: React.FC = () => {
         }));
         setSearchMode('manual');
         setSuggestedFilters(null);
+        setRecenterMap(true);
     }, [suggestedFilters]);
 
     const handleClearSuggestedFilters = useCallback(() => {
@@ -195,10 +216,17 @@ const SearchPage: React.FC = () => {
                         suggestedFilters={suggestedFilters}
                         onApplySuggestedFilters={handleApplySuggestedFilters}
                         onClearSuggestedFilters={handleClearSuggestedFilters}
+                        searchOnMove={searchOnMove}
+                        onSearchOnMoveChange={setSearchOnMove}
                     />
                 </div>
                  <div className="relative hidden md:block w-1/3 h-full">
-                     <MapComponent properties={filteredProperties} />
+                     <MapComponent 
+                        properties={filteredProperties} 
+                        onBoundsChange={handleBoundsChange}
+                        searchOnMove={searchOnMove}
+                        recenter={recenterMap}
+                     />
                 </div>
             </main>
         </div>

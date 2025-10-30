@@ -19,6 +19,8 @@ interface PropertyListProps {
   suggestedFilters: AiSearchQuery | null;
   onApplySuggestedFilters: () => void;
   onClearSuggestedFilters: () => void;
+  searchOnMove: boolean;
+  onSearchOnMoveChange: (value: boolean) => void;
 }
 
 const FilterButton: React.FC<{
@@ -122,7 +124,8 @@ const PropertyList: React.FC<PropertyListProps> = ({
     properties, filters, onFilterChange, onSortChange, onSaveSearch, onGetAlerts, isSaving,
     searchMode, onSearchModeChange, 
     chatHistory, onSendMessage, isAiThinking,
-    suggestedFilters, onApplySuggestedFilters, onClearSuggestedFilters
+    suggestedFilters, onApplySuggestedFilters, onClearSuggestedFilters,
+    searchOnMove, onSearchOnMoveChange
 }) => {
     
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -290,6 +293,19 @@ const PropertyList: React.FC<PropertyListProps> = ({
                             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
                                 <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                             </div>
+                        </div>
+
+                        <div className="pt-2">
+                            <label htmlFor="search-on-move" className="flex items-center text-sm font-medium text-neutral-700 cursor-pointer">
+                                <input
+                                type="checkbox"
+                                id="search-on-move"
+                                checked={searchOnMove}
+                                onChange={(e) => onSearchOnMoveChange(e.target.checked)}
+                                className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
+                                />
+                                <span className="ml-2">Search as I move the map</span>
+                            </label>
                         </div>
                         
                         <div className="flex gap-4 pt-2">
