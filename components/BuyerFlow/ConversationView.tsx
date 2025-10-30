@@ -20,7 +20,14 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation }) => 
     
     useEffect(scrollToBottom, [conversation.messages]);
     
-    if (!property) return <div>Loading property...</div>;
+    if (!property) { 
+        // FIX: Improved error handling for cases where property data might be missing.
+        return (
+            <div className="h-full flex items-center justify-center text-center text-neutral-500 p-4">
+                <p>Property data not found. It may have been removed.</p>
+            </div>
+        );
+    }
 
     const handleSendMessage = (text: string) => {
         const newMessage: Message = {
@@ -67,11 +74,14 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation }) => 
                                     )}
                                 </div>
                             )}
-                            <div className={`max-w-md px-4 py-2 rounded-2xl ${isUser 
+                            <div className={`max-w-md p-3 rounded-2xl ${isUser 
                                 ? 'bg-primary text-white rounded-br-lg' 
                                 : 'bg-neutral-100 text-neutral-800 rounded-bl-lg'
                             }`}>
-                                <p className="text-sm">{msg.text}</p>
+                                {msg.text && <p className="text-sm">{msg.text}</p>}
+                                {msg.imageUrl && (
+                                    <img src={msg.imageUrl} alt="Annotated property" className="max-w-full h-auto rounded-lg" />
+                                )}
                             </div>
                         </div>
                     );

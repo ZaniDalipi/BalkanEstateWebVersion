@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import { Property } from '../../types';
-import L, { LatLngBounds } from 'leaflet';
+import L from 'leaflet';
 
 
 // Fix for default icon issue with bundlers
@@ -30,9 +30,8 @@ type TileLayerType = keyof typeof TILE_LAYERS;
 
 interface MapComponentProps {
   properties: Property[];
-  onBoundsChange: (bounds: LatLngBounds) => void;
-  searchOnMove: boolean;
   recenter: boolean;
+  onMapMove: (bounds: L.LatLngBounds) => void;
 }
 
 const ChangeView: React.FC<{center: [number, number], zoom: number, enabled: boolean}> = ({ center, zoom, enabled }) => {
@@ -46,19 +45,14 @@ const ChangeView: React.FC<{center: [number, number], zoom: number, enabled: boo
     return null;
 }
 
-const MapEvents: React.FC<{ onBoundsChange: (bounds: LatLngBounds) => void; searchOnMove: boolean }> = ({ onBoundsChange, searchOnMove }) => {
+const MapEvents: React.FC<{ onMove: (bounds: L.LatLngBounds) => void }> = ({ onMove }) => {
     const map = useMapEvents({
-        moveend: () => {
-            if (searchOnMove) {
-                onBoundsChange(map.getBounds());
-            }
-        },
-        // Also update on initial load
         load: () => {
-             if (searchOnMove) {
-                onBoundsChange(map.getBounds());
-            }
-        }
+            onMove(map.getBounds());
+        },
+        moveend: () => {
+            onMove(map.getBounds());
+        },
     });
     return null;
 };
@@ -73,23 +67,36 @@ const formatMarkerPrice = (price: number): string => {
     return `€${price}`;
 };
 
+const PROPERTY_TYPE_COLORS: Record<NonNullable<Property['propertyType']> | 'other', string> = {
+    house: '#0252CD',    // primary blue
+    apartment: '#28a745', // green
+    villa: '#6f42c1',     // purple
+    other: '#6c757d',     // grey
+};
+
 const createCustomMarkerIcon = (property: Property) => {
     const price = formatMarkerPrice(property.price);
-    const bedIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 inline-block mr-1"><path stroke-linecap="round" stroke-linejoin="round" d="M21 10.5v8.25a1.5 1.5 0 01-1.5 1.5H4.5A1.5 1.5 0 013 18.75v-8.25A1.5 1.5 0 014.5 9h15a1.5 1.5 0 011.5 1.5z" /><path stroke-linecap="round" stroke-linejoin="round" d="M21 6.75A1.5 1.5 0 0019.5 5.25h-15A1.5 1.5 0 003 6.75v1.5" /><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 12.75h1.5v1.5H7.5z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12.75h1.5v1.5H15z" /></svg>`;
+    const type = property.propertyType || 'other';
+    const color = PROPERTY_TYPE_COLORS[type] || PROPERTY_TYPE_COLORS.other;
 
+    const svgHtml = `
+        <svg width="70" height="56" viewBox="0 0 70 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));">
+            <path d="M35 56L25 44H45L35 56Z" fill="#003A96" />
+            <path d="M65 24.5V44H5V24.5L35 5L65 24.5Z" fill="${color}" stroke="#FFFFFF" stroke-width="2" />
+            <text x="35" y="30" font-family="Inter, sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">${price}</text>
+        </svg>
+    `;
+    
     return L.divIcon({
-        html: `
-            <div class="bg-primary text-white font-bold rounded-lg px-3 py-1.5 text-sm flex items-center gap-2 shadow-lg border-2 border-white/80 whitespace-nowrap cursor-pointer hover:bg-primary-dark transition-colors">
-                <span>${price}</span>
-                <span class="flex items-center">${bedIconSvg}${property.beds}</span>
-            </div>
-        `,
-        className: '', // This needs to be empty for Tailwind to work on the HTML element
+        html: svgHtml,
+        className: '', // Important to be empty for custom SVG styling to work
+        iconSize: [70, 56],
+        iconAnchor: [35, 56], // Anchor at the tip of the pointer
     });
 };
 
 
-const MapComponent: React.FC<MapComponentProps> = ({ properties, onBoundsChange, searchOnMove, recenter }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove }) => {
   const [tileLayer, setTileLayer] = useState<TileLayerType>('street');
   const center: [number, number] = properties.length > 0 ? [properties[0].lat, properties[0].lng] : [44.2, 19.9]; // Default center of Balkans
   const zoom = properties.length === 1 ? 13 : 7;
@@ -98,7 +105,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, onBoundsChange,
     <div className="w-full h-full">
       <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full">
         <ChangeView center={center} zoom={zoom} enabled={recenter} />
-        <MapEvents onBoundsChange={onBoundsChange} searchOnMove={searchOnMove} />
+        <MapEvents onMove={onMapMove} />
         <TileLayer
           attribution={TILE_LAYERS[tileLayer].attribution}
           url={TILE_LAYERS[tileLayer].url}

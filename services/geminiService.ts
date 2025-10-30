@@ -37,6 +37,7 @@ export interface PropertyAnalysisResult {
     materials: string[];
     description: string;
     image_tags: ImageTag[];
+    property_type: 'house' | 'apartment' | 'villa' | 'other';
 }
 
 
@@ -55,6 +56,7 @@ export const generateDescriptionFromImages = async (images: File[], language: st
     8.  **key_features**: A list of key selling points (e.g., "modern kitchen", "hardwood floors", "city view"). These will also become "Special Features".
     9.  **materials**: A list of prominent building materials seen (e.g., "brick", "wood", "marble"). These will become "Materials".
     10. **image_tags**: For each image provided, assign a tag from the following list: 'exterior', 'living_room', 'kitchen', 'bedroom', 'bathroom', 'other'. The output should be an array of objects, where each object has an 'index' (corresponding to the image order, starting from 0) and a 'tag'.
+    11. **property_type**: The type of property from this list: 'house', 'apartment', 'villa', 'other'.
 
     Please provide only the JSON object as a response.
     `;
@@ -98,8 +100,13 @@ export const generateDescriptionFromImages = async (images: File[], language: st
                     required: ['index', 'tag'],
                 },
             },
+            property_type: {
+                type: Type.STRING,
+                enum: ['house', 'apartment', 'villa', 'other'],
+                description: 'The type of the property.',
+            },
         },
-        required: ['description', 'bedrooms', 'bathrooms', 'sq_meters', 'year_built', 'parking_spots', 'amenities', 'key_features', 'materials', 'image_tags'],
+        required: ['description', 'bedrooms', 'bathrooms', 'sq_meters', 'year_built', 'parking_spots', 'amenities', 'key_features', 'materials', 'image_tags', 'property_type'],
     };
 
     const result = await ai.models.generateContent({

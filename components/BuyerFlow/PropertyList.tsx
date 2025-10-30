@@ -20,7 +20,7 @@ interface PropertyListProps {
   onApplySuggestedFilters: () => void;
   onClearSuggestedFilters: () => void;
   searchOnMove: boolean;
-  onSearchOnMoveChange: (value: boolean) => void;
+  onSearchOnMoveChange: (enabled: boolean) => void;
 }
 
 const FilterButton: React.FC<{
@@ -265,13 +265,13 @@ const PropertyList: React.FC<PropertyListProps> = ({
                             <select
                                 name="sortBy"
                                 value={filters.sortBy}
-                                onChange={handleInputChange}
+                                onChange={(e) => onSortChange(e.target.value)}
                                 className={`${inputBaseClasses} appearance-none`}
                             >
+                                <option value="newest">Sort by: Newest first</option>
                                 <option value="price_asc">Sort by: Price (low-high)</option>
                                 <option value="price_desc">Sort by: Price (high-low)</option>
                                 <option value="beds_desc">Sort by: Beds (most)</option>
-                                <option value="newest">Sort by: Newest first</option>
                             </select>
                             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
                                 <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
@@ -294,21 +294,21 @@ const PropertyList: React.FC<PropertyListProps> = ({
                                 <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                             </div>
                         </div>
-
-                        <div className="pt-2">
-                            <label htmlFor="search-on-move" className="flex items-center text-sm font-medium text-neutral-700 cursor-pointer">
-                                <input
+                        
+                        <div className="flex items-center pt-2">
+                             <input
                                 type="checkbox"
                                 id="search-on-move"
                                 checked={searchOnMove}
                                 onChange={(e) => onSearchOnMoveChange(e.target.checked)}
-                                className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
-                                />
-                                <span className="ml-2">Search as I move the map</span>
+                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                            />
+                            <label htmlFor="search-on-move" className="ml-2 block text-xs text-neutral-600">
+                                Search as I move the map
                             </label>
                         </div>
-                        
-                        <div className="flex gap-4 pt-2">
+
+                        <div className="pt-2">
                             <button 
                                 onClick={onSaveSearch} 
                                 disabled={isSaving}
@@ -325,13 +325,6 @@ const PropertyList: React.FC<PropertyListProps> = ({
                                 ) : (
                                     'Save Search'
                                 )}
-                            </button>
-                             <button
-                                onClick={() => {}} // Search is live, so this is a visual affordance
-                                className="w-full py-2.5 px-4 border border-transparent text-white rounded-lg shadow-sm text-sm font-bold bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary flex items-center justify-center gap-2"
-                            >
-                                <SearchIcon className="w-4 h-4" />
-                                Search Now
                             </button>
                         </div>
                     </div>

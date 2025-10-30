@@ -25,6 +25,7 @@ interface ListingData {
     description: string;
     image_tags: { index: number; tag: string; }[];
     tourUrl: string;
+    propertyType: 'house' | 'apartment' | 'villa' | 'other';
 }
 
 const initialListingData: ListingData = {
@@ -42,6 +43,7 @@ const initialListingData: ListingData = {
     description: '',
     image_tags: [],
     tourUrl: '',
+    propertyType: 'house',
 };
 
 const INITIAL_ROOM_TAGS: PropertyImageTag[] = ['bedroom', 'bathroom', 'kitchen', 'living_room', 'exterior', 'other'];
@@ -344,12 +346,31 @@ const FormStep: React.FC<{
 
             <fieldset className="space-y-4 rounded-lg border p-6">
                  <legend className="text-lg font-semibold px-2 text-neutral-800">Property Details</legend>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-x-6 gap-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-x-6 gap-y-8 pt-4">
                     <div><label htmlFor="bedrooms" className="block text-sm font-medium text-neutral-700 mb-1">Bedrooms</label><input type="number" id="bedrooms" name="bedrooms" value={listingData.bedrooms} onChange={handleInputChange} className={inputBaseClasses} /></div>
                     <div><label htmlFor="bathrooms" className="block text-sm font-medium text-neutral-700 mb-1">Bathrooms</label><input type="number" id="bathrooms" name="bathrooms" value={listingData.bathrooms} onChange={handleInputChange} className={inputBaseClasses} /></div>
                     <div><label htmlFor="sq_meters" className="block text-sm font-medium text-neutral-700 mb-1">Area (m²)</label><input type="number" id="sq_meters" name="sq_meters" value={listingData.sq_meters} onChange={handleInputChange} className={inputBaseClasses} /></div>
                     <div><label htmlFor="year_built" className="block text-sm font-medium text-neutral-700 mb-1">Year Built</label><input type="number" id="year_built" name="year_built" value={listingData.year_built} onChange={handleInputChange} className={inputBaseClasses} /></div>
                     <div><label htmlFor="parking_spots" className="block text-sm font-medium text-neutral-700 mb-1">Parking</label><input type="number" id="parking_spots" name="parking_spots" value={listingData.parking_spots} onChange={handleInputChange} className={inputBaseClasses} /></div>
+                    <div className="col-span-2 md:col-span-5">
+                        <label className="block text-sm font-medium text-neutral-700 mb-1.5">Property Type</label>
+                        <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200">
+                            {(['house', 'apartment', 'villa', 'other'] as const).map(type => (
+                                <button
+                                    key={type}
+                                    type="button"
+                                    onClick={() => handleDataChange('propertyType', type)}
+                                    className={`px-2.5 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex-grow text-center capitalize ${
+                                        listingData.propertyType === type
+                                        ? 'bg-white text-primary shadow'
+                                        : 'text-neutral-600 hover:bg-neutral-200'
+                                    }`}
+                                >
+                                    {type}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </fieldset>
             
@@ -405,10 +426,38 @@ const FormStep: React.FC<{
     )
 };
     
-const FloorplanStep: React.FC<{onFinish: () => void}> = ({onFinish}) => (
+const FloorplanStep: React.FC<{
+    onFinish: () => void;
+    onFloorplanChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    floorplanPreview: string | null;
+    onRemoveFloorplan: () => void;
+}> = ({ onFinish, onFloorplanChange, floorplanPreview, onRemoveFloorplan }) => (
      <div className="space-y-6 pt-8 animate-fade-in text-center">
         <h3 className="text-2xl font-bold text-neutral-800">Add a Floor Plan (Optional)</h3>
-        <p className="text-neutral-600 mt-2 max-w-lg mx-auto">A floor plan can significantly increase buyer interest. This is a placeholder for a future feature.</p>
+        <p className="text-neutral-600 mt-2 max-w-lg mx-auto">A floor plan can significantly increase buyer interest. Upload an image of your property's layout.</p>
+        
+        {floorplanPreview ? (
+            <div className="relative inline-block group mt-4">
+                <img src={floorplanPreview} alt="Floor plan preview" className="max-h-80 rounded-lg shadow-md mx-auto border" />
+                <button 
+                    onClick={onRemoveFloorplan}
+                    className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm leading-none opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                    &times;
+                </button>
+            </div>
+        ) : (
+            <div className="mt-4 flex justify-center px-6 pt-5 pb-6 border-2 border-neutral-300 border-dashed rounded-md">
+                <div className="space-y-1 text-center">
+                    <UploadIcon className="mx-auto h-12 w-12 text-neutral-400" />
+                    <label htmlFor="floorplan-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary-dark">
+                        <input id="floorplan-upload" name="floorplan-upload" type="file" className="sr-only" accept="image/*,.pdf" onChange={onFloorplanChange} />
+                        <span>Upload floor plan</span>
+                    </label>
+                </div>
+            </div>
+        )}
+        
         <div className="flex justify-center gap-4 pt-6">
             <button onClick={onFinish} className="px-6 py-3 border border-neutral-300 rounded-md text-neutral-700 bg-white hover:bg-neutral-50">Skip & Finish</button>
             <button onClick={onFinish} className="px-6 py-3 text-white bg-primary hover:bg-primary-dark rounded-md">Finish Listing</button>
@@ -430,6 +479,8 @@ const GeminiDescriptionGenerator: React.FC = () => {
     const { state, dispatch } = useAppContext();
     const [images, setImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+    const [floorplan, setFloorplan] = useState<File | null>(null);
+    const [floorplanPreview, setFloorplanPreview] = useState<string | null>(null);
     const [step, setStep] = useState<Step>('init');
     const [mode, setMode] = useState<Mode>('ai');
     const [language, setLanguage] = useState('English');
@@ -454,6 +505,26 @@ const GeminiDescriptionGenerator: React.FC = () => {
             URL.revokeObjectURL(prev[index]);
             return newPreviews;
         });
+    };
+
+    const handleFloorplanChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files[0]) {
+            const file = event.target.files[0];
+            setFloorplan(file);
+            if (floorplanPreview) {
+                URL.revokeObjectURL(floorplanPreview);
+            }
+            const previewUrl = URL.createObjectURL(file);
+            setFloorplanPreview(previewUrl);
+        }
+    };
+
+    const handleRemoveFloorplan = () => {
+        if (floorplanPreview) {
+            URL.revokeObjectURL(floorplanPreview);
+        }
+        setFloorplan(null);
+        setFloorplanPreview(null);
     };
     
     const handleGenerate = async () => {
@@ -482,6 +553,7 @@ const GeminiDescriptionGenerator: React.FC = () => {
                 materials: analysisResult.materials || [],
                 description: analysisResult.description,
                 image_tags: analysisResult.image_tags,
+                propertyType: analysisResult.property_type || 'house',
             });
             setStep('form');
         } catch (e) {
@@ -584,6 +656,8 @@ const GeminiDescriptionGenerator: React.FC = () => {
             lat: cityData?.lat || 44.2, // Default fallback
             lng: cityData?.lng || 19.9, // Default fallback
             seller: sellers[randomSellerKey],
+            propertyType: listingData.propertyType,
+            floorplanUrl: floorplanPreview || undefined,
         };
         
         dispatch({ type: 'ADD_PROPERTY', payload: newProperty });
@@ -595,6 +669,11 @@ const GeminiDescriptionGenerator: React.FC = () => {
         setImages([]);
         imagePreviews.forEach(URL.revokeObjectURL);
         setImagePreviews([]);
+        if (floorplanPreview) {
+            URL.revokeObjectURL(floorplanPreview);
+        }
+        setFloorplan(null);
+        setFloorplanPreview(null);
         setListingData(null);
         setError('');
         setMode('ai');
@@ -634,7 +713,12 @@ const GeminiDescriptionGenerator: React.FC = () => {
                     onNextStep={() => setStep('floorplan')}
                 />;
             case 'floorplan': 
-                return <FloorplanStep onFinish={handleFinalizeListing} />;
+                return <FloorplanStep 
+                    onFinish={handleFinalizeListing} 
+                    onFloorplanChange={handleFloorplanChange}
+                    floorplanPreview={floorplanPreview}
+                    onRemoveFloorplan={handleRemoveFloorplan}
+                />;
             case 'success': 
                 return <SuccessStep onStartOver={handleStartOver} />;
             default: 

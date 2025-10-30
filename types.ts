@@ -1,4 +1,4 @@
-// FIX: Removed circular self-import of `UserRole`.
+// FIX: Removed circular import of `UserRole` from within the same file to resolve declaration conflicts.
 export enum UserRole {
   UNDEFINED = 'UNDEFINED',
   BUYER = 'BUYER',
@@ -49,13 +49,16 @@ export interface Property {
   materials: string[];
   seller: Seller;
   tourUrl?: string;
+  floorplanUrl?: string;
   createdAt?: number;
+  propertyType?: 'house' | 'apartment' | 'villa' | 'other';
 }
 
 export interface Message {
   id: string;
   senderId: 'user' | string; // 'user' or seller's name for simplicity
-  text: string;
+  text?: string;
+  imageUrl?: string;
   timestamp: string;
   isRead: boolean;
 }
@@ -96,6 +99,7 @@ export type AppAction =
   | { type: 'MARK_ALL_SEARCHES_VIEWED' }
   | { type: 'TOGGLE_SAVED_HOME'; payload: Property }
   | { type: 'ADD_MESSAGE'; payload: { conversationId: string; message: Message } }
+  | { type: 'CREATE_OR_ADD_MESSAGE', payload: { propertyId: string; message: Message } }
   | { type: 'MARK_CONVERSATION_AS_READ'; payload: string }
   | { type: 'ADD_TO_COMPARISON'; payload: string }
   | { type: 'REMOVE_FROM_COMPARISON'; payload: string }
@@ -126,5 +130,5 @@ export interface Filters {
     baths: number | null;
     sortBy: string;
     sellerType: SellerType;
-    propertyType: string;
+    propertyType: 'any' | 'house' | 'apartment' | 'villa' | 'other';
 }

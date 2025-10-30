@@ -20,15 +20,16 @@ const SearchPage: React.FC = () => {
         maxPrice: null,
         beds: null,
         baths: null,
-        sortBy: 'price_asc',
+        sortBy: 'newest',
         sellerType: 'any',
         propertyType: 'any',
     });
+    
+    const [searchOnMove, setSearchOnMove] = useState(true);
+    const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
 
     const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
     const [isSaving, setIsSaving] = useState(false);
-    const [searchOnMove, setSearchOnMove] = useState(true);
-    const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
     const [recenterMap, setRecenterMap] = useState(true);
 
     const showToast = (message: string, type: 'success' | 'error') => {
@@ -56,7 +57,7 @@ const SearchPage: React.FC = () => {
                 break;
         }
 
-        const manualFiltered = sortedProperties.filter(p => {
+        return sortedProperties.filter(p => {
             const queryMatch = filters.query ? 
                 p.address.toLowerCase().includes(filters.query.toLowerCase()) || 
                 p.city.toLowerCase().includes(filters.query.toLowerCase()) : true;
@@ -66,15 +67,11 @@ const SearchPage: React.FC = () => {
             const bedsMatch = filters.beds ? p.beds >= filters.beds : true;
             const bathsMatch = filters.baths ? p.baths >= filters.baths : true;
             const sellerTypeMatch = filters.sellerType !== 'any' ? p.seller.type === filters.sellerType : true;
+            const propertyTypeMatch = filters.propertyType !== 'any' ? p.propertyType === filters.propertyType : true;
+            const boundsMatch = !searchOnMove || !mapBounds || mapBounds.contains([p.lat, p.lng]);
 
-            return queryMatch && minPriceMatch && maxPriceMatch && bedsMatch && bathsMatch && sellerTypeMatch;
+            return queryMatch && minPriceMatch && maxPriceMatch && bedsMatch && bathsMatch && sellerTypeMatch && propertyTypeMatch && boundsMatch;
         });
-
-        if (searchOnMove && mapBounds) {
-            return manualFiltered.filter(p => mapBounds.contains([p.lat, p.lng]));
-        }
-
-        return manualFiltered;
 
     }, [properties, filters, searchOnMove, mapBounds]);
 
@@ -85,13 +82,6 @@ const SearchPage: React.FC = () => {
 
     const handleSortChange = useCallback((value: string) => {
         setFilters(prev => ({ ...prev, sortBy: value }));
-        // Sorting shouldn't recenter the map, just re-order the list
-        setRecenterMap(false);
-    }, []);
-
-    const handleBoundsChange = useCallback((bounds: L.LatLngBounds) => {
-        setMapBounds(bounds);
-        // User moved the map, so we disable automatic recentering
         setRecenterMap(false);
     }, []);
     
@@ -130,6 +120,11 @@ const SearchPage: React.FC = () => {
     const handleGetAlerts = useCallback(() => {
         dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true });
     }, [dispatch]);
+    
+    const handleMapMove = useCallback((newBounds: L.LatLngBounds) => {
+        setMapBounds(newBounds);
+        setRecenterMap(false);
+    }, []);
 
     // AI Search logic
     const [searchMode, setSearchMode] = useState<'manual' | 'ai'>('manual');
@@ -223,9 +218,8 @@ const SearchPage: React.FC = () => {
                  <div className="relative hidden md:block w-1/3 h-full">
                      <MapComponent 
                         properties={filteredProperties} 
-                        onBoundsChange={handleBoundsChange}
-                        searchOnMove={searchOnMove}
                         recenter={recenterMap}
+                        onMapMove={handleMapMove}
                      />
                 </div>
             </main>

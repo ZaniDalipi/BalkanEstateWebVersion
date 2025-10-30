@@ -1,5 +1,5 @@
 import React, { createContext, useReducer, useContext, Dispatch } from 'react';
-import { AppState, AppAction, UserRole, SavedSearch, AppView, Property, Conversation } from '../types';
+import { AppState, AppAction, UserRole, SavedSearch, AppView, Property, Conversation, Message } from '../types';
 import { dummyProperties } from '../services/propertyService';
 
 const dummySavedSearches: SavedSearch[] = [
@@ -90,7 +90,6 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
             isPricingModalOpen: action.payload.isOpen,
             isFirstLoginOffer: action.payload.isOffer || false
         };
-    // FIX: Corrected typo in action type from 'TOGGLE_AUTH_Modal' to 'TOGGLE_AUTH_MODAL' to match the type definition.
     case 'TOGGLE_AUTH_MODAL':
         return {...state, isAuthModalOpen: action.payload};
     case 'SET_IS_AUTHENTICATED':
@@ -130,6 +129,33 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
             : c
         )
       };
+    case 'CREATE_OR_ADD_MESSAGE': {
+      const { propertyId, message } = action.payload;
+      const existingConversation = state.conversations.find(c => c.propertyId === propertyId);
+      
+      if (existingConversation) {
+        // Conversation exists, just add the message
+        return {
+          ...state,
+          conversations: state.conversations.map(c => 
+            c.id === existingConversation.id 
+              ? { ...c, messages: [...c.messages, message], ...{ messages: c.messages.map(m => ({ ...m, isRead: true })) } }
+              : c
+          )
+        };
+      } else {
+        // Conversation doesn't exist, create a new one
+        const newConversation: Conversation = {
+          id: `conv-${Date.now()}`,
+          propertyId: propertyId,
+          messages: [message]
+        };
+        return {
+          ...state,
+          conversations: [newConversation, ...state.conversations]
+        };
+      }
+    }
     case 'MARK_CONVERSATION_AS_READ':
       return {
         ...state,

@@ -43,6 +43,12 @@ const Header: React.FC<HeaderProps> = ({ onSubscribeClick, onPlansClick }) => {
     dispatch({ type: 'SET_ACTIVE_VIEW', payload: view });
   };
 
+  const handleLogoClick = () => {
+    dispatch({ type: 'SET_USER_ROLE', payload: UserRole.BUYER });
+    dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
+    dispatch({ type: 'SET_SELECTED_PROPERTY', payload: null });
+  };
+
   return (
     <header className="bg-white shadow-sm sticky top-0 z-20">
       <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -89,12 +95,12 @@ const Header: React.FC<HeaderProps> = ({ onSubscribeClick, onPlansClick }) => {
         )}
        
         <div className="flex justify-between items-center py-3">
-          <div className="flex-1 flex justify-start items-center space-x-2">
+          <button onClick={handleLogoClick} className="flex-1 flex justify-start items-center space-x-2 group">
             <LogoIcon className="w-8 h-8 text-primary" />
             <h1 className="text-xl sm:text-2xl font-bold text-neutral-800">
               Balkan <span className="text-primary">Estate</span>
             </h1>
-          </div>
+          </button>
 
           <div className="hidden md:flex justify-center bg-neutral-100 p-1 rounded-full items-center space-x-1 border border-neutral-200 shadow-sm">
             <button

@@ -170,6 +170,7 @@ export const dummyProperties: Property[] = [
     seller: sellers['ana_kovacevic'],
     tourUrl: 'https://my.matterport.com/show/?m=u8t5v9o4p3K',
     createdAt: new Date('2024-07-28T10:00:00Z').getTime(),
+    propertyType: 'apartment',
   },
   // Zagreb, Croatia
   {
@@ -192,6 +193,7 @@ export const dummyProperties: Property[] = [
     materials: ["Brick", "Wood"],
     seller: sellers['marko_horvat'],
     createdAt: new Date('2024-07-27T12:30:00Z').getTime(),
+    propertyType: 'apartment',
   },
   // Sarajevo, Bosnia and Herzegovina
   {
@@ -214,6 +216,7 @@ export const dummyProperties: Property[] = [
     materials: ['Concrete'],
     seller: sellers['private_seller_1'],
     createdAt: new Date('2024-07-26T18:00:00Z').getTime(),
+    propertyType: 'apartment',
   },
   // Ljubljana, Slovenia
   {
@@ -236,6 +239,7 @@ export const dummyProperties: Property[] = [
     materials: ['Wood', 'Glass'],
     seller: sellers['marko_horvat'],
     createdAt: new Date('2024-07-25T09:00:00Z').getTime(),
+    propertyType: 'house',
   },
   // Skopje, North Macedonia
   {
@@ -258,6 +262,7 @@ export const dummyProperties: Property[] = [
     materials: ['Concrete'],
     seller: sellers['ana_kovacevic'],
     createdAt: new Date('2024-07-29T11:00:00Z').getTime(),
+    propertyType: 'apartment',
   },
   // Podgorica, Montenegro
    {
@@ -280,6 +285,7 @@ export const dummyProperties: Property[] = [
     materials: ['Brick'],
     seller: sellers['private_seller_2'],
     createdAt: new Date('2024-07-24T15:00:00Z').getTime(),
+    propertyType: 'apartment',
   },
   // Novi Sad, Serbia
   {
@@ -302,6 +308,7 @@ export const dummyProperties: Property[] = [
     materials: ['Reinforced Concrete'],
     seller: sellers['ana_kovacevic'],
     createdAt: new Date('2024-07-23T14:00:00Z').getTime(),
+    propertyType: 'apartment',
   },
   // Split, Croatia
   {
@@ -324,6 +331,7 @@ export const dummyProperties: Property[] = [
     materials: ['Stone', 'Glass'],
     seller: sellers['marko_horvat'],
     createdAt: new Date('2024-07-22T11:00:00Z').getTime(),
+    propertyType: 'villa',
   },
   // Tirana, Albania
   {
@@ -346,6 +354,7 @@ export const dummyProperties: Property[] = [
     materials: ['Brick'],
     seller: sellers['private_seller_1'],
     createdAt: new Date('2024-07-21T10:00:00Z').getTime(),
+    propertyType: 'apartment',
   },
   // Sofia, Bulgaria
   {
@@ -368,6 +377,7 @@ export const dummyProperties: Property[] = [
     materials: ['Brick'],
     seller: sellers['marko_horvat'],
     createdAt: new Date('2024-07-20T16:00:00Z').getTime(),
+    propertyType: 'apartment',
   },
   // Thessaloniki, Greece
   {
@@ -390,6 +400,7 @@ export const dummyProperties: Property[] = [
     materials: ['Concrete', 'Glass'],
     seller: sellers['marko_horvat'],
     createdAt: new Date('2024-07-19T13:00:00Z').getTime(),
+    propertyType: 'apartment',
   },
   // Banja Luka, Bosnia and Herzegovina
   {
@@ -412,6 +423,7 @@ export const dummyProperties: Property[] = [
     materials: ['Concrete'],
     seller: sellers['ana_kovacevic'],
     createdAt: new Date('2024-07-18T17:00:00Z').getTime(),
+    propertyType: 'apartment',
   },
   // Rijeka, Croatia
   {
@@ -434,6 +446,7 @@ export const dummyProperties: Property[] = [
     materials: ['Stone'],
     seller: sellers['marko_horvat'],
     createdAt: new Date('2024-07-17T12:00:00Z').getTime(),
+    propertyType: 'apartment',
   },
   // Niš, Serbia
   {
@@ -456,6 +469,7 @@ export const dummyProperties: Property[] = [
     materials: ['Brick'],
     seller: sellers['ana_kovacevic'],
     createdAt: new Date('2024-07-16T14:00:00Z').getTime(),
+    propertyType: 'apartment',
   },
   // Maribor, Slovenia
   {
@@ -478,6 +492,7 @@ export const dummyProperties: Property[] = [
     materials: ['Concrete'],
     seller: sellers['marko_horvat'],
     createdAt: new Date('2024-07-15T10:00:00Z').getTime(),
+    propertyType: 'apartment',
   },
   // ... continue generating properties
 ];
@@ -521,6 +536,8 @@ const generateRandomProperty = (id: number): Property => {
     
     const sellerKeys = Object.keys(sellers);
     const randomSellerKey = randomFromArray(sellerKeys);
+    
+    const propertyTypes: ('house' | 'apartment' | 'villa')[] = ['house', 'apartment', 'villa'];
 
     return {
         id: (id + 16).toString(),
@@ -542,6 +559,7 @@ const generateRandomProperty = (id: number): Property => {
         materials,
         seller: sellers[randomSellerKey],
         createdAt: Date.now() - Math.floor(Math.random() * 1000 * 60 * 60 * 24 * 30), // Within the last 30 days
+        propertyType: randomFromArray(propertyTypes),
     };
 };
 
