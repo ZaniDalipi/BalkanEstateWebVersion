@@ -1,6 +1,6 @@
 import React, { createContext, useReducer, useContext, Dispatch } from 'react';
-import { AppState, AppAction, UserRole, SavedSearch, AppView, Property, Conversation, Message } from '../types';
-import { dummyProperties } from '../services/propertyService';
+import { AppState, AppAction, UserRole, SavedSearch, AppView, Property, Conversation, Message, User } from '../types';
+import { dummyProperties, mockUsers } from '../services/propertyService';
 
 const dummySavedSearches: SavedSearch[] = [
     {
@@ -53,15 +53,16 @@ const dummyConversations: Conversation[] = [
 
 
 const initialState: AppState = {
-  userRole: UserRole.UNDEFINED, // Default to UNDEFINED to show onboarding screen
+  userRole: UserRole.UNDEFINED,
   properties: dummyProperties,
   isSubscriptionModalOpen: false,
   isPricingModalOpen: false,
   isFirstLoginOffer: false,
   isAuthModalOpen: false,
-  isAuthenticated: false, // Start as unauthenticated
+  isAuthenticated: false,
+  currentUser: null, // Start with no user logged in
   selectedProperty: null,
-  activeView: 'search', // Default to search page
+  activeView: 'search',
   savedSearches: dummySavedSearches,
   savedHomes: [],
   conversations: dummyConversations,
@@ -92,12 +93,22 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         };
     case 'TOGGLE_AUTH_MODAL':
         return {...state, isAuthModalOpen: action.payload};
-    case 'SET_IS_AUTHENTICATED':
-        return { ...state, isAuthenticated: action.payload };
+    case 'SET_AUTH_STATE':
+        return { 
+            ...state, 
+            isAuthenticated: action.payload.isAuthenticated,
+            currentUser: action.payload.user,
+            userRole: action.payload.user?.role || (state.userRole === UserRole.UNDEFINED ? UserRole.UNDEFINED : state.userRole),
+        };
     case 'SET_SELECTED_PROPERTY':
         return { ...state, selectedProperty: action.payload };
     case 'ADD_PROPERTY':
         return { ...state, properties: [action.payload, ...state.properties] };
+    case 'UPDATE_PROPERTY':
+        return {
+            ...state,
+            properties: state.properties.map(p => p.id === action.payload.id ? action.payload : p),
+        };
     case 'SET_ACTIVE_VIEW':
         return { ...state, activeView: action.payload };
     case 'ADD_SAVED_SEARCH':
@@ -134,7 +145,6 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       const existingConversation = state.conversations.find(c => c.propertyId === propertyId);
       
       if (existingConversation) {
-        // Conversation exists, just add the message
         return {
           ...state,
           conversations: state.conversations.map(c => 
@@ -144,7 +154,6 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
           )
         };
       } else {
-        // Conversation doesn't exist, create a new one
         const newConversation: Conversation = {
           id: `conv-${Date.now()}`,
           propertyId: propertyId,

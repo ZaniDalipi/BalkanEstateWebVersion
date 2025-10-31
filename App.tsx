@@ -10,13 +10,12 @@ import SavedSearchesPage from './components/BuyerFlow/SavedSearchesPage';
 import SavedHomesPage from './components/BuyerFlow/SavedHomesPage';
 import InboxPage from './components/BuyerFlow/InboxPage';
 import BottomNav from './components/shared/BottomNav';
+import MyAccountPage from './components/shared/MyAccountPage';
 
 const AppContent: React.FC = () => {
   const { state } = useAppContext();
-
-  switch (state.userRole) {
-    case UserRole.BUYER:
-      // Simple router for buyer views
+  
+  const renderBuyerContent = () => {
       switch (state.activeView) {
         case 'saved-searches':
           return <SavedSearchesPage />;
@@ -24,12 +23,31 @@ const AppContent: React.FC = () => {
           return <SavedHomesPage />;
         case 'inbox':
           return <InboxPage />;
+        case 'account':
+          return <MyAccountPage />;
         case 'search':
         default:
           return <SearchPage />;
       }
+  };
+
+  const renderSellerContent = () => {
+       switch (state.activeView) {
+        case 'inbox':
+          return <InboxPage />;
+        case 'account':
+          return <MyAccountPage />;
+        case 'search': // Sellers default to their main dashboard
+        default:
+          return <SellerDashboard />;
+      }
+  };
+
+  switch (state.userRole) {
+    case UserRole.BUYER:
+      return renderBuyerContent();
     case UserRole.SELLER:
-      return <SellerDashboard />;
+      return renderSellerContent();
     default:
       return <Onboarding />;
   }
@@ -37,9 +55,10 @@ const AppContent: React.FC = () => {
 
 const MainLayout: React.FC = () => {
   const { state, dispatch } = useAppContext();
-  const isBuyer = state.userRole === UserRole.BUYER;
+  const isNavVisible = state.userRole === UserRole.BUYER || state.userRole === UserRole.SELLER;
+  
   return (
-    <div className={`font-sans ${isBuyer ? 'pb-16 md:pb-0' : ''}`}>
+    <div className={`font-sans ${isNavVisible ? 'pb-16 md:pb-0' : ''}`}>
       <AppContent />
       <AuthModal />
       <PricingPlans 
@@ -47,7 +66,7 @@ const MainLayout: React.FC = () => {
         onClose={() => dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: false } })}
         isOffer={state.isFirstLoginOffer}
       />
-      {isBuyer && <BottomNav />}
+      {isNavVisible && <BottomNav />}
     </div>
   );
 };

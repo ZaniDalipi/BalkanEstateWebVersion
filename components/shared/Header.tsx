@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogoIcon, UserIcon, SearchIcon, MagnifyingGlassPlusIcon, HeartIcon, BuildingLibraryIcon, EnvelopeIcon } from '../../constants';
+import { LogoIcon, UserIcon, SearchIcon, MagnifyingGlassPlusIcon, HeartIcon, BuildingLibraryIcon, EnvelopeIcon, UserCircleIcon } from '../../constants';
 import { UserRole, AppView } from '../../types';
 import { useAppContext } from '../../context/AppContext';
 
@@ -29,14 +29,18 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onSubscribeClick, onPlansClick }) => {
   const { state, dispatch } = useAppContext();
-  const { userRole, activeView, isAuthenticated } = state;
+  const { userRole, activeView, isAuthenticated, currentUser } = state;
 
   const setRole = (role: UserRole) => {
     dispatch({ type: 'SET_USER_ROLE', payload: role });
+     // If switching to a role that doesn't have the current view, switch to a default view
+    if (role === UserRole.SELLER && activeView !== 'search') {
+      dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search'});
+    }
   };
   
   const handleNavClick = (view: AppView) => {
-    if (view === 'inbox' && !isAuthenticated) {
+    if ((view === 'inbox' || view === 'account') && !isAuthenticated) {
         dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
         return;
     }
@@ -73,13 +77,6 @@ const Header: React.FC<HeaderProps> = ({ onSubscribeClick, onPlansClick }) => {
                       view="saved-homes"
                       label="Saved Homes"
                       icon={<HeartIcon />}
-                      activeView={activeView}
-                      onClick={handleNavClick}
-                    />
-                    <NavItem
-                      view="loans"
-                      label="Home Loans"
-                      icon={<BuildingLibraryIcon />}
                       activeView={activeView}
                       onClick={handleNavClick}
                     />
@@ -136,17 +133,31 @@ const Header: React.FC<HeaderProps> = ({ onSubscribeClick, onPlansClick }) => {
                     View Plans
                 </button>
             )}
-            <button
-              onClick={() => dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true })}
-              className="flex items-center space-x-2 text-neutral-600 font-semibold hover:text-primary transition-colors py-2 px-3 rounded-full hover:bg-neutral-100"
-            >
-                <UserIcon className="w-6 h-6" />
-                <span className="hidden sm:inline">Login / Register</span>
-            </button>
+
+            {isAuthenticated && currentUser ? (
+                 <button
+                  onClick={() => handleNavClick('account')}
+                  className="flex items-center space-x-2 text-neutral-600 font-semibold hover:text-primary transition-colors py-2 px-3 rounded-full hover:bg-neutral-100"
+                >
+                    {currentUser.avatarUrl ? (
+                      <img src={currentUser.avatarUrl} alt="User Avatar" className="w-8 h-8 rounded-full object-cover"/>
+                    ) : (
+                      <UserCircleIcon className="w-8 h-8" />
+                    )}
+                    <span className="hidden sm:inline">My Account</span>
+                </button>
+            ) : (
+                <button
+                  onClick={() => dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true })}
+                  className="flex items-center space-x-2 text-neutral-600 font-semibold hover:text-primary transition-colors py-2 px-3 rounded-full hover:bg-neutral-100"
+                >
+                    <UserIcon className="w-6 h-6" />
+                    <span className="hidden sm:inline">Login / Register</span>
+                </button>
+            )}
           </nav>
         </div>
         
-        {/* Mobile-only switcher */}
         <div className="md:hidden flex justify-center pb-3 border-b border-neutral-200">
             <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm">
                 <button

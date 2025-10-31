@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import { Property } from '../../types';
 import L from 'leaflet';
+import { useAppContext } from '../../context/AppContext';
+import { formatPrice } from '../../utils/currency';
 
 
 // Fix for default icon issue with bundlers
@@ -97,10 +99,15 @@ const createCustomMarkerIcon = (property: Property) => {
 
 
 const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove }) => {
+  const { dispatch } = useAppContext();
   const [tileLayer, setTileLayer] = useState<TileLayerType>('street');
   const center: [number, number] = properties.length > 0 ? [properties[0].lat, properties[0].lng] : [44.2, 19.9]; // Default center of Balkans
   const zoom = properties.length === 1 ? 13 : 7;
     
+  const handlePopupClick = (property: Property) => {
+    dispatch({ type: 'SET_SELECTED_PROPERTY', payload: property });
+  };
+
   return (
     <div className="w-full h-full">
       <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full">
@@ -113,9 +120,12 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
         {properties.map(prop => (
           <Marker key={prop.id} position={[prop.lat, prop.lng]} icon={createCustomMarkerIcon(prop)}>
             <Popup>
-              <div className="w-48">
+              <div 
+                className="w-48 cursor-pointer"
+                onClick={() => handlePopupClick(prop)}
+              >
                 <img src={prop.imageUrl} alt={prop.address} className="w-full h-24 object-cover rounded-md mb-2" />
-                <p className="font-bold text-md leading-tight">€{prop.price.toLocaleString()}</p>
+                <p className="font-bold text-md leading-tight">{formatPrice(prop.price, prop.country)}</p>
                 <p className="text-sm text-neutral-600 truncate">{prop.address}, {prop.city}</p>
               </div>
             </Popup>

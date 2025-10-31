@@ -620,7 +620,8 @@ const GeminiDescriptionGenerator: React.FC = () => {
     }, [listingData, handleDataChange]);
 
     const handleFinalizeListing = () => {
-        if (!listingData) return;
+// FIX: Added a check for currentUser to prevent potential null reference errors.
+        if (!listingData || !state.currentUser) return;
 
         const cityData = CITY_DATA[listingData.country]?.find(c => c.name.toLowerCase() === listingData.city.toLowerCase());
 
@@ -638,6 +639,10 @@ const GeminiDescriptionGenerator: React.FC = () => {
 
         const newProperty: Property = {
             id: Date.now().toString(),
+// FIX: Added missing sellerId from the currently logged-in user to conform to the Property type.
+            sellerId: state.currentUser.id,
+// FIX: Added a default 'active' status for new listings to conform to the Property type.
+            status: 'active',
             price: listingData.price,
             address: listingData.address,
             city: listingData.city,
@@ -651,7 +656,7 @@ const GeminiDescriptionGenerator: React.FC = () => {
             specialFeatures: listingData.specialFeatures,
             materials: listingData.materials,
             tourUrl: listingData.tourUrl,
-            imageUrl: imagePreviews[0] || 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=2070&auto=format&fit=crop',
+            imageUrl: imagePreviews[0] || 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=2070&auto-format&fit=crop',
             images: newImages,
             lat: cityData?.lat || 44.2, // Default fallback
             lng: cityData?.lng || 19.9, // Default fallback

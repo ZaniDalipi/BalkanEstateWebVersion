@@ -5,7 +5,7 @@ export enum UserRole {
   SELLER = 'SELLER',
 }
 
-export type AppView = 'search' | 'saved-searches' | 'saved-homes' | 'loans' | 'inbox';
+export type AppView = 'search' | 'saved-searches' | 'saved-homes' | 'loans' | 'inbox' | 'account';
 
 export interface SavedSearch {
     id: string;
@@ -14,6 +14,15 @@ export interface SavedSearch {
     properties: Property[];
 }
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  phone: string;
+  role: UserRole;
+  subscriptionPlan: 'none' | 'monthly' | 'yearly';
+}
 
 export interface Seller {
   type: 'agent' | 'private';
@@ -23,6 +32,7 @@ export interface Seller {
 }
 
 export type PropertyImageTag = 'exterior' | 'living_room' | 'kitchen' | 'bedroom' | 'bathroom' | 'other';
+export type PropertyStatus = 'active' | 'draft' | 'pending' | 'sold';
 
 export interface PropertyImage {
   url: string;
@@ -31,6 +41,8 @@ export interface PropertyImage {
 
 export interface Property {
   id: string;
+  sellerId: string; // New: Link to the User who owns it
+  status: PropertyStatus; // New: To manage the listing state
   price: number;
   address: string;
   city: string;
@@ -52,6 +64,10 @@ export interface Property {
   floorplanUrl?: string;
   createdAt?: number;
   propertyType?: 'house' | 'apartment' | 'villa' | 'other';
+  // New: Performance stats
+  views?: number;
+  saves?: number;
+  inquiries?: number;
 }
 
 export interface Message {
@@ -77,6 +93,7 @@ export interface AppState {
   isFirstLoginOffer: boolean;
   isAuthModalOpen: boolean;
   isAuthenticated: boolean;
+  currentUser: User | null; // New: Store logged-in user's data
   selectedProperty: Property | null;
   activeView: AppView;
   savedSearches: SavedSearch[];
@@ -91,9 +108,10 @@ export type AppAction =
   | { type: 'TOGGLE_SUBSCRIPTION_MODAL'; payload: boolean }
   | { type: 'TOGGLE_PRICING_MODAL'; payload: { isOpen: boolean; isOffer?: boolean } }
   | { type: 'TOGGLE_AUTH_MODAL'; payload: boolean }
-  | { type: 'SET_IS_AUTHENTICATED'; payload: boolean }
+  | { type: 'SET_AUTH_STATE'; payload: { isAuthenticated: boolean; user: User | null } }
   | { type: 'SET_SELECTED_PROPERTY'; payload: Property | null }
   | { type: 'ADD_PROPERTY'; payload: Property }
+  | { type: 'UPDATE_PROPERTY'; payload: Property }
   | { type: 'SET_ACTIVE_VIEW'; payload: AppView }
   | { type: 'ADD_SAVED_SEARCH'; payload: SavedSearch }
   | { type: 'MARK_ALL_SEARCHES_VIEWED' }

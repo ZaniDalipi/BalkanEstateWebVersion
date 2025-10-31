@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import Modal from '../shared/Modal';
 import { useAppContext } from '../../context/AppContext';
 import { AppleIcon, DevicePhoneMobileIcon, EnvelopeIcon, FacebookIcon, GoogleIcon, LogoIcon } from '../../constants';
+import { mockUsers } from '../../services/propertyService'; // Import mock users
+import { UserRole } from '../../types';
 
 type View = 'login' | 'signup';
 type Method = 'email' | 'phone';
@@ -24,13 +26,11 @@ const AuthModal: React.FC = () => {
 
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // Here would be actual validation and API calls
-        // For now, just simulate success
-        dispatch({ type: 'SET_IS_AUTHENTICATED', payload: true });
-        handleClose();
+        // Simulate a successful login by picking a mock seller user
+        const loggedInUser = state.userRole === UserRole.SELLER ? mockUsers['user_seller_1'] : null;
         
-        // REMOVED: No longer showing pricing plans on login.
-        // It now only shows after a user creates a new listing.
+        dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user: loggedInUser } });
+        handleClose();
     };
 
     const floatingInputClasses = "block px-2.5 pb-2.5 pt-4 w-full text-base text-neutral-900 bg-white rounded-lg border border-neutral-300 appearance-none focus:outline-none focus:ring-0 focus:border-primary peer";
@@ -42,11 +42,11 @@ const AuthModal: React.FC = () => {
             return (
                 <div className="space-y-4">
                     <div className="relative">
-                        <input type="email" id="email" className={floatingInputClasses} placeholder=" " required />
+                        <input type="email" id="email" className={floatingInputClasses} placeholder=" " required defaultValue={state.userRole === UserRole.SELLER ? 'ana.k@example.com' : ''} />
                         <label htmlFor="email" className={floatingLabelClasses}>Email Address</label>
                     </div>
                     <div className="relative">
-                        <input type="password" id="password" className={floatingInputClasses} placeholder=" " required />
+                        <input type="password" id="password" className={floatingInputClasses} placeholder=" " required defaultValue="password123" />
                         <label htmlFor="password" className={floatingLabelClasses}>Password</label>
                     </div>
                     {isLogin && (
