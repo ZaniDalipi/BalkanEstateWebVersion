@@ -20,6 +20,8 @@ const SearchPage: React.FC = () => {
         maxPrice: null,
         beds: null,
         baths: null,
+        minSqft: null,
+        maxSqft: null,
         sortBy: 'newest',
         sellerType: 'any',
         propertyType: 'any',
@@ -66,11 +68,13 @@ const SearchPage: React.FC = () => {
             const maxPriceMatch = filters.maxPrice ? p.price <= filters.maxPrice : true;
             const bedsMatch = filters.beds ? p.beds >= filters.beds : true;
             const bathsMatch = filters.baths ? p.baths >= filters.baths : true;
+            const minSqftMatch = filters.minSqft ? p.sqft >= filters.minSqft : true;
+            const maxSqftMatch = filters.maxSqft ? p.sqft <= filters.maxSqft : true;
             const sellerTypeMatch = filters.sellerType !== 'any' ? p.seller.type === filters.sellerType : true;
             const propertyTypeMatch = filters.propertyType !== 'any' ? p.propertyType === filters.propertyType : true;
             const boundsMatch = !searchOnMove || !mapBounds || mapBounds.contains([p.lat, p.lng]);
 
-            return queryMatch && minPriceMatch && maxPriceMatch && bedsMatch && bathsMatch && sellerTypeMatch && propertyTypeMatch && boundsMatch;
+            return queryMatch && minPriceMatch && maxPriceMatch && bedsMatch && bathsMatch && sellerTypeMatch && propertyTypeMatch && boundsMatch && minSqftMatch && maxSqftMatch;
         });
 
     }, [properties, filters, searchOnMove, mapBounds]);
@@ -91,7 +95,7 @@ const SearchPage: React.FC = () => {
             return;
         }
 
-        const isSearchMeaningful = filters.query.trim() !== '' || filters.minPrice || filters.maxPrice || filters.beds || filters.baths || filters.sellerType !== 'any';
+        const isSearchMeaningful = filters.query.trim() !== '' || filters.minPrice || filters.maxPrice || filters.beds || filters.baths || filters.minSqft || filters.maxSqft || filters.sellerType !== 'any';
 
         if (!isSearchMeaningful) {
             showToast("Cannot save an empty search. Please add some criteria.", 'error');
@@ -164,6 +168,8 @@ const SearchPage: React.FC = () => {
             maxPrice: suggestedFilters.maxPrice || null,
             beds: suggestedFilters.beds || null,
             baths: suggestedFilters.baths || null,
+            minSqft: suggestedFilters.minSqft || null,
+            maxSqft: suggestedFilters.maxSqft || null,
         }));
         setSearchMode('manual');
         setSuggestedFilters(null);

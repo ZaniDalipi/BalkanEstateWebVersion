@@ -1,6 +1,5 @@
-// FIX: Removed extraneous content from another file that was incorrectly appended, which was causing multiple import and export errors.
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Property, PropertyImage, PropertyImageTag } from '../../types';
+import { Property, PropertyImage, PropertyImageTag, Seller } from '../../types';
 import { generateDescriptionFromImages, PropertyAnalysisResult } from '../../services/geminiService';
 import { sellers, CITY_DATA } from '../../services/propertyService';
 import { SparklesIcon } from '../../constants';
@@ -69,8 +68,8 @@ const InfoIcon: React.FC<{className?: string}> = ({className}) => (
 );
 
 const inputBaseClasses = "block w-full text-base bg-neutral-50 border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors focus:bg-white";
-const floatingInputClasses = "block px-2.5 pb-2.5 pt-4 w-full text-base text-neutral-900 bg-white rounded-lg border border-neutral-300 appearance-none focus:outline-none focus:ring-0 focus:border-primary peer";
-const floatingLabelClasses = "absolute text-base text-neutral-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1";
+const floatingInputClasses = "block px-2.5 pb-2.5 pt-4 w-full text-base text-neutral-900 bg-white rounded-lg border appearance-none focus:outline-none focus:ring-0 peer";
+const floatingLabelClasses = "absolute text-base duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1";
 const floatingSelectLabelClasses = "absolute text-base text-neutral-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 start-1";
 
 // --- Sub-components ---
@@ -220,10 +219,10 @@ const InitStep: React.FC<{
             </ul>
         </div>
         <div className="relative">
-             <select id="language-select" value={language} onChange={(e) => onLanguageChange(e.target.value)} className={floatingInputClasses}>
+             <select id="language-select" value={language} onChange={(e) => onLanguageChange(e.target.value)} className={`${floatingInputClasses} border-neutral-300 focus:border-primary`}>
                 {LANGUAGES.map(lang => <option key={lang} value={lang}>{lang}</option>)}
              </select>
-             <label htmlFor="language-select" className={`${floatingSelectLabelClasses} flex items-center gap-1.5`}>
+             <label htmlFor="language-select" className={`${floatingSelectLabelClasses} flex items-center gap-1.5 text-neutral-500`}>
                 Description Language
                 <span title="Selecting a language will tailor the AI-generated property description for that specific region and audience.">
                    <InfoIcon className="w-4 h-4 text-neutral-400 cursor-help" />
@@ -273,6 +272,7 @@ const LoadingStep = () => (
 const FormStep: React.FC<{
     listingData: ListingData;
     mode: Mode;
+    formErrors: Record<string, string>;
     onModeChange: (mode: Mode) => void;
     handleDataChange: (field: keyof ListingData, value: any) => void;
     handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
@@ -285,7 +285,7 @@ const FormStep: React.FC<{
     onAddNewTag: () => void;
     onStartOver: () => void;
     onNextStep: () => void;
-}> = ({ listingData, mode, onModeChange, handleDataChange, handleInputChange, handleImageTagChange, imagePreviews, onImageChange, availableTags, newTagInput, onNewTagInputChange, onAddNewTag, onStartOver, onNextStep }) => {
+}> = ({ listingData, mode, formErrors, onModeChange, handleDataChange, handleInputChange, handleImageTagChange, imagePreviews, onImageChange, availableTags, newTagInput, onNewTagInputChange, onAddNewTag, onStartOver, onNextStep }) => {
 
     const onChipItemsChange = useCallback((items: string[]) => handleDataChange('specialFeatures', items), [handleDataChange]);
     const onMaterialsChange = useCallback((items: string[]) => handleDataChange('materials', items), [handleDataChange]);
@@ -306,40 +306,44 @@ const FormStep: React.FC<{
                 <legend className="text-lg font-semibold px-2 text-neutral-800">Location & Price</legend>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6 pt-4">
                     <div className="relative">
-                         <select id="country" name="country" value={listingData.country} onChange={handleInputChange} className={`${floatingInputClasses} peer`} required>
+                         <select id="country" name="country" value={listingData.country} onChange={handleInputChange} className={`${floatingInputClasses} peer ${formErrors.country ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-primary'}`} required>
                             <option value="" disabled>Select a country</option>
                            {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
-                        <label htmlFor="country" className={floatingSelectLabelClasses}>Country</label>
+                        <label htmlFor="country" className={`${floatingSelectLabelClasses} ${formErrors.country ? 'text-red-500' : 'text-neutral-500'}`}>Country</label>
                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                             <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                         </div>
+                        {formErrors.country && <p className="text-xs text-red-600 mt-1">{formErrors.country}</p>}
                     </div>
                      <div className="relative">
-                        <select id="city" name="city" value={listingData.city} onChange={handleInputChange} className={`${floatingInputClasses} peer`} required disabled={!listingData.country}>
+                        <select id="city" name="city" value={listingData.city} onChange={handleInputChange} className={`${floatingInputClasses} peer ${formErrors.city ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-primary'}`} required disabled={!listingData.country}>
                             <option value="" disabled>Select a city</option>
                             {citiesForSelectedCountry.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
-                        <label htmlFor="city" className={floatingSelectLabelClasses}>City</label>
+                        <label htmlFor="city" className={`${floatingSelectLabelClasses} ${formErrors.city ? 'text-red-500' : 'text-neutral-500'}`}>City</label>
                         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                             <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                         </div>
+                        {formErrors.city && <p className="text-xs text-red-600 mt-1">{formErrors.city}</p>}
                     </div>
 
                     <div className="relative">
                          <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
                             <span className="text-neutral-500">{getCurrencySymbol(listingData.country)}</span>
                         </div>
-                        <input type="text" id="price" name="price" value={listingData.price > 0 ? listingData.price.toLocaleString('de-DE') : ''} onChange={handleInputChange} placeholder=" " className={`${floatingInputClasses} pl-12 peer`} />
-                        <label htmlFor="price" className={`${floatingLabelClasses}`}>Price</label>
+                        <input type="text" id="price" name="price" value={listingData.price > 0 ? listingData.price.toLocaleString('de-DE') : ''} onChange={handleInputChange} placeholder=" " className={`${floatingInputClasses} pl-12 peer ${formErrors.price ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-primary'}`} />
+                        <label htmlFor="price" className={`${floatingLabelClasses} ${formErrors.price ? 'text-red-500 peer-focus:text-red-500' : 'text-neutral-500 peer-focus:text-primary'}`}>Price</label>
+                        {formErrors.price && <p className="text-xs text-red-600 mt-1">{formErrors.price}</p>}
                     </div>
                     <div className="md:col-span-2 relative">
-                        <input id="address" name="address" value={listingData.address} onChange={handleInputChange} className={`${floatingInputClasses} peer`} placeholder=" "/>
-                        <label htmlFor="address" className={floatingLabelClasses}>Address</label>
+                        <input id="address" name="address" value={listingData.address} onChange={handleInputChange} className={`${floatingInputClasses} peer ${formErrors.address ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-primary'}`} placeholder=" "/>
+                        <label htmlFor="address" className={`${floatingLabelClasses} ${formErrors.address ? 'text-red-500 peer-focus:text-red-500' : 'text-neutral-500 peer-focus:text-primary'}`}>Address</label>
+                        {formErrors.address && <p className="text-xs text-red-600 mt-1">{formErrors.address}</p>}
                     </div>
                     <div className="md:col-span-2 relative">
-                        <input type="text" id="tourUrl" name="tourUrl" value={listingData.tourUrl} onChange={handleInputChange} className={`${floatingInputClasses} peer`} placeholder=" " />
-                         <label htmlFor="tourUrl" className={floatingLabelClasses}>3D Tour URL (Optional)</label>
+                        <input type="text" id="tourUrl" name="tourUrl" value={listingData.tourUrl} onChange={handleInputChange} className={`${floatingInputClasses} peer border-neutral-300 focus:border-primary`} placeholder=" " />
+                         <label htmlFor="tourUrl" className={`${floatingLabelClasses} text-neutral-500 peer-focus:text-primary`}>3D Tour URL (Optional)</label>
                     </div>
                 </div>
             </fieldset>
@@ -347,11 +351,11 @@ const FormStep: React.FC<{
             <fieldset className="space-y-4 rounded-lg border p-6">
                  <legend className="text-lg font-semibold px-2 text-neutral-800">Property Details</legend>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-x-6 gap-y-8 pt-4">
-                    <div><label htmlFor="bedrooms" className="block text-sm font-medium text-neutral-700 mb-1">Bedrooms</label><input type="number" id="bedrooms" name="bedrooms" value={listingData.bedrooms} onChange={handleInputChange} className={inputBaseClasses} /></div>
-                    <div><label htmlFor="bathrooms" className="block text-sm font-medium text-neutral-700 mb-1">Bathrooms</label><input type="number" id="bathrooms" name="bathrooms" value={listingData.bathrooms} onChange={handleInputChange} className={inputBaseClasses} /></div>
-                    <div><label htmlFor="sq_meters" className="block text-sm font-medium text-neutral-700 mb-1">Area (m²)</label><input type="number" id="sq_meters" name="sq_meters" value={listingData.sq_meters} onChange={handleInputChange} className={inputBaseClasses} /></div>
-                    <div><label htmlFor="year_built" className="block text-sm font-medium text-neutral-700 mb-1">Year Built</label><input type="number" id="year_built" name="year_built" value={listingData.year_built} onChange={handleInputChange} className={inputBaseClasses} /></div>
-                    <div><label htmlFor="parking_spots" className="block text-sm font-medium text-neutral-700 mb-1">Parking</label><input type="number" id="parking_spots" name="parking_spots" value={listingData.parking_spots} onChange={handleInputChange} className={inputBaseClasses} /></div>
+                    <div><label htmlFor="bedrooms" className="block text-sm font-medium text-neutral-700 mb-1">Bedrooms</label><input type="number" id="bedrooms" name="bedrooms" min="0" value={listingData.bedrooms} onChange={handleInputChange} className={`${inputBaseClasses} border-neutral-300 focus:border-primary`} /></div>
+                    <div><label htmlFor="bathrooms" className="block text-sm font-medium text-neutral-700 mb-1">Bathrooms</label><input type="number" id="bathrooms" name="bathrooms" min="0" value={listingData.bathrooms} onChange={handleInputChange} className={`${inputBaseClasses} border-neutral-300 focus:border-primary`} /></div>
+                    <div><label htmlFor="sq_meters" className="block text-sm font-medium text-neutral-700 mb-1">Area (m²)</label><input type="number" id="sq_meters" name="sq_meters" min="0" value={listingData.sq_meters} onChange={handleInputChange} className={`${inputBaseClasses} ${formErrors.sq_meters ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-primary'}`} /><p className="text-xs text-red-600 mt-1">{formErrors.sq_meters}</p></div>
+                    <div><label htmlFor="year_built" className="block text-sm font-medium text-neutral-700 mb-1">Year Built</label><input type="number" id="year_built" name="year_built" min="0" value={listingData.year_built} onChange={handleInputChange} className={inputBaseClasses} /></div>
+                    <div><label htmlFor="parking_spots" className="block text-sm font-medium text-neutral-700 mb-1">Parking</label><input type="number" id="parking_spots" name="parking_spots" min="0" value={listingData.parking_spots} onChange={handleInputChange} className={inputBaseClasses} /></div>
                     <div className="col-span-2 md:col-span-5">
                         <label className="block text-sm font-medium text-neutral-700 mb-1.5">Property Type</label>
                         <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200">
@@ -384,11 +388,12 @@ const FormStep: React.FC<{
             
             <div>
                 <label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-1">Description</label>
-                <textarea id="description" name="description" rows={6} value={listingData.description} onChange={handleInputChange} className={inputBaseClasses} />
+                <textarea id="description" name="description" rows={6} value={listingData.description} onChange={handleInputChange} className={`${inputBaseClasses} border-neutral-300 focus:border-primary`} />
             </div>
             
             <div>
                 <h4 className="font-semibold text-neutral-700 mb-2">Property Images & Tags</h4>
+                {formErrors.images && <p className="text-red-600 text-sm mb-2 font-semibold bg-red-50 p-3 rounded-md">{formErrors.images}</p>}
                 <div className="mt-1 mb-4 flex justify-center px-6 pt-5 pb-6 border-2 border-neutral-300 border-dashed rounded-md">
                      <div className="space-y-1 text-center">
                         <UploadIcon className="mx-auto h-12 w-12 text-neutral-400" />
@@ -458,19 +463,32 @@ const FloorplanStep: React.FC<{
             </div>
         )}
         
-        <div className="flex justify-center gap-4 pt-6">
-            <button onClick={onFinish} className="px-6 py-3 border border-neutral-300 rounded-md text-neutral-700 bg-white hover:bg-neutral-50">Skip & Finish</button>
-            <button onClick={onFinish} className="px-6 py-3 text-white bg-primary hover:bg-primary-dark rounded-md">Finish Listing</button>
+        <div className="flex flex-row justify-center items-center gap-4 pt-6">
+            <button 
+                onClick={onFinish} 
+                className="px-8 py-3 border border-neutral-300 rounded-lg text-md font-semibold text-neutral-700 bg-white hover:bg-neutral-50 transition-colors shadow-sm"
+            >
+                Skip & Finish
+            </button>
+            <button 
+                onClick={onFinish} 
+                className="px-8 py-3 border border-transparent rounded-lg text-md font-semibold text-white bg-primary hover:bg-primary-dark transition-colors shadow-sm"
+            >
+                Finish Listing
+            </button>
         </div>
      </div>
 );
     
-const SuccessStep: React.FC<{onStartOver: () => void}> = ({onStartOver}) => (
-     <div className="text-center py-12 flex flex-col items-center justify-center animate-fade-in">
+const SuccessStep: React.FC<{onStartOver: () => void, onViewListings: () => void}> = ({onStartOver, onViewListings}) => (
+    <div className="text-center py-12 flex flex-col items-center justify-center animate-fade-in">
         <CheckCircleIcon className="h-16 w-16 text-green-500 mb-4" />
-        <h3 className="text-2xl font-bold text-neutral-800">Listing Ready!</h3>
-        <p className="text-neutral-600 mt-2 max-w-md">Your listing information has been saved and is now live for buyers to see.</p>
-        <button onClick={onStartOver} className="mt-8 w-full max-w-xs flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-md font-medium text-white bg-primary hover:bg-primary-dark">Create Another Listing</button>
+        <h3 className="text-2xl font-bold text-neutral-800">Listing Published!</h3>
+        <p className="text-neutral-600 mt-2 max-w-md mx-auto">Your new property is now live. You can manage all your listings from your account page, or create another one.</p>
+        <div className="mt-8 flex flex-col sm:flex-row gap-4 w-full max-w-md mx-auto">
+            <button onClick={onViewListings} className="w-full flex justify-center py-3 px-4 border border-primary text-primary rounded-lg shadow-sm text-md font-medium bg-white hover:bg-primary-light transition-colors">View My Listings</button>
+            <button onClick={onStartOver} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-md font-medium text-white bg-primary hover:bg-primary-dark transition-colors">Create Another Listing</button>
+        </div>
     </div>
 );
 
@@ -486,6 +504,7 @@ const GeminiDescriptionGenerator: React.FC = () => {
     const [language, setLanguage] = useState('English');
     const [listingData, setListingData] = useState<ListingData | null>(null);
     const [error, setError] = useState('');
+    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [availableTags, setAvailableTags] = useState<string[]>(INITIAL_ROOM_TAGS);
     const [newTagInput, setNewTagInput] = useState('');
 
@@ -563,15 +582,34 @@ const GeminiDescriptionGenerator: React.FC = () => {
         }
     };
     
+    const handleStartOver = () => {
+        setImages([]);
+        imagePreviews.forEach(URL.revokeObjectURL);
+        setImagePreviews([]);
+        if (floorplanPreview) {
+            URL.revokeObjectURL(floorplanPreview);
+        }
+        setFloorplan(null);
+        setFloorplanPreview(null);
+        setListingData(null);
+        setError('');
+        setFormErrors({});
+        setMode('ai');
+        setStep('init');
+    };
+
     const handleModeChange = (newMode: Mode) => {
         setMode(newMode);
         if (newMode === 'manual') {
-            if (!listingData) {
-                setListingData(initialListingData);
-            }
+            setListingData(initialListingData);
+            setImages([]);
+            imagePreviews.forEach(URL.revokeObjectURL);
+            setImagePreviews([]);
+            setError('');
+            setFormErrors({});
             setStep('form');
         } else {
-            setStep('init');
+            handleStartOver();
         }
     };
 
@@ -591,15 +629,17 @@ const GeminiDescriptionGenerator: React.FC = () => {
             
             let parsedValue: string | number = value;
             if (type === 'number') {
-                parsedValue = parseInt(value, 10) || 0;
+                const num = parseInt(value, 10);
+                parsedValue = Math.max(0, num || 0);
             } else if (name === 'price') {
-                parsedValue = parseInt(value.replace(/\D/g, '')) || 0;
+                const num = parseInt(value.replace(/\D/g, ''), 10);
+                parsedValue = isNaN(num) ? 0 : num;
             }
     
             const updatedData = { ...currentData, [key]: parsedValue };
     
             if (key === 'country') {
-                updatedData.city = ''; // Reset city when country changes
+                updatedData.city = '';
             }
     
             return updatedData;
@@ -619,9 +659,48 @@ const GeminiDescriptionGenerator: React.FC = () => {
         handleDataChange('image_tags', newTags);
     }, [listingData, handleDataChange]);
 
+    const validateForm = useCallback((): Record<string, string> => {
+        const errors: Record<string, string> = {};
+        if (!listingData) {
+            errors.form = "Listing data is missing. Please start over.";
+            return errors;
+        }
+
+        if (!listingData.country) errors.country = 'Country is required.';
+        if (!listingData.city) errors.city = 'City is required.';
+        if (!listingData.address.trim()) errors.address = 'Address is required.';
+        if (!listingData.price || listingData.price <= 0) errors.price = 'Price must be greater than zero.';
+        
+        // Bedrooms and bathrooms can now be 0. Area (m²) must be > 0. Description is optional.
+        if (!listingData.sq_meters || listingData.sq_meters <= 0) errors.sq_meters = 'Area must be greater than 0.';
+        
+        if (imagePreviews.length === 0) errors.images = 'Please upload at least one property image.';
+
+        return errors;
+    }, [listingData, imagePreviews]);
+
+    const handleProceedToFloorplan = useCallback(() => {
+        const errors = validateForm();
+        setFormErrors(errors);
+        if (Object.keys(errors).length === 0) {
+            setStep('floorplan');
+        }
+    }, [validateForm]);
+
     const handleFinalizeListing = () => {
-// FIX: Added a check for currentUser to prevent potential null reference errors.
-        if (!listingData || !state.currentUser) return;
+        if (!state.isAuthenticated || !state.currentUser) {
+            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
+            return;
+        }
+
+        const errors = validateForm();
+        setFormErrors(errors);
+        if (Object.keys(errors).length > 0) {
+            setStep('form'); // Force back to form if invalid
+            return;
+        }
+        
+        if (!listingData) return;
 
         const cityData = CITY_DATA[listingData.country]?.find(c => c.name.toLowerCase() === listingData.city.toLowerCase());
 
@@ -634,14 +713,16 @@ const GeminiDescriptionGenerator: React.FC = () => {
             return { url, tag };
         });
         
-        const sellerKeys = Object.keys(sellers);
-        const randomSellerKey = sellerKeys[Math.floor(Math.random() * sellerKeys.length)];
+        const sellerFromUser: Seller = {
+            type: 'agent',
+            name: state.currentUser.name,
+            avatarUrl: state.currentUser.avatarUrl,
+            phone: state.currentUser.phone,
+        };
 
         const newProperty: Property = {
             id: Date.now().toString(),
-// FIX: Added missing sellerId from the currently logged-in user to conform to the Property type.
             sellerId: state.currentUser.id,
-// FIX: Added a default 'active' status for new listings to conform to the Property type.
             status: 'active',
             price: listingData.price,
             address: listingData.address,
@@ -658,9 +739,9 @@ const GeminiDescriptionGenerator: React.FC = () => {
             tourUrl: listingData.tourUrl,
             imageUrl: imagePreviews[0] || 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=2070&auto-format&fit=crop',
             images: newImages,
-            lat: cityData?.lat || 44.2, // Default fallback
-            lng: cityData?.lng || 19.9, // Default fallback
-            seller: sellers[randomSellerKey],
+            lat: cityData?.lat || 44.2,
+            lng: cityData?.lng || 19.9,
+            seller: sellerFromUser,
             propertyType: listingData.propertyType,
             floorplanUrl: floorplanPreview || undefined,
         };
@@ -668,21 +749,6 @@ const GeminiDescriptionGenerator: React.FC = () => {
         dispatch({ type: 'ADD_PROPERTY', payload: newProperty });
         setStep('success');
         dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: true } });
-    };
-    
-    const handleStartOver = () => {
-        setImages([]);
-        imagePreviews.forEach(URL.revokeObjectURL);
-        setImagePreviews([]);
-        if (floorplanPreview) {
-            URL.revokeObjectURL(floorplanPreview);
-        }
-        setFloorplan(null);
-        setFloorplanPreview(null);
-        setListingData(null);
-        setError('');
-        setMode('ai');
-        setStep('init');
     };
 
     const handleAddNewTag = useCallback(() => {
@@ -692,6 +758,10 @@ const GeminiDescriptionGenerator: React.FC = () => {
             setNewTagInput('');
         }
     }, [newTagInput, availableTags]);
+
+    const handleViewListings = () => {
+        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
+    };
     
     const renderStep = () => {
         switch (step) {
@@ -709,13 +779,14 @@ const GeminiDescriptionGenerator: React.FC = () => {
                 return <FormStep 
                     listingData={listingData}
                     mode={mode} onModeChange={handleModeChange}
+                    formErrors={formErrors}
                     handleDataChange={handleDataChange}
                     handleInputChange={handleInputChange}
                     handleImageTagChange={handleImageTagChange}
                     imagePreviews={imagePreviews} onImageChange={handleImageChange}
                     availableTags={availableTags} newTagInput={newTagInput} onNewTagInputChange={setNewTagInput} onAddNewTag={handleAddNewTag}
                     onStartOver={handleStartOver}
-                    onNextStep={() => setStep('floorplan')}
+                    onNextStep={handleProceedToFloorplan}
                 />;
             case 'floorplan': 
                 return <FloorplanStep 
@@ -725,7 +796,7 @@ const GeminiDescriptionGenerator: React.FC = () => {
                     onRemoveFloorplan={handleRemoveFloorplan}
                 />;
             case 'success': 
-                return <SuccessStep onStartOver={handleStartOver} />;
+                return <SuccessStep onStartOver={handleStartOver} onViewListings={handleViewListings} />;
             default: 
                 return <InitStep 
                     mode={mode} onModeChange={handleModeChange}

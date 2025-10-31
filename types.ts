@@ -136,6 +136,8 @@ export interface AiSearchQuery {
   beds?: number;
   baths?: number;
   features?: string[];
+  minSqft?: number;
+  maxSqft?: number;
 }
 
 export type SellerType = 'any' | 'agent' | 'private';
@@ -146,6 +148,8 @@ export interface Filters {
     maxPrice: number | null;
     beds: number | null;
     baths: number | null;
+    minSqft: number | null;
+    maxSqft: number | null;
     sortBy: string;
     sellerType: SellerType;
     propertyType: 'any' | 'house' | 'apartment' | 'villa' | 'other';

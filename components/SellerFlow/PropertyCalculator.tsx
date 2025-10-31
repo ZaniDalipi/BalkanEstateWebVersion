@@ -28,7 +28,7 @@ const PropertyCalculator: React.FC = () => {
     setTimeout(() => {
         const formData = new FormData(form); // Use the captured variable
         const city = formData.get('city') as string;
-        const sqft = Number(formData.get('sqft'));
+        const sqft = Math.max(0, Number(formData.get('sqft')));
 
         if (!city) {
             setError('Please select a city.');
@@ -109,7 +109,7 @@ const PropertyCalculator: React.FC = () => {
             </div>
           </div>
           <div className="relative">
-             <input type="number" name="sqft" id="sqft" defaultValue="100" className={floatingInputClasses} placeholder=" " required />
+             <input type="number" name="sqft" id="sqft" min="0" defaultValue="100" className={floatingInputClasses} placeholder=" " required />
              <label htmlFor="sqft" className={floatingLabelClasses}>Area (m²)</label>
           </div>
            <button type="submit" disabled={loading} className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-secondary hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary disabled:bg-opacity-50">

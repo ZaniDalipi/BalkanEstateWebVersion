@@ -9,6 +9,7 @@ import {
     MagnifyingGlassPlusIcon, MagnifyingGlassMinusIcon, ArrowUturnLeftIcon, PencilIcon, ShareIcon, ArrowDownTrayIcon, XMarkIcon
 } from '../../constants';
 import { getNeighborhoodInsights } from '../../services/geminiService';
+import ImageViewerModal from './ImageViewerModal';
 
 
 // --- Image Editor Modal ---
@@ -332,6 +333,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
   const [activeCategory, setActiveCategory] = useState<PropertyImageTag | 'all'>('all');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
   
   const allImages = useMemo(() => {
     const images = property.images || [];
@@ -390,6 +392,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
   return (
     <div className="absolute inset-0 bg-neutral-50 z-30 overflow-y-auto animate-fade-in">
         {isEditorOpen && <ImageEditorModal imageUrl={currentImageUrl} property={property} onClose={() => setIsEditorOpen(false)} />}
+        {isViewerOpen && <ImageViewerModal images={allImages} startIndex={currentImageIndex} onClose={() => setIsViewerOpen(false)} />}
         <div className="p-4 bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 z-10 flex items-center justify-between">
             <button onClick={handleBack} className="flex items-center gap-2 text-primary font-semibold hover:underline">
                 <ArrowLeftIcon className="w-5 h-5" />
@@ -407,17 +410,21 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden">
-              <div className="relative group cursor-pointer" onClick={() => setIsEditorOpen(true)}>
+              <div className="relative group">
                 <img 
                   src={currentImageUrl}
                   alt={property.address} 
                   className="w-full h-[450px] object-cover"
                 />
-                 <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm text-neutral-800 font-semibold px-4 py-2 rounded-full">
+                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                    <button onClick={() => setIsEditorOpen(true)} className="flex items-center gap-2 bg-white/80 backdrop-blur-sm text-neutral-800 font-semibold px-4 py-2 rounded-full hover:scale-105 transition-transform">
                         <PencilIcon className="w-5 h-5" />
-                        <span>Annotate Image</span>
-                    </div>
+                        <span>Annotate</span>
+                    </button>
+                    <button onClick={() => setIsViewerOpen(true)} className="flex items-center gap-2 bg-white/80 backdrop-blur-sm text-neutral-800 font-semibold px-4 py-2 rounded-full hover:scale-105 transition-transform">
+                        <MagnifyingGlassPlusIcon className="w-5 h-5" />
+                        <span>Zoom</span>
+                    </button>
                 </div>
                 {imagesForCurrentCategory.length > 1 && (
                     <>

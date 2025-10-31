@@ -155,23 +155,23 @@ export const getAiChatResponse = async (history: ChatMessage[], properties: Prop
 
         Your main goal is to understand the user's needs and convert their conversational request into a structured search query. Be concise and helpful. Never be salesy.
 
-        You have access to a list of properties. Use their attributes (city, country, price, beds, baths, specialFeatures) to understand what's available.
+        You have access to a list of properties. Use their attributes (city, country, price, beds, baths, sqft, specialFeatures) to understand what's available.
 
         **Your instructions are:**
         1.  **Engage Naturally:** Start with a friendly greeting if it's the beginning of the conversation.
         2.  **Understand Intent:** Interpret casual language (e.g., "something cozy" might mean a smaller apartment or house).
         3.  **Ask Clarifying Questions:** If key details like budget, location, or number of bedrooms are missing, ask a SINGLE, brief follow-up question. Do not ask multiple questions at once.
-        4.  **Formulate a Search Query:** Once you have enough information (usually location and price range), formulate a structured JSON search query.
+        4.  **Formulate a Search Query:** Once you have enough information (usually location and price range), formulate a structured JSON search query. You can also ask about size in square meters (m²).
         5.  **Respond in JSON:** Your entire response MUST be a single JSON object.
         6.  **Crucially, when you set isFinalQuery to true, your responseMessage should ask the user to confirm by clicking the 'Apply Filters' button.** This gives them control.
 
         **JSON Output Structure:**
         You must return a JSON object with three fields:
         - \`responseMessage\`: A string containing your friendly, natural language message to the user.
-        - \`searchQuery\`: A JSON object with the extracted search criteria (fields: location, minPrice, maxPrice, beds, baths, features). Set this to \`null\` if you don't have enough information to search yet.
+        - \`searchQuery\`: A JSON object with the extracted search criteria (fields: location, minPrice, maxPrice, beds, baths, minSqft, maxSqft, features). Set this to \`null\` if you don't have enough information to search yet.
         - \`isFinalQuery\`: A boolean. Set to \`true\` only when you have sufficient information and have provided a \`searchQuery\`. Otherwise, set it to \`false\`.
 
-        **Example Interaction:**
+        **Example Interactions:**
         User: "I'm looking for something quiet in Belgrade under 400k."
         Your JSON Response:
         {
@@ -193,6 +193,16 @@ export const getAiChatResponse = async (history: ChatMessage[], properties: Prop
           "isFinalQuery": true
         }
 
+        User: "I'm looking for a large apartment in Split, maybe 150m2 or more."
+        Your JSON Response:
+        {
+          "responseMessage": "I've found some large apartments in Split over 150m². Are you interested in a specific price range? If so, I can refine the search. If not, just click 'Apply Filters'!",
+          "searchQuery": {
+            "location": "Split",
+            "minSqft": 150
+          },
+          "isFinalQuery": true
+        }
         ---
         **Available Property Data Context (for your reference):**
         ${JSON.stringify(simplifiedProperties.slice(0, 10), null, 2)}
@@ -214,6 +224,8 @@ export const getAiChatResponse = async (history: ChatMessage[], properties: Prop
                     maxPrice: { type: Type.NUMBER },
                     beds: { type: Type.INTEGER },
                     baths: { type: Type.INTEGER },
+                    minSqft: { type: Type.NUMBER, description: 'The minimum size in square meters.' },
+                    maxSqft: { type: Type.NUMBER, description: 'The maximum size in square meters.' },
                     features: { type: Type.ARRAY, items: { type: Type.STRING } },
                 },
             },
@@ -253,6 +265,8 @@ export const generateSearchName = async (filters: Filters): Promise<string> => {
     if (filters.maxPrice) relevantFilters.maxPrice = filters.maxPrice;
     if (filters.beds) relevantFilters.beds = filters.beds;
     if (filters.baths) relevantFilters.baths = filters.baths;
+    if (filters.minSqft) relevantFilters.minSqft = filters.minSqft;
+    if (filters.maxSqft) relevantFilters.maxSqft = filters.maxSqft;
     if (filters.sellerType !== 'any') relevantFilters.sellerType = filters.sellerType;
 
     const prompt = `
@@ -261,6 +275,7 @@ export const generateSearchName = async (filters: Filters): Promise<string> => {
         - If there's a query (location), start with that.
         - Describe price ranges like "€50k - €100k" or "over €200k" or "under €150k".
         - Describe beds/baths like "3+ beds", "2+ baths".
+        - Describe size like "over 100m²" or "50-100m²".
         - Mention the seller type if it's not 'any'.
         - Combine these elements with commas.
         - Be concise.
@@ -279,6 +294,11 @@ export const generateSearchName = async (filters: Filters): Promise<string> => {
         { "query": "Belgrade", "sellerType": "private" }
         Example 3 Output:
         Belgrade, private listings
+
+        Example 4 Input:
+        { "query": "Zagreb", "minSqft": 100 }
+        Example 4 Output:
+        Zagreb, over 100m²
 
         Now, generate a name for this filter object:
         ${JSON.stringify(relevantFilters)}

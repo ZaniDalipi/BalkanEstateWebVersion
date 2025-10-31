@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { Property, ChatMessage, AiSearchQuery, Filters, SellerType } from '../../types';
 import PropertyCard from './PropertyCard';
-import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon } from '../../constants';
+import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon } from '../../constants';
 
 interface PropertyListProps {
   properties: Property[];
@@ -73,6 +73,7 @@ const SuggestedFilters: React.FC<{
 
     const formatValue = (key: string, value: any) => {
         if (key === 'minPrice' || key === 'maxPrice') return `€${(value as number).toLocaleString()}`;
+        if (key === 'minSqft' || key === 'maxSqft') return `${value} m²`;
         if (Array.isArray(value)) return value.join(', ');
         return value;
     };
@@ -85,6 +86,8 @@ const SuggestedFilters: React.FC<{
             beds: 'Min Beds',
             baths: 'Min Baths',
             features: 'Features',
+            minSqft: 'Min Size',
+            maxSqft: 'Max Size',
         };
         return labels[key] || key;
     };
@@ -118,6 +121,7 @@ const SuggestedFilters: React.FC<{
 };
 
 const PRICE_RANGES = [50000, 75000, 100000, 125000, 150000, 175000, 200000, 250000, 300000, 400000, 500000, 750000, 1000000];
+const SQFT_RANGES = [30, 50, 70, 90, 120, 150, 200, 250, 300, 400];
 const formatNumber = (num: number) => new Intl.NumberFormat('de-DE').format(num);
 
 const PropertyList: React.FC<PropertyListProps> = ({ 
@@ -133,11 +137,16 @@ const PropertyList: React.FC<PropertyListProps> = ({
         
         let finalValue: string | number | null = value;
         
-        const isNumericSelect = e.target.nodeName === 'SELECT' && (name === 'minPrice' || name === 'maxPrice');
+        const isNumericSelect = e.target.nodeName === 'SELECT' && (name === 'minPrice' || name === 'maxPrice' || name === 'minSqft' || name === 'maxSqft');
         const isNumericInput = e.target.getAttribute('type') === 'number';
 
         if (isNumericInput || isNumericSelect) {
-            finalValue = value === '' ? null : Number(value);
+            if (value === '') {
+                finalValue = null;
+            } else {
+                const numValue = Number(value);
+                finalValue = numValue < 0 ? 0 : numValue;
+            }
         }
         
         onFilterChange(name as keyof Filters, finalValue);
@@ -247,6 +256,49 @@ const PropertyList: React.FC<PropertyListProps> = ({
                                     min="0"
                                     className={inputBaseClasses}
                                 />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label htmlFor="minSqft" className="block text-xs font-medium text-neutral-700 mb-1.5">Min Size (m²)</label>
+                                <div className="relative">
+                                    <select
+                                        id="minSqft"
+                                        name="minSqft"
+                                        value={filters.minSqft || ''}
+                                        onChange={handleInputChange}
+                                        className={`${inputBaseClasses} appearance-none`}
+                                    >
+                                        <option value="">Any</option>
+                                        {SQFT_RANGES.map(size => (
+                                            <option key={`min-${size}`} value={size}>{size} m²</option>
+                                        ))}
+                                    </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
+                                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                    </div>
+                                </div>
+                            </div>
+                             <div>
+                                <label htmlFor="maxSqft" className="block text-xs font-medium text-neutral-700 mb-1.5">Max Size (m²)</label>
+                                <div className="relative">
+                                    <select
+                                        id="maxSqft"
+                                        name="maxSqft"
+                                        value={filters.maxSqft || ''}
+                                        onChange={handleInputChange}
+                                        className={`${inputBaseClasses} appearance-none`}
+                                    >
+                                        <option value="">Any</option>
+                                        {SQFT_RANGES.map(size => (
+                                            <option key={`max-${size}`} value={size}>{size} m²</option>
+                                        ))}
+                                    </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
+                                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -369,10 +421,20 @@ const PropertyList: React.FC<PropertyListProps> = ({
             </div>
 
             {/* Property Grid */}
-            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {properties.map(prop => (
-                    <PropertyCard key={prop.id} property={prop} />
-                ))}
+            <div className="p-4">
+                {properties.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {properties.map(prop => (
+                            <PropertyCard key={prop.id} property={prop} />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-16 px-4 bg-neutral-50/70 rounded-lg border">
+                        <BuildingLibraryIcon className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
+                        <h3 className="text-xl font-semibold text-neutral-800">No Properties Found</h3>
+                        <p className="text-neutral-500 mt-2">Try adjusting your search filters or moving the map to a different area.</p>
+                    </div>
+                )}
             </div>
         </div>
     );

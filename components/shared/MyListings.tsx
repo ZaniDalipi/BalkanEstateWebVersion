@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useMemo } from 'react';
 import { Property, PropertyStatus } from '../../types';
-import { getPropertiesForSeller } from '../../services/propertyService';
 import { formatPrice } from '../../utils/currency';
 import { useAppContext } from '../../context/AppContext';
 // FIX: Added EyeIcon and InboxIcon to imports to fix missing member errors.
@@ -54,27 +54,15 @@ const ListingCard: React.FC<{ property: Property; onCardClick: () => void; }> = 
 
 
 const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
-    const [properties, setProperties] = useState<Property[]>([]);
-    const [loading, setLoading] = useState(true);
-    const { dispatch } = useAppContext();
-
-    useEffect(() => {
-        const loadProperties = async () => {
-            setLoading(true);
-            const userProperties = await getPropertiesForSeller(sellerId);
-            setProperties(userProperties);
-            setLoading(false);
-        };
-        loadProperties();
-    }, [sellerId]);
+    const { state, dispatch } = useAppContext();
     
+    const properties = useMemo(() => 
+        state.properties.filter(p => p.sellerId === sellerId)
+    , [state.properties, sellerId]);
+
     const handleCardClick = (property: Property) => {
         dispatch({ type: 'SET_SELECTED_PROPERTY', payload: property });
     };
-
-    if (loading) {
-        return <div className="text-center p-8">Loading your listings...</div>;
-    }
 
     return (
         <div className="space-y-6">
