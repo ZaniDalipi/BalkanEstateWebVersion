@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Property, PropertyStatus } from '../../types';
 import { formatPrice } from '../../utils/currency';
@@ -22,7 +21,15 @@ const StatusBadge: React.FC<{ status: PropertyStatus }> = ({ status }) => {
     );
 };
 
-const ListingCard: React.FC<{ property: Property; onCardClick: () => void; }> = ({ property, onCardClick }) => (
+const ListingCard: React.FC<{ property: Property; onCardClick: () => void; }> = ({ property, onCardClick }) => {
+    const { dispatch } = useAppContext();
+
+    const handleMarkAsSold = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        dispatch({ type: 'MARK_PROPERTY_SOLD', payload: property.id });
+    };
+
+    return (
     <div 
         className="bg-white p-4 rounded-lg border border-neutral-200 hover:shadow-md transition-shadow flex flex-col sm:flex-row gap-4 cursor-pointer"
         onClick={onCardClick}
@@ -48,9 +55,19 @@ const ListingCard: React.FC<{ property: Property; onCardClick: () => void; }> = 
                 <SparklesIcon className="w-4 h-4" />
                 Renew
             </button>
+            {property.status === 'active' && (
+                 <button 
+                    onClick={handleMarkAsSold} 
+                    className="px-3 py-1.5 text-xs font-semibold bg-green-100 text-green-800 rounded-full hover:bg-green-200 transition-colors w-full sm:w-auto flex items-center justify-center gap-1"
+                >
+                    <CheckCircleIcon className="w-4 h-4" />
+                    Mark as Sold
+                </button>
+            )}
         </div>
     </div>
 );
+};
 
 
 const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
@@ -60,8 +77,8 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
         state.properties.filter(p => p.sellerId === sellerId)
     , [state.properties, sellerId]);
 
-    const handleCardClick = (property: Property) => {
-        dispatch({ type: 'SET_SELECTED_PROPERTY', payload: property });
+    const handleCardClick = (propertyId: string) => {
+        dispatch({ type: 'SET_SELECTED_PROPERTY', payload: propertyId });
     };
 
     return (
@@ -72,7 +89,7 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
             </div>
             {properties.length > 0 ? (
                 <div className="space-y-4">
-                    {properties.map(prop => <ListingCard key={prop.id} property={prop} onCardClick={() => handleCardClick(prop)} />)}
+                    {properties.map(prop => <ListingCard key={prop.id} property={prop} onCardClick={() => handleCardClick(prop.id)} />)}
                 </div>
             ) : (
                 <div className="text-center p-8 border-2 border-dashed rounded-lg">

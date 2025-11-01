@@ -189,7 +189,7 @@ const PropertyList: React.FC<PropertyListProps> = ({
                                 className={`${inputBaseClasses} pl-9`}
                             />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label htmlFor="minPrice" className="block text-xs font-medium text-neutral-700 mb-1.5">Min Price</label>
                                 <div className="relative">
@@ -232,7 +232,7 @@ const PropertyList: React.FC<PropertyListProps> = ({
                             </div>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-medium text-neutral-700 mb-1.5">Bedrooms</label>
                                 <input 
@@ -259,7 +259,7 @@ const PropertyList: React.FC<PropertyListProps> = ({
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label htmlFor="minSqft" className="block text-xs font-medium text-neutral-700 mb-1.5">Min Size (m²)</label>
                                 <div className="relative">

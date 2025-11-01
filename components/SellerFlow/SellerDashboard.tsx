@@ -1,27 +1,20 @@
 import React from 'react';
-import Header from '../shared/Header';
-import { UserRole } from '../../types';
-import PropertyCalculator from './PropertyCalculator';
 import { useAppContext } from '../../context/AppContext';
 import GeminiDescriptionGenerator from './GeminiDescriptionGenerator';
 import { CurrencyDollarIcon, SparklesIcon } from '../../constants';
+import PropertyCalculator from './PropertyCalculator';
 
 const SellerDashboard: React.FC = () => {
     const { dispatch } = useAppContext();
 
-    const handlePlansClick = () => {
-        dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: false } });
-    };
-
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <Header onPlansClick={handlePlansClick} />
-      <main className="p-8 max-w-7xl mx-auto">
+    <div className="min-h-full bg-neutral-50">
+      <main className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
         <h2 className="text-3xl md:text-4xl font-bold text-neutral-800 mb-8">Seller Dashboard</h2>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-                 <div className="bg-white p-8 rounded-xl shadow-lg border border-neutral-200">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="md:col-span-2">
+                 <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-xl shadow-lg border border-neutral-200">
                     <div className="flex items-center gap-4 mb-4">
                         <div className="bg-primary-light p-3 rounded-full">
                             <SparklesIcon className="w-6 h-6 text-primary"/>
@@ -34,8 +27,8 @@ const SellerDashboard: React.FC = () => {
                     <GeminiDescriptionGenerator />
                 </div>
             </div>
-            <div className="lg:col-span-1">
-                 <div className="bg-white p-8 rounded-xl shadow-lg border border-neutral-200 h-full">
+            <div className="md:col-span-1">
+                 <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-xl shadow-lg border border-neutral-200 h-full">
                     <div className="flex items-center gap-4 mb-4">
                         <div className="bg-secondary/20 p-3 rounded-full">
                             <CurrencyDollarIcon className="w-6 h-6 text-secondary"/>

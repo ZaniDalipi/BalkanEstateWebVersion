@@ -6,7 +6,9 @@ import {
     ArrowLeftIcon, MapPinIcon, BedIcon, BathIcon, SqftIcon, CalendarIcon, 
     ParkingIcon, PhoneIcon, StarIcon, CubeIcon, VideoCameraIcon, UserCircleIcon, 
     SparklesIcon, ChevronLeftIcon, ChevronRightIcon,
-    MagnifyingGlassPlusIcon, MagnifyingGlassMinusIcon, ArrowUturnLeftIcon, PencilIcon, ShareIcon, ArrowDownTrayIcon, XMarkIcon
+    MagnifyingGlassPlusIcon, PencilIcon, ShareIcon, ArrowDownTrayIcon, XMarkIcon,
+    // FIX: Imported ArrowUturnLeftIcon to resolve missing component error.
+    ArrowUturnLeftIcon
 } from '../../constants';
 import { getNeighborhoodInsights } from '../../services/geminiService';
 import ImageViewerModal from './ImageViewerModal';
@@ -26,8 +28,6 @@ const ImageEditorModal: React.FC<{
     const imageRef = useRef<HTMLImageElement>(new Image());
     const [zoom, setZoom] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     
     const [isDrawing, setIsDrawing] = useState(false);
     const [paths, setPaths] = useState<Path[]>([]);
@@ -390,9 +390,9 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
   const isFavorited = state.savedHomes.some(p => p.id === property.id);
 
   return (
-    <div className="absolute inset-0 bg-neutral-50 z-30 overflow-y-auto animate-fade-in">
+    <div className="absolute inset-0 md:left-20 bg-neutral-50 z-30 overflow-y-auto animate-fade-in transition-all duration-300">
         {isEditorOpen && <ImageEditorModal imageUrl={currentImageUrl} property={property} onClose={() => setIsEditorOpen(false)} />}
-        {isViewerOpen && <ImageViewerModal images={allImages} startIndex={currentImageIndex} onClose={() => setIsViewerOpen(false)} />}
+        {isViewerOpen && <ImageViewerModal images={imagesForCurrentCategory} startIndex={currentImageIndex} onClose={() => setIsViewerOpen(false)} />}
         <div className="p-4 bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 z-10 flex items-center justify-between">
             <button onClick={handleBack} className="flex items-center gap-2 text-primary font-semibold hover:underline">
                 <ArrowLeftIcon className="w-5 h-5" />
@@ -410,22 +410,21 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden">
-              <div className="relative group">
-                <img 
-                  src={currentImageUrl}
-                  alt={property.address} 
-                  className="w-full h-[450px] object-cover"
-                />
-                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={() => setIsEditorOpen(true)} className="flex items-center gap-2 bg-white/80 backdrop-blur-sm text-neutral-800 font-semibold px-4 py-2 rounded-full hover:scale-105 transition-transform">
+              <div className="relative">
+                <button onClick={() => setIsViewerOpen(true)} className="w-full h-[450px] block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-t-xl">
+                    <img 
+                        src={currentImageUrl}
+                        alt={property.address} 
+                        className="w-full h-full object-cover"
+                    />
+                </button>
+                <div className="absolute top-4 right-4 flex flex-col gap-2">
+                    <button onClick={() => setIsEditorOpen(true)} className="flex items-center gap-2 bg-white/80 backdrop-blur-sm text-neutral-800 font-semibold px-4 py-2 rounded-full hover:scale-105 transition-transform shadow-md">
                         <PencilIcon className="w-5 h-5" />
-                        <span>Annotate</span>
-                    </button>
-                    <button onClick={() => setIsViewerOpen(true)} className="flex items-center gap-2 bg-white/80 backdrop-blur-sm text-neutral-800 font-semibold px-4 py-2 rounded-full hover:scale-105 transition-transform">
-                        <MagnifyingGlassPlusIcon className="w-5 h-5" />
-                        <span>Zoom</span>
+                        <span className="hidden sm:inline">Annotate</span>
                     </button>
                 </div>
+
                 {imagesForCurrentCategory.length > 1 && (
                     <>
                         <button onClick={(e) => { e.stopPropagation(); handlePrevImage(); }} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/70 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors shadow-md">

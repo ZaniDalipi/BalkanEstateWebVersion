@@ -17,7 +17,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
 
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    dispatch({ type: 'SET_SELECTED_PROPERTY', payload: property });
+    dispatch({ type: 'SET_SELECTED_PROPERTY', payload: property.id });
   };
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -64,7 +64,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
                 <span className="truncate">{property.address}, {property.city}</span>
             </div>
         </button>
-        <div className="mt-4 flex justify-around text-sm text-neutral-800 border-t border-neutral-100 pt-3">
+        <div className="mt-4 flex flex-col items-start gap-2 text-sm sm:flex-row sm:justify-around sm:items-center sm:gap-0 text-neutral-800 border-t border-neutral-100 pt-3">
           <div className="flex items-center gap-2">
             <BedIcon className="w-5 h-5 text-primary" />
             <span><span className="font-bold">{property.beds}</span> {property.beds === 1 ? 'bedroom' : 'bedrooms'}</span>
@@ -78,11 +78,11 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
             <span><span className="font-bold">{property.sqft}</span> m²</span>
           </div>
         </div>
-        <div className="mt-4 pt-3 border-t border-neutral-100 flex justify-between items-center">
-            {showCompareButton ? (
+        <div className="mt-4 pt-3 border-t border-neutral-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
+            {showCompareButton && (
                 <button
                     onClick={handleCompareClick}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all shadow-sm hover:shadow-md ${
+                    className={`flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all shadow-sm hover:shadow-md w-full sm:w-auto ${
                         isInComparison
                             ? 'bg-primary-light text-primary-dark border border-primary/50'
                             : 'bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100'
@@ -91,19 +91,17 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
                     <ScaleIcon className="w-5 h-5" />
                     <span>{isInComparison ? 'Selected' : 'Compare'}</span>
                 </button>
-            ) : (
-                <div /> /* Empty div to keep alignment */
             )}
              <button
                 onClick={handleCardClick}
-                className="bg-primary text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary-dark transition-all shadow-sm hover:shadow-md flex items-center gap-2"
+                className="bg-primary text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary-dark transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 w-full sm:w-auto"
             >
                 {property.seller.avatarUrl ? (
                     <img src={property.seller.avatarUrl} alt={property.seller.name} className="w-6 h-6 rounded-full object-cover border-2 border-white/50" />
                 ) : (
                     <UserCircleIcon className="w-6 h-6" />
                 )}
-                <span>{property.seller.type === 'agent' ? 'View Details' : 'View Details'}</span>
+                <span>View Details</span>
             </button>
         </div>
       </div>

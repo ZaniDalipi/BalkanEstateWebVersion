@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import Header from '../shared/Header';
 import { Property } from '../../types';
 import PropertyCard from './PropertyCard';
 import { HeartIcon } from '../../constants';
@@ -39,8 +38,7 @@ const SavedHomesPage: React.FC = () => {
 
 
   return (
-    <div className="bg-neutral-50 min-h-screen">
-      <Header />
+    <div className="bg-neutral-50 min-h-full">
       <Toast 
           show={toast.show} 
           message={toast.message} 

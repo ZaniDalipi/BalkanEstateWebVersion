@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import Modal from '../shared/Modal';
 import { useAppContext } from '../../context/AppContext';
-import { AppleIcon, DevicePhoneMobileIcon, EnvelopeIcon, FacebookIcon, GoogleIcon, LogoIcon } from '../../constants';
-import { mockUsers } from '../../services/propertyService'; // Import mock users
+import { AppleIcon, DevicePhoneMobileIcon, EnvelopeIcon, FacebookIcon, GoogleIcon, LogoIcon, XMarkIcon } from '../../constants';
+import { mockUsers } from '../../services/propertyService';
 import { UserRole } from '../../types';
 
 type View = 'login' | 'signup';
@@ -15,7 +14,7 @@ const SocialButton: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon
     </button>
 );
 
-const AuthModal: React.FC = () => {
+const AuthPage: React.FC = () => {
     const { state, dispatch } = useAppContext();
     const [view, setView] = useState<View>('login');
     const [method, setMethod] = useState<Method>('email');
@@ -26,7 +25,6 @@ const AuthModal: React.FC = () => {
 
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // Simulate a successful login by picking a mock seller user
         const loggedInUser = state.userRole === UserRole.SELLER ? mockUsers['user_seller_1'] : null;
         
         dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user: loggedInUser } });
@@ -84,78 +82,83 @@ const AuthModal: React.FC = () => {
     }
 
     return (
-        <Modal 
-            isOpen={state.isAuthModalOpen} 
-            onClose={handleClose} 
-            title=""
+        <div 
+            className="fixed inset-0 z-50 flex justify-center items-center md:bg-black/50 md:p-4"
+            onClick={handleClose}
         >
-            <div className="w-full max-w-md mx-auto">
-                <div className="flex justify-center items-center space-x-2 mb-4">
-                    <LogoIcon className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-xl sm:text-2xl font-bold text-neutral-800 text-center mb-4 sm:mb-6">{view === 'login' ? 'Welcome Back!' : 'Create an Account'}</h2>
+            <div 
+                className="bg-white w-full h-full md:h-auto md:max-w-md md:rounded-2xl md:shadow-2xl flex flex-col relative overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <button onClick={handleClose} className="absolute top-4 right-4 text-neutral-500 hover:text-neutral-800 z-10">
+                    <XMarkIcon className="w-6 h-6" />
+                </button>
 
+                <div className="p-6 sm:p-8 w-full max-w-md mx-auto mt-8 md:mt-0">
+                    <div className="flex justify-center items-center space-x-2 mb-4">
+                        <LogoIcon className="w-8 h-8 text-primary" />
+                    </div>
+                    <h2 className="text-xl sm:text-2xl font-bold text-neutral-800 text-center mb-4 sm:mb-6">{view === 'login' ? 'Welcome Back!' : 'Create an Account'}</h2>
 
-                <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm mb-4 sm:mb-6">
-                    <button
-                        onClick={() => setView('login')}
-                        className={`w-1/2 px-4 py-2 rounded-full text-base font-semibold transition-all duration-300 ${view === 'login' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}
-                    >Login</button>
-                    <button
-                        onClick={() => setView('signup')}
-                        className={`w-1/2 px-4 py-2 rounded-full text-base font-semibold transition-all duration-300 ${view === 'signup' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}
-                    >Sign Up</button>
-                </div>
+                    <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm mb-4 sm:mb-6">
+                        <button
+                            onClick={() => setView('login')}
+                            className={`w-1/2 px-4 py-2 rounded-full text-base font-semibold transition-all duration-300 ${view === 'login' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}
+                        >Login</button>
+                        <button
+                            onClick={() => setView('signup')}
+                            className={`w-1/2 px-4 py-2 rounded-full text-base font-semibold transition-all duration-300 ${view === 'signup' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}
+                        >Sign Up</button>
+                    </div>
 
-                <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm mb-4 sm:mb-6 max-w-xs mx-auto">
-                    <button
-                        onClick={() => setMethod('email')}
-                        className={`w-1/2 px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${method === 'email' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}
-                    >
-                        <EnvelopeIcon className="w-5 h-5"/>
-                        Email
-                    </button>
-                    <button
-                        onClick={() => setMethod('phone')}
-                        className={`w-1/2 px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${method === 'phone' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}
-                    >
-                        <DevicePhoneMobileIcon className="w-5 h-5"/>
-                        Phone
-                    </button>
-                </div>
-
-
-                <form onSubmit={handleFormSubmit}>
-                    {renderForm()}
-                    <button type="submit" className="w-full mt-6 py-3 px-4 border border-transparent rounded-lg shadow-sm text-base sm:text-lg font-bold text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
-                        {view === 'login' ? 'Log In' : 'Sign Up'}
-                    </button>
-                </form>
-
-                <div className="my-4 sm:my-6 flex items-center">
-                    <div className="flex-grow border-t border-neutral-300"></div>
-                    <span className="flex-shrink mx-4 text-neutral-500 font-medium text-sm">Or continue with</span>
-                    <div className="flex-grow border-t border-neutral-300"></div>
-                </div>
-
-                <div className="space-y-3">
-                    <SocialButton icon={<GoogleIcon/>} label="Continue with Google" />
-                    <SocialButton icon={<FacebookIcon/>} label="Continue with Facebook" />
-                    <SocialButton icon={<AppleIcon className="text-black"/>} label="Continue with Apple" />
-                </div>
-                
-                <div className="text-center mt-6">
-                    <p className="text-sm text-neutral-600">
-                        {view === 'login' ? "Don't have an account? " : "Already have an account? "}
-                        <button onClick={() => setView(view === 'login' ? 'signup' : 'login')} className="font-bold text-primary hover:underline">
-                             {view === 'login' ? "Sign Up" : "Log In"}
+                    <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm mb-4 sm:mb-6 max-w-xs mx-auto">
+                        <button
+                            onClick={() => setMethod('email')}
+                            className={`w-1/2 px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${method === 'email' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}
+                        >
+                            <EnvelopeIcon className="w-5 h-5"/>
+                            Email
                         </button>
-                    </p>
-                </div>
+                        <button
+                            onClick={() => setMethod('phone')}
+                            className={`w-1/2 px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${method === 'phone' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}
+                        >
+                            <DevicePhoneMobileIcon className="w-5 h-5"/>
+                            Phone
+                        </button>
+                    </div>
 
+                    <form onSubmit={handleFormSubmit}>
+                        {renderForm()}
+                        <button type="submit" className="w-full mt-6 py-3 px-4 border border-transparent rounded-lg shadow-sm text-base sm:text-lg font-bold text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                            {view === 'login' ? 'Log In' : 'Sign Up'}
+                        </button>
+                    </form>
+
+                    <div className="my-4 sm:my-6 flex items-center">
+                        <div className="flex-grow border-t border-neutral-300"></div>
+                        <span className="flex-shrink mx-4 text-neutral-500 font-medium text-sm">Or continue with</span>
+                        <div className="flex-grow border-t border-neutral-300"></div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <SocialButton icon={<GoogleIcon/>} label="Continue with Google" />
+                        <SocialButton icon={<FacebookIcon/>} label="Continue with Facebook" />
+                        <SocialButton icon={<AppleIcon className="text-black"/>} label="Continue with Apple" />
+                    </div>
+                    
+                    <div className="text-center mt-6">
+                        <p className="text-sm text-neutral-600">
+                            {view === 'login' ? "Don't have an account? " : "Already have an account? "}
+                            <button onClick={() => setView(view === 'login' ? 'signup' : 'login')} className="font-bold text-primary hover:underline">
+                                 {view === 'login' ? "Sign Up" : "Log In"}
+                            </button>
+                        </p>
+                    </div>
+                </div>
             </div>
-        </Modal>
+        </div>
     );
 };
 
-export default AuthModal;
+export default AuthPage;

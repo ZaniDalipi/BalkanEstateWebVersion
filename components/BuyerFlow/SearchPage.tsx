@@ -1,14 +1,13 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import Header from '../shared/Header';
 import MapComponent from './MapComponent';
 import PropertyList from './PropertyList';
 import PropertyDetailsPage from './PropertyDetailsPage';
 import { SavedSearch, ChatMessage, AiSearchQuery, Filters } from '../../types';
 import { getAiChatResponse, generateSearchName } from '../../services/geminiService';
-import SubscriptionModal from './SubscriptionModal';
 import Toast from '../shared/Toast';
 import L from 'leaflet';
+import { Bars3Icon, MapPinIcon } from '../../constants';
 
 const SearchPage: React.FC = () => {
     const { state, dispatch } = useAppContext();
@@ -33,6 +32,7 @@ const SearchPage: React.FC = () => {
     const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
     const [isSaving, setIsSaving] = useState(false);
     const [recenterMap, setRecenterMap] = useState(true);
+    const [mobileView, setMobileView] = useState<'list' | 'map'>('list');
 
     const showToast = (message: string, type: 'success' | 'error') => {
         setToast({ show: true, message, type });
@@ -185,22 +185,15 @@ const SearchPage: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col h-screen overflow-hidden">
-            <Header
-                onSubscribeClick={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true })}
-            />
+        <div className="flex flex-col h-full overflow-hidden">
             <Toast 
                 show={toast.show} 
                 message={toast.message} 
                 type={toast.type} 
                 onClose={() => setToast({ ...toast, show: false })} 
             />
-             <SubscriptionModal
-                isOpen={state.isSubscriptionModalOpen}
-                onClose={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: false })}
-            />
-            <main className="flex-grow flex flex-row overflow-hidden">
-                <div className="w-full md:w-2/3 h-full overflow-y-auto">
+            <main className="flex-grow flex flex-row overflow-hidden relative">
+                <div className={`w-full md:w-2/3 lg:w-1/2 xl:w-1/3 h-full overflow-y-auto bg-white ${mobileView === 'map' ? 'hidden md:block' : ''}`}>
                     <PropertyList 
                         properties={filteredProperties}
                         filters={filters}
@@ -221,12 +214,31 @@ const SearchPage: React.FC = () => {
                         onSearchOnMoveChange={setSearchOnMove}
                     />
                 </div>
-                 <div className="relative hidden md:block w-1/3 h-full">
+                 <div className={`relative w-full h-full md:w-1/3 lg:w-1/2 xl:w-2/3 ${mobileView === 'list' ? 'hidden md:block' : 'block'}`}>
                      <MapComponent 
                         properties={filteredProperties} 
                         recenter={recenterMap}
                         onMapMove={handleMapMove}
                      />
+                </div>
+
+                <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
+                    <button
+                        onClick={() => setMobileView(v => v === 'list' ? 'map' : 'list')}
+                        className="flex items-center gap-2 px-4 py-2 bg-neutral-800 text-white font-semibold rounded-full shadow-lg hover:bg-neutral-900 transition-colors"
+                    >
+                        {mobileView === 'list' ? (
+                            <>
+                                <MapPinIcon className="w-5 h-5" />
+                                <span>Map</span>
+                            </>
+                        ) : (
+                            <>
+                                <Bars3Icon className="w-5 h-5" />
+                                <span>List</span>
+                            </>
+                        )}
+                    </button>
                 </div>
             </main>
         </div>

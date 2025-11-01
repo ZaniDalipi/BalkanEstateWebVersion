@@ -1,196 +1,142 @@
 import React, { createContext, useReducer, useContext, Dispatch } from 'react';
-import { AppState, AppAction, UserRole, SavedSearch, AppView, Property, Conversation, Message, User } from '../types';
+import { User, UserRole, AppView, Property, SavedSearch, Conversation, Message, AppState, AppAction } from '../types';
 import { dummyProperties, mockUsers } from '../services/propertyService';
 
-const dummySavedSearches: SavedSearch[] = [
-    {
-        id: '1',
-        name: 'Houses near Belgrade',
-        newPropertyCount: 15,
-        properties: dummyProperties.slice(0, 8),
-    },
-    {
-        id: '2',
-        name: 'Houses near Novi Sad',
-        newPropertyCount: 3,
-        properties: dummyProperties.slice(6, 10),
-    },
-    {
-        id: '3',
-        name: 'Houses near Tirana',
-        newPropertyCount: 15,
-        properties: dummyProperties.slice(8, 16),
-    }
-];
-
-const dummyConversations: Conversation[] = [
-    {
-        id: 'conv1',
-        propertyId: '1',
-        messages: [
-            { id: 'msg1', senderId: 'user', text: 'Hi, is this property still available?', timestamp: '2024-07-29T10:00:00Z', isRead: true },
-            { id: 'msg2', senderId: 'ana_kovacevic', text: "Hello! Yes, it is. Would you like to schedule a viewing?", timestamp: '2024-07-29T10:05:00Z', isRead: true },
-            { id: 'msg3', senderId: 'user', text: "Great! How about this Friday at 2 PM?", timestamp: '2024-07-29T10:06:00Z', isRead: true },
-            { id: 'msg4', senderId: 'ana_kovacevic', text: "Friday at 2 PM works perfectly. See you then!", timestamp: '2024-07-29T10:15:00Z', isRead: false },
-        ]
-    },
-    {
-        id: 'conv2',
-        propertyId: '8',
-        messages: [
-             { id: 'msg5', senderId: 'user', text: 'I love this villa in Split! Can you tell me more about the neighborhood?', timestamp: '2024-07-28T15:20:00Z', isRead: true },
-             { id: 'msg6', senderId: 'marko_horvat', text: "Of course! It's in a very quiet, prestigious area with great access to the beach and local restaurants. The view is spectacular.", timestamp: '2024-07-28T15:30:00Z', isRead: false },
-        ]
-    },
-    {
-        id: 'conv3',
-        propertyId: '3',
-        messages: [
-            { id: 'msg7', senderId: 'user', text: "Is the price for the Sarajevo apartment negotiable?", timestamp: '2024-07-27T18:00:00Z', isRead: true },
-        ]
-    }
-];
-
-
 const initialState: AppState = {
-  userRole: UserRole.UNDEFINED,
-  properties: dummyProperties,
-  isSubscriptionModalOpen: false,
+  userRole: null,
+  activeView: 'search',
   isPricingModalOpen: false,
   isFirstLoginOffer: false,
+  isSubscriptionModalOpen: false,
   isAuthModalOpen: false,
-  isAuthenticated: false,
-  currentUser: null, // Start with no user logged in
+  properties: dummyProperties,
   selectedProperty: null,
-  activeView: 'search',
-  savedSearches: dummySavedSearches,
+  isAuthenticated: false,
+  currentUser: null,
+  savedSearches: [],
   savedHomes: [],
-  conversations: dummyConversations,
   comparisonList: [],
+  conversations: [
+    {
+        id: 'convo1',
+        propertyId: 'prop1',
+        messages: [
+            { id: 'msg1', senderId: 'user_seller_1', text: 'Hello! I saw you were interested in the Knez Mihailova property. Do you have any questions?', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), isRead: false },
+            { id: 'msg2', senderId: 'user', text: 'Yes, I was wondering about the monthly utility costs.', timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), isRead: true },
+        ],
+    },
+  ],
+  selectedAgentId: null,
 };
 
-const AppContext = createContext<{
-  state: AppState;
-  dispatch: Dispatch<AppAction>;
-}>({
-  state: initialState,
-  dispatch: () => null,
-});
 
 const appReducer = (state: AppState, action: AppAction): AppState => {
   switch (action.type) {
     case 'SET_USER_ROLE':
       return { ...state, userRole: action.payload };
-    case 'SET_PROPERTIES':
-        return {...state, properties: action.payload };
-    case 'TOGGLE_SUBSCRIPTION_MODAL':
-        return {...state, isSubscriptionModalOpen: action.payload};
+    case 'SET_ACTIVE_VIEW':
+      return { ...state, activeView: action.payload, selectedProperty: null, selectedAgentId: null };
     case 'TOGGLE_PRICING_MODAL':
+      return { ...state, isPricingModalOpen: action.payload.isOpen, isFirstLoginOffer: action.payload.isOffer ?? state.isFirstLoginOffer };
+    case 'TOGGLE_SUBSCRIPTION_MODAL':
+      return { ...state, isSubscriptionModalOpen: action.payload };
+    case 'TOGGLE_AUTH_MODAL':
+      return { ...state, isAuthModalOpen: action.payload };
+    case 'SET_SELECTED_PROPERTY':
+      return { ...state, selectedProperty: state.properties.find(p => p.id === action.payload) || null };
+    case 'SET_SELECTED_AGENT':
+      return { ...state, selectedAgentId: action.payload };
+    case 'ADD_SAVED_SEARCH':
+        if (!state.isAuthenticated) {
+            return { ...state, isAuthModalOpen: true };
+        }
+      return { ...state, savedSearches: [action.payload, ...state.savedSearches] };
+    case 'TOGGLE_SAVED_HOME':
+        const isSaved = state.savedHomes.some(p => p.id === action.payload.id);
         return {
             ...state,
-            isPricingModalOpen: action.payload.isOpen,
-            isFirstLoginOffer: action.payload.isOffer || false
+            savedHomes: isSaved
+                ? state.savedHomes.filter(p => p.id !== action.payload.id)
+                : [action.payload, ...state.savedHomes],
         };
-    case 'TOGGLE_AUTH_MODAL':
-        return {...state, isAuthModalOpen: action.payload};
+    case 'ADD_TO_COMPARISON':
+        if (state.comparisonList.length < 4 && !state.comparisonList.includes(action.payload)) {
+            return { ...state, comparisonList: [...state.comparisonList, action.payload] };
+        }
+        return state;
+    case 'REMOVE_FROM_COMPARISON':
+        return { ...state, comparisonList: state.comparisonList.filter(id => id !== action.payload) };
+    case 'CLEAR_COMPARISON':
+        return { ...state, comparisonList: [] };
+    case 'MARK_ALL_SEARCHES_VIEWED':
+        return { ...state, savedSearches: state.savedSearches.map(s => ({ ...s, newPropertyCount: 0 })) };
+    case 'ADD_PROPERTY':
+      return { ...state, properties: [action.payload, ...state.properties] };
+    case 'MARK_PROPERTY_SOLD':
+      return { ...state, properties: state.properties.map(p => p.id === action.payload ? { ...p, status: 'sold' } : p) };
     case 'SET_AUTH_STATE':
+        const user = action.payload.user;
         return { 
             ...state, 
-            isAuthenticated: action.payload.isAuthenticated,
-            currentUser: action.payload.user,
-            userRole: action.payload.user?.role || (state.userRole === UserRole.UNDEFINED ? UserRole.UNDEFINED : state.userRole),
+            isAuthenticated: action.payload.isAuthenticated, 
+            currentUser: user,
+            // Populate saved searches/homes on login, clear on logout
+            savedHomes: action.payload.isAuthenticated ? state.properties.slice(0, 2) : [],
+            savedSearches: action.payload.isAuthenticated ? [
+                { id: 'ss1', name: 'Belgrade, under €400k', newPropertyCount: 2, properties: state.properties.slice(0,2) }
+            ] : [],
         };
-    case 'SET_SELECTED_PROPERTY':
-        return { ...state, selectedProperty: action.payload };
-    case 'ADD_PROPERTY':
-        return { ...state, properties: [action.payload, ...state.properties] };
-    case 'UPDATE_PROPERTY':
+    case 'ADD_MESSAGE':
         return {
             ...state,
-            properties: state.properties.map(p => p.id === action.payload.id ? action.payload : p),
+            conversations: state.conversations.map(c =>
+                c.id === action.payload.conversationId
+                    ? { ...c, messages: [...c.messages, action.payload.message] }
+                    : c
+            ),
         };
-    case 'SET_ACTIVE_VIEW':
-        return { ...state, activeView: action.payload };
-    case 'ADD_SAVED_SEARCH':
-        return { ...state, savedSearches: [action.payload, ...state.savedSearches] };
-    case 'MARK_ALL_SEARCHES_VIEWED':
-        return {
-            ...state,
-            savedSearches: state.savedSearches.map(s => ({...s, newPropertyCount: 0}))
-        };
-    case 'TOGGLE_SAVED_HOME':
-      const isSaved = state.savedHomes.some(p => p.id === action.payload.id);
-      if (isSaved) {
-        return {
-          ...state,
-          savedHomes: state.savedHomes.filter(p => p.id !== action.payload.id),
-        };
-      } else {
-        return {
-          ...state,
-          savedHomes: [...state.savedHomes, action.payload],
-        };
-      }
-     case 'ADD_MESSAGE':
-      return {
-        ...state,
-        conversations: state.conversations.map(c => 
-          c.id === action.payload.conversationId 
-            ? { ...c, messages: [...c.messages, action.payload.message] }
-            : c
-        )
-      };
     case 'CREATE_OR_ADD_MESSAGE': {
-      const { propertyId, message } = action.payload;
-      const existingConversation = state.conversations.find(c => c.propertyId === propertyId);
-      
-      if (existingConversation) {
-        return {
-          ...state,
-          conversations: state.conversations.map(c => 
-            c.id === existingConversation.id 
-              ? { ...c, messages: [...c.messages, message], ...{ messages: c.messages.map(m => ({ ...m, isRead: true })) } }
-              : c
-          )
-        };
-      } else {
-        const newConversation: Conversation = {
-          id: `conv-${Date.now()}`,
-          propertyId: propertyId,
-          messages: [message]
-        };
-        return {
-          ...state,
-          conversations: [newConversation, ...state.conversations]
-        };
-      }
+        const { propertyId, message } = action.payload;
+        const existingConvo = state.conversations.find(c => c.propertyId === propertyId);
+        if (existingConvo) {
+            return {
+                ...state,
+                conversations: state.conversations.map(c =>
+                    c.id === existingConvo.id
+                        ? { ...c, messages: [...c.messages, message] }
+                        : c
+                ),
+            };
+        } else {
+            const newConvo: Conversation = {
+                id: `convo-${Date.now()}`,
+                propertyId,
+                messages: [message],
+            };
+            return { ...state, conversations: [newConvo, ...state.conversations] };
+        }
     }
     case 'MARK_CONVERSATION_AS_READ':
-      return {
-        ...state,
-        conversations: state.conversations.map(c => 
-          c.id === action.payload
-            ? { ...c, messages: c.messages.map(m => ({ ...m, isRead: true })) }
-            : c
-        )
-      };
-    case 'ADD_TO_COMPARISON':
-      if (state.comparisonList.includes(action.payload) || state.comparisonList.length >= 4) {
-          return state;
-      }
-      return { ...state, comparisonList: [...state.comparisonList, action.payload] };
-    case 'REMOVE_FROM_COMPARISON':
-      return { ...state, comparisonList: state.comparisonList.filter(id => id !== action.payload) };
-    case 'CLEAR_COMPARISON':
-      return { ...state, comparisonList: [] };
+        return {
+            ...state,
+            conversations: state.conversations.map(c =>
+                c.id === action.payload
+                    ? { ...c, messages: c.messages.map(m => ({ ...m, isRead: true })) }
+                    : c
+            ),
+        };
     default:
       return state;
   }
 };
 
+const AppContext = createContext<{ state: AppState; dispatch: Dispatch<AppAction> }>({
+  state: initialState,
+  dispatch: () => null,
+});
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
-
   return (
     <AppContext.Provider value={{ state, dispatch }}>
       {children}

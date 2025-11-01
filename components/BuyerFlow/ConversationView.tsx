@@ -3,13 +3,14 @@ import { Conversation, Message } from '../../types';
 import { useAppContext } from '../../context/AppContext';
 import MessageInput from './MessageInput';
 import { formatPrice } from '../../utils/currency';
-import { CalendarIcon, UserCircleIcon } from '../../constants';
+import { CalendarIcon, UserCircleIcon, ChevronLeftIcon } from '../../constants';
 
 interface ConversationViewProps {
     conversation: Conversation;
+    onBack?: () => void; // Optional callback for mobile back button
 }
 
-const ConversationView: React.FC<ConversationViewProps> = ({ conversation }) => {
+const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBack }) => {
     const { state, dispatch } = useAppContext();
     const property = state.properties.find(p => p.id === conversation.propertyId);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -21,7 +22,6 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation }) => 
     useEffect(scrollToBottom, [conversation.messages]);
     
     if (!property) { 
-        // FIX: Improved error handling for cases where property data might be missing.
         return (
             <div className="h-full flex items-center justify-center text-center text-neutral-500 p-4">
                 <p>Property data not found. It may have been removed.</p>
@@ -35,29 +35,32 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation }) => 
             senderId: 'user',
             text,
             timestamp: new Date().toISOString(),
-            isRead: true, // User's own message is always "read"
+            isRead: true, 
         };
         dispatch({ type: 'ADD_MESSAGE', payload: { conversationId: conversation.id, message: newMessage }});
     };
     
     return (
         <div className="h-full flex flex-col bg-white">
-            {/* Header */}
-            <div className="p-3 border-b border-neutral-200 flex-shrink-0 flex items-center gap-4">
+            <div className="p-3 border-b border-neutral-200 flex-shrink-0 flex items-center gap-3">
+                {onBack && (
+                    <button onClick={onBack} className="md:hidden p-2 text-neutral-600 hover:bg-neutral-100 rounded-full">
+                        <ChevronLeftIcon className="w-6 h-6" />
+                    </button>
+                )}
                 <img src={property.imageUrl} alt={property.address} className="w-12 h-12 object-cover rounded-lg" />
                 <div className="flex-grow">
-                    <p className="font-bold text-neutral-800">{property.address}, {property.city}</p>
+                    <p className="font-bold text-neutral-800 truncate">{property.address}, {property.city}</p>
                     <p className="text-sm font-semibold text-primary">{formatPrice(property.price, property.country)}</p>
                 </div>
                 <button 
-                    onClick={() => dispatch({ type: 'SET_SELECTED_PROPERTY', payload: property })}
-                    className="px-4 py-2 text-sm font-semibold bg-primary-light text-primary-dark rounded-full hover:bg-primary/20 transition-colors"
+                    onClick={() => dispatch({ type: 'SET_SELECTED_PROPERTY', payload: property.id })}
+                    className="hidden sm:block px-4 py-2 text-sm font-semibold bg-primary-light text-primary-dark rounded-full hover:bg-primary/20 transition-colors"
                 >
                     View Property
                 </button>
             </div>
 
-            {/* Messages */}
             <div className="flex-grow overflow-y-auto p-4 space-y-4">
                 {conversation.messages.map(msg => {
                     const isUser = msg.senderId === 'user';
@@ -89,9 +92,8 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation }) => 
                 <div ref={messagesEndRef} />
             </div>
             
-             {/* Quick Actions */}
-            <div className="p-2 border-t border-neutral-200 flex-shrink-0">
-                 <div className="flex items-center justify-center gap-2">
+             <div className="p-2 border-t border-neutral-200 flex-shrink-0">
+                 <div className="flex items-center justify-center gap-2 flex-wrap">
                      <button className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-primary-dark bg-primary-light rounded-full hover:bg-primary/20 transition-colors">
                         <CalendarIcon className="w-4 h-4"/> Schedule a Tour
                     </button>
@@ -100,7 +102,6 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation }) => 
                 </div>
             </div>
 
-            {/* Input */}
             <div className="p-4 border-t border-neutral-200 flex-shrink-0 bg-neutral-50">
                 <MessageInput onSendMessage={handleSendMessage} />
             </div>

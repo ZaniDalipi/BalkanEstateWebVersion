@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import Header from './Header';
 import MyListings from './MyListings';
 import { User, UserRole } from '../../types';
 import PropertyDetailsPage from '../BuyerFlow/PropertyDetailsPage';
@@ -90,8 +89,7 @@ const MyAccountPage: React.FC = () => {
     };
 
     return (
-        <div className="bg-neutral-50 min-h-screen">
-            <Header />
+        <div className="bg-neutral-50 min-h-full">
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                     {/* Sidebar */}

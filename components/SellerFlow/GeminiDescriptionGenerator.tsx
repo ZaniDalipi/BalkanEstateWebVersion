@@ -3,7 +3,7 @@ import { Property, PropertyImage, PropertyImageTag, Seller } from '../../types';
 import { generateDescriptionFromImages, PropertyAnalysisResult } from '../../services/geminiService';
 import { sellers, CITY_DATA } from '../../services/propertyService';
 import { SparklesIcon } from '../../constants';
-import { COUNTRIES, getCurrencySymbol } from '../../utils/currency';
+import { getCurrencySymbol } from '../../utils/currency';
 import { useAppContext } from '../../context/AppContext';
 
 type Step = 'init' | 'loading' | 'form' | 'floorplan' | 'success';
@@ -285,7 +285,9 @@ const FormStep: React.FC<{
     onAddNewTag: () => void;
     onStartOver: () => void;
     onNextStep: () => void;
-}> = ({ listingData, mode, formErrors, onModeChange, handleDataChange, handleInputChange, handleImageTagChange, imagePreviews, onImageChange, availableTags, newTagInput, onNewTagInputChange, onAddNewTag, onStartOver, onNextStep }) => {
+    onBack: () => void;
+    availableCountries: string[];
+}> = ({ listingData, mode, formErrors, onModeChange, handleDataChange, handleInputChange, handleImageTagChange, imagePreviews, onImageChange, availableTags, newTagInput, onNewTagInputChange, onAddNewTag, onStartOver, onNextStep, onBack, availableCountries }) => {
 
     const onChipItemsChange = useCallback((items: string[]) => handleDataChange('specialFeatures', items), [handleDataChange]);
     const onMaterialsChange = useCallback((items: string[]) => handleDataChange('materials', items), [handleDataChange]);
@@ -308,7 +310,7 @@ const FormStep: React.FC<{
                     <div className="relative">
                          <select id="country" name="country" value={listingData.country} onChange={handleInputChange} className={`${floatingInputClasses} peer ${formErrors.country ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-primary'}`} required>
                             <option value="" disabled>Select a country</option>
-                           {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                           {availableCountries.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                         <label htmlFor="country" className={`${floatingSelectLabelClasses} ${formErrors.country ? 'text-red-500' : 'text-neutral-500'}`}>Country</label>
                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
@@ -423,20 +425,28 @@ const FormStep: React.FC<{
                 </div>
             </div>
 
-            <div className="flex justify-end gap-4 border-t pt-6">
-                 <button onClick={onStartOver} className="px-6 py-3 border border-neutral-300 rounded-md shadow-sm text-md font-medium text-neutral-700 bg-white hover:bg-neutral-50">Start Over</button>
-                <button onClick={onNextStep} className="px-6 py-3 border border-transparent rounded-md shadow-sm text-md font-medium text-white bg-primary hover:bg-primary-dark">Next: Add Floor Plan</button>
+            <div className="flex justify-between items-center border-t pt-6">
+                <button onClick={onStartOver} className="px-6 py-3 border border-neutral-300 rounded-md shadow-sm text-md font-medium text-neutral-700 bg-white hover:bg-neutral-50">Start Over</button>
+                <div className="flex items-center gap-4">
+                    {mode === 'ai' && (
+                        <button type="button" onClick={onBack} className="px-6 py-3 border border-neutral-300 rounded-md shadow-sm text-md font-medium text-neutral-700 bg-white hover:bg-neutral-50">
+                            Back
+                        </button>
+                    )}
+                    <button onClick={onNextStep} className="px-6 py-3 border border-transparent rounded-md shadow-sm text-md font-medium text-white bg-primary hover:bg-primary-dark">Next: Add Floor Plan</button>
+                </div>
             </div>
         </div>
     )
 };
     
 const FloorplanStep: React.FC<{
+    onBack: () => void;
     onFinish: () => void;
     onFloorplanChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     floorplanPreview: string | null;
     onRemoveFloorplan: () => void;
-}> = ({ onFinish, onFloorplanChange, floorplanPreview, onRemoveFloorplan }) => (
+}> = ({ onBack, onFinish, onFloorplanChange, floorplanPreview, onRemoveFloorplan }) => (
      <div className="space-y-6 pt-8 animate-fade-in text-center">
         <h3 className="text-2xl font-bold text-neutral-800">Add a Floor Plan (Optional)</h3>
         <p className="text-neutral-600 mt-2 max-w-lg mx-auto">A floor plan can significantly increase buyer interest. Upload an image of your property's layout.</p>
@@ -465,10 +475,11 @@ const FloorplanStep: React.FC<{
         
         <div className="flex flex-row justify-center items-center gap-4 pt-6">
             <button 
-                onClick={onFinish} 
+                type="button"
+                onClick={onBack} 
                 className="px-8 py-3 border border-neutral-300 rounded-lg text-md font-semibold text-neutral-700 bg-white hover:bg-neutral-50 transition-colors shadow-sm"
             >
-                Skip & Finish
+                Back
             </button>
             <button 
                 onClick={onFinish} 
@@ -507,6 +518,8 @@ const GeminiDescriptionGenerator: React.FC = () => {
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [availableTags, setAvailableTags] = useState<string[]>(INITIAL_ROOM_TAGS);
     const [newTagInput, setNewTagInput] = useState('');
+
+    const availableCountries = useMemo(() => Object.keys(CITY_DATA).sort(), []);
 
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files) {
@@ -762,6 +775,15 @@ const GeminiDescriptionGenerator: React.FC = () => {
     const handleViewListings = () => {
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
     };
+
+    const handleBackFromForm = () => {
+        setListingData(null);
+        setStep('init');
+    };
+
+    const handleBackFromFloorplan = () => {
+        setStep('form');
+    };
     
     const renderStep = () => {
         switch (step) {
@@ -787,6 +809,8 @@ const GeminiDescriptionGenerator: React.FC = () => {
                     availableTags={availableTags} newTagInput={newTagInput} onNewTagInputChange={setNewTagInput} onAddNewTag={handleAddNewTag}
                     onStartOver={handleStartOver}
                     onNextStep={handleProceedToFloorplan}
+                    onBack={handleBackFromForm}
+                    availableCountries={availableCountries}
                 />;
             case 'floorplan': 
                 return <FloorplanStep 
@@ -794,6 +818,7 @@ const GeminiDescriptionGenerator: React.FC = () => {
                     onFloorplanChange={handleFloorplanChange}
                     floorplanPreview={floorplanPreview}
                     onRemoveFloorplan={handleRemoveFloorplan}
+                    onBack={handleBackFromFloorplan}
                 />;
             case 'success': 
                 return <SuccessStep onStartOver={handleStartOver} onViewListings={handleViewListings} />;

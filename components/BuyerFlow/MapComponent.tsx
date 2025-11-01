@@ -104,8 +104,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
   const center: [number, number] = properties.length > 0 ? [properties[0].lat, properties[0].lng] : [44.2, 19.9]; // Default center of Balkans
   const zoom = properties.length === 1 ? 13 : 7;
     
-  const handlePopupClick = (property: Property) => {
-    dispatch({ type: 'SET_SELECTED_PROPERTY', payload: property });
+  const handlePopupClick = (propertyId: string) => {
+    dispatch({ type: 'SET_SELECTED_PROPERTY', payload: propertyId });
   };
 
   return (
@@ -122,7 +122,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
             <Popup>
               <div 
                 className="w-48 cursor-pointer"
-                onClick={() => handlePopupClick(prop)}
+                onClick={() => handlePopupClick(prop.id)}
               >
                 <img src={prop.imageUrl} alt={prop.address} className="w-full h-24 object-cover rounded-md mb-2" />
                 <p className="font-bold text-md leading-tight">{formatPrice(prop.price, prop.country)}</p>
