@@ -48,7 +48,28 @@ const ChangeView: React.FC<{center: [number, number], zoom: number, enabled: boo
 }
 
 const MapEvents: React.FC<{ onMove: (bounds: L.LatLngBounds) => void }> = ({ onMove }) => {
-    const map = useMapEvents({
+    const map = useMap();
+
+    useEffect(() => {
+        const resizeObserver = new ResizeObserver(() => {
+            // Use a timeout to ensure the map container has finished resizing
+            // before invalidating the map size. This is a robust way to handle
+            // containers that are conditionally shown/hidden or resized.
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 0);
+        });
+
+        const mapContainer = map.getContainer();
+        resizeObserver.observe(mapContainer);
+        
+        // Cleanup observer on component unmount
+        return () => {
+            resizeObserver.unobserve(mapContainer);
+        };
+    }, [map]);
+
+    useMapEvents({
         load: () => {
             onMove(map.getBounds());
         },
