@@ -193,7 +193,7 @@ const SearchPage: React.FC = () => {
                 onClose={() => setToast({ ...toast, show: false })} 
             />
             <main className="flex-grow flex flex-row overflow-hidden relative">
-                <div className={`w-full md:w-2/5 h-full overflow-y-auto bg-white ${mobileView === 'map' ? 'hidden md:block' : ''}`}>
+                <div className={`w-full md:w-3/5 h-full overflow-y-auto bg-white ${mobileView === 'map' ? 'hidden md:block' : ''}`}>
                     <PropertyList 
                         properties={filteredProperties}
                         filters={filters}
@@ -214,7 +214,7 @@ const SearchPage: React.FC = () => {
                         onSearchOnMoveChange={setSearchOnMove}
                     />
                 </div>
-                 <div className={`relative w-full h-full md:w-3/5 ${mobileView === 'list' ? 'hidden md:block' : 'block'}`}>
+                 <div className={`relative w-full h-full md:w-2/5 ${mobileView === 'list' ? 'hidden md:block' : 'block'}`}>
                      <MapComponent 
                         properties={filteredProperties} 
                         recenter={recenterMap}
