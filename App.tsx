@@ -82,7 +82,7 @@ const MainLayout: React.FC = () => {
         
         <div className="transition-all duration-300 ease-in-out md:pl-20 h-screen flex flex-col">
             <Header onToggleSidebar={() => setIsSidebarOpen(true)} />
-            <main className={`flex-grow ${isFullHeightView ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+            <main className={`flex flex-col flex-grow ${isFullHeightView ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                 <AppContent />
             </main>
         </div>
