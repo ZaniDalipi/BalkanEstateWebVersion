@@ -98,20 +98,44 @@ const ListingCard: React.FC<{
 );
 };
 
+const FilterPill: React.FC<{
+    label: string;
+    isActive: boolean;
+    onClick: () => void;
+}> = ({ label, isActive, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex-grow text-center capitalize ${
+            isActive
+                ? 'bg-white text-primary shadow'
+                : 'text-neutral-600 hover:bg-neutral-200'
+        }`}
+    >
+        {label}
+    </button>
+);
+
 
 const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
     const { state, dispatch } = useAppContext();
     const [showSoldConfirm, setShowSoldConfirm] = useState(false);
     const [propertyToMarkSold, setPropertyToMarkSold] = useState<string | null>(null);
+    const [statusFilter, setStatusFilter] = useState<PropertyStatus | 'all'>('all');
     
-    const properties = useMemo(() => 
-        [...state.properties]
-            .filter(p => p.sellerId === sellerId)
-            .sort((a, b) => {
-                const statusOrder = { active: 1, pending: 2, draft: 3, sold: 4 };
-                return statusOrder[a.status] - statusOrder[b.status];
-            })
+    const myProperties = useMemo(() => 
+        state.properties.filter(p => p.sellerId === sellerId)
     , [state.properties, sellerId]);
+
+    const filteredAndSortedProperties = useMemo(() => {
+        const filtered = statusFilter === 'all'
+            ? myProperties
+            : myProperties.filter(p => p.status === statusFilter);
+        
+        return [...filtered].sort((a, b) => {
+            const statusOrder = { active: 1, pending: 2, draft: 3, sold: 4 };
+            return statusOrder[a.status] - statusOrder[b.status];
+        });
+    }, [myProperties, statusFilter]);
 
     const handleRenew = (id: string) => {
         dispatch({ type: 'RENEW_PROPERTY', payload: id });
@@ -129,6 +153,14 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
         setShowSoldConfirm(false);
         setPropertyToMarkSold(null);
     };
+    
+    const filterOptions: { label: string, value: PropertyStatus | 'all' }[] = [
+        { label: 'All', value: 'all' },
+        { label: 'Active', value: 'active' },
+        { label: 'Pending', value: 'pending' },
+        { label: 'Sold', value: 'sold' },
+        { label: 'Draft', value: 'draft' },
+    ];
 
     return (
         <div className="space-y-6">
@@ -144,7 +176,7 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
                 </div>
             </Modal>
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                <h3 className="text-xl sm:text-2xl font-bold text-neutral-800">My Listings ({properties.length})</h3>
+                <h3 className="text-xl sm:text-2xl font-bold text-neutral-800">My Listings ({myProperties.length})</h3>
                 <button 
                   onClick={() => {
                       dispatch({ type: 'SET_PROPERTY_TO_EDIT', payload: null });
@@ -156,9 +188,21 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
                   <span>Add New Listing</span>
                 </button>
             </div>
-            {properties.length > 0 ? (
+
+            <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200 self-start max-w-full sm:max-w-lg overflow-x-auto">
+                {filterOptions.map(option => (
+                    <FilterPill
+                        key={option.value}
+                        label={option.label}
+                        isActive={statusFilter === option.value}
+                        onClick={() => setStatusFilter(option.value)}
+                    />
+                ))}
+            </div>
+
+            {filteredAndSortedProperties.length > 0 ? (
                 <div className="space-y-4">
-                    {properties.map(prop => 
+                    {filteredAndSortedProperties.map(prop => 
                         <ListingCard 
                             key={prop.id} 
                             property={prop}
@@ -169,8 +213,17 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
                 </div>
             ) : (
                 <div className="text-center p-12 border-2 border-dashed rounded-lg bg-neutral-50">
-                    <h4 className="text-xl font-semibold text-neutral-700">No Listings Yet</h4>
-                    <p className="text-neutral-500 mt-2">Click "Add New Listing" to get started.</p>
+                    {myProperties.length > 0 ? (
+                         <>
+                            <h4 className="text-xl font-semibold text-neutral-700">No Listings Found</h4>
+                            <p className="text-neutral-500 mt-2">No properties match the "{statusFilter}" filter. Try selecting "All".</p>
+                        </>
+                    ) : (
+                        <>
+                            <h4 className="text-xl font-semibold text-neutral-700">No Listings Yet</h4>
+                            <p className="text-neutral-500 mt-2">Click "Add New Listing" to get started.</p>
+                        </>
+                    )}
                 </div>
             )}
         </div>
