@@ -203,6 +203,7 @@ export const dummyProperties: Property[] = [
     views: 125,
     saves: 12,
     inquiries: 3,
+    floorNumber: 5,
   },
   {
     id: 'prop2',
@@ -233,6 +234,7 @@ export const dummyProperties: Property[] = [
     views: 340,
     saves: 25,
     inquiries: 8,
+    totalFloors: 2,
   },
   {
     id: 'prop3',
@@ -260,6 +262,7 @@ export const dummyProperties: Property[] = [
     views: 210,
     saves: 15,
     inquiries: 5,
+    floorNumber: 3,
   },
   {
     id: 'prop4',
@@ -287,14 +290,15 @@ export const dummyProperties: Property[] = [
     views: 1500,
     saves: 120,
     inquiries: 22,
+    totalFloors: 3,
   },
-  { id: 'prop5', sellerId: 'user_agent_3', status: 'active', price: 180000, address: 'Partizanska 5', city: 'Bitola', country: 'North Macedonia', beds: 2, baths: 1, sqft: 75, yearBuilt: 2005, parking: 1, description: 'Cozy apartment near the city center of Bitola.', specialFeatures: ['Balcony'], materials: [], imageUrl: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=2070&auto-format&fit=crop', images: [], lat: 41.0319, lng: 21.33, seller: sellers.seller4, propertyType: 'apartment', createdAt: Date.now() - 86400000 * 3, lastRenewed: Date.now() - 86400000 * 2 },
-  { id: 'prop6', sellerId: 'user_agent_3', status: 'active', price: 420000, address: 'Vitosha Boulevard 15', city: 'Sofia', country: 'Bulgaria', beds: 3, baths: 2, sqft: 110, yearBuilt: 2012, parking: 1, description: 'Modern flat in the heart of Sofia with great views.', specialFeatures: ['City View'], materials: [], imageUrl: 'https://images.unsplash.com/photo-1560185127-6ed189bf02f4?q=80&w=2070&auto-format&fit=crop', images: [], lat: 42.6977, lng: 23.3219, seller: sellers.seller4, propertyType: 'apartment', createdAt: Date.now() - 86400000 * 8 },
-  { id: 'prop7', sellerId: 'user_agent_5', status: 'active', price: 850000, address: 'Rruga Butrinti', city: 'Sarandë', country: 'Albania', beds: 4, baths: 3, sqft: 200, yearBuilt: 2019, parking: 2, description: 'Stunning villa with sea views in Sarandë.', specialFeatures: ['Sea View', 'Swimming Pool'], materials: ['Stone'], imageUrl: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?q=80&w=1974&auto-format&fit=crop', images: [], lat: 39.8756, lng: 20.0056, seller: sellers.seller6, propertyType: 'villa', createdAt: Date.now() - 86400000 * 1 },
-  { id: 'prop8', sellerId: 'user_seller_1', status: 'active', price: 210000, address: 'Strazilovska 12', city: 'Novi Sad', country: 'Serbia', beds: 2, baths: 1, sqft: 65, yearBuilt: 1985, parking: 0, description: 'Renovated apartment in a classic building in Novi Sad.', specialFeatures: ['Renovated'], materials: ['Hardwood Floors'], imageUrl: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1980&auto-format&fit=crop', images: [], lat: 45.2517, lng: 19.845, seller: sellers.seller1, propertyType: 'apartment', createdAt: Date.now() - 86400000 * 12, lastRenewed: Date.now() - 86400000 * 5 },
-  { id: 'prop9', sellerId: 'user_agent_6', status: 'sold', price: 75000, address: 'Marsala Tita 80', city: 'Tuzla', country: 'Bosnia and Herzegovina', beds: 1, baths: 1, sqft: 40, yearBuilt: 2000, parking: 0, description: 'Compact and modern studio in Tuzla.', specialFeatures: [], materials: [], imageUrl: 'https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=2057&auto-format&fit=crop', images: [], lat: 44.5384, lng: 18.6671, seller: sellers.seller7, propertyType: 'apartment', createdAt: Date.now() - 86400000 * 40 },
-  { id: 'prop10', sellerId: 'user_agent_2', status: 'active', price: 1200000, address: 'Stradun 5', city: 'Dubrovnik', country: 'Croatia', beds: 3, baths: 3, sqft: 150, yearBuilt: 1700, parking: 0, description: 'Historic stone house in the Old Town of Dubrovnik.', specialFeatures: ['Historic Area'], materials: ['Stone'], imageUrl: 'https://images.unsplash.com/photo-1615571022219-eb45cf7faa9d?q=80&w=1964&auto-format&fit=crop', images: [], lat: 42.6414, lng: 18.1083, seller: sellers.seller3, propertyType: 'house', createdAt: Date.now() - 86400000 * 6 },
-  { id: 'prop11', sellerId: 'user_agent_5', status: 'active', price: 320000, address: 'Nikis Avenue 22', city: 'Thessaloniki', country: 'Greece', beds: 2, baths: 2, sqft: 90, yearBuilt: 2018, parking: 1, description: 'Modern apartment overlooking the Thermaic Gulf.', specialFeatures: ['Sea View'], materials: [], imageUrl: 'https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?q=80&w=2070&auto-format&fit=crop', images: [], lat: 40.626, lng: 22.95, seller: sellers.seller6, propertyType: 'apartment', createdAt: Date.now() - 86400000 * 9 },
+  { id: 'prop5', sellerId: 'user_agent_3', status: 'active', price: 180000, address: 'Partizanska 5', city: 'Bitola', country: 'North Macedonia', beds: 2, baths: 1, sqft: 75, yearBuilt: 2005, parking: 1, description: 'Cozy apartment near the city center of Bitola.', specialFeatures: ['Balcony'], materials: [], imageUrl: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=2070&auto-format&fit=crop', images: [], lat: 41.0319, lng: 21.33, seller: sellers.seller4, propertyType: 'apartment', createdAt: Date.now() - 86400000 * 3, lastRenewed: Date.now() - 86400000 * 2, floorNumber: 4 },
+  { id: 'prop6', sellerId: 'user_agent_3', status: 'active', price: 420000, address: 'Vitosha Boulevard 15', city: 'Sofia', country: 'Bulgaria', beds: 3, baths: 2, sqft: 110, yearBuilt: 2012, parking: 1, description: 'Modern flat in the heart of Sofia with great views.', specialFeatures: ['City View'], materials: [], imageUrl: 'https://images.unsplash.com/photo-1560185127-6ed189bf02f4?q=80&w=2070&auto-format&fit=crop', images: [], lat: 42.6977, lng: 23.3219, seller: sellers.seller4, propertyType: 'apartment', createdAt: Date.now() - 86400000 * 8, floorNumber: 8 },
+  { id: 'prop7', sellerId: 'user_agent_5', status: 'active', price: 850000, address: 'Rruga Butrinti', city: 'Sarandë', country: 'Albania', beds: 4, baths: 3, sqft: 200, yearBuilt: 2019, parking: 2, description: 'Stunning villa with sea views in Sarandë.', specialFeatures: ['Sea View', 'Swimming Pool'], materials: ['Stone'], imageUrl: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?q=80&w=1974&auto-format&fit=crop', images: [], lat: 39.8756, lng: 20.0056, seller: sellers.seller6, propertyType: 'villa', createdAt: Date.now() - 86400000 * 1, totalFloors: 2 },
+  { id: 'prop8', sellerId: 'user_seller_1', status: 'active', price: 210000, address: 'Strazilovska 12', city: 'Novi Sad', country: 'Serbia', beds: 2, baths: 1, sqft: 65, yearBuilt: 1985, parking: 0, description: 'Renovated apartment in a classic building in Novi Sad.', specialFeatures: ['Renovated'], materials: ['Hardwood Floors'], imageUrl: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1980&auto-format&fit=crop', images: [], lat: 45.2517, lng: 19.845, seller: sellers.seller1, propertyType: 'apartment', createdAt: Date.now() - 86400000 * 12, lastRenewed: Date.now() - 86400000 * 5, floorNumber: 2 },
+  { id: 'prop9', sellerId: 'user_agent_6', status: 'sold', price: 75000, address: 'Marsala Tita 80', city: 'Tuzla', country: 'Bosnia and Herzegovina', beds: 1, baths: 1, sqft: 40, yearBuilt: 2000, parking: 0, description: 'Compact and modern studio in Tuzla.', specialFeatures: [], materials: [], imageUrl: 'https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=2057&auto-format&fit=crop', images: [], lat: 44.5384, lng: 18.6671, seller: sellers.seller7, propertyType: 'apartment', createdAt: Date.now() - 86400000 * 40, floorNumber: 1 },
+  { id: 'prop10', sellerId: 'user_agent_2', status: 'active', price: 1200000, address: 'Stradun 5', city: 'Dubrovnik', country: 'Croatia', beds: 3, baths: 3, sqft: 150, yearBuilt: 1700, parking: 0, description: 'Historic stone house in the Old Town of Dubrovnik.', specialFeatures: ['Historic Area'], materials: ['Stone'], imageUrl: 'https://images.unsplash.com/photo-1615571022219-eb45cf7faa9d?q=80&w=1964&auto-format&fit=crop', images: [], lat: 42.6414, lng: 18.1083, seller: sellers.seller3, propertyType: 'house', createdAt: Date.now() - 86400000 * 6, totalFloors: 4 },
+  { id: 'prop11', sellerId: 'user_agent_5', status: 'active', price: 320000, address: 'Nikis Avenue 22', city: 'Thessaloniki', country: 'Greece', beds: 2, baths: 2, sqft: 90, yearBuilt: 2018, parking: 1, description: 'Modern apartment overlooking the Thermaic Gulf.', specialFeatures: ['Sea View'], materials: [], imageUrl: 'https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?q=80&w=2070&auto-format&fit=crop', images: [], lat: 40.626, lng: 22.95, seller: sellers.seller6, propertyType: 'apartment', createdAt: Date.now() - 86400000 * 9, floorNumber: 6 },
   ...Array.from({ length: 2989 }, (_, i) => {
     const propId = i + 12;
     const countryList = Object.keys(CITY_DATA);
@@ -306,6 +310,15 @@ export const dummyProperties: Property[] = [
     const sellerUser = mockUsers[sellerId];
     const sellerInfo: Seller = { type: sellerUser.role === UserRole.AGENT ? 'agent' : 'private', name: sellerUser.name, avatarUrl: sellerUser.avatarUrl, phone: sellerUser.phone, agencyName: sellerUser.agencyName };
     const propertyType = ['house', 'apartment', 'villa'][propId % 3] as 'house' | 'apartment' | 'villa';
+    
+    let floorNumber: number | undefined = undefined;
+    let totalFloors: number | undefined = undefined;
+
+    if (propertyType === 'apartment') {
+        floorNumber = 1 + (propId % 10);
+    } else if (propertyType === 'house' || propertyType === 'villa') {
+        totalFloors = 1 + (propId % 3);
+    }
     
     // Choose a relevant Unsplash collection based on property type for better aesthetics
     let collectionId;
@@ -351,6 +364,8 @@ export const dummyProperties: Property[] = [
       views: 50 + propId * 10,
       saves: 5 + propId,
       inquiries: propId % 5,
+      floorNumber,
+      totalFloors,
     } as Property;
   }),
 ];

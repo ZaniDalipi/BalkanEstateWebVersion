@@ -38,6 +38,8 @@ export interface PropertyAnalysisResult {
     description: string;
     image_tags: ImageTag[];
     property_type: 'house' | 'apartment' | 'villa' | 'other';
+    floor_number?: number;
+    total_floors?: number;
 }
 
 
@@ -57,6 +59,8 @@ export const generateDescriptionFromImages = async (images: File[], language: st
     9.  **materials**: A list of prominent building materials seen (e.g., "brick", "wood", "marble"). These will become "Materials".
     10. **image_tags**: For each image provided, assign a tag from the following list: 'exterior', 'living_room', 'kitchen', 'bedroom', 'bathroom', 'other'. The output should be an array of objects, where each object has an 'index' (corresponding to the image order, starting from 0) and a 'tag'.
     11. **property_type**: The type of property from this list: 'house', 'apartment', 'villa', 'other'.
+    12. **floor_number**: If the property is an 'apartment', estimate what floor it is on. Provide a single integer. If it's not an apartment or you cannot tell, omit this field.
+    13. **total_floors**: If the property is a 'house' or 'villa', estimate the total number of floors (e.g., 1, 2, 3). If it is not a house or villa or you cannot tell, omit this field.
 
     Please provide only the JSON object as a response.
     `;
@@ -104,6 +108,16 @@ export const generateDescriptionFromImages = async (images: File[], language: st
                 type: Type.STRING,
                 enum: ['house', 'apartment', 'villa', 'other'],
                 description: 'The type of the property.',
+            },
+            floor_number: { 
+                type: Type.INTEGER, 
+                description: 'The floor the apartment is on. Only for apartments.',
+                nullable: true,
+            },
+            total_floors: { 
+                type: Type.INTEGER, 
+                description: 'The total number of floors. Only for houses or villas.',
+                nullable: true,
             },
         },
         required: ['description', 'bedrooms', 'bathrooms', 'sq_meters', 'year_built', 'parking_spots', 'amenities', 'key_features', 'materials', 'image_tags', 'property_type'],
