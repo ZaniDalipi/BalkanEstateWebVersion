@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import MyListings from './MyListings';
 import { User, UserRole } from '../../types';
 import PropertyDetailsPage from '../BuyerFlow/PropertyDetailsPage';
-// FIX: Added ArrowLeftOnRectangleIcon to imports to fix missing member error.
 import { BuildingOfficeIcon, ChartBarIcon, UserCircleIcon, ArrowLeftOnRectangleIcon } from '../../constants';
 
 type AccountTab = 'listings' | 'performance' | 'profile' | 'subscription';
@@ -27,37 +26,125 @@ const TabButton: React.FC<{
     </button>
 );
 
-const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
-    // A simple form to display and edit user profile data
+const RoleSelector: React.FC<{
+    selectedRole: UserRole;
+    onChange: (role: UserRole) => void;
+}> = ({ selectedRole, onChange }) => {
+    const roles: { id: UserRole, label: string }[] = [
+        { id: UserRole.BUYER, label: 'Buyer' },
+        { id: UserRole.PRIVATE_SELLER, label: 'Private Seller' },
+        { id: UserRole.AGENT, label: 'Agent' }
+    ];
+
     return (
-        <div className="space-y-6">
-            <h3 className="text-xl font-bold text-neutral-800">Profile Settings</h3>
-            <div className="relative">
-                <input type="text" id="name" defaultValue={user.name} className="block px-2.5 pb-2.5 pt-4 w-full text-base text-neutral-900 bg-white rounded-lg border border-neutral-300 appearance-none focus:outline-none focus:ring-0 focus:border-primary peer" placeholder=" " />
-                <label htmlFor="name" className="absolute text-base text-neutral-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1">Full Name</label>
-            </div>
-            <div className="relative">
-                <input type="email" id="email" defaultValue={user.email} className="block px-2.5 pb-2.5 pt-4 w-full text-base text-neutral-900 bg-white rounded-lg border border-neutral-300 appearance-none focus:outline-none focus:ring-0 focus:border-primary peer" placeholder=" " />
-                <label htmlFor="email" className="absolute text-base text-neutral-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1">Email</label>
-            </div>
-            <div className="relative">
-                <input type="tel" id="phone" defaultValue={user.phone} className="block px-2.5 pb-2.5 pt-4 w-full text-base text-neutral-900 bg-white rounded-lg border border-neutral-300 appearance-none focus:outline-none focus:ring-0 focus:border-primary peer" placeholder=" " />
-                <label htmlFor="phone" className="absolute text-base text-neutral-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1">Phone</label>
-            </div>
-            <div className="flex justify-end">
-                <button className="px-6 py-2.5 bg-primary text-white font-semibold rounded-lg shadow-sm hover:bg-primary-dark">Save Changes</button>
-            </div>
+        <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200">
+            {roles.map(role => (
+                <button
+                    key={role.id}
+                    type="button"
+                    onClick={() => onChange(role.id)}
+                    className={`px-2.5 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex-grow text-center ${
+                        selectedRole === role.id
+                        ? 'bg-white text-primary shadow'
+                        : 'text-neutral-600 hover:bg-neutral-200'
+                    }`}
+                >
+                    {role.label}
+                </button>
+            ))}
         </div>
+    );
+};
+
+
+const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
+    const { dispatch } = useAppContext();
+    const [formData, setFormData] = useState<User>(user);
+    const [isSaved, setIsSaved] = useState(false);
+
+    useEffect(() => {
+        setFormData(user);
+    }, [user]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setFormData(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleRoleChange = (role: UserRole) => {
+        setFormData(prev => ({ ...prev, role }));
+    };
+
+    const handleSaveChanges = (e: React.FormEvent) => {
+        e.preventDefault();
+        dispatch({ type: 'UPDATE_USER', payload: formData });
+        setIsSaved(true);
+        setTimeout(() => setIsSaved(false), 2000);
+    };
+
+    const floatingInputClasses = "block px-2.5 pb-2.5 pt-4 w-full text-base text-neutral-900 bg-white rounded-lg border border-neutral-300 appearance-none focus:outline-none focus:ring-0 focus:border-primary peer";
+    const floatingLabelClasses = "absolute text-base text-neutral-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1";
+
+    return (
+        <form onSubmit={handleSaveChanges} className="space-y-8">
+            <div>
+                <h3 className="text-xl font-bold text-neutral-800 mb-2">Profile Settings</h3>
+                <p className="text-sm text-neutral-500">Manage your personal information and account type.</p>
+            </div>
+
+            <fieldset>
+                <legend className="block text-sm font-medium text-neutral-700 mb-2">Your Role</legend>
+                <RoleSelector selectedRole={formData.role} onChange={handleRoleChange} />
+            </fieldset>
+
+            <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <legend className="sr-only">Personal Information</legend>
+                <div className="relative">
+                    <input type="text" id="name" value={formData.name} onChange={handleInputChange} className={floatingInputClasses} placeholder=" " />
+                    <label htmlFor="name" className={floatingLabelClasses}>Full Name</label>
+                </div>
+                <div className="relative">
+                    <input type="email" id="email" value={formData.email} onChange={handleInputChange} className={floatingInputClasses} placeholder=" " />
+                    <label htmlFor="email" className={floatingLabelClasses}>Email</label>
+                </div>
+                <div className="relative md:col-span-2">
+                    <input type="tel" id="phone" value={formData.phone} onChange={handleInputChange} className={floatingInputClasses} placeholder=" " />
+                    <label htmlFor="phone" className={floatingLabelClasses}>Phone</label>
+                </div>
+            </fieldset>
+
+            {formData.role === UserRole.AGENT && (
+                <fieldset className="space-y-6 animate-fade-in border-t pt-8">
+                     <legend className="text-lg font-semibold text-neutral-700 -mt-2 mb-4">Agent Information</legend>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="relative">
+                            <input type="text" id="agencyName" value={formData.agencyName || ''} onChange={handleInputChange} className={floatingInputClasses} placeholder=" " />
+                            <label htmlFor="agencyName" className={floatingLabelClasses}>Agency Name</label>
+                        </div>
+                        <div className="relative">
+                            <input type="text" id="agentId" value={formData.agentId || ''} onChange={handleInputChange} className={floatingInputClasses} placeholder=" " />
+                            <label htmlFor="agentId" className={floatingLabelClasses}>Agent ID</label>
+                        </div>
+                        <div className="relative md:col-span-2">
+                            <input type="text" id="licenseNumber" value={formData.licenseNumber || ''} onChange={handleInputChange} className={floatingInputClasses} placeholder=" " />
+                            <label htmlFor="licenseNumber" className={floatingLabelClasses}>License Number (optional)</label>
+                        </div>
+                    </div>
+                </fieldset>
+            )}
+
+            <div className="flex justify-end pt-4">
+                <button type="submit" className="px-6 py-2.5 bg-primary text-white font-semibold rounded-lg shadow-sm hover:bg-primary-dark transition-colors w-32">
+                    {isSaved ? 'Saved!' : 'Save Changes'}
+                </button>
+            </div>
+        </form>
     );
 };
 
 const MyAccountPage: React.FC = () => {
     const { state, dispatch } = useAppContext();
     const [activeTab, setActiveTab] = useState<AccountTab>('listings');
-
-    if (state.selectedProperty && state.userRole === UserRole.SELLER) {
-        return <PropertyDetailsPage property={state.selectedProperty} />;
-    }
 
     if (!state.currentUser) {
         return (
@@ -67,16 +154,29 @@ const MyAccountPage: React.FC = () => {
         );
     }
     
+    const isSellerProfile = state.currentUser.role === UserRole.AGENT || state.currentUser.role === UserRole.PRIVATE_SELLER;
+
+    useEffect(() => {
+        if (!isSellerProfile && (activeTab === 'listings' || activeTab === 'performance')) {
+            setActiveTab('profile');
+        }
+    }, [isSellerProfile, activeTab]);
+    
     const handleLogout = () => {
         dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null } });
-        dispatch({ type: 'SET_USER_ROLE', payload: UserRole.BUYER }); // Default to buyer view on logout
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
+    };
+
+    const roleDisplayMap: Record<UserRole, string> = {
+        [UserRole.AGENT]: 'Agent',
+        [UserRole.PRIVATE_SELLER]: 'Private Seller',
+        [UserRole.BUYER]: 'Buyer',
     };
 
     const renderContent = () => {
         switch (activeTab) {
             case 'listings':
-                return <MyListings sellerId={state.currentUser!.id} />;
+                return isSellerProfile ? <MyListings sellerId={state.currentUser!.id} /> : null;
             case 'profile':
                 return <ProfileSettings user={state.currentUser!} />;
             case 'performance':
@@ -102,11 +202,15 @@ const MyAccountPage: React.FC = () => {
                                     <UserCircleIcon className="w-24 h-24 text-neutral-300 mb-3" />
                                 )}
                                 <h2 className="font-bold text-xl text-neutral-800">{state.currentUser.name}</h2>
-                                <p className="text-sm text-neutral-500 capitalize">{state.currentUser.role}</p>
+                                <p className="text-sm text-neutral-500 capitalize">{roleDisplayMap[state.currentUser.role]}</p>
                             </div>
                             <nav className="space-y-2">
-                                <TabButton label="My Listings" icon={<BuildingOfficeIcon className="w-6 h-6"/>} isActive={activeTab === 'listings'} onClick={() => setActiveTab('listings')} />
-                                <TabButton label="Performance" icon={<ChartBarIcon className="w-6 h-6"/>} isActive={activeTab === 'performance'} onClick={() => setActiveTab('performance')} />
+                                {isSellerProfile && (
+                                    <>
+                                        <TabButton label="My Listings" icon={<BuildingOfficeIcon className="w-6 h-6"/>} isActive={activeTab === 'listings'} onClick={() => setActiveTab('listings')} />
+                                        <TabButton label="Performance" icon={<ChartBarIcon className="w-6 h-6"/>} isActive={activeTab === 'performance'} onClick={() => setActiveTab('performance')} />
+                                    </>
+                                )}
                                 <TabButton label="Profile Settings" icon={<UserCircleIcon className="w-6 h-6"/>} isActive={activeTab === 'profile'} onClick={() => setActiveTab('profile')} />
                                 <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-left text-red-600 hover:bg-red-50 mt-4">
                                     <ArrowLeftOnRectangleIcon className="w-6 h-6" />

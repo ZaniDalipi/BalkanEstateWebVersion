@@ -1,67 +1,78 @@
 import React from 'react';
 import { Agent } from '../../types';
 import StarRating from '../shared/StarRating';
-import { TrophyIcon } from '../../constants';
+import { TrophyIcon, UserCircleIcon, CheckCircleIcon } from '../../constants';
+import { useAppContext } from '../../context/AppContext';
+import { formatPrice } from '../../utils/currency';
 
 interface AgentCardProps {
-    agent: Agent & { rank: number; propertiesSold: number; totalSales: number; };
-    onSelectAgent: () => void;
+  agent: Agent;
+  rank: number;
 }
 
-const AgentCard: React.FC<AgentCardProps> = ({ agent, onSelectAgent }) => {
-    const rank = agent.rank;
-    
-    const rankIconColors: { [key: number]: string } = {
-        1: 'text-yellow-400',
-        2: 'text-neutral-400',
-        3: 'text-yellow-600',
-    };
-    
-    const rankBorderColors: { [key: number]: string } = {
-        1: 'border-yellow-400',
-        2: 'border-neutral-400',
-        3: 'border-yellow-600',
-    };
-    
-    const cardBorderColor = rank < 4 ? rankBorderColors[rank] : 'border-neutral-200';
-    const cardBgColor = rank === 1 ? 'bg-yellow-50/50' : (rank === 2 ? 'bg-neutral-100/70' : (rank === 3 ? 'bg-yellow-100/30' : 'bg-white'));
+const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
+  const { dispatch } = useAppContext();
 
+  const rankColors: { [key: number]: { bg: string; text: string; border: string } } = {
+    1: { bg: 'bg-yellow-400', text: 'text-yellow-800', border: 'border-yellow-400' },
+    2: { bg: 'bg-neutral-300', text: 'text-neutral-700', border: 'border-neutral-400' },
+    3: { bg: 'bg-yellow-600', text: 'text-yellow-900', border: 'border-yellow-600' },
+  };
 
-    return (
-        <div className={`rounded-xl border-2 ${cardBorderColor} ${cardBgColor} p-4 flex flex-col items-center text-center transition-all duration-300 hover:shadow-xl hover:-translate-y-1 relative`}>
-            
-            <div className={`absolute top-2 right-2 flex items-center justify-center w-8 h-8 rounded-full ${rank === 1 ? 'bg-yellow-400' : (rank === 2 ? 'bg-neutral-400' : 'bg-yellow-600')} text-white font-bold text-sm shadow-md`}>
-                {rank}
-            </div>
-            
-            <div className={`relative mb-4 mt-4`}>
-                 <img src={agent.avatarUrl} alt={agent.name} className={`w-24 h-24 rounded-full object-cover shadow-xl border-4 ${cardBorderColor}`}/>
-            </div>
-            
-            <h3 className="font-bold text-lg text-neutral-800">{agent.name}</h3>
-            <p className="text-sm text-neutral-500 mb-2">{agent.agency}</p>
-            
-            <StarRating rating={agent.rating} reviewCount={agent.reviewCount} />
-            
-            <div className="w-full flex justify-around items-center my-4 py-3 border-y border-neutral-200/80">
-                <div className="text-center">
-                    <p className="font-bold text-2xl text-primary">{agent.propertiesSold}</p>
-                    <p className="text-xs text-neutral-500 uppercase font-semibold">Properties Sold</p>
-                </div>
-                 <div className="text-center">
-                    <p className="font-bold text-2xl text-primary">{agent.totalSales.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0})}</p>
-                    <p className="text-xs text-neutral-500 uppercase font-semibold">Total Sales</p>
-                </div>
-            </div>
+  const rankColor = rankColors[rank] || { bg: 'bg-neutral-200', text: 'text-neutral-600', border: 'border-neutral-300' };
 
-            <button
-                onClick={onSelectAgent}
-                className="mt-auto w-full px-4 py-2.5 bg-primary text-white font-bold rounded-lg hover:bg-primary-dark transition-colors shadow-md"
-            >
-                View Profile
-            </button>
+  const handleSelectAgent = () => {
+    dispatch({ type: 'SET_SELECTED_AGENT', payload: agent.id });
+  };
+
+  return (
+    <div 
+      className={`bg-white rounded-xl shadow-md border hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer ${rank <= 3 ? rankColor.border : 'border-neutral-200'}`}
+      onClick={handleSelectAgent}
+    >
+      <div className="p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            {agent.avatarUrl ? (
+              <img src={agent.avatarUrl} alt={agent.name} className="w-16 h-16 rounded-full object-cover" />
+            ) : (
+              <UserCircleIcon className="w-16 h-16 text-neutral-300" />
+            )}
+            <div>
+              <h3 className="text-lg font-bold text-neutral-900">{agent.name}</h3>
+              {agent.city && agent.country && (
+                  <p className="text-sm text-neutral-500 font-medium">{agent.city}, {agent.country}</p>
+              )}
+              {agent.licenseNumber && (
+                  <div className="flex items-center gap-1 mt-1 text-green-700">
+                      <CheckCircleIcon className="w-4 h-4" />
+                      <span className="text-xs font-bold">Trusted Agent</span>
+                  </div>
+              )}
+              <div className="flex items-center gap-1.5 mt-1">
+                <StarRating rating={agent.rating} className="w-4 h-4" />
+                <span className="text-sm font-semibold text-neutral-600">{agent.rating.toFixed(1)}</span>
+              </div>
+            </div>
+          </div>
+          <div className={`flex items-center gap-2 font-bold px-3 py-1.5 rounded-full text-sm ${rankColor.bg} ${rankColor.text}`}>
+            <TrophyIcon className="w-4 h-4" />
+            <span>#{rank}</span>
+          </div>
         </div>
-    );
+        <div className="mt-4 grid grid-cols-2 gap-4 text-center border-t border-neutral-100 pt-4">
+          <div>
+            <p className="text-xs text-neutral-500 font-semibold">Total Sales</p>
+            <p className="text-lg font-bold text-primary">{formatPrice(agent.totalSalesValue, 'Serbia')}</p>
+          </div>
+          <div>
+            <p className="text-xs text-neutral-500 font-semibold">Properties Sold</p>
+            <p className="text-lg font-bold text-primary">{agent.propertiesSold}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default AgentCard;

@@ -9,7 +9,7 @@ import Toast from '../shared/Toast';
 
 const SavedHomesPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
-  const { savedHomes, comparisonList, properties } = state;
+  const { savedHomes, comparisonList, properties, isAuthenticated } = state;
   const [isComparisonModalOpen, setComparisonModalOpen] = useState(false);
   const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
 
@@ -35,31 +35,28 @@ const SavedHomesPage: React.FC = () => {
   const selectedForComparison = useMemo(() => {
     return comparisonList.map(id => properties.find(p => p.id === id)).filter((p): p is Property => p !== undefined);
   }, [comparisonList, properties]);
+  
+  const exampleProperties = useMemo(() => properties.slice(0, 4), [properties]);
 
-
-  return (
-    <div className="bg-neutral-50 min-h-full">
-      <Toast 
-          show={toast.show} 
-          message={toast.message} 
-          type={toast.type} 
-          onClose={() => setToast({ ...toast, show: false })} 
-      />
-      <ComparisonModal
-          isOpen={isComparisonModalOpen}
-          onClose={() => setComparisonModalOpen(false)}
-          properties={selectedForComparison}
-      />
-      <main className={`py-8 ${comparisonList.length > 0 ? 'pb-20' : ''}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-neutral-900">Saved Homes</h1>
-            <p className="text-lg text-neutral-600 mt-2">
-              Your favorite properties, all in one place.
-            </p>
-          </div>
-
-          {Object.keys(groupedHomes).length > 0 ? (
+  const renderContent = () => {
+    if (!isAuthenticated) {
+        return (
+            <div className="text-center py-16 px-4 bg-white rounded-lg shadow-md border">
+                <HeartIcon className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-neutral-800">Log in to view your saved homes</h3>
+                <p className="text-neutral-500 mt-2">Save your favorite properties and access them anytime, anywhere.</p>
+                <button
+                    onClick={() => dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true })}
+                    className="mt-6 px-6 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
+                >
+                    Login / Register
+                </button>
+            </div>
+        );
+    }
+    
+    if (Object.keys(groupedHomes).length > 0) {
+        return (
             <div className="space-y-12">
               {Object.entries(groupedHomes).map(([country, cities]) => (
                 <div key={country}>
@@ -84,13 +81,55 @@ const SavedHomesPage: React.FC = () => {
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="text-center py-16 px-4 bg-white rounded-lg shadow-md border">
-                <HeartIcon className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-neutral-800">You haven't saved any homes yet.</h3>
-              <p className="text-neutral-500 mt-2">Click the heart icon on any property to save it here.</p>
-            </div>
-          )}
+        );
+    } else {
+        return (
+            <>
+                <div className="text-center py-16 px-4 bg-white rounded-lg shadow-md border">
+                    <HeartIcon className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-neutral-800">You haven't saved any homes yet.</h3>
+                  <p className="text-neutral-500 mt-2">Click the heart icon on any property to save it here.</p>
+                </div>
+                <div className="mt-12">
+                    <h2 className="text-2xl font-bold text-neutral-800 mb-6 text-center">Here are some popular properties</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {exampleProperties.map((property) => (
+                            <PropertyCard 
+                                key={property.id} 
+                                property={property} 
+                                showCompareButton={true}
+                                showToast={showToast}
+                             />
+                        ))}
+                    </div>
+                </div>
+            </>
+        );
+    }
+  };
+
+  return (
+    <div className="bg-neutral-50 min-h-full">
+      <Toast 
+          show={toast.show} 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast({ ...toast, show: false })} 
+      />
+      <ComparisonModal
+          isOpen={isComparisonModalOpen}
+          onClose={() => setComparisonModalOpen(false)}
+          properties={selectedForComparison}
+      />
+      <main className={`py-8 ${comparisonList.length > 0 ? 'pb-20' : ''}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-neutral-900">Saved Homes</h1>
+            <p className="text-lg text-neutral-600 mt-2">
+              Your favorite properties, all in one place.
+            </p>
+          </div>
+          {renderContent()}
         </div>
       </main>
       {comparisonList.length > 0 && (

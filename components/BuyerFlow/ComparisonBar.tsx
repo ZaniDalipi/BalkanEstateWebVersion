@@ -35,7 +35,7 @@ const ComparisonBar: React.FC<ComparisonBarProps> = ({ properties, onCompareNow,
                     </div>
                     <div>
                         <h3 className="font-bold text-neutral-800">Compare Properties</h3>
-                        <p className="text-sm text-neutral-600">{propertyCount} of 4 selected</p>
+                        <p className="text-sm text-neutral-600">{propertyCount} of 5 selected</p>
                     </div>
                 </div>
                 <div className="w-full sm:w-auto flex items-center justify-end gap-4 flex-shrink-0">

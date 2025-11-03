@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import MapComponent from './MapComponent';
 import PropertyList from './PropertyList';
@@ -8,23 +8,26 @@ import { getAiChatResponse, generateSearchName } from '../../services/geminiServ
 import Toast from '../shared/Toast';
 import L from 'leaflet';
 import { Bars3Icon, MapPinIcon } from '../../constants';
+import { CITY_DATA } from '../../services/propertyService';
+
+const initialFilters: Filters = {
+    query: '',
+    minPrice: null,
+    maxPrice: null,
+    beds: null,
+    baths: null,
+    minSqft: null,
+    maxSqft: null,
+    sortBy: 'newest',
+    sellerType: 'any',
+    propertyType: 'any',
+};
 
 const SearchPage: React.FC = () => {
     const { state, dispatch } = useAppContext();
     const { properties, selectedProperty, isAuthenticated } = state;
 
-    const [filters, setFilters] = useState<Filters>({
-        query: '',
-        minPrice: null,
-        maxPrice: null,
-        beds: null,
-        baths: null,
-        minSqft: null,
-        maxSqft: null,
-        sortBy: 'newest',
-        sellerType: 'any',
-        propertyType: 'any',
-    });
+    const [filters, setFilters] = useState<Filters>(initialFilters);
     
     const [searchOnMove, setSearchOnMove] = useState(true);
     const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
@@ -33,10 +36,57 @@ const SearchPage: React.FC = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [recenterMap, setRecenterMap] = useState(true);
     const [mobileView, setMobileView] = useState<'list' | 'map'>('list');
+    const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
 
-    const showToast = (message: string, type: 'success' | 'error') => {
+    const allCities = useMemo(() => Object.values(CITY_DATA).flat(), []);
+
+    const searchLocation = useMemo<[number, number] | null>(() => {
+        const query = filters.query.trim().toLowerCase();
+        if (!query) return null;
+        const city = allCities.find(c => 
+            c.name.toLowerCase() === query || 
+            c.localNames.some(ln => ln.toLowerCase() === query)
+        );
+        return city ? [city.lat, city.lng] : null;
+    }, [filters.query, allCities]);
+
+    const showToast = useCallback((message: string, type: 'success' | 'error') => {
         setToast({ show: true, message, type });
-    };
+    }, []);
+
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setUserLocation([position.coords.latitude, position.coords.longitude]);
+                },
+                (error: GeolocationPositionError) => {
+                    let toastMessage: string;
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            toastMessage = "Location access denied. You can enable it in your browser settings.";
+                            console.warn("User denied geolocation access.");
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            toastMessage = "Location information is unavailable.";
+                            console.warn("Geolocation position unavailable.");
+                            break;
+                        case error.TIMEOUT:
+                            toastMessage = "Request for user location timed out.";
+                            console.warn("Geolocation request timed out.");
+                            break;
+                        default:
+                            toastMessage = "An unknown error occurred while getting your location.";
+                            console.error("Error getting user location:", error.message);
+                            break;
+                    }
+                    showToast(toastMessage, 'error');
+                }
+            );
+        } else {
+            showToast("Geolocation is not supported by your browser.", 'error');
+        }
+    }, [showToast]);
     
     const filteredProperties = useMemo(() => {
         let sortedProperties = [...properties];
@@ -53,7 +103,11 @@ const SearchPage: React.FC = () => {
                 sortedProperties.sort((a, b) => b.beds - a.beds);
                 break;
             case 'newest':
-                sortedProperties.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                sortedProperties.sort((a, b) => {
+                    const effectiveDateA = Math.max(a.createdAt || 0, a.lastRenewed || 0);
+                    const effectiveDateB = Math.max(b.createdAt || 0, b.lastRenewed || 0);
+                    return effectiveDateB - effectiveDateA;
+                });
                 break;
             default:
                 break;
@@ -79,8 +133,17 @@ const SearchPage: React.FC = () => {
 
     }, [properties, filters, searchOnMove, mapBounds]);
 
+    const isSearchActive = useMemo(() => {
+        return filters.query.trim() !== '' || filters.minPrice !== null || filters.maxPrice !== null || filters.beds !== null || filters.baths !== null || filters.minSqft !== null || filters.maxSqft !== null || filters.sellerType !== 'any' || filters.propertyType !== 'any';
+    }, [filters]);
+
     const handleFilterChange = useCallback((name: keyof Filters, value: string | number | null) => {
         setFilters(prev => ({ ...prev, [name]: value }));
+        setRecenterMap(true);
+    }, []);
+
+    const handleResetFilters = useCallback(() => {
+        setFilters(initialFilters);
         setRecenterMap(true);
     }, []);
 
@@ -119,7 +182,7 @@ const SearchPage: React.FC = () => {
         } finally {
             setIsSaving(false);
         }
-    }, [isAuthenticated, dispatch, filters, filteredProperties]);
+    }, [isAuthenticated, dispatch, filters, filteredProperties, showToast]);
     
     const handleGetAlerts = useCallback(() => {
         dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true });
@@ -198,6 +261,7 @@ const SearchPage: React.FC = () => {
                         properties={filteredProperties}
                         filters={filters}
                         onFilterChange={handleFilterChange}
+                        onResetFilters={handleResetFilters}
                         onSortChange={handleSortChange}
                         onSaveSearch={handleSaveSearch}
                         onGetAlerts={handleGetAlerts}
@@ -219,6 +283,9 @@ const SearchPage: React.FC = () => {
                         properties={filteredProperties} 
                         recenter={recenterMap}
                         onMapMove={handleMapMove}
+                        userLocation={userLocation}
+                        isSearchActive={isSearchActive}
+                        searchLocation={searchLocation}
                      />
                 </div>
 

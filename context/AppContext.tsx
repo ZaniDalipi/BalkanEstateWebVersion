@@ -3,7 +3,7 @@ import { User, UserRole, AppView, Property, SavedSearch, Conversation, Message, 
 import { dummyProperties, mockUsers } from '../services/propertyService';
 
 const initialState: AppState = {
-  userRole: null,
+  isInitialLaunch: true,
   activeView: 'search',
   isPricingModalOpen: false,
   isFirstLoginOffer: false,
@@ -11,6 +11,7 @@ const initialState: AppState = {
   isAuthModalOpen: false,
   properties: dummyProperties,
   selectedProperty: null,
+  propertyToEdit: null,
   isAuthenticated: false,
   currentUser: null,
   savedSearches: [],
@@ -32,10 +33,23 @@ const initialState: AppState = {
 
 const appReducer = (state: AppState, action: AppAction): AppState => {
   switch (action.type) {
-    case 'SET_USER_ROLE':
-      return { ...state, userRole: action.payload };
-    case 'SET_ACTIVE_VIEW':
-      return { ...state, activeView: action.payload, selectedProperty: null, selectedAgentId: null };
+    case 'COMPLETE_ONBOARDING':
+      return { ...state, isInitialLaunch: false };
+    case 'SET_ACTIVE_VIEW': {
+        const newState: AppState = { 
+            ...state, 
+            activeView: action.payload, 
+            selectedProperty: null, 
+        };
+        // Preserve propertyToEdit only when navigating to the create-listing view
+        if (action.payload !== 'create-listing') {
+            newState.propertyToEdit = null;
+        }
+        if (action.payload !== 'agents') {
+            newState.selectedAgentId = null;
+        }
+        return newState;
+    }
     case 'TOGGLE_PRICING_MODAL':
       return { ...state, isPricingModalOpen: action.payload.isOpen, isFirstLoginOffer: action.payload.isOffer ?? state.isFirstLoginOffer };
     case 'TOGGLE_SUBSCRIPTION_MODAL':
@@ -44,6 +58,8 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, isAuthModalOpen: action.payload };
     case 'SET_SELECTED_PROPERTY':
       return { ...state, selectedProperty: state.properties.find(p => p.id === action.payload) || null };
+    case 'SET_PROPERTY_TO_EDIT':
+      return { ...state, propertyToEdit: action.payload };
     case 'SET_SELECTED_AGENT':
       return { ...state, selectedAgentId: action.payload };
     case 'ADD_SAVED_SEARCH':
@@ -60,7 +76,7 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
                 : [action.payload, ...state.savedHomes],
         };
     case 'ADD_TO_COMPARISON':
-        if (state.comparisonList.length < 4 && !state.comparisonList.includes(action.payload)) {
+        if (state.comparisonList.length < 5 && !state.comparisonList.includes(action.payload)) {
             return { ...state, comparisonList: [...state.comparisonList, action.payload] };
         }
         return state;
@@ -72,19 +88,29 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         return { ...state, savedSearches: state.savedSearches.map(s => ({ ...s, newPropertyCount: 0 })) };
     case 'ADD_PROPERTY':
       return { ...state, properties: [action.payload, ...state.properties] };
+    case 'UPDATE_PROPERTY':
+      return { 
+        ...state, 
+        properties: state.properties.map(p => p.id === action.payload.id ? action.payload : p),
+        propertyToEdit: null,
+      };
+    case 'RENEW_PROPERTY':
+        return { ...state, properties: state.properties.map(p => p.id === action.payload ? { ...p, lastRenewed: Date.now() } : p) };
     case 'MARK_PROPERTY_SOLD':
       return { ...state, properties: state.properties.map(p => p.id === action.payload ? { ...p, status: 'sold' } : p) };
+    case 'UPDATE_USER':
+      return {
+        ...state,
+        currentUser: state.currentUser ? { ...state.currentUser, ...action.payload } : null,
+      };
     case 'SET_AUTH_STATE':
-        const user = action.payload.user;
         return { 
             ...state, 
             isAuthenticated: action.payload.isAuthenticated, 
-            currentUser: user,
-            // Populate saved searches/homes on login, clear on logout
-            savedHomes: action.payload.isAuthenticated ? state.properties.slice(0, 2) : [],
-            savedSearches: action.payload.isAuthenticated ? [
-                { id: 'ss1', name: 'Belgrade, under €400k', newPropertyCount: 2, properties: state.properties.slice(0,2) }
-            ] : [],
+            currentUser: action.payload.user,
+            // Clear saved items on logout. For a demo app, we also start fresh on login.
+            savedHomes: action.payload.isAuthenticated ? [] : [],
+            savedSearches: action.payload.isAuthenticated ? [] : [],
         };
     case 'ADD_MESSAGE':
         return {

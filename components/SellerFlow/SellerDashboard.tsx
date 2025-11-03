@@ -4,13 +4,11 @@ import GeminiDescriptionGenerator from './GeminiDescriptionGenerator';
 import { CurrencyDollarIcon, SparklesIcon } from '../../constants';
 import PropertyCalculator from './PropertyCalculator';
 
-const SellerDashboard: React.FC = () => {
-    const { dispatch } = useAppContext();
-
+const CreateListingPage: React.FC = () => {
   return (
     <div className="min-h-full bg-neutral-50">
       <main className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold text-neutral-800 mb-8">Seller Dashboard</h2>
+        <h2 className="text-3xl md:text-4xl font-bold text-neutral-800 mb-8">Create a New Listing</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-2">
@@ -19,10 +17,10 @@ const SellerDashboard: React.FC = () => {
                         <div className="bg-primary-light p-3 rounded-full">
                             <SparklesIcon className="w-6 h-6 text-primary"/>
                         </div>
-                        <h3 className="text-2xl font-bold text-neutral-800">AI Property Description</h3>
+                        <h3 className="text-2xl font-bold text-neutral-800">AI-Powered Listing Creator</h3>
                     </div>
                     <p className="text-neutral-600 mb-6">
-                        Simply upload photos of your property, and our AI will analyze them to automatically generate a detailed and compelling listing description. Save time and attract more buyers.
+                        Upload photos of your property to automatically generate a detailed listing, or fill out the form manually. You can review and edit all details before publishing.
                     </p>
                     <GeminiDescriptionGenerator />
                 </div>
@@ -47,4 +45,4 @@ const SellerDashboard: React.FC = () => {
   );
 };
 
-export default SellerDashboard;
+export default CreateListingPage;

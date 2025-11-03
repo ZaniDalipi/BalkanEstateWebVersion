@@ -1,10 +1,10 @@
 export enum UserRole {
   BUYER = 'buyer',
-  SELLER = 'seller',
+  PRIVATE_SELLER = 'private_seller',
   AGENT = 'agent',
 }
 
-export type AppView = 'search' | 'saved-searches' | 'saved-homes' | 'inbox' | 'account' | 'agents' | 'dashboard';
+export type AppView = 'search' | 'saved-searches' | 'saved-homes' | 'inbox' | 'account' | 'dashboard' | 'create-listing' | 'agents';
 
 export type PropertyImageTag = 'exterior' | 'living_room' | 'kitchen' | 'bedroom' | 'bathroom' | 'other';
 
@@ -17,6 +17,7 @@ export interface Seller {
   name: string;
   avatarUrl?: string;
   phone: string;
+  agencyName?: string;
 }
 
 export interface User {
@@ -25,15 +26,20 @@ export interface User {
   email: string;
   avatarUrl?: string;
   phone: string;
-  role: UserRole;
+  role: UserRole; // Role can still be used for user-specific data, but not for app flow
+  city?: string;
+  country?: string;
   testimonials?: { quote: string; clientName: string; }[];
+  agencyName?: string;
+  agentId?: string;
+  licenseNumber?: string;
 }
 
 export interface Agent extends User {
+    totalSalesValue: number;
+    propertiesSold: number;
+    activeListings: number;
     rating: number;
-    reviewCount: number;
-    specialties: string[];
-    agency: string;
 }
 
 export interface PropertyImage {
@@ -66,6 +72,7 @@ export interface Property {
   propertyType: 'house' | 'apartment' | 'villa' | 'other';
   floorplanUrl?: string;
   createdAt?: number;
+  lastRenewed?: number;
   views?: number;
   saves?: number;
   inquiries?: number;
@@ -125,7 +132,7 @@ export interface Conversation {
 // --- App State & Actions ---
 
 export interface AppState {
-  userRole: UserRole | null;
+  isInitialLaunch: boolean;
   activeView: AppView;
   isPricingModalOpen: boolean;
   isFirstLoginOffer: boolean;
@@ -133,6 +140,7 @@ export interface AppState {
   isAuthModalOpen: boolean;
   properties: Property[];
   selectedProperty: Property | null;
+  propertyToEdit: Property | null;
   isAuthenticated: boolean;
   currentUser: User | null;
   savedSearches: SavedSearch[];
@@ -143,13 +151,13 @@ export interface AppState {
 }
 
 export type AppAction =
-  | { type: 'SET_USER_ROLE'; payload: UserRole }
+  | { type: 'COMPLETE_ONBOARDING' }
   | { type: 'SET_ACTIVE_VIEW'; payload: AppView }
   | { type: 'TOGGLE_PRICING_MODAL'; payload: { isOpen: boolean; isOffer?: boolean } }
   | { type: 'TOGGLE_SUBSCRIPTION_MODAL'; payload: boolean }
   | { type: 'TOGGLE_AUTH_MODAL'; payload: boolean }
   | { type: 'SET_SELECTED_PROPERTY'; payload: string | null }
-  | { type: 'SET_SELECTED_AGENT'; payload: string | null }
+  | { type: 'SET_PROPERTY_TO_EDIT'; payload: Property | null }
   | { type: 'ADD_SAVED_SEARCH'; payload: SavedSearch }
   | { type: 'TOGGLE_SAVED_HOME'; payload: Property }
   | { type: 'ADD_TO_COMPARISON'; payload: string }
@@ -160,5 +168,9 @@ export type AppAction =
   | { type: 'MARK_CONVERSATION_AS_READ'; payload: string }
   | { type: 'ADD_MESSAGE'; payload: { conversationId: string; message: Message } }
   | { type: 'ADD_PROPERTY'; payload: Property }
+  | { type: 'UPDATE_PROPERTY'; payload: Property }
+  | { type: 'RENEW_PROPERTY'; payload: string }
   | { type: 'MARK_PROPERTY_SOLD'; payload: string }
+  | { type: 'SET_SELECTED_AGENT', payload: string | null }
+  | { type: 'UPDATE_USER'; payload: Partial<User> }
   | { type: 'SET_AUTH_STATE'; payload: { isAuthenticated: boolean; user: User | null } };

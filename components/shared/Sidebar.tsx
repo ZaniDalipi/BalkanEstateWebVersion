@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { AppView, UserRole } from '../../types';
-import { LogoIcon, SearchIcon, MagnifyingGlassPlusIcon, HeartIcon, EnvelopeIcon, UserCircleIcon, UsersIcon, ArrowLeftOnRectangleIcon, XMarkIcon } from '../../constants';
+import { LogoIcon, SearchIcon, MagnifyingGlassPlusIcon, HeartIcon, EnvelopeIcon, UserCircleIcon, UsersIcon, ArrowLeftOnRectangleIcon, XMarkIcon, PencilIcon } from '../../constants';
 
 const NavItem: React.FC<{
   view: AppView;
@@ -33,7 +33,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const { state, dispatch } = useAppContext();
-    const { activeView, isAuthenticated, currentUser, userRole } = state;
+    const { activeView, isAuthenticated, currentUser } = state;
 
     const handleNavClick = (view: AppView) => {
         if ((view === 'inbox' || view === 'account' || view === 'saved-searches' || view === 'saved-homes') && !isAuthenticated) {
@@ -44,28 +44,29 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         onClose(); // Close sidebar on mobile after navigation
     };
 
+    const handleNewListingClick = () => {
+        if (isAuthenticated) {
+            dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'create-listing' });
+        } else {
+            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
+        }
+        onClose();
+    };
+
     const handleLogout = () => {
         dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null } });
-        dispatch({ type: 'SET_USER_ROLE', payload: UserRole.BUYER });
+        // After logout, reset to a default public view
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
         onClose();
     };
 
-    const buyerNavItems = [
+    const navItems = [
       { view: 'search' as AppView, label: 'Search', icon: <SearchIcon /> },
       { view: 'saved-searches' as AppView, label: 'Saved Searches', icon: <MagnifyingGlassPlusIcon /> },
       { view: 'saved-homes' as AppView, label: 'Saved Homes', icon: <HeartIcon /> },
-      { view: 'agents' as AppView, label: 'Agents', icon: <UsersIcon /> },
       { view: 'inbox' as AppView, label: 'Inbox', icon: <EnvelopeIcon /> },
+      { view: 'agents' as AppView, label: 'Top Agents', icon: <UsersIcon /> },
     ];
-    
-    const sellerNavItems = [
-       { view: 'search' as AppView, label: 'Dashboard', icon: <SearchIcon /> },
-       { view: 'agents' as AppView, label: 'Agents', icon: <UsersIcon /> },
-       { view: 'inbox' as AppView, label: 'Inbox', icon: <EnvelopeIcon /> },
-    ];
-    
-    const navItems = userRole === UserRole.SELLER ? sellerNavItems : buyerNavItems;
 
     return (
         <>
@@ -78,12 +79,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             {/* Sidebar */}
             <aside className={`fixed top-0 left-0 h-full bg-white border-r border-neutral-200 z-40 flex flex-col transition-all duration-300 ease-in-out group overflow-hidden ${isOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64'} md:w-20 md:translate-x-0 hover:md:w-64`}>
                 <div className="flex items-center p-4 h-[69px] border-b border-neutral-200 flex-shrink-0 md:justify-center group-hover:md:justify-start">
-                    <div className="flex items-center space-x-2">
+                    <button
+                        onClick={() => handleNavClick('search')}
+                        className="flex items-center space-x-2"
+                    >
                         <LogoIcon className="w-8 h-8 text-primary flex-shrink-0" />
                         <h1 className="text-xl font-bold text-neutral-800 md:hidden group-hover:md:inline whitespace-nowrap">
                             Balkan <span className="text-primary">Estate</span>
                         </h1>
-                    </div>
+                    </button>
                     <button onClick={onClose} className="md:hidden absolute right-4 top-5 text-neutral-700 hover:text-neutral-800">
                         <XMarkIcon className="w-6 h-6"/>
                     </button>
@@ -100,6 +104,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                             onClick={handleNavClick}
                         />
                     ))}
+                     <div className="px-2 pt-2 mt-2 border-t border-neutral-100">
+                        <button
+                            onClick={handleNewListingClick}
+                            className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-white bg-secondary hover:bg-opacity-90 md:justify-center group-hover:md:justify-start"
+                        >
+                            <PencilIcon className="w-6 h-6 flex-shrink-0" />
+                            <span className="md:hidden group-hover:md:inline whitespace-nowrap">+ New Listing</span>
+                        </button>
+                    </div>
                 </nav>
 
                 <div className="p-2 border-t border-neutral-200 flex-shrink-0">

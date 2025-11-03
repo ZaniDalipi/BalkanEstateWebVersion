@@ -1,933 +1,1116 @@
-export const CITY_RAW_DATA: Record<string, { city: string; latitude: number; longitude: number; }[]> = {
+export const CITY_RAW_DATA: Record<string, { primary: string; localNames: string[]; latitude: number; longitude: number; }[]> = {
   "North Macedonia": [
     {
-      "city": "Skopje",
+      "primary": "Skopje",
+      "localNames": ["Shkup"],
       "latitude": 41.9981,
       "longitude": 21.4254
     },
     {
-      "city": "Bitola",
+      "primary": "Bitola",
+      "localNames": [],
       "latitude": 41.0328,
       "longitude": 21.3403
     },
     {
-      "city": "Ohrid",
+      "primary": "Ohrid",
+      "localNames": [],
       "latitude": 41.1171,
       "longitude": 20.8016
     },
     {
-      "city": "Prilep",
+      "primary": "Prilep",
+      "localNames": [],
       "latitude": 41.3451,
       "longitude": 21.555
     },
     {
-      "city": "Tetovo",
+      "primary": "Tetovo",
+      "localNames": ["Tetovë"],
       "latitude": 42.0106,
       "longitude": 20.9715
     },
     {
-      "city": "Kumanovo",
+      "primary": "Kumanovo",
+      "localNames": ["Kumanovë"],
       "latitude": 42.1322,
       "longitude": 21.7144
     },
     {
-      "city": "Štip",
+      "primary": "Štip",
+      "localNames": [],
       "latitude": 41.7458,
       "longitude": 22.1956
     },
     {
-      "city": "Struga",
+      "primary": "Struga",
+      "localNames": [],
       "latitude": 41.178,
       "longitude": 20.6778
     },
     {
-      "city": "Gevgelija",
+      "primary": "Gevgelija",
+      "localNames": [],
       "latitude": 41.1414,
       "longitude": 22.5025
     },
     {
-      "city": "Veles",
+      "primary": "Veles",
+      "localNames": [],
       "latitude": 41.7156,
       "longitude": 21.7756
     },
     {
-      "city": "Strumica",
+      "primary": "Strumica",
+      "localNames": [],
       "latitude": 41.4378,
       "longitude": 22.6428
     },
     {
-      "city": "Kavadarci",
+      "primary": "Kavadarci",
+      "localNames": [],
       "latitude": 41.4331,
       "longitude": 22.0119
     },
     {
-      "city": "Kočani",
+      "primary": "Kočani",
+      "localNames": [],
       "latitude": 41.9167,
       "longitude": 22.4128
     },
     {
-      "city": "Kriva Palanka",
+      "primary": "Kriva Palanka",
+      "localNames": [],
       "latitude": 42.2019,
       "longitude": 22.3317
     },
     {
-      "city": "Radoviš",
+      "primary": "Radoviš",
+      "localNames": [],
       "latitude": 41.6383,
       "longitude": 22.4647
     },
     {
-      "city": "Resen",
+      "primary": "Resen",
+      "localNames": [],
       "latitude": 41.0889,
       "longitude": 21.0122
     },
     {
-      "city": "Debar",
+      "primary": "Debar",
+      "localNames": ["Dibër"],
       "latitude": 41.525,
       "longitude": 20.5272
     },
     {
-      "city": "Vinica",
+      "primary": "Vinica",
+      "localNames": [],
       "latitude": 41.8828,
       "longitude": 22.5092
     },
     {
-      "city": "Delčevo",
+      "primary": "Delčevo",
+      "localNames": [],
       "latitude": 41.9653,
       "longitude": 22.7742
     },
     {
-      "city": "Probištip",
+      "primary": "Probištip",
+      "localNames": [],
       "latitude": 42.0031,
       "longitude": 22.1786
     },
     {
-      "city": "Berovo",
+      "primary": "Berovo",
+      "localNames": [],
       "latitude": 41.7061,
       "longitude": 22.8578
     },
     {
-      "city": "Makedonski Brod",
+      "primary": "Makedonski Brod",
+      "localNames": [],
       "latitude": 41.5136,
       "longitude": 21.2153
     },
     {
-      "city": "Kratovo",
+      "primary": "Kratovo",
+      "localNames": [],
       "latitude": 42.0781,
       "longitude": 22.1806
     },
     {
-      "city": "Demir Hisar",
+      "primary": "Demir Hisar",
+      "localNames": [],
       "latitude": 41.2208,
       "longitude": 21.2031
     },
     {
-      "city": "Kruševo",
+      "primary": "Kruševo",
+      "localNames": [],
       "latitude": 41.3689,
       "longitude": 21.2483
     }
   ],
   "Albania": [
     {
-      "city": "Tirana",
+      "primary": "Tirana",
+      "localNames": ["Tiranë"],
       "latitude": 41.3275,
       "longitude": 19.8189
     },
     {
-      "city": "Durrës",
+      "primary": "Durrës",
+      "localNames": [],
       "latitude": 41.3231,
       "longitude": 19.4414
     },
     {
-      "city": "Vlorë",
+      "primary": "Vlorë",
+      "localNames": [],
       "latitude": 40.4667,
       "longitude": 19.4897
     },
     {
-      "city": "Shkodër",
+      "primary": "Shkodër",
+      "localNames": ["Shkodra"],
       "latitude": 42.0683,
       "longitude": 19.5126
     },
     {
-      "city": "Sarandë",
+      "primary": "Sarandë",
+      "localNames": ["Saranda"],
       "latitude": 39.8756,
       "longitude": 20.0056
     },
     {
-      "city": "Fier",
+      "primary": "Fier",
+      "localNames": [],
       "latitude": 40.7275,
       "longitude": 19.5628
     },
     {
-      "city": "Korçë",
+      "primary": "Korçë",
+      "localNames": [],
       "latitude": 40.6141,
       "longitude": 20.777
     },
     {
-      "city": "Elbasan",
+      "primary": "Elbasan",
+      "localNames": [],
       "latitude": 41.1125,
       "longitude": 20.0822
     },
     {
-      "city": "Berat",
+      "primary": "Berat",
+      "localNames": [],
       "latitude": 40.7053,
       "longitude": 19.9522
     },
     {
-      "city": "Lushnjë",
+      "primary": "Lushnjë",
+      "localNames": [],
       "latitude": 40.9419,
       "longitude": 19.705
     },
     {
-      "city": "Pogradec",
+      "primary": "Pogradec",
+      "localNames": [],
       "latitude": 40.9014,
       "longitude": 20.655
     },
     {
-      "city": "Kukës",
+      "primary": "Kukës",
+      "localNames": [],
       "latitude": 42.0833,
       "longitude": 20.4167
     },
     {
-      "city": "Lezhë",
+      "primary": "Lezhë",
+      "localNames": [],
       "latitude": 41.7814,
       "longitude": 19.6436
     },
     {
-      "city": "Përmet",
+      "primary": "Përmet",
+      "localNames": [],
       "latitude": 40.2336,
       "longitude": 20.3517
     },
     {
-      "city": "Librazhd",
+      "primary": "Librazhd",
+      "localNames": [],
       "latitude": 41.1969,
       "longitude": 20.3356
     },
     {
-      "city": "Fushë-Krujë",
+      "primary": "Fushë-Krujë",
+      "localNames": [],
       "latitude": 41.4783,
       "longitude": 19.7178
     },
     {
-      "city": "Këlcyrë",
+      "primary": "Këlcyrë",
+      "localNames": [],
       "latitude": 40.3131,
       "longitude": 20.1892
     },
     {
-      "city": "Maliq",
+      "primary": "Maliq",
+      "localNames": [],
       "latitude": 40.7108,
       "longitude": 20.6994
     },
     {
-      "city": "Ballsh",
+      "primary": "Ballsh",
+      "localNames": [],
       "latitude": 40.6,
       "longitude": 19.7333
     }
   ],
   "Montenegro": [
     {
-      "city": "Podgorica",
+      "primary": "Podgorica",
+      "localNames": [],
       "latitude": 42.441,
       "longitude": 19.2627
     },
     {
-      "city": "Nikšić",
+      "primary": "Nikšić",
+      "localNames": [],
       "latitude": 42.773,
       "longitude": 18.9444
     },
     {
-      "city": "Herceg Novi",
+      "primary": "Herceg Novi",
+      "localNames": [],
       "latitude": 42.4531,
       "longitude": 18.5375
     },
     {
-      "city": "Budva",
+      "primary": "Budva",
+      "localNames": [],
       "latitude": 42.2881,
       "longitude": 18.8423
     },
     {
-      "city": "Kotor",
+      "primary": "Kotor",
+      "localNames": [],
       "latitude": 42.4247,
       "longitude": 18.7712
     },
     {
-      "city": "Bar",
+      "primary": "Bar",
+      "localNames": [],
       "latitude": 42.093,
       "longitude": 19.1003
     },
     {
-      "city": "Cetinje",
+      "primary": "Cetinje",
+      "localNames": [],
       "latitude": 42.3889,
       "longitude": 18.9142
     },
     {
-      "city": "Ulcinj",
+      "primary": "Ulcinj",
+      "localNames": ["Ulqin"],
       "latitude": 41.9236,
       "longitude": 19.2056
     },
     {
-      "city": "Tivat",
+      "primary": "Tivat",
+      "localNames": [],
       "latitude": 42.4289,
       "longitude": 18.6961
     },
     {
-      "city": "Rožaje",
+      "primary": "Rožaje",
+      "localNames": [],
       "latitude": 42.8439,
       "longitude": 20.1678
     },
     {
-      "city": "Pljevlja",
+      "primary": "Pljevlja",
+      "localNames": [],
       "latitude": 43.3567,
       "longitude": 19.3583
     },
     {
-      "city": "Bijelo Polje",
+      "primary": "Bijelo Polje",
+      "localNames": [],
       "latitude": 43.0342,
       "longitude": 19.7492
     },
     {
-      "city": "Danilovgrad",
+      "primary": "Danilovgrad",
+      "localNames": [],
       "latitude": 42.5539,
       "longitude": 19.1058
     },
     {
-      "city": "Mojkovac",
+      "primary": "Mojkovac",
+      "localNames": [],
       "latitude": 42.96,
       "longitude": 19.5833
     },
     {
-      "city": "Plav",
+      "primary": "Plav",
+      "localNames": [],
       "latitude": 42.5969,
       "longitude": 19.9456
     },
     {
-      "city": "Šavnik",
+      "primary": "Šavnik",
+      "localNames": [],
       "latitude": 42.9564,
       "longitude": 19.0886
     },
     {
-      "city": "Kolašin",
+      "primary": "Kolašin",
+      "localNames": [],
       "latitude": 42.8233,
       "longitude": 19.5167
     }
   ],
   "Greece": [
     {
-      "city": "Athens",
+      "primary": "Athens",
+      "localNames": ["Αθήνα"],
       "latitude": 37.9838,
       "longitude": 23.7275
     },
     {
-      "city": "Thessaloniki",
+      "primary": "Thessaloniki",
+      "localNames": ["Θεσσαλονίκη"],
       "latitude": 40.6401,
       "longitude": 22.9444
     },
     {
-      "city": "Patras",
+      "primary": "Patras",
+      "localNames": ["Πάτρα"],
       "latitude": 38.2466,
       "longitude": 21.7346
     },
     {
-      "city": "Heraklion",
+      "primary": "Heraklion",
+      "localNames": ["Ηράκλειο"],
       "latitude": 35.3387,
       "longitude": 25.1442
     },
     {
-      "city": "Larissa",
+      "primary": "Larissa",
+      "localNames": ["Λάρισα"],
       "latitude": 39.639,
       "longitude": 22.4191
     },
     {
-      "city": "Volos",
+      "primary": "Volos",
+      "localNames": ["Βόλος"],
       "latitude": 39.361,
       "longitude": 22.942
     },
     {
-      "city": "Ioannina",
+      "primary": "Ioannina",
+      "localNames": ["Ιωάννινα"],
       "latitude": 39.667,
       "longitude": 20.8537
     },
     {
-      "city": "Kalamata",
+      "primary": "Kalamata",
+      "localNames": ["Καλαμάτα"],
       "latitude": 37.0391,
       "longitude": 22.1126
     },
     {
-      "city": "Kavala",
+      "primary": "Kavala",
+      "localNames": ["Καβάλα"],
       "latitude": 40.9367,
       "longitude": 24.4136
     },
     {
-      "city": "Chania",
+      "primary": "Chania",
+      "localNames": ["Χανιά"],
       "latitude": 35.5122,
       "longitude": 24.0156
     },
     {
-      "city": "Serres",
+      "primary": "Serres",
+      "localNames": ["Σέρρες"],
       "latitude": 41.085,
       "longitude": 23.5475
     },
     {
-      "city": "Alexandroupoli",
+      "primary": "Alexandroupoli",
+      "localNames": ["Αλεξανδρούπολη"],
       "latitude": 40.8475,
       "longitude": 25.8744
     },
     {
-      "city": "Kozani",
+      "primary": "Kozani",
+      "localNames": ["Κοζάνη"],
       "latitude": 40.3011,
       "longitude": 21.7864
     },
     {
-      "city": "Veroia",
+      "primary": "Veroia",
+      "localNames": ["Βέροια"],
       "latitude": 40.5236,
       "longitude": 22.2034
     },
     {
-      "city": "Agrinio",
+      "primary": "Agrinio",
+      "localNames": ["Αγρίνιο"],
       "latitude": 38.6214,
       "longitude": 21.4078
     },
     {
-      "city": "Naousa",
+      "primary": "Naousa",
+      "localNames": ["Νάουσα"],
       "latitude": 40.6294,
       "longitude": 22.0681
     },
     {
-      "city": "Edessa",
+      "primary": "Edessa",
+      "localNames": ["Έδεσσα"],
       "latitude": 40.8,
       "longitude": 22.05
     },
     {
-      "city": "Florina",
+      "primary": "Florina",
+      "localNames": ["Φλώρινα"],
       "latitude": 40.7819,
       "longitude": 21.4083
     },
     {
-      "city": "Grevena",
+      "primary": "Grevena",
+      "localNames": ["Γρεβενά"],
       "latitude": 40.0847,
       "longitude": 21.4272
     },
     {
-      "city": "Kastoria",
+      "primary": "Kastoria",
+      "localNames": ["Καστοριά"],
       "latitude": 40.5167,
       "longitude": 21.2667
     },
     {
-      "city": "Orestiada",
+      "primary": "Orestiada",
+      "localNames": ["Ορεστιάδα"],
       "latitude": 41.5031,
       "longitude": 26.5297
     }
   ],
   "Bulgaria": [
     {
-      "city": "Sofia",
+      "primary": "Sofia",
+      "localNames": ["София"],
       "latitude": 42.6977,
       "longitude": 23.3219
     },
     {
-      "city": "Plovdiv",
+      "primary": "Plovdiv",
+      "localNames": ["Пловдив"],
       "latitude": 42.1354,
       "longitude": 24.7453
     },
     {
-      "city": "Varna",
+      "primary": "Varna",
+      "localNames": ["Варна"],
       "latitude": 43.2141,
       "longitude": 27.9147
     },
     {
-      "city": "Burgas",
+      "primary": "Burgas",
+      "localNames": ["Бургас"],
       "latitude": 42.5048,
       "longitude": 27.4626
     },
     {
-      "city": "Ruse",
+      "primary": "Ruse",
+      "localNames": ["Русе"],
       "latitude": 43.8356,
       "longitude": 25.9657
     },
     {
-      "city": "Stara Zagora",
+      "primary": "Stara Zagora",
+      "localNames": ["Стара Загора"],
       "latitude": 42.4258,
       "longitude": 25.6345
     },
     {
-      "city": "Pleven",
+      "primary": "Pleven",
+      "localNames": ["Плевен"],
       "latitude": 43.417,
       "longitude": 24.6067
     },
     {
-      "city": "Veliko Tarnovo",
+      "primary": "Veliko Tarnovo",
+      "localNames": ["Велико Търново"],
       "latitude": 43.0812,
       "longitude": 25.629
     },
     {
-      "city": "Sliven",
+      "primary": "Sliven",
+      "localNames": ["Сливен"],
       "latitude": 42.6858,
       "longitude": 26.3292
     },
     {
-      "city": "Dobrich",
+      "primary": "Dobrich",
+      "localNames": ["Добрич"],
       "latitude": 43.5667,
       "longitude": 27.8333
     },
     {
-      "city": "Shumen",
+      "primary": "Shumen",
+      "localNames": ["Шумен"],
       "latitude": 43.2713,
       "longitude": 26.9362
     },
     {
-      "city": "Pernik",
+      "primary": "Pernik",
+      "localNames": ["Перник"],
       "latitude": 42.5997,
       "longitude": 23.0308
     },
     {
-      "city": "Yambol",
+      "primary": "Yambol",
+      "localNames": ["Ямбол"],
       "latitude": 42.4833,
       "longitude": 26.5
     },
     {
-      "city": "Haskovo",
+      "primary": "Haskovo",
+      "localNames": ["Хасково"],
       "latitude": 41.9344,
       "longitude": 25.5556
     },
     {
-      "city": "Pazardzhik",
+      "primary": "Pazardzhik",
+      "localNames": ["Пазарджик"],
       "latitude": 42.2,
       "longitude": 24.3333
     },
     {
-      "city": "Smolyan",
+      "primary": "Smolyan",
+      "localNames": ["Смолян"],
       "latitude": 41.5833,
       "longitude": 24.6917
     },
     {
-      "city": "Kardzhali",
+      "primary": "Kardzhali",
+      "localNames": ["Кърджали"],
       "latitude": 41.65,
       "longitude": 25.3667
     },
     {
-      "city": "Kyustendil",
+      "primary": "Kyustendil",
+      "localNames": ["Кюстендил"],
       "latitude": 42.2839,
       "longitude": 22.6911
     },
     {
-      "city": "Silistra",
+      "primary": "Silistra",
+      "localNames": ["Силистра"],
       "latitude": 44.1167,
       "longitude": 27.2667
     },
     {
-      "city": "Razgrad",
+      "primary": "Razgrad",
+      "localNames": ["Разград"],
       "latitude": 43.5333,
       "longitude": 26.5167
     },
     {
-      "city": "Targovishte",
+      "primary": "Targovishte",
+      "localNames": ["Търговище"],
       "latitude": 43.2592,
       "longitude": 26.5892
     },
     {
-      "city": "Dupnitsa",
+      "primary": "Dupnitsa",
+      "localNames": ["Дупница"],
       "latitude": 42.2667,
       "longitude": 23.1167
     }
   ],
   "Croatia": [
     {
-      "city": "Zagreb",
+      "primary": "Zagreb",
+      "localNames": [],
       "latitude": 45.815,
       "longitude": 15.9819
     },
     {
-      "city": "Split",
+      "primary": "Split",
+      "localNames": [],
       "latitude": 43.5081,
       "longitude": 16.4402
     },
     {
-      "city": "Rijeka",
+      "primary": "Rijeka",
+      "localNames": [],
       "latitude": 45.3271,
       "longitude": 14.4422
     },
     {
-      "city": "Zadar",
+      "primary": "Zadar",
+      "localNames": [],
       "latitude": 44.1194,
       "longitude": 15.2314
     },
     {
-      "city": "Dubrovnik",
+      "primary": "Dubrovnik",
+      "localNames": [],
       "latitude": 42.6507,
       "longitude": 18.0944
     },
     {
-      "city": "Osijek",
+      "primary": "Osijek",
+      "localNames": [],
       "latitude": 45.554,
       "longitude": 18.6955
     },
     {
-      "city": "Pula",
+      "primary": "Pula",
+      "localNames": [],
       "latitude": 44.8666,
       "longitude": 13.8496
     },
     {
-      "city": "Šibenik",
+      "primary": "Šibenik",
+      "localNames": [],
       "latitude": 43.7339,
       "longitude": 15.8956
     },
     {
-      "city": "Varaždin",
+      "primary": "Varaždin",
+      "localNames": [],
       "latitude": 46.3058,
       "longitude": 16.3364
     },
     {
-      "city": "Karlovac",
+      "primary": "Karlovac",
+      "localNames": [],
       "latitude": 45.4953,
       "longitude": 15.5478
     },
     {
-      "city": "Sisak",
+      "primary": "Sisak",
+      "localNames": [],
       "latitude": 45.4869,
       "longitude": 16.3764
     },
     {
-      "city": "Velika Gorica",
+      "primary": "Velika Gorica",
+      "localNames": [],
       "latitude": 45.7125,
       "longitude": 16.0756
     },
     {
-      "city": "Bjelovar",
+      "primary": "Bjelovar",
+      "localNames": [],
       "latitude": 45.8986,
       "longitude": 16.8422
     },
     {
-      "city": "Koprivnica",
+      "primary": "Koprivnica",
+      "localNames": [],
       "latitude": 46.1628,
       "longitude": 16.8275
     },
     {
-      "city": "Đakovo",
+      "primary": "Đakovo",
+      "localNames": [],
       "latitude": 45.3086,
       "longitude": 18.4106
     },
     {
-      "city": "Virovitica",
+      "primary": "Virovitica",
+      "localNames": [],
       "latitude": 45.8319,
       "longitude": 17.3839
     },
     {
-      "city": "Požega",
+      "primary": "Požega",
+      "localNames": [],
       "latitude": 45.3403,
       "longitude": 17.685
     },
     {
-      "city": "Slavonski Brod",
+      "primary": "Slavonski Brod",
+      "localNames": [],
       "latitude": 45.1667,
       "longitude": 18.0167
     },
     {
-      "city": "Vukovar",
+      "primary": "Vukovar",
+      "localNames": [],
       "latitude": 45.3436,
       "longitude": 19.0022
     },
     {
-      "city": "Sinj",
+      "primary": "Sinj",
+      "localNames": [],
       "latitude": 43.7,
       "longitude": 16.6333
     },
     {
-      "city": "Knin",
+      "primary": "Knin",
+      "localNames": [],
       "latitude": 44.0333,
       "longitude": 16.2
     }
   ],
   "Serbia": [
     {
-      "city": "Belgrade",
+      "primary": "Belgrade",
+      "localNames": ["Beograd"],
       "latitude": 44.7872,
       "longitude": 20.4573
     },
     {
-      "city": "Novi Sad",
+      "primary": "Novi Sad",
+      "localNames": [],
       "latitude": 45.2671,
       "longitude": 19.8335
     },
     {
-      "city": "Niš",
+      "primary": "Niš",
+      "localNames": [],
       "latitude": 43.3209,
       "longitude": 21.8958
     },
     {
-      "city": "Kragujevac",
+      "primary": "Kragujevac",
+      "localNames": [],
       "latitude": 44.0128,
       "longitude": 20.9114
     },
     {
-      "city": "Subotica",
+      "primary": "Subotica",
+      "localNames": [],
       "latitude": 46.1,
       "longitude": 19.6667
     },
     {
-      "city": "Čačak",
+      "primary": "Čačak",
+      "localNames": [],
       "latitude": 43.8914,
       "longitude": 20.3497
     },
     {
-      "city": "Novi Pazar",
+      "primary": "Novi Pazar",
+      "localNames": [],
       "latitude": 43.1406,
       "longitude": 20.5122
     },
     {
-      "city": "Zrenjanin",
+      "primary": "Zrenjanin",
+      "localNames": [],
       "latitude": 45.3836,
       "longitude": 20.3819
     },
     {
-      "city": "Pančevo",
+      "primary": "Pančevo",
+      "localNames": [],
       "latitude": 44.87,
       "longitude": 20.64
     },
     {
-      "city": "Smederevo",
+      "primary": "Smederevo",
+      "localNames": [],
       "latitude": 44.6658,
       "longitude": 20.93
     },
     {
-      "city": "Leskovac",
+      "primary": "Leskovac",
+      "localNames": [],
       "latitude": 42.9981,
       "longitude": 21.9461
     },
     {
-      "city": "Valjevo",
+      "primary": "Valjevo",
+      "localNames": [],
       "latitude": 44.2667,
       "longitude": 19.8833
     },
     {
-      "city": "Kruševac",
+      "primary": "Kruševac",
+      "localNames": [],
       "latitude": 43.58,
       "longitude": 21.3339
     },
     {
-      "city": "Užice",
+      "primary": "Užice",
+      "localNames": [],
       "latitude": 43.8558,
       "longitude": 19.8428
     },
     {
-      "city": "Vranje",
+      "primary": "Vranje",
+      "localNames": [],
       "latitude": 42.5542,
       "longitude": 21.8972
     },
     {
-      "city": "Šabac",
+      "primary": "Šabac",
+      "localNames": [],
       "latitude": 44.7564,
       "longitude": 19.69
     },
     {
-      "city": "Sombor",
+      "primary": "Sombor",
+      "localNames": [],
       "latitude": 45.7742,
       "longitude": 19.1122
     },
     {
-      "city": "Požarevac",
+      "primary": "Požarevac",
+      "localNames": [],
       "latitude": 44.6208,
       "longitude": 21.1878
     },
     {
-      "city": "Pirot",
+      "primary": "Pirot",
+      "localNames": [],
       "latitude": 43.1531,
       "longitude": 22.5861
     },
     {
-      "city": "Zaječar",
+      "primary": "Zaječar",
+      "localNames": [],
       "latitude": 43.9036,
       "longitude": 22.2644
     },
     {
-      "city": "Kikinda",
+      "primary": "Kikinda",
+      "localNames": [],
       "latitude": 45.8289,
       "longitude": 20.4653
     }
   ],
   "Kosovo": [
     {
-      "city": "Pristina",
+      "primary": "Pristina",
+      "localNames": ["Prishtinë"],
       "latitude": 42.6629,
       "longitude": 21.1655
     },
     {
-      "city": "Prizren",
+      "primary": "Prizren",
+      "localNames": [],
       "latitude": 42.2139,
       "longitude": 20.7397
     },
     {
-      "city": "Peja",
+      "primary": "Peja",
+      "localNames": ["Peć"],
       "latitude": 42.6603,
       "longitude": 20.2924
     },
     {
-      "city": "Gjakova",
+      "primary": "Gjakova",
+      "localNames": ["Đakovica"],
       "latitude": 42.3803,
       "longitude": 20.4308
     },
     {
-      "city": "Mitrovica",
+      "primary": "Mitrovica",
+      "localNames": [],
       "latitude": 42.8914,
       "longitude": 20.8667
     },
     {
-      "city": "Ferizaj",
+      "primary": "Ferizaj",
+      "localNames": ["Uroševac"],
       "latitude": 42.3703,
       "longitude": 21.1553
     },
     {
-      "city": "Gjilan",
+      "primary": "Gjilan",
+      "localNames": ["Gnjilane"],
       "latitude": 42.4653,
       "longitude": 21.4653
     },
     {
-      "city": "Podujeva",
+      "primary": "Podujeva",
+      "localNames": ["Podujevë"],
       "latitude": 42.9106,
       "longitude": 21.1961
     },
     {
-      "city": "Vushtrri",
+      "primary": "Vushtrri",
+      "localNames": ["Vučitrn"],
       "latitude": 42.8231,
       "longitude": 20.9678
     },
     {
-      "city": "Suhareka",
+      "primary": "Suhareka",
+      "localNames": ["Suva Reka"],
       "latitude": 42.3586,
       "longitude": 20.8253
     },
     {
-      "city": "Rahovec",
+      "primary": "Rahovec",
+      "localNames": ["Orahovac"],
       "latitude": 42.3992,
       "longitude": 20.6542
     },
     {
-      "city": "Malisheva",
+      "primary": "Malisheva",
+      "localNames": ["Mališevo"],
       "latitude": 42.4822,
       "longitude": 20.7458
     },
     {
-      "city": "Skenderaj",
+      "primary": "Skenderaj",
+      "localNames": ["Srbica"],
       "latitude": 42.7383,
       "longitude": 20.7889
     },
     {
-      "city": "Vitia",
+      "primary": "Vitia",
+      "localNames": ["Vitina"],
       "latitude": 42.3214,
       "longitude": 21.3583
     },
     {
-      "city": "Deçan",
+      "primary": "Deçan",
+      "localNames": ["Dečani"],
       "latitude": 42.5378,
       "longitude": 20.2878
     },
     {
-      "city": "Lipjan",
+      "primary": "Lipjan",
+      "localNames": ["Lipljan"],
       "latitude": 42.5242,
       "longitude": 21.1258
     }
   ],
   "Bosnia and Herzegovina": [
     {
-      "city": "Sarajevo",
+      "primary": "Sarajevo",
+      "localNames": [],
       "latitude": 43.8563,
       "longitude": 18.4131
     },
     {
-      "city": "Banja Luka",
+      "primary": "Banja Luka",
+      "localNames": [],
       "latitude": 44.7722,
       "longitude": 17.191
     },
     {
-      "city": "Mostar",
+      "primary": "Mostar",
+      "localNames": [],
       "latitude": 43.3438,
       "longitude": 17.8078
     },
     {
-      "city": "Tuzla",
+      "primary": "Tuzla",
+      "localNames": [],
       "latitude": 44.5384,
       "longitude": 18.6671
     },
     {
-      "city": "Zenica",
+      "primary": "Zenica",
+      "localNames": [],
       "latitude": 44.2039,
       "longitude": 17.9078
     },
     {
-      "city": "Bijeljina",
+      "primary": "Bijeljina",
+      "localNames": [],
       "latitude": 44.7569,
       "longitude": 19.2163
     },
     {
-      "city": "Trebinje",
+      "primary": "Trebinje",
+      "localNames": [],
       "latitude": 42.7118,
       "longitude": 18.3436
     },
     {
-      "city": "Prijedor",
+      "primary": "Prijedor",
+      "localNames": [],
       "latitude": 44.98,
       "longitude": 16.7108
     },
     {
-      "city": "Doboj",
+      "primary": "Doboj",
+      "localNames": [],
       "latitude": 44.7319,
       "longitude": 18.0878
     },
     {
-      "city": "Cazin",
+      "primary": "Cazin",
+      "localNames": [],
       "latitude": 44.9664,
       "longitude": 15.9428
     },
     {
-      "city": "Bihać",
+      "primary": "Bihać",
+      "localNames": [],
       "latitude": 44.8156,
       "longitude": 15.8708
     },
     {
-      "city": "Brčko",
+      "primary": "Brčko",
+      "localNames": [],
       "latitude": 44.8728,
       "longitude": 18.8083
     },
     {
-      "city": "Livno",
+      "primary": "Livno",
+      "localNames": [],
       "latitude": 43.8269,
       "longitude": 17.0081
     },
     {
-      "city": "Gračanica",
+      "primary": "Gračanica",
+      "localNames": [],
       "latitude": 44.7031,
       "longitude": 18.31
     },
     {
-      "city": "Konjic",
+      "primary": "Konjic",
+      "localNames": [],
       "latitude": 43.6519,
       "longitude": 17.9608
     },
     {
-      "city": "Goražde",
+      "primary": "Goražde",
+      "localNames": [],
       "latitude": 43.6678,
       "longitude": 18.9764
     },
     {
-      "city": "Visoko",
+      "primary": "Visoko",
+      "localNames": [],
       "latitude": 43.9889,
       "longitude": 18.1781
     },
     {
-      "city": "Zavidovići",
+      "primary": "Zavidovići",
+      "localNames": [],
       "latitude": 44.4458,
       "longitude": 18.1497
     },
     {
-      "city": "Živinice",
+      "primary": "Živinice",
+      "localNames": [],
       "latitude": 44.4492,
       "longitude": 18.6464
     },
     {
-      "city": "Sanski Most",
+      "primary": "Sanski Most",
+      "localNames": [],
       "latitude": 44.7653,
       "longitude": 16.6658
     },
     {
-      "city": "Gradiška",
+      "primary": "Gradiška",
+      "localNames": [],
       "latitude": 45.1414,
       "longitude": 17.2503
     }

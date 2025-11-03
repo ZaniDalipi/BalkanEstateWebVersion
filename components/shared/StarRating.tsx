@@ -1,42 +1,36 @@
 import React from 'react';
-// FIX: Correctly import both StarIcon (outline) and StarIconSolid (filled).
-import { StarIcon, StarIconSolid } from '../../constants';
+import { StarIcon } from '../../constants';
+import { StarIconSolid } from '../../constants';
 
 interface StarRatingProps {
-    rating: number;
-    reviewCount?: number;
-    size?: 'sm' | 'md' | 'lg';
+  rating: number;
+  totalStars?: number;
+  className?: string;
 }
 
-const StarRating: React.FC<StarRatingProps> = ({ rating, reviewCount, size = 'md' }) => {
-    const fullStars = Math.floor(rating);
-    const halfStar = rating % 1 >= 0.5;
-    const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+const StarRating: React.FC<StarRatingProps> = ({ rating, totalStars = 5, className = 'h-5 w-5' }) => {
+  const fullStars = Math.floor(rating);
+  const hasHalfStar = rating % 1 !== 0;
+  const emptyStars = totalStars - fullStars - (hasHalfStar ? 1 : 0);
 
-    const sizeClasses = {
-        sm: 'w-4 h-4',
-        md: 'w-5 h-5',
-        lg: 'w-6 h-6',
-    };
-
-    return (
-        <div className="flex items-center gap-2">
-            <div className="flex items-center">
-                {[...Array(fullStars)].map((_, i) => (
-                    <StarIconSolid key={`full-${i}`} className={`${sizeClasses[size]} text-yellow-400`} />
-                ))}
-                {/* Note: Half star is complex with SVG, so we'll round for now */}
-                {[...Array(emptyStars + (halfStar ? 1 : 0))].map((_, i) => (
-                     <StarIcon key={`empty-${i}`} className={`${sizeClasses[size]} text-yellow-400`} />
-                ))}
-            </div>
-            {reviewCount !== undefined && (
-                <span className="text-sm text-neutral-500 font-medium">
-                    ({reviewCount})
-                </span>
-            )}
+  return (
+    <div className="flex items-center">
+      {[...Array(fullStars)].map((_, i) => (
+        <StarIconSolid key={`full-${i}`} className={`${className} text-yellow-400`} />
+      ))}
+      {hasHalfStar && (
+        <div className="relative">
+          <StarIcon className={`${className} text-yellow-200`} />
+          <div className="absolute top-0 left-0 overflow-hidden w-1/2">
+            <StarIconSolid className={`${className} text-yellow-400`} />
+          </div>
         </div>
-    );
+      )}
+      {[...Array(emptyStars)].map((_, i) => (
+        <StarIcon key={`empty-${i}`} className={`${className} text-yellow-200`} />
+      ))}
+    </div>
+  );
 };
 
 export default StarRating;

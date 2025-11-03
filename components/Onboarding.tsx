@@ -6,8 +6,8 @@ import { LogoIcon } from '../constants';
 const Onboarding: React.FC = () => {
   const { dispatch } = useAppContext();
 
-  const selectRole = (role: UserRole) => {
-    dispatch({ type: 'SET_USER_ROLE', payload: role });
+  const handleChoice = () => {
+    dispatch({ type: 'COMPLETE_ONBOARDING' });
   };
 
   return (
@@ -27,9 +27,9 @@ const Onboarding: React.FC = () => {
         <div className="grid md:grid-cols-2 gap-8">
           <div 
             className="group p-6 border border-neutral-200 rounded-xl hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer flex flex-col"
-            onClick={() => selectRole(UserRole.BUYER)}
+            onClick={handleChoice}
           >
-              <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=2070&auto-format&fit=crop" alt="A couple looking at a new home" className="rounded-lg mb-6 w-full h-48 object-cover" />
+              <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=2070&auto-format=fit=crop" alt="A couple looking at a new home" className="rounded-lg mb-6 w-full h-48 object-cover" />
               <div className="text-center flex-grow flex flex-col">
                   <h3 className="text-2xl font-semibold text-neutral-900 mb-2">I'm looking to buy</h3>
                   <p className="text-neutral-600 mb-6 flex-grow">Find your dream home with our powerful search tools and real-time alerts.</p>
@@ -41,9 +41,9 @@ const Onboarding: React.FC = () => {
 
           <div 
             className="group p-6 border border-neutral-200 rounded-xl hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer flex flex-col"
-            onClick={() => selectRole(UserRole.SELLER)}
+            onClick={handleChoice}
           >
-              <img src="https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=2070&auto-format&fit=crop" alt="A modern house exterior" className="rounded-lg mb-6 w-full h-48 object-cover" />
+              <img src="https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=2070&auto-format=fit=crop" alt="A modern house exterior" className="rounded-lg mb-6 w-full h-48 object-cover" />
               <div className="text-center flex-grow flex flex-col">
                   <h3 className="text-2xl font-semibold text-neutral-900 mb-2">I want to sell</h3>
                   <p className="text-neutral-600 mb-6 flex-grow">List your property, reach thousands of potential buyers, and use our smart tools.</p>

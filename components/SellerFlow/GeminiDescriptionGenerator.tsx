@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Property, PropertyImage, PropertyImageTag, Seller } from '../../types';
+import { Property, PropertyImage, PropertyImageTag, Seller, UserRole } from '../../types';
 import { generateDescriptionFromImages, PropertyAnalysisResult } from '../../services/geminiService';
 import { sellers, CITY_DATA } from '../../services/propertyService';
 import { SparklesIcon } from '../../constants';
@@ -25,6 +25,11 @@ interface ListingData {
     image_tags: { index: number; tag: string; }[];
     tourUrl: string;
     propertyType: 'house' | 'apartment' | 'villa' | 'other';
+}
+
+interface ImageData {
+    file: File | null;
+    previewUrl: string;
 }
 
 const initialListingData: ListingData = {
@@ -206,9 +211,9 @@ const InitStep: React.FC<{
     mode: Mode, onModeChange: (mode: Mode) => void,
     language: string, onLanguageChange: (lang: string) => void,
     onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
-    imagePreviews: string[], onRemoveImage: (index: number) => void,
-    onGenerate: () => void, imagesCount: number, error: string,
-}> = ({ mode, onModeChange, language, onLanguageChange, onImageChange, imagePreviews, onRemoveImage, onGenerate, imagesCount, error }) => (
+    imageData: ImageData[], onRemoveImage: (index: number) => void,
+    onGenerate: () => void, error: string,
+}> = ({ mode, onModeChange, language, onLanguageChange, onImageChange, imageData, onRemoveImage, onGenerate, error }) => (
      <div className="space-y-6">
         <ModeToggle mode={mode} onModeChange={onModeChange} />
         <div className="p-6 bg-primary-light border border-primary/20 rounded-lg">
@@ -245,18 +250,18 @@ const InitStep: React.FC<{
             </div>
         </div>
 
-        {imagePreviews.length > 0 && (
+        {imageData.length > 0 && (
             <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
-                {imagePreviews.map((preview, index) => (
+                {imageData.map((img, index) => (
                     <div key={index} className="relative group">
-                        <img src={preview} alt={`preview ${index}`} className="h-24 w-24 object-cover rounded-md shadow-sm" />
+                        <img src={img.previewUrl} alt={`preview ${index}`} className="h-24 w-24 object-cover rounded-md shadow-sm" />
                         <button onClick={() => onRemoveImage(index)} className="absolute top-0 right-0 bg-red-600 text-white rounded-full p-0.5 w-5 h-5 flex items-center justify-center text-xs leading-none transform -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
                     </div>
                 ))}
             </div>
         )}
         
-        <button onClick={onGenerate} disabled={imagesCount === 0} className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-md shadow-sm text-md font-medium text-white bg-primary hover:bg-primary-dark disabled:bg-opacity-50 disabled:cursor-not-allowed">Generate with AI</button>
+        <button onClick={onGenerate} disabled={imageData.filter(i => i.file).length === 0} className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-md shadow-sm text-md font-medium text-white bg-primary hover:bg-primary-dark disabled:bg-opacity-50 disabled:cursor-not-allowed">Generate with AI</button>
         {error && <p className="text-red-600 text-sm text-center font-medium bg-red-50 p-3 rounded-md">{error}</p>}
     </div>
 );
@@ -272,13 +277,16 @@ const LoadingStep = () => (
 const FormStep: React.FC<{
     listingData: ListingData;
     mode: Mode;
+    isEditing: boolean;
     formErrors: Record<string, string>;
     onModeChange: (mode: Mode) => void;
     handleDataChange: (field: keyof ListingData, value: any) => void;
     handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
     handleImageTagChange: (index: number, tag: string) => void;
-    imagePreviews: string[];
+    imageData: ImageData[];
     onImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    onRemoveImage: (index: number) => void;
+    onReorderImages: (dragIndex: number, hoverIndex: number) => void;
     availableTags: string[];
     newTagInput: string;
     onNewTagInputChange: (value: string) => void;
@@ -287,10 +295,28 @@ const FormStep: React.FC<{
     onNextStep: () => void;
     onBack: () => void;
     availableCountries: string[];
-}> = ({ listingData, mode, formErrors, onModeChange, handleDataChange, handleInputChange, handleImageTagChange, imagePreviews, onImageChange, availableTags, newTagInput, onNewTagInputChange, onAddNewTag, onStartOver, onNextStep, onBack, availableCountries }) => {
+}> = ({ listingData, mode, isEditing, formErrors, onModeChange, handleDataChange, handleInputChange, handleImageTagChange, imageData, onImageChange, onRemoveImage, onReorderImages, availableTags, newTagInput, onNewTagInputChange, onAddNewTag, onStartOver, onNextStep, onBack, availableCountries }) => {
 
     const onChipItemsChange = useCallback((items: string[]) => handleDataChange('specialFeatures', items), [handleDataChange]);
     const onMaterialsChange = useCallback((items: string[]) => handleDataChange('materials', items), [handleDataChange]);
+    const draggedItemIndex = useRef<number | null>(null);
+    const dragOverItemIndex = useRef<number | null>(null);
+
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+        draggedItemIndex.current = index;
+        e.dataTransfer.effectAllowed = 'move';
+    };
+    const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+        dragOverItemIndex.current = index;
+    };
+    const handleDragEnd = () => {
+        if (draggedItemIndex.current !== null && dragOverItemIndex.current !== null && draggedItemIndex.current !== dragOverItemIndex.current) {
+            onReorderImages(draggedItemIndex.current, dragOverItemIndex.current);
+        }
+        draggedItemIndex.current = null;
+        dragOverItemIndex.current = null;
+    };
+
 
     const citiesForSelectedCountry = useMemo(() => {
         if (!listingData.country || !CITY_DATA[listingData.country]) {
@@ -301,8 +327,9 @@ const FormStep: React.FC<{
 
     return (
         <div className="space-y-8 animate-fade-in">
-            <ModeToggle mode={mode} onModeChange={onModeChange} />
+            {!isEditing && <ModeToggle mode={mode} onModeChange={onModeChange} />}
             {mode === 'ai' && <p className="text-center text-neutral-600 -mt-4 mb-4">The AI has generated the details below. Review and edit as needed.</p>}
+            {isEditing && <p className="text-center text-neutral-600 -mt-4 mb-4">You are editing an existing listing. Make your changes and save.</p>}
 
             <fieldset className="space-y-4 rounded-lg border p-6">
                 <legend className="text-lg font-semibold px-2 text-neutral-800">Location & Price</legend>
@@ -402,11 +429,20 @@ const FormStep: React.FC<{
                         <label htmlFor="file-upload-form" className="relative cursor-pointer rounded-md font-medium text-primary hover:text-primary-dark"><input id="file-upload-form" name="file-upload-form" type="file" className="sr-only" multiple accept="image/*" onChange={onImageChange} /><span>Upload more images</span></label>
                     </div>
                 </div>
-                {imagePreviews.length > 0 ? (
+                {imageData.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                        {imagePreviews.map((preview, index) => (
-                            <div key={preview} className="relative group">
-                                <img src={preview} alt={`preview ${index}`} className="h-32 w-full object-cover rounded-md shadow-sm border" />
+                        {imageData.map((img, index) => (
+                            <div 
+                                key={img.previewUrl} 
+                                className="relative group cursor-grab"
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, index)}
+                                onDragEnter={(e) => handleDragEnter(e, index)}
+                                onDragEnd={handleDragEnd}
+                                onDragOver={(e) => e.preventDefault()}
+                            >
+                                <img src={img.previewUrl} alt={`preview ${index}`} className="h-32 w-full object-cover rounded-md shadow-sm border" />
+                                <button type="button" onClick={() => onRemoveImage(index)} className="absolute top-0 right-0 bg-red-600 text-white rounded-full p-0.5 w-5 h-5 flex items-center justify-center text-xs leading-none transform -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
                                  <ImageTagSelector
                                     value={listingData.image_tags.find(t => t.index === index)?.tag || ''}
                                     options={availableTags}
@@ -428,7 +464,7 @@ const FormStep: React.FC<{
             <div className="flex justify-between items-center border-t pt-6">
                 <button onClick={onStartOver} className="px-6 py-3 border border-neutral-300 rounded-md shadow-sm text-md font-medium text-neutral-700 bg-white hover:bg-neutral-50">Start Over</button>
                 <div className="flex items-center gap-4">
-                    {mode === 'ai' && (
+                    {mode === 'ai' && !isEditing && (
                         <button type="button" onClick={onBack} className="px-6 py-3 border border-neutral-300 rounded-md shadow-sm text-md font-medium text-neutral-700 bg-white hover:bg-neutral-50">
                             Back
                         </button>
@@ -491,11 +527,13 @@ const FloorplanStep: React.FC<{
      </div>
 );
     
-const SuccessStep: React.FC<{onStartOver: () => void, onViewListings: () => void}> = ({onStartOver, onViewListings}) => (
+const SuccessStep: React.FC<{isEditing: boolean, onStartOver: () => void, onViewListings: () => void}> = ({ isEditing, onStartOver, onViewListings }) => (
     <div className="text-center py-12 flex flex-col items-center justify-center animate-fade-in">
         <CheckCircleIcon className="h-16 w-16 text-green-500 mb-4" />
-        <h3 className="text-2xl font-bold text-neutral-800">Listing Published!</h3>
-        <p className="text-neutral-600 mt-2 max-w-md mx-auto">Your new property is now live. You can manage all your listings from your account page, or create another one.</p>
+        <h3 className="text-2xl font-bold text-neutral-800">{isEditing ? 'Listing Updated!' : 'Listing Published!'}</h3>
+        <p className="text-neutral-600 mt-2 max-w-md mx-auto">
+            {isEditing ? 'Your changes have been successfully saved.' : 'Your new property is now live. You can manage all your listings from your account page, or create another one.'}
+        </p>
         <div className="mt-8 flex flex-col sm:flex-row gap-4 w-full max-w-md mx-auto">
             <button onClick={onViewListings} className="w-full flex justify-center py-3 px-4 border border-primary text-primary rounded-lg shadow-sm text-md font-medium bg-white hover:bg-primary-light transition-colors">View My Listings</button>
             <button onClick={onStartOver} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-md font-medium text-white bg-primary hover:bg-primary-dark transition-colors">Create Another Listing</button>
@@ -506,8 +544,9 @@ const SuccessStep: React.FC<{onStartOver: () => void, onViewListings: () => void
 
 const GeminiDescriptionGenerator: React.FC = () => {
     const { state, dispatch } = useAppContext();
-    const [images, setImages] = useState<File[]>([]);
-    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+    const { propertyToEdit } = state;
+    
+    const [imageData, setImageData] = useState<ImageData[]>([]);
     const [floorplan, setFloorplan] = useState<File | null>(null);
     const [floorplanPreview, setFloorplanPreview] = useState<string | null>(null);
     const [step, setStep] = useState<Step>('init');
@@ -518,32 +557,111 @@ const GeminiDescriptionGenerator: React.FC = () => {
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [availableTags, setAvailableTags] = useState<string[]>(INITIAL_ROOM_TAGS);
     const [newTagInput, setNewTagInput] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
 
     const availableCountries = useMemo(() => Object.keys(CITY_DATA).sort(), []);
+    
+    useEffect(() => {
+        if (propertyToEdit) {
+            setIsEditing(true);
+            setListingData({
+                address: propertyToEdit.address,
+                city: propertyToEdit.city,
+                country: propertyToEdit.country,
+                price: propertyToEdit.price,
+                bedrooms: propertyToEdit.beds,
+                bathrooms: propertyToEdit.baths,
+                sq_meters: propertyToEdit.sqft,
+                year_built: propertyToEdit.yearBuilt,
+                parking_spots: propertyToEdit.parking,
+                specialFeatures: propertyToEdit.specialFeatures || [],
+                materials: propertyToEdit.materials || [],
+                description: propertyToEdit.description || '',
+                tourUrl: propertyToEdit.tourUrl || '',
+                propertyType: propertyToEdit.propertyType,
+                image_tags: (propertyToEdit.images || []).map((img, index) => ({ index, tag: img.tag })),
+            });
+            const allImages = [
+                { url: propertyToEdit.imageUrl, tag: 'exterior' as PropertyImageTag },
+                ...(propertyToEdit.images || [])
+            ].filter((v, i, a) => a.findIndex(t => t.url === v.url) === i);
+
+            setImageData(allImages.map(img => ({ file: null, previewUrl: img.url })));
+
+            if (propertyToEdit.floorplanUrl) {
+                setFloorplanPreview(propertyToEdit.floorplanUrl);
+            }
+            
+            setMode('manual');
+            setStep('form');
+            setError('');
+            setFormErrors({});
+        } else {
+             handleStartOver();
+        }
+    }, [propertyToEdit]);
 
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files) {
             const filesArray = Array.from(event.target.files);
-            setImages(prev => [...prev, ...filesArray]);
-            const newPreviews = filesArray.map((file: File) => URL.createObjectURL(file));
-            setImagePreviews(prev => [...prev, ...newPreviews]);
+            // FIX: Explicitly type 'file' as File to resolve a TypeScript type inference issue where 'file' was being treated as 'unknown'.
+            const newImageData = filesArray.map((file: File) => ({ file, previewUrl: URL.createObjectURL(file) }));
+            setImageData(prev => [...prev, ...newImageData]);
         }
     };
 
     const removeImage = (index: number) => {
-        setImages(prev => prev.filter((_, i) => i !== index));
-        setImagePreviews(prev => {
-            const newPreviews = prev.filter((_, i) => i !== index);
-            URL.revokeObjectURL(prev[index]);
-            return newPreviews;
-        });
+        const itemToRemove = imageData[index];
+        if (itemToRemove.file) { // Only revoke if it's a blob URL
+            URL.revokeObjectURL(itemToRemove.previewUrl);
+        }
+
+        setImageData(prev => prev.filter((_, i) => i !== index));
+
+        if (listingData) {
+            const newTags = listingData.image_tags
+                .filter(tag => tag.index !== index)
+                .map(tag => ({
+                    ...tag,
+                    index: tag.index > index ? tag.index - 1 : tag.index
+                }));
+            handleDataChange('image_tags', newTags);
+        }
     };
+    
+    const handleReorderImages = (dragIndex: number, hoverIndex: number) => {
+        setImageData(prev => {
+            const newImageData = [...prev];
+            const [draggedItem] = newImageData.splice(dragIndex, 1);
+            newImageData.splice(hoverIndex, 0, draggedItem);
+            return newImageData;
+        });
+
+        if (listingData) {
+            const newTags = [...listingData.image_tags];
+            const dragItemTag = newTags.find(t => t.index === dragIndex);
+            const hoverItemTag = newTags.find(t => t.index === hoverIndex);
+
+            // Simple swap logic might not be enough, need to re-order the whole array
+            const reorderedTags = [...listingData.image_tags];
+            const [draggedTag] = reorderedTags.splice(dragIndex, 1);
+            if (draggedTag) {
+                reorderedTags.splice(hoverIndex, 0, draggedTag);
+            }
+
+            // After reordering, remap all indices
+            const finalTags = reorderedTags.map((tag, index) => ({ ...tag, index }));
+
+            handleDataChange('image_tags', finalTags);
+        }
+    };
+
 
     const handleFloorplanChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
             setFloorplan(file);
-            if (floorplanPreview) {
+            if (floorplanPreview && floorplanPreview.startsWith('blob:')) {
                 URL.revokeObjectURL(floorplanPreview);
             }
             const previewUrl = URL.createObjectURL(file);
@@ -552,7 +670,7 @@ const GeminiDescriptionGenerator: React.FC = () => {
     };
 
     const handleRemoveFloorplan = () => {
-        if (floorplanPreview) {
+        if (floorplanPreview && floorplanPreview.startsWith('blob:')) {
             URL.revokeObjectURL(floorplanPreview);
         }
         setFloorplan(null);
@@ -565,15 +683,17 @@ const GeminiDescriptionGenerator: React.FC = () => {
             return;
         }
 
-        if (images.length === 0) {
-            setError('Please upload at least one image of your property.');
+        const filesToProcess = imageData.map(d => d.file).filter((f): f is File => f !== null);
+
+        if (filesToProcess.length === 0) {
+            setError('Please upload at least one new image to use AI generation.');
             return;
         }
         setStep('loading');
         setError('');
 
         try {
-            const analysisResult = await generateDescriptionFromImages(images, language);
+            const analysisResult = await generateDescriptionFromImages(filesToProcess, language);
             setListingData({
                 ...initialListingData,
                 bedrooms: analysisResult.bedrooms,
@@ -596,18 +716,22 @@ const GeminiDescriptionGenerator: React.FC = () => {
     };
     
     const handleStartOver = () => {
-        setImages([]);
-        imagePreviews.forEach(URL.revokeObjectURL);
-        setImagePreviews([]);
-        if (floorplanPreview) {
+        imageData.forEach(img => {
+            if (img.file) URL.revokeObjectURL(img.previewUrl);
+        });
+        if (floorplanPreview && floorplanPreview.startsWith('blob:')) {
             URL.revokeObjectURL(floorplanPreview);
         }
+
+        setImageData([]);
         setFloorplan(null);
         setFloorplanPreview(null);
         setListingData(null);
         setError('');
         setFormErrors({});
         setMode('ai');
+        setIsEditing(false);
+        dispatch({ type: 'SET_PROPERTY_TO_EDIT', payload: null });
         setStep('init');
     };
 
@@ -615,9 +739,8 @@ const GeminiDescriptionGenerator: React.FC = () => {
         setMode(newMode);
         if (newMode === 'manual') {
             setListingData(initialListingData);
-            setImages([]);
-            imagePreviews.forEach(URL.revokeObjectURL);
-            setImagePreviews([]);
+            imageData.forEach(img => { if (img.file) URL.revokeObjectURL(img.previewUrl); });
+            setImageData([]);
             setError('');
             setFormErrors({});
             setStep('form');
@@ -684,13 +807,12 @@ const GeminiDescriptionGenerator: React.FC = () => {
         if (!listingData.address.trim()) errors.address = 'Address is required.';
         if (!listingData.price || listingData.price <= 0) errors.price = 'Price must be greater than zero.';
         
-        // Bedrooms and bathrooms can now be 0. Area (m²) must be > 0. Description is optional.
         if (!listingData.sq_meters || listingData.sq_meters <= 0) errors.sq_meters = 'Area must be greater than 0.';
         
-        if (imagePreviews.length === 0) errors.images = 'Please upload at least one property image.';
+        if (imageData.length === 0) errors.images = 'Please upload at least one property image.';
 
         return errors;
-    }, [listingData, imagePreviews]);
+    }, [listingData, imageData]);
 
     const handleProceedToFloorplan = useCallback(() => {
         const errors = validateForm();
@@ -709,7 +831,7 @@ const GeminiDescriptionGenerator: React.FC = () => {
         const errors = validateForm();
         setFormErrors(errors);
         if (Object.keys(errors).length > 0) {
-            setStep('form'); // Force back to form if invalid
+            setStep('form');
             return;
         }
         
@@ -717,51 +839,80 @@ const GeminiDescriptionGenerator: React.FC = () => {
 
         const cityData = CITY_DATA[listingData.country]?.find(c => c.name.toLowerCase() === listingData.city.toLowerCase());
 
-        const newImages: PropertyImage[] = imagePreviews.map((url, index) => {
+        const newImages: PropertyImage[] = imageData.map((data, index) => {
             const tagInfo = listingData.image_tags.find(t => t.index === index);
             let tag: PropertyImageTag = 'other';
             if (tagInfo && ALL_VALID_TAGS.includes(tagInfo.tag as PropertyImageTag)) {
                 tag = tagInfo.tag as PropertyImageTag;
             }
-            return { url, tag };
+            return { url: data.previewUrl, tag };
         });
         
-        const sellerFromUser: Seller = {
-            type: 'agent',
-            name: state.currentUser.name,
-            avatarUrl: state.currentUser.avatarUrl,
-            phone: state.currentUser.phone,
-        };
-
-        const newProperty: Property = {
-            id: Date.now().toString(),
-            sellerId: state.currentUser.id,
-            status: 'active',
-            price: listingData.price,
-            address: listingData.address,
-            city: listingData.city,
-            country: listingData.country,
-            beds: listingData.bedrooms,
-            baths: listingData.bathrooms,
-            sqft: listingData.sq_meters,
-            yearBuilt: listingData.year_built,
-            parking: listingData.parking_spots,
-            description: listingData.description,
-            specialFeatures: listingData.specialFeatures,
-            materials: listingData.materials,
-            tourUrl: listingData.tourUrl,
-            imageUrl: imagePreviews[0] || 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=2070&auto-format&fit=crop',
-            images: newImages,
-            lat: cityData?.lat || 44.2,
-            lng: cityData?.lng || 19.9,
-            seller: sellerFromUser,
-            propertyType: listingData.propertyType,
-            floorplanUrl: floorplanPreview || undefined,
-        };
+        const newTimestamp = Date.now();
         
-        dispatch({ type: 'ADD_PROPERTY', payload: newProperty });
-        setStep('success');
-        dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: true } });
+        if (isEditing && propertyToEdit) {
+            const updatedProperty: Property = {
+                ...propertyToEdit,
+                price: listingData.price,
+                address: listingData.address,
+                city: listingData.city,
+                country: listingData.country,
+                beds: listingData.bedrooms,
+                baths: listingData.bathrooms,
+                sqft: listingData.sq_meters,
+                yearBuilt: listingData.year_built,
+                parking: listingData.parking_spots,
+                description: listingData.description,
+                specialFeatures: listingData.specialFeatures,
+                materials: listingData.materials,
+                tourUrl: listingData.tourUrl,
+                imageUrl: imageData[0]?.previewUrl || 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=2070&auto-format=fit=crop',
+                images: newImages.slice(1), // Exclude main image from the array as per schema
+                propertyType: listingData.propertyType,
+                floorplanUrl: floorplanPreview || undefined,
+                createdAt: newTimestamp, // Update timestamp to show as recent
+            };
+            dispatch({ type: 'UPDATE_PROPERTY', payload: updatedProperty });
+            dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
+        } else {
+            const sellerFromUser: Seller = {
+                type: state.currentUser.role === UserRole.AGENT ? 'agent' : 'private',
+                name: state.currentUser.name,
+                avatarUrl: state.currentUser.avatarUrl,
+                phone: state.currentUser.phone,
+                agencyName: state.currentUser.agencyName,
+            };
+
+            const newProperty: Property = {
+                id: Date.now().toString(),
+                sellerId: state.currentUser.id,
+                status: 'active',
+                price: listingData.price,
+                address: listingData.address,
+                city: listingData.city,
+                country: listingData.country,
+                beds: listingData.bedrooms,
+                baths: listingData.bathrooms,
+                sqft: listingData.sq_meters,
+                yearBuilt: listingData.year_built,
+                parking: listingData.parking_spots,
+                description: listingData.description,
+                specialFeatures: listingData.specialFeatures,
+                materials: listingData.materials,
+                tourUrl: listingData.tourUrl,
+                imageUrl: imageData[0]?.previewUrl || 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=2070&auto-format=fit=crop',
+                images: newImages.slice(1),
+                lat: cityData?.lat || 44.2,
+                lng: cityData?.lng || 19.9,
+                seller: sellerFromUser,
+                propertyType: listingData.propertyType,
+                floorplanUrl: floorplanPreview || undefined,
+                createdAt: newTimestamp,
+            };
+            dispatch({ type: 'ADD_PROPERTY', payload: newProperty });
+            dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: true } });
+            setStep('success');
+        }
     };
 
     const handleAddNewTag = useCallback(() => {
@@ -791,8 +942,8 @@ const GeminiDescriptionGenerator: React.FC = () => {
                 return <InitStep 
                     mode={mode} onModeChange={handleModeChange}
                     language={language} onLanguageChange={setLanguage}
-                    onImageChange={handleImageChange} imagePreviews={imagePreviews} onRemoveImage={removeImage}
-                    onGenerate={handleGenerate} imagesCount={images.length} error={error}
+                    onImageChange={handleImageChange} imageData={imageData} onRemoveImage={removeImage}
+                    onGenerate={handleGenerate} error={error}
                 />;
             case 'loading': 
                 return <LoadingStep />;
@@ -800,12 +951,15 @@ const GeminiDescriptionGenerator: React.FC = () => {
                 if (!listingData) return null;
                 return <FormStep 
                     listingData={listingData}
-                    mode={mode} onModeChange={handleModeChange}
+                    mode={mode}
+                    isEditing={isEditing}
+                    onModeChange={handleModeChange}
                     formErrors={formErrors}
                     handleDataChange={handleDataChange}
                     handleInputChange={handleInputChange}
                     handleImageTagChange={handleImageTagChange}
-                    imagePreviews={imagePreviews} onImageChange={handleImageChange}
+                    imageData={imageData} onImageChange={handleImageChange} onRemoveImage={removeImage}
+                    onReorderImages={handleReorderImages}
                     availableTags={availableTags} newTagInput={newTagInput} onNewTagInputChange={setNewTagInput} onAddNewTag={handleAddNewTag}
                     onStartOver={handleStartOver}
                     onNextStep={handleProceedToFloorplan}
@@ -821,13 +975,13 @@ const GeminiDescriptionGenerator: React.FC = () => {
                     onBack={handleBackFromFloorplan}
                 />;
             case 'success': 
-                return <SuccessStep onStartOver={handleStartOver} onViewListings={handleViewListings} />;
+                return <SuccessStep isEditing={isEditing} onStartOver={handleStartOver} onViewListings={handleViewListings} />;
             default: 
                 return <InitStep 
                     mode={mode} onModeChange={handleModeChange}
                     language={language} onLanguageChange={setLanguage}
-                    onImageChange={handleImageChange} imagePreviews={imagePreviews} onRemoveImage={removeImage}
-                    onGenerate={handleGenerate} imagesCount={images.length} error={error}
+                    onImageChange={handleImageChange} imageData={imageData} onRemoveImage={removeImage}
+                    onGenerate={handleGenerate} error={error}
                 />;
         }
     }

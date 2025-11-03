@@ -3,73 +3,51 @@ import { AppProvider, useAppContext } from './context/AppContext';
 import { UserRole } from './types';
 import Onboarding from './components/Onboarding';
 import SearchPage from './components/BuyerFlow/SearchPage';
-import SellerDashboard from './components/SellerFlow/SellerDashboard';
+import CreateListingPage from './components/SellerFlow/SellerDashboard';
 import AuthPage from './components/auth/AuthModal';
 import PricingPlans from './components/SellerFlow/PricingPlans';
 import SavedSearchesPage from './components/BuyerFlow/SavedSearchesPage';
 import SavedHomesPage from './components/BuyerFlow/SavedHomesPage';
 import InboxPage from './components/BuyerFlow/InboxPage';
 import MyAccountPage from './components/shared/MyAccountPage';
-import AgentsPage from './components/AgentsPage/AgentsPage';
 import Sidebar from './components/shared/Sidebar';
 import Header from './components/shared/Header';
 import SubscriptionModal from './components/BuyerFlow/SubscriptionModal';
+import AgentsPage from './components/AgentsPage/AgentsPage';
 
 const AppContent: React.FC = () => {
   const { state } = useAppContext();
+
+  // If no role is selected yet (first time user), show onboarding
+  if (state.isInitialLaunch) {
+    return <Onboarding />;
+  }
   
-  const renderBuyerContent = () => {
-      switch (state.activeView) {
-        case 'saved-searches':
-          return <SavedSearchesPage />;
-        case 'saved-homes':
-          return <SavedHomesPage />;
-        case 'inbox':
-          return <InboxPage />;
-        case 'account':
-          return <MyAccountPage />;
-        case 'agents':
-          return <AgentsPage />;
-        case 'search':
-        default:
-          return <SearchPage />;
-      }
-  };
-
-  const renderSellerContent = () => {
-       switch (state.activeView) {
-        case 'inbox':
-          return <InboxPage />;
-        case 'account':
-          return <MyAccountPage />;
-        case 'agents':
-            return <AgentsPage />;
-        case 'search': // Sellers default to their main dashboard
-        default:
-          return <SellerDashboard />;
-      }
-  };
-
-  const renderContent = () => {
-    switch (state.userRole) {
-      case UserRole.BUYER:
-        return renderBuyerContent();
-      case UserRole.SELLER:
-        return renderSellerContent();
-      default:
-        return <Onboarding />;
-    }
-  };
-
-  return renderContent();
+  switch (state.activeView) {
+    case 'saved-searches':
+      return <SavedSearchesPage />;
+    case 'saved-homes':
+      return <SavedHomesPage />;
+    case 'inbox':
+      return <InboxPage />;
+    case 'account':
+      return <MyAccountPage />;
+    case 'create-listing':
+      return <CreateListingPage />;
+    case 'agents':
+      return <AgentsPage />;
+    case 'search':
+    default:
+      return <SearchPage />;
+  }
 };
 
 const MainLayout: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const isLayoutVisible = state.userRole === UserRole.BUYER || state.userRole === UserRole.SELLER;
   
-  const isFullHeightView = (state.activeView === 'search' && state.userRole === UserRole.BUYER) || state.activeView === 'inbox';
+  const isLayoutVisible = !state.isInitialLaunch;
+  const isFullHeightView = state.activeView === 'search' || state.activeView === 'inbox';
 
 
   if (!isLayoutVisible) {

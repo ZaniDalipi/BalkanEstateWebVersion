@@ -6,8 +6,8 @@ import { EnvelopeIcon } from '../../constants';
 import PropertyCard from './PropertyCard';
 
 const InboxPage: React.FC = () => {
-    const { state } = useAppContext();
-    const { conversations, properties } = state;
+    const { state, dispatch } = useAppContext();
+    const { conversations, properties, isAuthenticated } = state;
 
     // A check to determine if we are on a mobile device based on window width.
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -35,6 +35,24 @@ const InboxPage: React.FC = () => {
 
     const selectedConversation = conversations.find(c => c.id === selectedConversationId) || null;
     const featuredProperties = properties.slice(0, 3); // For the empty state
+
+    if (!isAuthenticated) {
+        return (
+            <div className="w-full flex flex-col items-center justify-center p-4 sm:p-8 text-center h-full">
+                <EnvelopeIcon className="w-16 h-16 text-neutral-300 mb-4" />
+                <h2 className="text-2xl font-bold text-neutral-800">Log in to view your messages</h2>
+                <p className="text-neutral-600 mt-2 max-w-md">
+                    Communicate with sellers and agents about your favorite properties.
+                </p>
+                <button
+                    onClick={() => dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true })}
+                    className="mt-8 px-6 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
+                >
+                    Login / Register
+                </button>
+            </div>
+        );
+    }
 
     if (conversations.length === 0) {
         return (

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { Property, ChatMessage, AiSearchQuery, Filters, SellerType } from '../../types';
 import PropertyCard from './PropertyCard';
 import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon } from '../../constants';
@@ -7,6 +7,7 @@ interface PropertyListProps {
   properties: Property[];
   filters: Filters;
   onFilterChange: (name: keyof Filters, value: string | number | null) => void;
+  onResetFilters: () => void;
   onSortChange: (value: string) => void;
   onSaveSearch: () => void;
   onGetAlerts: () => void;
@@ -42,7 +43,7 @@ const FilterButton: React.FC<{
 
 const FilterButtonGroup: React.FC<{
   label: string;
-  options: { value: string | number; label: string }[];
+  options: { value: string | number | null; label: string }[];
   selectedValue: string | number | null;
   onChange: (value: string | number | null) => void;
 }> = ({ label, options, selectedValue, onChange }) => (
@@ -51,7 +52,7 @@ const FilterButtonGroup: React.FC<{
     <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200">
       {options.map(({ value, label: optionLabel }) => (
         <FilterButton
-          key={value}
+          key={optionLabel}
           onClick={() => onChange(selectedValue === value ? null : value)}
           isActive={selectedValue === value}
         >
@@ -124,13 +125,50 @@ const PRICE_RANGES = [50000, 75000, 100000, 125000, 150000, 175000, 200000, 2500
 const SQFT_RANGES = [30, 50, 70, 90, 120, 150, 200, 250, 300, 400];
 const formatNumber = (num: number) => new Intl.NumberFormat('de-DE').format(num);
 
+const ITEMS_PER_PAGE = 20;
+
 const PropertyList: React.FC<PropertyListProps> = ({ 
-    properties, filters, onFilterChange, onSortChange, onSaveSearch, onGetAlerts, isSaving,
+    properties, filters, onFilterChange, onResetFilters, onSortChange, onSaveSearch, onGetAlerts, isSaving,
     searchMode, onSearchModeChange, 
     chatHistory, onSendMessage, isAiThinking,
     suggestedFilters, onApplySuggestedFilters, onClearSuggestedFilters,
     searchOnMove, onSearchOnMoveChange
 }) => {
+
+    const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+    const loadMoreRef = useRef(null);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    
+    useEffect(() => {
+      // Reset visible count when filters change
+      setVisibleCount(ITEMS_PER_PAGE);
+    }, [filters, properties]);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && !isLoadingMore && visibleCount < properties.length) {
+                    setIsLoadingMore(true);
+                    setTimeout(() => {
+                        setVisibleCount(prev => prev + ITEMS_PER_PAGE);
+                        setIsLoadingMore(false);
+                    }, 300); // Small delay to show loading and prevent rapid firing
+                }
+            },
+            { threshold: 1.0 }
+        );
+
+        const currentRef = loadMoreRef.current;
+        if (currentRef) {
+            observer.observe(currentRef);
+        }
+
+        return () => {
+            if (currentRef) {
+                observer.unobserve(currentRef);
+            }
+        };
+    }, [visibleCount, properties.length, isLoadingMore]);
     
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -233,30 +271,29 @@ const PropertyList: React.FC<PropertyListProps> = ({
                         </div>
                         
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-medium text-neutral-700 mb-1.5">Bedrooms</label>
-                                <input 
-                                    type="number" 
-                                    name="beds" 
-                                    placeholder="Any" 
-                                    value={filters.beds || ''} 
-                                    onChange={handleInputChange}
-                                    min="0"
-                                    className={inputBaseClasses}
-                                />
-                            </div>
-                             <div>
-                                <label className="block text-xs font-medium text-neutral-700 mb-1.5">Bathrooms</label>
-                                <input 
-                                    type="number" 
-                                    name="baths" 
-                                    placeholder="Any" 
-                                    value={filters.baths || ''} 
-                                    onChange={handleInputChange}
-                                    min="0"
-                                    className={inputBaseClasses}
-                                />
-                            </div>
+                             <FilterButtonGroup 
+                                label="Bedrooms"
+                                options={[
+                                    {value: null, label: 'Any'},
+                                    {value: 1, label: '1+'},
+                                    {value: 2, label: '2+'},
+                                    {value: 3, label: '3+'},
+                                    {value: 4, label: '4+'},
+                                ]}
+                                selectedValue={filters.beds}
+                                onChange={(value) => onFilterChange('beds', value)}
+                            />
+                            <FilterButtonGroup 
+                                label="Bathrooms"
+                                options={[
+                                    {value: null, label: 'Any'},
+                                    {value: 1, label: '1+'},
+                                    {value: 2, label: '2+'},
+                                    {value: 3, label: '3+'},
+                                ]}
+                                selectedValue={filters.baths}
+                                onChange={(value) => onFilterChange('baths', value)}
+                            />
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -302,47 +339,45 @@ const PropertyList: React.FC<PropertyListProps> = ({
                             </div>
                         </div>
 
-                        <FilterButtonGroup 
-                            label="Listing Type"
-                            options={[
-                                {value: 'any', label: 'Any'},
-                                {value: 'agent', label: 'Agent'},
-                                {value: 'private', label: 'Private'},
-                            ]}
-                            selectedValue={filters.sellerType}
-                            onChange={(value) => onFilterChange('sellerType', value as SellerType)}
-                        />
-
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <FilterButtonGroup 
+                                label="Listing Type"
+                                options={[
+                                    {value: 'any', label: 'Any'},
+                                    {value: 'agent', label: 'Agent'},
+                                    {value: 'private', label: 'Private'},
+                                ]}
+                                selectedValue={filters.sellerType}
+                                onChange={(value) => onFilterChange('sellerType', (value as SellerType) || 'any')}
+                            />
+                            <FilterButtonGroup
+                                label="Property Type"
+                                options={[
+                                    { value: 'any', label: 'Any' },
+                                    { value: 'house', label: 'House' },
+                                    { value: 'apartment', label: 'Apartment' },
+                                    { value: 'villa', label: 'Villa' },
+                                ]}
+                                selectedValue={filters.propertyType}
+                                onChange={(value) => onFilterChange('propertyType', (value as Filters['propertyType']) || 'any')}
+                            />
+                        </div>
+                        
                         <div className="relative">
+                            <label htmlFor="sortBy" className="block text-xs font-medium text-neutral-700 mb-1.5">Sort by</label>
                             <select
+                                id="sortBy"
                                 name="sortBy"
                                 value={filters.sortBy}
                                 onChange={(e) => onSortChange(e.target.value)}
                                 className={`${inputBaseClasses} appearance-none`}
                             >
-                                <option value="newest">Sort by: Newest first</option>
-                                <option value="price_asc">Sort by: Price (low-high)</option>
-                                <option value="price_desc">Sort by: Price (high-low)</option>
-                                <option value="beds_desc">Sort by: Beds (most)</option>
+                                <option value="newest">Newest first</option>
+                                <option value="price_asc">Price (low-high)</option>
+                                <option value="price_desc">Price (high-low)</option>
+                                <option value="beds_desc">Beds (most)</option>
                             </select>
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
-                                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                            </div>
-                        </div>
-
-                        <div className="relative">
-                            <select
-                                name="propertyType"
-                                value={filters.propertyType}
-                                onChange={handleInputChange}
-                                className={`${inputBaseClasses} appearance-none`}
-                            >
-                                <option value="any">Property Type (Any)</option>
-                                <option value="apartment">Apartment</option>
-                                <option value="house">House</option>
-                                <option value="villa">Villa</option>
-                            </select>
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500 pt-6">
                                 <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                             </div>
                         </div>
@@ -360,11 +395,17 @@ const PropertyList: React.FC<PropertyListProps> = ({
                             </label>
                         </div>
 
-                        <div className="pt-2">
+                        <div className="pt-2 flex items-center gap-2">
+                             <button 
+                                onClick={onResetFilters}
+                                className="py-2.5 px-4 border border-neutral-300 text-neutral-600 rounded-lg text-sm font-bold bg-white hover:bg-neutral-100 transition-colors"
+                            >
+                                Reset
+                            </button>
                             <button 
                                 onClick={onSaveSearch} 
                                 disabled={isSaving}
-                                className="w-full py-2.5 px-4 border border-primary text-primary rounded-lg shadow-sm text-sm font-bold bg-white hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-2"
+                                className="flex-grow py-2.5 px-4 border border-primary text-primary rounded-lg shadow-sm text-sm font-bold bg-white hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-2"
                             >
                                 {isSaving ? (
                                     <>
@@ -423,11 +464,23 @@ const PropertyList: React.FC<PropertyListProps> = ({
             {/* Property Grid */}
             <div className="p-4">
                 {properties.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {properties.map(prop => (
-                            <PropertyCard key={prop.id} property={prop} />
-                        ))}
-                    </div>
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {properties.slice(0, visibleCount).map(prop => (
+                                <PropertyCard key={prop.id} property={prop} />
+                            ))}
+                        </div>
+                        {visibleCount < properties.length && (
+                            <div ref={loadMoreRef} className="text-center p-8">
+                                {isLoadingMore ? (
+                                    <div className="flex justify-center items-center space-x-2 text-neutral-500">
+                                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                        <span>Loading more...</span>
+                                    </div>
+                                ) : <div className="h-1"></div>}
+                            </div>
+                        )}
+                    </>
                 ) : (
                     <div className="text-center py-16 px-4 bg-neutral-50/70 rounded-lg border">
                         <BuildingLibraryIcon className="w-12 h-12 text-neutral-300 mx-auto mb-4" />

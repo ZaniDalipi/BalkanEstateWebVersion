@@ -14,6 +14,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
   const { state, dispatch } = useAppContext();
   const isFavorited = state.savedHomes.some(p => p.id === property.id);
   const isInComparison = state.comparisonList.includes(property.id);
+  const isNew = property.createdAt && (Date.now() - property.createdAt < 3 * 24 * 60 * 60 * 1000);
 
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -34,10 +35,10 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
       if (isInComparison) {
           dispatch({ type: 'REMOVE_FROM_COMPARISON', payload: property.id });
       } else {
-          if (state.comparisonList.length < 4) {
+          if (state.comparisonList.length < 5) {
               dispatch({ type: 'ADD_TO_COMPARISON', payload: property.id });
           } else {
-              showToast?.("You can compare a maximum of 4 properties.", 'error');
+              showToast?.("You can compare a maximum of 5 properties.", 'error');
           }
       }
   };
@@ -50,6 +51,11 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
         <button onClick={handleCardClick} className="block w-full">
             <img src={property.imageUrl} alt={property.address} className="w-full h-48 object-cover" />
         </button>
+        {isNew && (
+            <div className="absolute top-2 left-2 bg-secondary text-white text-xs font-bold px-2 py-1 rounded-md shadow-md z-10">
+                NEW
+            </div>
+        )}
         <div onClick={handleFavoriteClick} className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm p-2 rounded-full cursor-pointer hover:bg-white z-10">
              <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 transition-colors duration-300 ${isFavorited ? 'text-red-500 fill-current' : 'text-neutral-500 hover:text-red-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />

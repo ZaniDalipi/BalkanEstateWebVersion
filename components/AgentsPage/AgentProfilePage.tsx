@@ -1,94 +1,114 @@
 import React from 'react';
-import { Agent, Property } from '../../types';
-import StarRating from '../shared/StarRating';
-import { ArrowLeftIcon, PhoneIcon, EnvelopeIcon, ChatBubbleBottomCenterTextIcon } from '../../constants';
+import { Agent } from '../../types';
 import { useAppContext } from '../../context/AppContext';
+import { ArrowLeftIcon, BuildingOfficeIcon, ChartBarIcon, ChatBubbleBottomCenterTextIcon, EnvelopeIcon, PhoneIcon, CheckCircleIcon } from '../../constants';
+import StarRating from '../shared/StarRating';
+import { formatPrice } from '../../utils/currency';
 import PropertyCard from '../BuyerFlow/PropertyCard';
 
 interface AgentProfilePageProps {
-    agent: Agent & { propertiesSold: number; totalSales: number; };
-    onBack: () => void;
+  agent: Agent;
 }
 
-const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent, onBack }) => {
-    const { state } = useAppContext();
-    const agentListings = state.properties.filter(p => p.sellerId === agent.id && p.status === 'active');
+const StatCard: React.FC<{ label: string; value: string | number; icon: React.ReactNode }> = ({ label, value, icon }) => (
+    <div className="bg-primary-light p-4 rounded-lg flex items-center gap-4">
+        <div className="bg-white p-3 rounded-full text-primary">
+            {icon}
+        </div>
+        <div>
+            <p className="text-sm font-semibold text-primary-dark/80">{label}</p>
+            <p className="text-2xl font-bold text-primary-dark">{value}</p>
+        </div>
+    </div>
+);
+
+
+const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
+    const { state, dispatch } = useAppContext();
+    const agentProperties = state.properties.filter(p => p.sellerId === agent.id && p.status === 'active');
+    
+    const handleBack = () => {
+        dispatch({ type: 'SET_SELECTED_AGENT', payload: null });
+    };
 
     return (
-        <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8 animate-fade-in">
-            <button onClick={onBack} className="flex items-center gap-2 text-primary font-semibold mb-6 hover:underline">
+    <div className="bg-neutral-50 min-h-full animate-fade-in">
+       <div className="p-4 bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 z-10">
+            <button onClick={handleBack} className="flex items-center gap-2 text-primary font-semibold hover:underline max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <ArrowLeftIcon className="w-5 h-5" />
                 Back to Leaderboard
             </button>
-
-            {/* Agent Header */}
-            <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
-                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                    <img src={agent.avatarUrl} alt={agent.name} className="w-32 h-32 rounded-full object-cover border-4 border-primary-light shadow-md" />
-                    <div className="flex-grow text-center sm:text-left">
-                        <h1 className="text-3xl font-bold text-neutral-900">{agent.name}</h1>
-                        <p className="text-lg text-neutral-600 font-medium">{agent.agency}</p>
-                        <div className="my-2 flex justify-center sm:justify-start">
-                             <StarRating rating={agent.rating} reviewCount={agent.reviewCount} size="md"/>
+        </div>
+      
+      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg border border-neutral-200 flex flex-col md:flex-row items-center gap-8 mb-8">
+            <img src={agent.avatarUrl} alt={agent.name} className="w-32 h-32 rounded-full object-cover border-4 border-primary-light" />
+            <div className="text-center md:text-left">
+                <div className="flex items-center justify-center md:justify-start gap-3 mb-2 flex-wrap">
+                    <h1 className="text-4xl font-bold text-neutral-900">{agent.name}</h1>
+                    {agent.licenseNumber && (
+                        <div className="flex items-center gap-1.5 bg-green-100 text-green-800 px-3 py-1.5 rounded-full text-sm font-semibold">
+                            <CheckCircleIcon className="w-5 h-5"/>
+                            <span>Trusted Agent</span>
                         </div>
-                        <div className="mt-3 flex justify-center sm:justify-start flex-wrap gap-2">
-                            {agent.specialties.map(s => <span key={s} className="bg-primary-light text-primary-dark text-xs font-semibold px-2.5 py-1 rounded-full">{s}</span>)}
-                        </div>
-                    </div>
-                    <div className="flex-shrink-0 flex flex-col sm:items-end gap-3 w-full sm:w-auto">
-                         <a href={`tel:${agent.phone}`} className="w-full flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-lg shadow-sm hover:bg-primary-dark transition-colors">
-                            <PhoneIcon className="w-5 h-5"/>
-                            Call Agent
-                        </a>
-                         <a href={`mailto:${agent.email}`} className="w-full flex items-center justify-center gap-2 px-5 py-2.5 bg-white text-neutral-700 font-semibold rounded-lg border border-neutral-300 hover:bg-neutral-50 transition-colors">
-                            <EnvelopeIcon className="w-5 h-5"/>
-                            Email Agent
-                        </a>
-                    </div>
+                    )}
                 </div>
-                <div className="mt-6 pt-6 border-t border-neutral-200 grid grid-cols-1 sm:grid-cols-2 text-center gap-4">
-                     <div>
-                        <p className="font-bold text-3xl text-primary">{agent.propertiesSold}</p>
-                        <p className="text-sm text-neutral-500 uppercase font-semibold">Properties Sold</p>
-                    </div>
-                     <div>
-                        <p className="font-bold text-3xl text-primary">{agent.totalSales.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0})}</p>
-                        <p className="text-sm text-neutral-500 uppercase font-semibold">Total Sales Value</p>
-                    </div>
+
+                <div className="flex items-center justify-center md:justify-start gap-2">
+                    <StarRating rating={agent.rating} />
+                    <span className="text-lg font-bold text-neutral-700">{agent.rating.toFixed(1)}</span>
+                </div>
+                <div className="mt-4 flex items-center justify-center md:justify-start flex-wrap gap-x-6 gap-y-2 text-neutral-600">
+                    <a href={`tel:${agent.phone}`} className="flex items-center gap-2 hover:text-primary"><PhoneIcon className="w-5 h-5"/>{agent.phone}</a>
+                    <a href={`mailto:${agent.email}`} className="flex items-center gap-2 hover:text-primary"><EnvelopeIcon className="w-5 h-5"/>{agent.email}</a>
                 </div>
             </div>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <StatCard label="Total Sales Value" value={formatPrice(agent.totalSalesValue, 'Serbia')} icon={<ChartBarIcon className="w-6 h-6"/>} />
+            <StatCard label="Properties Sold" value={agent.propertiesSold} icon={<BuildingOfficeIcon className="w-6 h-6"/>} />
+            <StatCard label="Active Listings" value={agent.activeListings} icon={<BuildingOfficeIcon className="w-6 h-6"/>} />
+        </div>
 
-            {/* Active Listings */}
-            <div className="mt-8">
-                <h2 className="text-2xl font-bold text-neutral-800 mb-4">Active Listings ({agentListings.length})</h2>
-                {agentListings.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {agentListings.map(prop => <PropertyCard key={prop.id} property={prop} />)}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+                <h2 className="text-2xl font-bold text-neutral-800 mb-4">Active Listings</h2>
+                {agentProperties.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {agentProperties.map(prop => <PropertyCard key={prop.id} property={prop} />)}
                     </div>
                 ) : (
-                    <div className="bg-white p-8 rounded-lg border text-center">
-                        <p className="text-neutral-600">{agent.name} currently has no active listings.</p>
+                    <div className="text-center p-8 bg-white rounded-lg border">
+                        <p className="text-neutral-600">{agent.name} has no active listings at the moment.</p>
                     </div>
                 )}
             </div>
-            
-            {/* Testimonials */}
-            {agent.testimonials && agent.testimonials.length > 0 && (
-                <div className="mt-8">
-                    <h2 className="text-2xl font-bold text-neutral-800 mb-4">What Clients Are Saying</h2>
-                     <div className="space-y-4">
-                        {agent.testimonials.map((testimonial, index) => (
-                            <div key={index} className="bg-white p-6 rounded-lg border shadow-sm">
-                                <ChatBubbleBottomCenterTextIcon className="w-8 h-8 text-primary/50 mb-2" />
-                                <p className="italic text-neutral-700">"{testimonial.quote}"</p>
-                                <p className="text-right font-semibold text-neutral-800 mt-3">- {testimonial.clientName}</p>
-                            </div>
+            <div>
+                 <h2 className="text-2xl font-bold text-neutral-800 mb-4">Client Testimonials</h2>
+                 {agent.testimonials && agent.testimonials.length > 0 ? (
+                     <div className="space-y-6">
+                        {agent.testimonials.map((t, index) => (
+                             <div key={index} className="bg-white p-6 rounded-xl shadow-md border">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <ChatBubbleBottomCenterTextIcon className="w-6 h-6 text-primary" />
+                                </div>
+                                <p className="text-neutral-700 italic">"{t.quote}"</p>
+                                <p className="text-right font-semibold text-neutral-800 mt-3">- {t.clientName}</p>
+                             </div>
                         ))}
+                     </div>
+                 ) : (
+                    <div className="text-center p-8 bg-white rounded-lg border">
+                        <p className="text-neutral-600">No testimonials yet.</p>
                     </div>
-                </div>
-            )}
+                 )}
+            </div>
         </div>
-    );
+
+      </main>
+    </div>
+  );
 };
 
 export default AgentProfilePage;

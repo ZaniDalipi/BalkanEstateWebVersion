@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import { Property } from '../../types';
 import L from 'leaflet';
@@ -34,6 +34,9 @@ interface MapComponentProps {
   properties: Property[];
   recenter: boolean;
   onMapMove: (bounds: L.LatLngBounds) => void;
+  userLocation: [number, number] | null;
+  isSearchActive: boolean;
+  searchLocation: [number, number] | null;
 }
 
 const ChangeView: React.FC<{center: [number, number], zoom: number, enabled: boolean}> = ({ center, zoom, enabled }) => {
@@ -97,13 +100,34 @@ const PROPERTY_TYPE_COLORS: Record<NonNullable<Property['propertyType']> | 'othe
     other: '#6c757d',     // grey
 };
 
-const createCustomMarkerIcon = (property: Property) => {
+const ZOOM_THRESHOLD = 12;
+
+const createSimpleMarkerIcon = (property: Property) => {
     const price = formatMarkerPrice(property.price);
-    const type = property.propertyType || 'other';
-    const color = PROPERTY_TYPE_COLORS[type] || PROPERTY_TYPE_COLORS.other;
+    const color = PROPERTY_TYPE_COLORS[property.propertyType] || PROPERTY_TYPE_COLORS.other;
 
     const svgHtml = `
-        <svg width="70" height="56" viewBox="0 0 70 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));">
+            <circle cx="20" cy="20" r="18" fill="${color}" stroke="#FFFFFF" stroke-width="2"/>
+            <text x="20" y="21" font-family="Inter, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">${price}</text>
+        </svg>
+    `;
+    
+    return L.divIcon({
+        html: svgHtml,
+        className: '',
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+        popupAnchor: [0, -20]
+    });
+};
+
+const createDetailedMarkerIcon = (property: Property) => {
+    const price = formatMarkerPrice(property.price);
+    const color = PROPERTY_TYPE_COLORS[property.propertyType] || PROPERTY_TYPE_COLORS.other;
+
+    const svgHtml = `
+        <svg width="60" height="48" viewBox="0 0 70 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3)); transform-origin: bottom center;">
             <path d="M35 56L25 44H45L35 56Z" fill="#003A96" />
             <path d="M65 24.5V44H5V24.5L35 5L65 24.5Z" fill="${color}" stroke="#FFFFFF" stroke-width="2" />
             <text x="35" y="30" font-family="Inter, sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">${price}</text>
@@ -112,18 +136,92 @@ const createCustomMarkerIcon = (property: Property) => {
     
     return L.divIcon({
         html: svgHtml,
-        className: '', // Important to be empty for custom SVG styling to work
-        iconSize: [70, 56],
-        iconAnchor: [35, 56], // Anchor at the tip of the pointer
+        className: '',
+        iconSize: [60, 48],
+        iconAnchor: [30, 48],
+        popupAnchor: [0, -48]
     });
 };
 
+const createCustomMarkerIcon = (property: Property, zoom: number): L.DivIcon => {
+    if (zoom < ZOOM_THRESHOLD) {
+        return createSimpleMarkerIcon(property);
+    }
+    return createDetailedMarkerIcon(property);
+};
 
-const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove }) => {
+interface MarkersProps {
+    properties: Property[];
+    onPopupClick: (id: string) => void;
+}
+
+const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) => {
+    const map = useMap();
+    const [zoom, setZoom] = useState(map.getZoom());
+
+    useMapEvents({
+        zoomend: () => {
+            setZoom(map.getZoom());
+        },
+    });
+
+    return (
+        <>
+            {properties.map(prop => (
+                <Marker key={prop.id} position={[prop.lat, prop.lng]} icon={createCustomMarkerIcon(prop, zoom)}>
+                    <Popup>
+                        <div 
+                            className="w-48 cursor-pointer"
+                            onClick={() => onPopupClick(prop.id)}
+                        >
+                            <img src={prop.imageUrl} alt={prop.address} className="w-full h-24 object-cover rounded-md mb-2" />
+                            <p className="font-bold text-md leading-tight">{formatPrice(prop.price, prop.country)}</p>
+                            <p className="text-sm text-neutral-600 truncate">{prop.address}, {prop.city}</p>
+                        </div>
+                    </Popup>
+                </Marker>
+            ))}
+        </>
+    );
+};
+
+const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove, userLocation, isSearchActive, searchLocation }) => {
   const { dispatch } = useAppContext();
   const [tileLayer, setTileLayer] = useState<TileLayerType>('street');
-  const center: [number, number] = properties.length > 0 ? [properties[0].lat, properties[0].lng] : [44.2, 19.9]; // Default center of Balkans
-  const zoom = properties.length === 1 ? 13 : 7;
+  
+  const { center, zoom } = useMemo(() => {
+    // 1. Prioritize explicit search location from the query input
+    if (searchLocation) {
+        return {
+            center: searchLocation,
+            zoom: 12, // A good zoom level for a city
+        };
+    }
+    
+    // 2. If a search (e.g., by price) is active and has results, focus on them.
+    if (isSearchActive && properties.length > 0) {
+      return {
+        center: [properties[0].lat, properties[0].lng] as [number, number],
+        zoom: properties.length === 1 ? 14 : 12,
+      };
+    }
+    // 3. For initial load or cleared search, prioritize user location.
+    if (userLocation) {
+      return { center: userLocation, zoom: 14 };
+    }
+    // 4. Fallback to properties if no user location.
+    if (properties.length > 0) {
+      return {
+        center: [properties[0].lat, properties[0].lng] as [number, number],
+        zoom: 10,
+      };
+    }
+    // Absolute fallback
+    return {
+      center: [44.2, 19.9] as [number, number],
+      zoom: 10,
+    };
+  }, [properties, userLocation, isSearchActive, searchLocation]);
     
   const handlePopupClick = (propertyId: string) => {
     dispatch({ type: 'SET_SELECTED_PROPERTY', payload: propertyId });
@@ -131,28 +229,29 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
 
   return (
     <div className="w-full h-full">
-      <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full">
+      <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full" maxZoom={14} minZoom={9}>
         <ChangeView center={center} zoom={zoom} enabled={recenter} />
         <MapEvents onMove={onMapMove} />
         <TileLayer
           attribution={TILE_LAYERS[tileLayer].attribution}
           url={TILE_LAYERS[tileLayer].url}
         />
-        {properties.map(prop => (
-          <Marker key={prop.id} position={[prop.lat, prop.lng]} icon={createCustomMarkerIcon(prop)}>
-            <Popup>
-              <div 
-                className="w-48 cursor-pointer"
-                onClick={() => handlePopupClick(prop.id)}
-              >
-                <img src={prop.imageUrl} alt={prop.address} className="w-full h-24 object-cover rounded-md mb-2" />
-                <p className="font-bold text-md leading-tight">{formatPrice(prop.price, prop.country)}</p>
-                <p className="text-sm text-neutral-600 truncate">{prop.address}, {prop.city}</p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        <Markers properties={properties} onPopupClick={handlePopupClick} />
       </MapContainer>
+      <div className="absolute bottom-4 left-4 z-[1000] bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-neutral-200">
+        <h4 className="font-bold text-sm mb-2 text-neutral-800">Legend</h4>
+        <div className="space-y-1.5">
+            {Object.entries(PROPERTY_TYPE_COLORS).map(([type, color]) => (
+                <div key={type} className="flex items-center gap-2">
+                    <span
+                        className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm"
+                        style={{ backgroundColor: color }}
+                    ></span>
+                    <span className="text-xs font-semibold text-neutral-700 capitalize">{type}</span>
+                </div>
+            ))}
+        </div>
+      </div>
       <div className="absolute bottom-4 right-4 z-[1000] bg-white/80 backdrop-blur-sm p-1 rounded-full shadow-lg flex space-x-1 border border-neutral-200">
         <button 
           onClick={() => setTileLayer('street')} 

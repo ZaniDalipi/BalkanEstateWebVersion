@@ -25,7 +25,8 @@ const AuthPage: React.FC = () => {
 
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const loggedInUser = state.userRole === UserRole.SELLER ? mockUsers['user_seller_1'] : null;
+        // For demo purposes, log in as the first seller.
+        const loggedInUser = mockUsers['user_seller_1'];
         
         dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user: loggedInUser } });
         handleClose();
@@ -40,7 +41,7 @@ const AuthPage: React.FC = () => {
             return (
                 <div className="space-y-4">
                     <div className="relative">
-                        <input type="email" id="email" className={floatingInputClasses} placeholder=" " required defaultValue={state.userRole === UserRole.SELLER ? 'ana.k@example.com' : ''} />
+                        <input type="email" id="email" className={floatingInputClasses} placeholder=" " required defaultValue={'ana.k@example.com'} />
                         <label htmlFor="email" className={floatingLabelClasses}>Email Address</label>
                     </div>
                     <div className="relative">
@@ -83,7 +84,7 @@ const AuthPage: React.FC = () => {
 
     return (
         <div 
-            className="fixed inset-0 z-50 flex justify-center items-center md:bg-black/50 md:p-4"
+            className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 p-4"
             onClick={handleClose}
         >
             <div 
