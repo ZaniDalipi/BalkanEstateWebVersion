@@ -76,6 +76,8 @@ export interface Property {
   views?: number;
   saves?: number;
   inquiries?: number;
+  floorNumber?: number;
+  totalFloors?: number;
 }
 
 export interface Filters {

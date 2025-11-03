@@ -25,6 +25,8 @@ interface ListingData {
     image_tags: { index: number; tag: string; }[];
     tourUrl: string;
     propertyType: 'house' | 'apartment' | 'villa' | 'other';
+    floorNumber: number;
+    totalFloors: number;
 }
 
 interface ImageData {
@@ -48,6 +50,8 @@ const initialListingData: ListingData = {
     image_tags: [],
     tourUrl: '',
     propertyType: 'house',
+    floorNumber: 0,
+    totalFloors: 0,
 };
 
 const INITIAL_ROOM_TAGS: PropertyImageTag[] = ['bedroom', 'bathroom', 'kitchen', 'living_room', 'exterior', 'other'];
@@ -385,6 +389,20 @@ const FormStep: React.FC<{
                     <div><label htmlFor="sq_meters" className="block text-sm font-medium text-neutral-700 mb-1">Area (m²)</label><input type="number" id="sq_meters" name="sq_meters" min="0" value={listingData.sq_meters} onChange={handleInputChange} className={`${inputBaseClasses} ${formErrors.sq_meters ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-primary'}`} /><p className="text-xs text-red-600 mt-1">{formErrors.sq_meters}</p></div>
                     <div><label htmlFor="year_built" className="block text-sm font-medium text-neutral-700 mb-1">Year Built</label><input type="number" id="year_built" name="year_built" min="0" value={listingData.year_built} onChange={handleInputChange} className={inputBaseClasses} /></div>
                     <div><label htmlFor="parking_spots" className="block text-sm font-medium text-neutral-700 mb-1">Parking</label><input type="number" id="parking_spots" name="parking_spots" min="0" value={listingData.parking_spots} onChange={handleInputChange} className={inputBaseClasses} /></div>
+                    
+                    {listingData.propertyType === 'apartment' && (
+                        <div>
+                            <label htmlFor="floorNumber" className="block text-sm font-medium text-neutral-700 mb-1">Floor #</label>
+                            <input type="number" id="floorNumber" name="floorNumber" min="0" value={listingData.floorNumber} onChange={handleInputChange} className={`${inputBaseClasses} border-neutral-300 focus:border-primary`} />
+                        </div>
+                    )}
+                    {(listingData.propertyType === 'house' || listingData.propertyType === 'villa') && (
+                        <div>
+                            <label htmlFor="totalFloors" className="block text-sm font-medium text-neutral-700 mb-1"># of Floors</label>
+                            <input type="number" id="totalFloors" name="totalFloors" min="0" value={listingData.totalFloors} onChange={handleInputChange} className={`${inputBaseClasses} border-neutral-300 focus:border-primary`} />
+                        </div>
+                    )}
+                    
                     <div className="col-span-2 md:col-span-5">
                         <label className="block text-sm font-medium text-neutral-700 mb-1.5">Property Type</label>
                         <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200">
@@ -580,6 +598,8 @@ const GeminiDescriptionGenerator: React.FC = () => {
                 tourUrl: propertyToEdit.tourUrl || '',
                 propertyType: propertyToEdit.propertyType,
                 image_tags: (propertyToEdit.images || []).map((img, index) => ({ index, tag: img.tag })),
+                floorNumber: propertyToEdit.floorNumber || 0,
+                totalFloors: propertyToEdit.totalFloors || 0,
             });
             const allImages = [
                 { url: propertyToEdit.imageUrl, tag: 'exterior' as PropertyImageTag },
@@ -706,6 +726,8 @@ const GeminiDescriptionGenerator: React.FC = () => {
                 description: analysisResult.description,
                 image_tags: analysisResult.image_tags,
                 propertyType: analysisResult.property_type || 'house',
+                floorNumber: analysisResult.floor_number || 0,
+                totalFloors: analysisResult.total_floors || 0,
             });
             setStep('form');
         } catch (e) {
@@ -871,6 +893,8 @@ const GeminiDescriptionGenerator: React.FC = () => {
                 propertyType: listingData.propertyType,
                 floorplanUrl: floorplanPreview || undefined,
                 createdAt: newTimestamp, // Update timestamp to show as recent
+                floorNumber: listingData.floorNumber > 0 ? listingData.floorNumber : undefined,
+                totalFloors: listingData.totalFloors > 0 ? listingData.totalFloors : undefined,
             };
             dispatch({ type: 'UPDATE_PROPERTY', payload: updatedProperty });
             dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
@@ -908,6 +932,8 @@ const GeminiDescriptionGenerator: React.FC = () => {
                 propertyType: listingData.propertyType,
                 floorplanUrl: floorplanPreview || undefined,
                 createdAt: newTimestamp,
+                floorNumber: listingData.floorNumber > 0 ? listingData.floorNumber : undefined,
+                totalFloors: listingData.totalFloors > 0 ? listingData.totalFloors : undefined,
             };
             dispatch({ type: 'ADD_PROPERTY', payload: newProperty });
             dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: true } });

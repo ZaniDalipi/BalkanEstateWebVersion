@@ -8,10 +8,13 @@ import {
     SparklesIcon, ChevronLeftIcon, ChevronRightIcon,
     MagnifyingGlassPlusIcon, PencilIcon, ShareIcon, ArrowDownTrayIcon, XMarkIcon,
     // FIX: Imported ArrowUturnLeftIcon to resolve missing component error.
-    ArrowUturnLeftIcon
+    ArrowUturnLeftIcon,
+    BuildingOfficeIcon,
+    CubeTransparentIcon
 } from '../../constants';
 import { getNeighborhoodInsights } from '../../services/geminiService';
 import ImageViewerModal from './ImageViewerModal';
+import FloorPlanViewerModal from './FloorPlanViewerModal';
 
 
 // --- Image Editor Modal ---
@@ -334,6 +337,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const [isFloorPlanOpen, setIsFloorPlanOpen] = useState(false);
   
   const allImages = useMemo(() => {
     const images = property.images || [];
@@ -390,13 +394,16 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
   const isFavorited = state.savedHomes.some(p => p.id === property.id);
 
   return (
-    <div className="absolute inset-0 md:left-20 bg-neutral-50 z-30 overflow-y-auto animate-fade-in transition-all duration-300">
+    <div className="bg-neutral-50 h-full overflow-y-auto animate-fade-in">
         {isEditorOpen && <ImageEditorModal imageUrl={currentImageUrl} property={property} onClose={() => setIsEditorOpen(false)} />}
         {isViewerOpen && <ImageViewerModal images={imagesForCurrentCategory} startIndex={currentImageIndex} onClose={() => setIsViewerOpen(false)} />}
+        {isFloorPlanOpen && property.floorplanUrl && (
+            <FloorPlanViewerModal imageUrl={property.floorplanUrl} onClose={() => setIsFloorPlanOpen(false)} />
+        )}
         <div className="p-4 bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 z-10 flex items-center justify-between">
             <button onClick={handleBack} className="flex items-center gap-2 text-primary font-semibold hover:underline">
                 <ArrowLeftIcon className="w-5 h-5" />
-                Back to Search
+                Back
             </button>
             <div onClick={handleFavoriteClick} className="bg-white p-2 rounded-full cursor-pointer border border-neutral-200 hover:shadow-md">
                  <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 transition-colors duration-300 ${isFavorited ? 'text-red-500 fill-current' : 'text-neutral-500 hover:text-red-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -491,6 +498,27 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-4">
                     <DetailItem icon={<CalendarIcon />} label="Year Built">{property.yearBuilt}</DetailItem>
                     <DetailItem icon={<ParkingIcon />} label="Parking">{property.parking > 0 ? `${property.parking} ${property.parking === 1 ? 'spot' : 'spots'}` : 'None'}</DetailItem>
+                    
+                    {property.propertyType === 'apartment' && property.floorNumber && (
+                        <DetailItem icon={<BuildingOfficeIcon />} label="Floor">{property.floorNumber}</DetailItem>
+                    )}
+                    {(property.propertyType === 'house' || property.propertyType === 'villa') && property.totalFloors && (
+                         <DetailItem icon={<BuildingOfficeIcon />} label="Floors">{property.totalFloors}</DetailItem>
+                    )}
+
+                    {property.floorplanUrl && (
+                        <div className="sm:col-span-2">
+                             <DetailItem icon={<CubeTransparentIcon />} label="Floor Plan">
+                                <button
+                                    onClick={() => setIsFloorPlanOpen(true)}
+                                    className="px-4 py-2 bg-primary-light text-primary-dark font-semibold rounded-lg hover:bg-primary/20 transition-colors"
+                                >
+                                    View Interactive Floor Plan
+                                </button>
+                            </DetailItem>
+                        </div>
+                    )}
+
                     <div className="sm:col-span-2">
                         <DetailItem icon={<StarIcon />} label="Special Features">
                              {Array.isArray(property.specialFeatures) && property.specialFeatures.length > 0 ? (

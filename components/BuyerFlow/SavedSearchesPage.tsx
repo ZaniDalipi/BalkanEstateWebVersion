@@ -2,16 +2,11 @@ import React from 'react';
 import { useAppContext } from '../../context/AppContext';
 import SavedSearchAccordion from './SavedSearchAccordion';
 import { MagnifyingGlassPlusIcon } from '../../constants';
-import PropertyDetailsPage from './PropertyDetailsPage';
 import { SavedSearch } from '../../types';
 
 const SavedSearchesPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
-  const { savedSearches, isAuthenticated, selectedProperty } = state;
-
-  if (selectedProperty) {
-    return <PropertyDetailsPage property={selectedProperty} />;
-  }
+  const { savedSearches, isAuthenticated } = state;
 
   const handleMarkAllViewed = () => {
     dispatch({ type: 'MARK_ALL_SEARCHES_VIEWED' });

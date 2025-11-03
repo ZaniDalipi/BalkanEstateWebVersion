@@ -14,6 +14,7 @@ import Sidebar from './components/shared/Sidebar';
 import Header from './components/shared/Header';
 import SubscriptionModal from './components/BuyerFlow/SubscriptionModal';
 import AgentsPage from './components/AgentsPage/AgentsPage';
+import PropertyDetailsPage from './components/BuyerFlow/PropertyDetailsPage';
 
 const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar }) => {
   const { state } = useAppContext();
@@ -21,6 +22,11 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
   // If no role is selected yet (first time user), show onboarding
   if (state.isInitialLaunch) {
     return <Onboarding />;
+  }
+
+  // Global handler for selected property view
+  if (state.selectedProperty) {
+    return <PropertyDetailsPage property={state.selectedProperty} />;
   }
   
   switch (state.activeView) {
@@ -54,8 +60,8 @@ const MainLayout: React.FC = () => {
   }, []);
   
   const isLayoutVisible = !state.isInitialLaunch;
-  const isFullHeightView = state.activeView === 'search' || state.activeView === 'inbox';
-  const showHeader = !(isMobile && state.activeView === 'search');
+  const isFullHeightView = state.activeView === 'search' || state.activeView === 'inbox' || !!state.selectedProperty;
+  const showHeader = !(isMobile && (state.activeView === 'search' || !!state.selectedProperty));
 
 
   if (!isLayoutVisible) {

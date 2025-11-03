@@ -2,7 +2,6 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useAppContext } from '../../context/AppContext';
 import MapComponent from './MapComponent';
 import PropertyList from './PropertyList';
-import PropertyDetailsPage from './PropertyDetailsPage';
 import { SavedSearch, ChatMessage, AiSearchQuery, Filters } from '../../types';
 import { getAiChatResponse, generateSearchName } from '../../services/geminiService';
 import Toast from '../shared/Toast';
@@ -30,7 +29,7 @@ interface SearchPageProps {
 
 const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const { state, dispatch } = useAppContext();
-    const { properties, selectedProperty, isAuthenticated, isAuthModalOpen, isPricingModalOpen, isSubscriptionModalOpen, currentUser } = state;
+    const { properties, isAuthenticated, isAuthModalOpen, isPricingModalOpen, isSubscriptionModalOpen, currentUser } = state;
 
     const [filters, setFilters] = useState<Filters>(initialFilters);
     
@@ -260,10 +259,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         setFiltersOpen(false);
         setRecenterMap(true); 
     };
-
-    if (selectedProperty) {
-        return <PropertyDetailsPage property={selectedProperty} />;
-    }
     
     const mapProps = {
         properties: baseFilteredProperties,
@@ -290,22 +285,20 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     };
 
     const MobileHeader = () => (
-        <div className="absolute top-0 left-0 right-0 p-4 z-10 bg-gradient-to-b from-black/30 to-transparent pointer-events-auto">
-            <div className="flex justify-between items-center">
-                <button onClick={onToggleSidebar} className="bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md">
-                    <Bars3Icon className="w-6 h-6 text-neutral-800"/>
+        <div className="flex justify-between items-center">
+            <button onClick={onToggleSidebar} className="bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md">
+                <Bars3Icon className="w-6 h-6 text-neutral-800"/>
+            </button>
+            <div className="flex items-center gap-2">
+                <button onClick={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true })} className="bg-primary text-white px-4 py-2 text-sm font-semibold rounded-full shadow-md">Subscribe</button>
+                <button onClick={handleNewListingClick} className="bg-secondary text-white px-3 py-2 text-sm font-semibold rounded-full shadow-md">+ New Listing</button>
+                <button onClick={handleAccountClick} className="bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md">
+                    {isAuthenticated && currentUser?.avatarUrl ? (
+                        <img src={currentUser.avatarUrl} alt="avatar" className="w-6 h-6 rounded-full"/>
+                    ) : (
+                         <UserIcon className="w-6 h-6 text-neutral-800"/>
+                    )}
                 </button>
-                <div className="flex items-center gap-2">
-                    <button onClick={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true })} className="bg-primary text-white px-4 py-2 text-sm font-semibold rounded-full shadow-md">Subscribe</button>
-                    <button onClick={handleNewListingClick} className="bg-secondary text-white px-3 py-2 text-sm font-semibold rounded-full shadow-md">+ New Listing</button>
-                    <button onClick={handleAccountClick} className="bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md">
-                        {isAuthenticated && currentUser?.avatarUrl ? (
-                            <img src={currentUser.avatarUrl} alt="avatar" className="w-6 h-6 rounded-full"/>
-                        ) : (
-                             <UserIcon className="w-6 h-6 text-neutral-800"/>
-                        )}
-                    </button>
-                </div>
             </div>
         </div>
     );
@@ -355,7 +348,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                     {isFiltersOpen && <MobileFilters />}
                     
                     {/* Map & List Container (Siblings for z-index control) */}
-                    <div className={`absolute inset-0 z-10 ${mobileView === 'list' ? 'pointer-events-none' : ''}`}>
+                    <div className="absolute inset-0 z-10">
                         <MapComponent {...mapProps} />
                     </div>
                     
@@ -371,7 +364,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
 
                     {/* Floating UI Container */}
                     <div className="absolute inset-0 z-30 pointer-events-none">
-                         <div className="pointer-events-auto">
+                         <div className="absolute top-0 left-0 right-0 p-4 pointer-events-auto">
                             <MobileHeader />
                          </div>
 
