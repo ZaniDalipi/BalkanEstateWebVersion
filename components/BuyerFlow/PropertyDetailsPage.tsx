@@ -306,7 +306,7 @@ const NeighborhoodInsights: React.FC<{ lat: number; lng: number; city: string; c
                 <div className="flex-shrink-0 w-8 h-8 mr-3 text-primary bg-primary-light rounded-full flex items-center justify-center">
                     <SparklesIcon className="w-5 h-5" />
                 </div>
-                <h3 className="text-xl font-bold text-neutral-800">Neighborhood Insights</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-neutral-800">Neighborhood Insights</h3>
             </div>
             {renderContent()}
         </div>
@@ -411,7 +411,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden">
               <div className="relative">
-                <button onClick={() => setIsViewerOpen(true)} className="w-full h-[450px] block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-t-xl">
+                <button onClick={() => setIsViewerOpen(true)} className="w-full h-[250px] sm:h-[400px] lg:h-[450px] block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-t-xl">
                     <img 
                         src={currentImageUrl}
                         alt={property.address} 
@@ -443,12 +443,12 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                 )}
               </div>
               <div className="p-6">
-                <p className="text-4xl font-bold text-neutral-900">{formatPrice(property.price, property.country)}</p>
+                <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900">{formatPrice(property.price, property.country)}</p>
                 <div className="flex items-center text-neutral-600 mt-2">
                     <MapPinIcon className="w-5 h-5 mr-2 text-neutral-400" />
-                    <span className="text-lg">{property.address}, {property.city}, {property.country}</span>
+                    <span className="text-sm sm:text-base lg:text-lg">{property.address}, {property.city}, {property.country}</span>
                 </div>
-                <div className="mt-6 flex flex-wrap justify-around text-lg text-neutral-800 border-t border-neutral-200 pt-4 gap-4">
+                <div className="mt-6 flex flex-wrap justify-around text-base sm:text-lg text-neutral-800 border-t border-neutral-200 pt-4 gap-4">
                   <div className="flex items-center gap-3"><BedIcon className="w-6 h-6 text-primary" /><span><span className="font-bold">{property.beds}</span> beds</span></div>
                   <div className="flex items-center gap-3"><BathIcon className="w-6 h-6 text-primary" /><span><span className="font-bold">{property.baths}</span> baths</span></div>
                   <div className="flex items-center gap-3"><SqftIcon className="w-6 h-6 text-primary" /><span><span className="font-bold">{property.sqft}</span> m²</span></div>
@@ -457,7 +457,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
             </div>
             
              <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
-                <h3 className="text-xl font-bold text-neutral-800 mb-4">Photos</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-neutral-800 mb-4">Photos</h3>
                 <div className="flex flex-wrap gap-2 border-b border-neutral-200 pb-4 mb-4">
                     <button onClick={() => handleCategorySelect('all')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${activeCategory === 'all' ? 'bg-primary text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'}`}>All</button>
                     {Object.keys(categorizedImages).map(tag => (
@@ -480,14 +480,14 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
-                <h3 className="text-xl font-bold text-neutral-800 mb-4">About This Home</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-neutral-800 mb-4">About This Home</h3>
                 <div className="prose prose-sm max-w-none text-neutral-700 whitespace-pre-wrap">
                     {property.description}
                 </div>
             </div>
             
              <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
-                <h3 className="text-xl font-bold text-neutral-800 mb-6">Property Details</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-neutral-800 mb-6">Property Details</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-4">
                     <DetailItem icon={<CalendarIcon />} label="Year Built">{property.yearBuilt}</DetailItem>
                     <DetailItem icon={<ParkingIcon />} label="Parking">{property.parking > 0 ? `${property.parking} ${property.parking === 1 ? 'spot' : 'spots'}` : 'None'}</DetailItem>
@@ -519,7 +519,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
           <div className="lg:col-span-1">
             <div className="sticky top-24">
               <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
-                  <h3 className="text-xl font-bold text-neutral-800 mb-4">Contact Seller</h3>
+                  <h3 className="text-lg sm:text-xl font-bold text-neutral-800 mb-4">Contact Seller</h3>
                   <div className="flex items-center gap-4 mb-6">
                       {property.seller?.avatarUrl ? (
                           <img src={property.seller.avatarUrl} alt={property.seller.name} className="w-16 h-16 rounded-full object-cover" />

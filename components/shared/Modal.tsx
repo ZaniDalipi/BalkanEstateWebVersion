@@ -19,7 +19,10 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-[5000] flex justify-center items-center p-4" onClick={onClose}>
-      <div className={`bg-white rounded-lg shadow-xl p-6 md:p-8 w-full ${sizeClass} relative`} onClick={(e) => e.stopPropagation()}>
+      <div 
+        className={`bg-white rounded-lg shadow-xl p-6 md:p-8 w-full ${sizeClass} relative overflow-y-auto max-h-[90vh]`} 
+        onClick={(e) => e.stopPropagation()}
+      >
         <button onClick={onClose} className="absolute top-4 right-4 text-neutral-500 hover:text-neutral-800">
           <XMarkIcon className="w-6 h-6" />
         </button>

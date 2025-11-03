@@ -25,13 +25,13 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose }
   const renderBuyerPlan = () => (
     <div className="animate-fade-in grid md:grid-cols-2 gap-8 items-center">
         <div>
-             <h3 className="text-2xl font-bold text-neutral-800">Buyer Pro</h3>
+             <h3 className="text-xl sm:text-2xl font-bold text-neutral-800">Buyer Pro</h3>
              <div className="mt-2">
-                <span className="text-4xl font-extrabold text-primary">€1.50</span>
-                <span className="text-lg font-semibold text-neutral-500">/month</span>
+                <span className="text-3xl sm:text-4xl font-extrabold text-primary">€1.50</span>
+                <span className="text-base sm:text-lg font-semibold text-neutral-500">/month</span>
              </div>
-             <p className="text-neutral-600 mt-2">Never miss a new listing! Get notified the moment a property matching your criteria hits the market.</p>
-            <ul className="mt-6 space-y-3 text-neutral-700">
+             <p className="text-neutral-600 mt-2 text-sm sm:text-base">Never miss a new listing! Get notified the moment a property matching your criteria hits the market.</p>
+            <ul className="mt-6 space-y-3 text-neutral-700 text-sm sm:text-base">
                 <li className="flex items-center gap-3"><CheckCircleIcon className="w-6 h-6 text-green-500" /> Instant email & SMS notifications</li>
                 <li className="flex items-center gap-3"><CheckCircleIcon className="w-6 h-6 text-green-500" /> Save unlimited searches</li>
                 <li className="flex items-center gap-3"><CheckCircleIcon className="w-6 h-6 text-green-500" /> Early access to new listings</li>
@@ -64,11 +64,11 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose }
   );
 
   const renderSellerPlan = () => (
-    <div className="animate-fade-in text-center p-8">
+    <div className="animate-fade-in text-center p-4 sm:p-8">
         <BuildingOfficeIcon className="w-16 h-16 text-primary mx-auto mb-4" />
-        <h3 className="text-2xl font-bold text-neutral-800">Seller & Agent Plans</h3>
-        <p className="text-neutral-600 mt-2 max-w-md mx-auto">Reach thousands of potential buyers with our powerful tools for sellers.</p>
-        <ul className="mt-6 text-left space-y-3 max-w-xs mx-auto text-neutral-700">
+        <h3 className="text-xl sm:text-2xl font-bold text-neutral-800">Seller & Agent Plans</h3>
+        <p className="text-neutral-600 mt-2 max-w-md mx-auto text-sm sm:text-base">Reach thousands of potential buyers with our powerful tools for sellers.</p>
+        <ul className="mt-6 text-left space-y-3 max-w-xs mx-auto text-neutral-700 text-sm sm:text-base">
             <li className="flex items-center gap-3"><CheckCircleIcon className="w-6 h-6 text-green-500" /> Premium listing placement</li>
             <li className="flex items-center gap-3"><CheckCircleIcon className="w-6 h-6 text-green-500" /> Advanced analytics</li>
             <li className="flex items-center gap-3"><CheckCircleIcon className="w-6 h-6 text-green-500" /> List more properties</li>
@@ -88,14 +88,14 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose }
         <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-md mx-auto mb-6">
             <button
                 onClick={() => setActiveTab('buyer')}
-                className={`w-1/2 px-4 py-2 rounded-full text-base font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'buyer' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}
+                className={`w-1/2 px-4 py-2 rounded-full text-sm sm:text-base font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'buyer' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}
             >
                 <UserIcon className="w-5 h-5"/>
                 For Buyers
             </button>
             <button
                 onClick={() => setActiveTab('seller')}
-                className={`w-1/2 px-4 py-2 rounded-full text-base font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'seller' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}
+                className={`w-1/2 px-4 py-2 rounded-full text-sm sm:text-base font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'seller' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}
             >
                 <BuildingOfficeIcon className="w-5 h-5"/>
                 For Sellers

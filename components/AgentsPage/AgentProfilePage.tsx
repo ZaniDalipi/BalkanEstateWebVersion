@@ -17,7 +17,7 @@ const StatCard: React.FC<{ label: string; value: string | number; icon: React.Re
         </div>
         <div>
             <p className="text-sm font-semibold text-primary-dark/80">{label}</p>
-            <p className="text-2xl font-bold text-primary-dark">{value}</p>
+            <p className="text-xl sm:text-2xl font-bold text-primary-dark">{value}</p>
         </div>
     </div>
 );
@@ -45,7 +45,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
             <img src={agent.avatarUrl} alt={agent.name} className="w-32 h-32 rounded-full object-cover border-4 border-primary-light" />
             <div className="text-center md:text-left">
                 <div className="flex items-center justify-center md:justify-start gap-3 mb-2 flex-wrap">
-                    <h1 className="text-4xl font-bold text-neutral-900">{agent.name}</h1>
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900">{agent.name}</h1>
                     {agent.licenseNumber && (
                         <div className="flex items-center gap-1.5 bg-green-100 text-green-800 px-3 py-1.5 rounded-full text-sm font-semibold">
                             <CheckCircleIcon className="w-5 h-5"/>
@@ -73,7 +73,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-                <h2 className="text-2xl font-bold text-neutral-800 mb-4">Active Listings</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-neutral-800 mb-4">Active Listings</h2>
                 {agentProperties.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {agentProperties.map(prop => <PropertyCard key={prop.id} property={prop} />)}
@@ -85,7 +85,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                 )}
             </div>
             <div>
-                 <h2 className="text-2xl font-bold text-neutral-800 mb-4">Client Testimonials</h2>
+                 <h2 className="text-xl sm:text-2xl font-bold text-neutral-800 mb-4">Client Testimonials</h2>
                  {agent.testimonials && agent.testimonials.length > 0 ? (
                      <div className="space-y-6">
                         {agent.testimonials.map((t, index) => (

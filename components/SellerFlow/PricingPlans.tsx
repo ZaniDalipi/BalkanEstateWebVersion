@@ -58,7 +58,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer })
             {showConfirmation && (
                 <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-10 flex flex-col justify-center items-center p-8 text-center rounded-2xl">
                     <h3 className="text-2xl font-bold text-red-600">Are you sure?</h3>
-                    <p className="mt-2 text-neutral-700 max-w-sm">This is a one-time offer. If you leave now, you won't see this amazing discount again.</p>
+                    <p className="mt-2 text-neutral-700 max-w-sm text-sm sm:text-base">This is a one-time offer. If you leave now, you won't see this amazing discount again.</p>
                     <div className="mt-6 flex gap-4">
                         <button onClick={onClose} className="px-8 py-2.5 border border-red-600 text-red-600 font-semibold rounded-lg hover:bg-red-50 transition-colors">Leave Offer</button>
                         <button onClick={() => setShowConfirmation(false)} className="px-8 py-2.5 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition-colors">Stay & Save!</button>
@@ -68,11 +68,11 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer })
 
             {isOffer && (
                  <div className="mb-6 bg-red-600 text-white rounded-lg p-4 text-center shadow-lg">
-                    <div className="flex items-center justify-center gap-3">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
                         <BoltIcon className="w-8 h-8 text-yellow-300" />
-                        <div className="text-left">
-                            <h3 className="font-extrabold text-xl">Limited Time Offer Ends In:</h3>
-                            <p className="font-mono text-2xl tracking-wider">{formatTime(timeLeft)}</p>
+                        <div className="text-center sm:text-left">
+                            <h3 className="font-extrabold text-base sm:text-lg">Limited Time Offer Ends In:</h3>
+                            <p className="font-mono text-xl sm:text-2xl tracking-wider">{formatTime(timeLeft)}</p>
                         </div>
                     </div>
                 </div>
@@ -80,46 +80,46 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer })
             <div className="text-center mb-10">
                 {isOffer ? (
                     <>
-                        <h2 className="text-3xl font-extrabold text-primary tracking-tight">Congratulations on Your Listing!</h2>
-                        <p className="mt-4 text-lg text-neutral-600">As a special thank you, enjoy this one-time discount on our selling plans.</p>
+                        <h2 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">Congratulations on Your Listing!</h2>
+                        <p className="mt-4 text-base sm:text-lg text-neutral-600">As a special thank you, enjoy this one-time discount on our selling plans.</p>
                     </>
                 ) : (
                     <>
-                        <h2 className="text-3xl font-extrabold text-neutral-800 tracking-tight">Choose Your Selling Plan</h2>
-                        <p className="mt-4 text-lg text-neutral-600">Get your property in front of thousands of potential buyers</p>
+                        <h2 className="text-2xl sm:text-3xl font-extrabold text-neutral-800 tracking-tight">Choose Your Selling Plan</h2>
+                        <p className="mt-4 text-base sm:text-lg text-neutral-600">Get your property in front of thousands of potential buyers</p>
                     </>
                 )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                 {/* Pro Yearly Plan */}
-                <div className="relative p-8 rounded-2xl border-2 border-green-400 bg-gradient-to-br from-green-50 to-cyan-50 shadow-lg lg:-translate-y-4 flex flex-col h-full">
+                <div className="relative p-6 sm:p-8 rounded-2xl border-2 border-green-400 bg-gradient-to-br from-green-50 to-cyan-50 shadow-lg lg:-translate-y-4 flex flex-col h-full">
                     <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
                         <span className="inline-block bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
                             {isOffer ? '60% OFF' : 'MOST POPULAR'}
                         </span>
                     </div>
                     <div className="text-center pt-4">
-                        <h3 className="text-2xl font-bold text-neutral-800">Pro Yearly</h3>
+                        <h3 className="text-xl sm:text-2xl font-bold text-neutral-800">Pro Yearly</h3>
                         <div className="mt-2 h-20 flex flex-col items-center justify-center">
                             {isOffer ? (
                                 <>
                                     <div>
-                                        <span className="text-2xl font-semibold text-neutral-500 line-through">€200</span>
-                                        <span className="text-5xl font-extrabold text-red-600 ml-2">€80</span>
-                                        <span className="text-xl font-semibold text-neutral-600">/year</span>
+                                        <span className="text-xl sm:text-2xl font-semibold text-neutral-500 line-through">€200</span>
+                                        <span className="text-4xl sm:text-5xl font-extrabold text-red-600 ml-2">€80</span>
+                                        <span className="text-lg sm:text-xl font-semibold text-neutral-600">/year</span>
                                     </div>
-                                    <p className="mt-1 text-lg font-bold text-green-600">You save €120!</p>
+                                    <p className="mt-1 text-sm sm:text-base font-bold text-green-600">You save €120!</p>
                                 </>
                             ) : (
                                 <p>
-                                    <span className="text-5xl font-extrabold text-neutral-900">€200</span>
-                                    <span className="text-xl font-semibold text-neutral-600">/year</span>
+                                    <span className="text-4xl sm:text-5xl font-extrabold text-neutral-900">€200</span>
+                                    <span className="text-lg sm:text-xl font-semibold text-neutral-600">/year</span>
                                 </p>
                             )}
                         </div>
                     </div>
-                    <ul className="mt-8 space-y-4 text-neutral-700 font-medium flex-grow">
+                    <ul className="mt-8 space-y-4 text-neutral-700 font-medium flex-grow text-sm sm:text-base">
                         <li className="flex items-center"><TickIcon /> Up to 10 active property ads</li>
                         <li className="flex items-center"><TickIcon /> Premium listing placement</li>
                         <li className="flex items-center"><TickIcon /> Advanced analytics dashboard</li>
@@ -127,67 +127,67 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer })
                         <li className="flex items-center"><TickIcon /> Professional photography tips</li>
                         <li className="flex items-center"><TickIcon /> Priority customer support</li>
                     </ul>
-                    <button className="w-full mt-8 py-3.5 rounded-lg font-bold text-white bg-indigo-500 hover:bg-indigo-600 transition-colors shadow-md text-lg">
+                    <button className="w-full mt-8 py-3.5 rounded-lg font-bold text-white bg-indigo-500 hover:bg-indigo-600 transition-colors shadow-md text-base sm:text-lg">
                         {isOffer ? 'Get Pro Annual - €80/year' : 'Get Pro Annual - €200/year'}
                     </button>
                 </div>
 
                 {/* Pro Monthly Plan */}
-                <div className="relative p-8 rounded-2xl border border-neutral-200 bg-white flex flex-col h-full">
+                <div className="relative p-6 sm:p-8 rounded-2xl border border-neutral-200 bg-white flex flex-col h-full">
                      {isOffer && (
                         <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
                              <span className="inline-block bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">50% OFF</span>
                         </div>
                     )}
                      <div className="text-center pt-4">
-                        <h3 className="text-2xl font-bold text-neutral-800">Pro Monthly</h3>
+                        <h3 className="text-xl sm:text-2xl font-bold text-neutral-800">Pro Monthly</h3>
                         <div className="mt-2 h-20 flex flex-col items-center justify-center">
                             {isOffer ? (
                                 <>
                                     <div>
-                                        <span className="text-2xl font-semibold text-neutral-500 line-through">€25</span>
-                                        <span className="text-5xl font-extrabold text-red-600 ml-2">€12.50</span>
-                                        <span className="text-xl font-semibold text-neutral-600">/month</span>
+                                        <span className="text-xl sm:text-2xl font-semibold text-neutral-500 line-through">€25</span>
+                                        <span className="text-4xl sm:text-5xl font-extrabold text-red-600 ml-2">€12.50</span>
+                                        <span className="text-lg sm:text-xl font-semibold text-neutral-600">/month</span>
                                     </div>
-                                    <p className="mt-1 text-lg font-bold text-green-600">You save €12.50!</p>
+                                    <p className="mt-1 text-sm sm:text-base font-bold text-green-600">You save €12.50!</p>
                                 </>
                             ) : (
                                 <p>
-                                    <span className="text-5xl font-extrabold text-neutral-900">€25</span>
-                                    <span className="text-xl font-semibold text-neutral-600">/month</span>
+                                    <span className="text-4xl sm:text-5xl font-extrabold text-neutral-900">€25</span>
+                                    <span className="text-lg sm:text-xl font-semibold text-neutral-600">/month</span>
                                 </p>
                             )}
                         </div>
                     </div>
                     <div className="mt-8 space-y-3 flex-grow flex flex-col">
                         <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-200">
-                            <p className="font-semibold text-neutral-800">Up to 3 active ads</p>
+                            <p className="font-semibold text-neutral-800 text-sm">Up to 3 active ads</p>
                             <p className="text-neutral-600 text-sm">Great for starting out</p>
                         </div>
                         <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-200">
-                            <p className="font-semibold text-neutral-800">Standard placement</p>
+                            <p className="font-semibold text-neutral-800 text-sm">Standard placement</p>
                             <p className="text-neutral-600 text-sm">Visible in search results</p>
                         </div>
                         <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-200">
-                            <p className="font-semibold text-neutral-800">Basic analytics</p>
+                            <p className="font-semibold text-neutral-800 text-sm">Basic analytics</p>
                             <p className="text-neutral-600 text-sm">Track your listing views</p>
                         </div>
                         <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-200">
-                            <p className="font-semibold text-neutral-800">Email support</p>
+                            <p className="font-semibold text-neutral-800 text-sm">Email support</p>
                             <p className="text-neutral-600 text-sm">Get help when you need it</p>
                         </div>
                          <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-200">
-                            <p className="font-semibold text-neutral-800">Mobile app access</p>
+                            <p className="font-semibold text-neutral-800 text-sm">Mobile app access</p>
                             <p className="text-neutral-600 text-sm">Manage on the go</p>
                         </div>
                     </div>
-                     <button className="w-full mt-8 py-3.5 rounded-lg font-bold bg-white border border-neutral-300 text-neutral-700 hover:bg-neutral-100 transition-colors shadow-sm text-lg">
+                     <button className="w-full mt-8 py-3.5 rounded-lg font-bold bg-white border border-neutral-300 text-neutral-700 hover:bg-neutral-100 transition-colors shadow-sm text-base sm:text-lg">
                         {isOffer ? 'Get Pro Monthly - €12.50/month' : 'Get Pro Monthly - €25/month'}
                     </button>
                 </div>
 
                 {/* Enterprise Plan */}
-                <div className="relative p-8 rounded-2xl bg-neutral-800 text-white flex flex-col h-full">
+                <div className="relative p-6 sm:p-8 rounded-2xl bg-neutral-800 text-white flex flex-col h-full">
                     <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
                          <span className="inline-block bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
                             {isOffer ? '20% OFF' : 'OFFER'}
@@ -196,41 +196,41 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer })
                      <div className="text-center pt-4">
                         <div className="flex justify-center items-center gap-2">
                            <BuildingOfficeIcon className="w-8 h-8 text-amber-400" />
-                           <h3 className="text-2xl font-bold">Enterprise Plan</h3>
+                           <h3 className="text-xl sm:text-2xl font-bold">Enterprise Plan</h3>
                         </div>
                         <div className="mt-2 h-20 flex flex-col items-center justify-center">
                             {isOffer ? (
                                 <>
                                     <div>
-                                        <span className="text-2xl font-semibold text-neutral-400 line-through">€1,000</span>
-                                        <span className="text-4xl font-extrabold ml-2">€800</span>
-                                        <span className="text-lg font-semibold text-neutral-300">/year</span>
+                                        <span className="text-lg sm:text-xl font-semibold text-neutral-400 line-through">€1,000</span>
+                                        <span className="text-3xl sm:text-4xl font-extrabold ml-2">€800</span>
+                                        <span className="text-base sm:text-lg font-semibold text-neutral-300">/year</span>
                                     </div>
-                                    <p className="mt-1 text-lg font-bold text-green-500">You save €200!</p>
+                                    <p className="mt-1 text-sm sm:text-base font-bold text-green-500">You save €200!</p>
                                 </>
                             ) : (
                                 <p>
-                                    <span className="text-4xl font-extrabold">€1,000</span>
-                                    <span className="text-lg font-semibold text-neutral-300">/year</span>
+                                    <span className="text-3xl sm:text-4xl font-extrabold">€1,000</span>
+                                    <span className="text-base sm:text-lg font-semibold text-neutral-300">/year</span>
                                 </p>
                             )}
                         </div>
                     </div>
                     <div className="mt-8 space-y-4 flex-grow">
                         <div className="bg-neutral-700/50 p-4 rounded-lg">
-                            <p className="font-bold text-lg">Unlimited Property Listings</p>
+                            <p className="font-bold text-base sm:text-lg">Unlimited Property Listings</p>
                             <p className="text-neutral-300 text-sm">Post as many properties as you need</p>
                         </div>
                          <div className="bg-neutral-700/50 p-4 rounded-lg">
-                            <p className="font-bold text-lg">3 Priority Ads per month</p>
+                            <p className="font-bold text-base sm:text-lg">3 Priority Ads per month</p>
                             <p className="text-neutral-300 text-sm">Always shown first to users</p>
                         </div>
                          <div className="bg-neutral-700/50 p-4 rounded-lg">
-                            <p className="font-bold text-lg">Dedicated Account Manager</p>
+                            <p className="font-bold text-base sm:text-lg">Dedicated Account Manager</p>
                             <p className="text-neutral-300 text-sm">Personal support for your business</p>
                         </div>
                     </div>
-                     <button className="w-full mt-8 py-3.5 rounded-lg font-bold bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-md text-lg">
+                     <button className="w-full mt-8 py-3.5 rounded-lg font-bold bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-md text-base sm:text-lg">
                          {isOffer ? 'Contact Sales - €800/year' : 'Perfect for Real Estate Companies'}
                     </button>
                 </div>

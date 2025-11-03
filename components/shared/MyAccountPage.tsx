@@ -197,11 +197,11 @@ const MyAccountPage: React.FC = () => {
                         <div className="bg-white p-4 rounded-xl shadow-md border border-neutral-200">
                              <div className="flex flex-col items-center text-center pb-4 mb-4 border-b">
                                 {state.currentUser.avatarUrl ? (
-                                    <img src={state.currentUser.avatarUrl} alt="avatar" className="w-24 h-24 rounded-full object-cover mb-3" />
+                                    <img src={state.currentUser.avatarUrl} alt="avatar" className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover mb-3" />
                                 ) : (
-                                    <UserCircleIcon className="w-24 h-24 text-neutral-300 mb-3" />
+                                    <UserCircleIcon className="w-20 h-20 sm:w-24 sm:h-24 text-neutral-300 mb-3" />
                                 )}
-                                <h2 className="font-bold text-xl text-neutral-800">{state.currentUser.name}</h2>
+                                <h2 className="font-bold text-lg sm:text-xl text-neutral-800">{state.currentUser.name}</h2>
                                 <p className="text-sm text-neutral-500 capitalize">{roleDisplayMap[state.currentUser.role]}</p>
                             </div>
                             <nav className="space-y-2">
