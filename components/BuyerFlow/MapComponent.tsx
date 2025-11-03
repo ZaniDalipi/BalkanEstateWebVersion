@@ -227,9 +227,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
     dispatch({ type: 'SET_SELECTED_PROPERTY', payload: propertyId });
   };
 
+  const bottomControlsOffset = 112; // 80px for floating button + 32px padding
+
   return (
     <div className="w-full h-full">
-      <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full" maxZoom={14} minZoom={9}>
+      <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full" maxZoom={14} minZoom={5}>
         <ChangeView center={center} zoom={zoom} enabled={recenter} />
         <MapEvents onMove={onMapMove} />
         <TileLayer
@@ -238,7 +240,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
         />
         <Markers properties={properties} onPopupClick={handlePopupClick} />
       </MapContainer>
-      <div className="absolute bottom-4 left-4 z-[1000] bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-neutral-200">
+      <div className="absolute left-4 z-[1000] bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-neutral-200" style={{ bottom: `${bottomControlsOffset}px` }}>
         <h4 className="font-bold text-sm mb-2 text-neutral-800">Legend</h4>
         <div className="space-y-1.5">
             {Object.entries(PROPERTY_TYPE_COLORS).map(([type, color]) => (
@@ -252,7 +254,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
             ))}
         </div>
       </div>
-      <div className="absolute bottom-4 right-4 z-[1000] bg-white/80 backdrop-blur-sm p-1 rounded-full shadow-lg flex space-x-1 border border-neutral-200">
+      <div className="absolute right-4 z-[1000] bg-white/80 backdrop-blur-sm p-1 rounded-full shadow-lg flex space-x-1 border border-neutral-200" style={{ bottom: `${bottomControlsOffset}px` }}>
         <button 
           onClick={() => setTileLayer('street')} 
           className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-colors ${tileLayer === 'street' ? 'bg-primary text-white shadow-md' : 'text-neutral-600 hover:bg-neutral-100'}`}

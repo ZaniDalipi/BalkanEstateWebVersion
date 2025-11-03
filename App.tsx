@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { UserRole } from './types';
 import Onboarding from './components/Onboarding';
@@ -15,7 +15,7 @@ import Header from './components/shared/Header';
 import SubscriptionModal from './components/BuyerFlow/SubscriptionModal';
 import AgentsPage from './components/AgentsPage/AgentsPage';
 
-const AppContent: React.FC = () => {
+const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar }) => {
   const { state } = useAppContext();
 
   // If no role is selected yet (first time user), show onboarding
@@ -38,16 +38,24 @@ const AppContent: React.FC = () => {
       return <AgentsPage />;
     case 'search':
     default:
-      return <SearchPage />;
+      return <SearchPage onToggleSidebar={onToggleSidebar} />;
   }
 };
 
 const MainLayout: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   const isLayoutVisible = !state.isInitialLaunch;
   const isFullHeightView = state.activeView === 'search' || state.activeView === 'inbox';
+  const showHeader = !(isMobile && state.activeView === 'search');
 
 
   if (!isLayoutVisible) {
@@ -58,10 +66,10 @@ const MainLayout: React.FC = () => {
     <div className="min-h-screen bg-neutral-50 font-sans">
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         
-        <div className="transition-all duration-300 ease-in-out md:pl-20 h-screen flex flex-col">
-            <Header onToggleSidebar={() => setIsSidebarOpen(true)} />
+        <div className={`transition-all duration-300 ease-in-out h-screen flex flex-col ${showHeader ? 'md:pl-20' : ''}`}>
+            {showHeader && <Header onToggleSidebar={() => setIsSidebarOpen(true)} />}
             <main className={`flex flex-col flex-grow ${isFullHeightView ? 'overflow-hidden' : 'overflow-y-auto'}`}>
-                <AppContent />
+                <AppContent onToggleSidebar={() => setIsSidebarOpen(true)} />
             </main>
         </div>
         
