@@ -49,7 +49,7 @@ const ListingCard: React.FC<{
             <div className="flex justify-between items-start">
                 <div onClick={handleCardClick} className="cursor-pointer">
                     <StatusBadge status={property.status} />
-                    <p className="font-bold text-xl text-neutral-800 mt-1">{formatPrice(property.price, property.country)}</p>
+                    <p className="font-bold text-lg sm:text-xl text-neutral-800 mt-1">{formatPrice(property.price, property.country)}</p>
                     <p className="text-sm text-neutral-600">{property.address}, {property.city}</p>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-shrink-0">
@@ -144,7 +144,7 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
                 </div>
             </Modal>
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                <h3 className="text-2xl font-bold text-neutral-800">My Listings ({properties.length})</h3>
+                <h3 className="text-xl sm:text-2xl font-bold text-neutral-800">My Listings ({properties.length})</h3>
                 <button 
                   onClick={() => {
                       dispatch({ type: 'SET_PROPERTY_TO_EDIT', payload: null });

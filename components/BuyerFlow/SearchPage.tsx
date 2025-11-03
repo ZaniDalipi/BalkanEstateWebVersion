@@ -25,7 +25,7 @@ const initialFilters: Filters = {
 
 const SearchPage: React.FC = () => {
     const { state, dispatch } = useAppContext();
-    const { properties, selectedProperty, isAuthenticated } = state;
+    const { properties, selectedProperty, isAuthenticated, isAuthModalOpen, isPricingModalOpen, isSubscriptionModalOpen } = state;
 
     const [filters, setFilters] = useState<Filters>(initialFilters);
     
@@ -37,6 +37,8 @@ const SearchPage: React.FC = () => {
     const [recenterMap, setRecenterMap] = useState(true);
     const [mobileView, setMobileView] = useState<'list' | 'map'>('list');
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+
+    const isModalOpen = isAuthModalOpen || isPricingModalOpen || isSubscriptionModalOpen;
 
     const allCities = useMemo(() => Object.values(CITY_DATA).flat(), []);
 
@@ -278,7 +280,7 @@ const SearchPage: React.FC = () => {
                         onSearchOnMoveChange={setSearchOnMove}
                     />
                 </div>
-                 <div className={`relative w-full h-full md:w-2/5 ${mobileView === 'list' ? 'hidden md:block' : 'block'}`}>
+                 <div className={`relative w-full h-full md:w-2/5 ${mobileView === 'list' ? 'hidden md:block' : 'block'} ${isModalOpen ? 'z-0' : 'z-10'}`}>
                      <MapComponent 
                         properties={filteredProperties} 
                         recenter={recenterMap}
