@@ -2,15 +2,26 @@ import React from 'react';
 import { useAppContext } from '../../context/AppContext';
 import SavedSearchAccordion from './SavedSearchAccordion';
 import { MagnifyingGlassPlusIcon } from '../../constants';
-import { SavedSearch } from '../../types';
+import { SavedSearch, Filters } from '../../types';
+
+const initialFilters: Filters = {
+    query: '',
+    minPrice: null,
+    maxPrice: null,
+    beds: null,
+    baths: null,
+    livingRooms: null,
+    minSqft: null,
+    maxSqft: null,
+    sortBy: 'newest',
+    sellerType: 'any',
+    propertyType: 'any',
+};
+
 
 const SavedSearchesPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const { savedSearches, isAuthenticated } = state;
-
-  const handleMarkAllViewed = () => {
-    dispatch({ type: 'MARK_ALL_SEARCHES_VIEWED' });
-  };
 
   const renderContent = () => {
     if (!isAuthenticated) {
@@ -20,7 +31,7 @@ const SavedSearchesPage: React.FC = () => {
                 <h3 className="text-xl font-semibold text-neutral-800">Log in to view your saved searches</h3>
                 <p className="text-neutral-500 mt-2">Save your favorite search criteria and get notified about new listings.</p>
                 <button 
-                    onClick={() => dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true })}
+                    onClick={() => dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } })}
                     className="mt-6 px-6 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
                 >
                     Login / Register
@@ -34,8 +45,7 @@ const SavedSearchesPage: React.FC = () => {
             const exampleSearch: SavedSearch = {
                 id: 'ss-example',
                 name: 'Belgrade, under €400k',
-                newPropertyCount: state.properties.filter(p => p.city === 'Belgrade' && p.price < 400000).length,
-                properties: state.properties.filter(p => p.city === 'Belgrade' && p.price < 400000).slice(0,5),
+                filters: { ...initialFilters, query: 'Belgrade', maxPrice: 400000 },
             };
             dispatch({ type: 'ADD_SAVED_SEARCH', payload: exampleSearch });
         };
@@ -68,14 +78,6 @@ const SavedSearchesPage: React.FC = () => {
     
     return (
         <>
-            <div className="flex justify-end mb-6">
-              <button 
-                onClick={handleMarkAllViewed}
-                className="bg-primary-light text-primary-dark font-semibold text-sm px-4 py-2 rounded-full hover:bg-primary/20 transition-colors"
-              >
-                Mark all viewed
-              </button>
-            </div>
             <div className="space-y-4">
               {savedSearches.map((search) => (
                 <SavedSearchAccordion key={search.id} search={search} />

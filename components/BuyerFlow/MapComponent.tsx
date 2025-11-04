@@ -33,8 +33,7 @@ type TileLayerType = keyof typeof TILE_LAYERS;
 interface MapComponentProps {
   properties: Property[];
   recenter: boolean;
-  onMapMove: (bounds: L.LatLngBounds) => void;
-  userLocation: [number, number] | null;
+  onMapMove: (bounds: L.LatLngBounds, center: L.LatLng) => void;
   isSearchActive: boolean;
   searchLocation: [number, number] | null;
 }
@@ -50,7 +49,7 @@ const ChangeView: React.FC<{center: [number, number], zoom: number, enabled: boo
     return null;
 }
 
-const MapEvents: React.FC<{ onMove: (bounds: L.LatLngBounds) => void }> = ({ onMove }) => {
+const MapEvents: React.FC<{ onMove: (bounds: L.LatLngBounds, center: L.LatLng) => void }> = ({ onMove }) => {
     const map = useMap();
 
     useEffect(() => {
@@ -74,10 +73,10 @@ const MapEvents: React.FC<{ onMove: (bounds: L.LatLngBounds) => void }> = ({ onM
 
     useMapEvents({
         load: () => {
-            onMove(map.getBounds());
+            onMove(map.getBounds(), map.getCenter());
         },
         moveend: () => {
-            onMove(map.getBounds());
+            onMove(map.getBounds(), map.getCenter());
         },
     });
     return null;
@@ -185,9 +184,16 @@ const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) => {
     );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove, userLocation, isSearchActive, searchLocation }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove, isSearchActive, searchLocation }) => {
   const { dispatch } = useAppContext();
   const [tileLayer, setTileLayer] = useState<TileLayerType>('street');
+
+  // Filter out properties with invalid coordinates to prevent map errors
+  const validProperties = useMemo(() => {
+    return properties.filter(p => 
+      p.lat != null && !isNaN(p.lat) && p.lng != null && !isNaN(p.lng)
+    );
+  }, [properties]);
   
   const { center, zoom } = useMemo(() => {
     // 1. Prioritize explicit search location from the query input
@@ -198,21 +204,17 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
         };
     }
     
-    // 2. If a search (e.g., by price) is active and has results, focus on them.
-    if (isSearchActive && properties.length > 0) {
+    // 2. If a search is active and has results, focus on them.
+    if (isSearchActive && validProperties.length > 0) {
       return {
-        center: [properties[0].lat, properties[0].lng] as [number, number],
-        zoom: properties.length === 1 ? 14 : 12,
+        center: [validProperties[0].lat, validProperties[0].lng] as [number, number],
+        zoom: validProperties.length === 1 ? 14 : 12,
       };
     }
-    // 3. For initial load or cleared search, prioritize user location.
-    if (userLocation) {
-      return { center: userLocation, zoom: 14 };
-    }
-    // 4. Fallback to properties if no user location.
-    if (properties.length > 0) {
+    // 3. Fallback to properties if no user location.
+    if (validProperties.length > 0) {
       return {
-        center: [properties[0].lat, properties[0].lng] as [number, number],
+        center: [validProperties[0].lat, validProperties[0].lng] as [number, number],
         zoom: 10,
       };
     }
@@ -221,7 +223,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
       center: [44.2, 19.9] as [number, number],
       zoom: 10,
     };
-  }, [properties, userLocation, isSearchActive, searchLocation]);
+  }, [validProperties, isSearchActive, searchLocation]);
     
   const handlePopupClick = (propertyId: string) => {
     dispatch({ type: 'SET_SELECTED_PROPERTY', payload: propertyId });
@@ -238,7 +240,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
           attribution={TILE_LAYERS[tileLayer].attribution}
           url={TILE_LAYERS[tileLayer].url}
         />
-        <Markers properties={properties} onPopupClick={handlePopupClick} />
+        <Markers properties={validProperties} onPopupClick={handlePopupClick} />
       </MapContainer>
       <div className="absolute left-4 z-[1000] bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-neutral-200" style={{ bottom: `${bottomControlsOffset}px` }}>
         <h4 className="font-bold text-sm mb-2 text-neutral-800">Legend</h4>

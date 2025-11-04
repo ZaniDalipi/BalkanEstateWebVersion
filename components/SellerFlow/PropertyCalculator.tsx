@@ -8,7 +8,7 @@ const PropertyCalculator: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const availableCountries = useMemo(() => Object.keys(CITY_DATA).sort(), []);
-  const [selectedCountry, setSelectedCountry] = useState(availableCountries[0]);
+  const [selectedCountry, setSelectedCountry] = useState('');
 
   const availableCities = useMemo(() => {
     if (!selectedCountry || !CITY_DATA[selectedCountry]) return [];
@@ -27,11 +27,12 @@ const PropertyCalculator: React.FC = () => {
     // Simulate API call and calculation
     setTimeout(() => {
         const formData = new FormData(form); // Use the captured variable
+        const country = formData.get('country') as string;
         const city = formData.get('city') as string;
         const sqft = Math.max(0, Number(formData.get('sqft')));
 
-        if (!city) {
-            setError('Please select a city.');
+        if (!city || !country) {
+            setError('Please select a country and city.');
             setLoading(false);
             return;
         }
@@ -50,8 +51,6 @@ const PropertyCalculator: React.FC = () => {
 
         // Add some variance to make it an "estimate"
         const estimatedValue = avgPricePerSqft * sqft * (Math.random() * 0.2 + 0.9);
-
-        const country = selectedCountry;
 
         setResult({
             value: Math.round(estimatedValue / 100) * 100, // Round to nearest 100
@@ -80,7 +79,9 @@ const PropertyCalculator: React.FC = () => {
               value={selectedCountry} 
               onChange={(e) => setSelectedCountry(e.target.value)} 
               className={floatingInputClasses}
+              required
             >
+              <option value="" disabled>Select a country</option>
               {availableCountries.map(country => (
                   <option key={country} value={country}>{country}</option>
               ))}
@@ -95,10 +96,12 @@ const PropertyCalculator: React.FC = () => {
               id="city" 
               name="city" 
               key={selectedCountry} // Force re-render on country change
-              defaultValue={availableCities[0]} 
+              defaultValue=""
               className={floatingInputClasses} 
               disabled={!selectedCountry}
+              required
             >
+              <option value="" disabled>Select a city</option>
               {availableCities.map(city => (
                   <option key={city} value={city}>{city}</option>
               ))}

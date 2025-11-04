@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { AppleIcon, DevicePhoneMobileIcon, EnvelopeIcon, FacebookIcon, GoogleIcon, LogoIcon, XMarkIcon } from '../../constants';
 import { mockUsers } from '../../services/propertyService';
@@ -16,11 +16,15 @@ const SocialButton: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon
 
 const AuthPage: React.FC = () => {
     const { state, dispatch } = useAppContext();
-    const [view, setView] = useState<View>('login');
+    const [view, setView] = useState<View>(state.authModalView);
     const [method, setMethod] = useState<Method>('email');
 
+    useEffect(() => {
+        setView(state.authModalView);
+    }, [state.authModalView, state.isAuthModalOpen]);
+
     const handleClose = () => {
-        dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: false });
+        dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: false } });
     };
 
     const handleFormSubmit = (e: React.FormEvent) => {

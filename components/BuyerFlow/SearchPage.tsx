@@ -8,6 +8,8 @@ import Toast from '../shared/Toast';
 import L from 'leaflet';
 import { CITY_DATA } from '../../services/propertyService';
 import { Bars3Icon, SearchIcon, UserIcon, XMarkIcon, AdjustmentsHorizontalIcon, MapPinIcon, Squares2x2Icon } from '../../constants';
+import { findClosestCity } from '../../utils/location';
+import { filterProperties } from '../../utils/propertyUtils';
 
 const initialFilters: Filters = {
     query: '',
@@ -15,6 +17,7 @@ const initialFilters: Filters = {
     maxPrice: null,
     beds: null,
     baths: null,
+    livingRooms: null,
     minSqft: null,
     maxSqft: null,
     sortBy: 'newest',
@@ -39,7 +42,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
     const [isSaving, setIsSaving] = useState(false);
     const [recenterMap, setRecenterMap] = useState(true);
-    const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
 
     const isModalOpen = isAuthModalOpen || isPricingModalOpen || isSubscriptionModalOpen;
 
@@ -65,83 +67,32 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         setToast({ show: true, message, type });
     }, []);
 
-    useEffect(() => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    setUserLocation([position.coords.latitude, position.coords.longitude]);
-                },
-                (error: GeolocationPositionError) => {
-                    let toastMessage: string;
-                    switch (error.code) {
-                        case error.PERMISSION_DENIED:
-                            toastMessage = "Location access denied. You can enable it in your browser settings.";
-                            console.warn("User denied geolocation access.");
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            toastMessage = "Location information is unavailable.";
-                            console.warn("Geolocation position unavailable.");
-                            break;
-                        case error.TIMEOUT:
-                            toastMessage = "Request for user location timed out.";
-                            console.warn("Geolocation request timed out.");
-                            break;
-                        default:
-                            toastMessage = "An unknown error occurred while getting your location.";
-                            console.error("Error getting user location:", error.message);
-                            break;
-                    }
-                    showToast(toastMessage, 'error');
-                }
-            );
-        } else {
-            showToast("Geolocation is not supported by your browser.", 'error');
-        }
-    }, [showToast]);
+    const isSearchActive = useMemo(() => {
+        return filters.query.trim() !== '' || filters.minPrice !== null || filters.maxPrice !== null || filters.beds !== null || filters.baths !== null || filters.livingRooms !== null || filters.minSqft !== null || filters.maxSqft !== null || filters.sellerType !== 'any' || filters.propertyType !== 'any';
+    }, [filters]);
+
     
     // Properties filtered by form inputs (price, beds, etc.), used to populate the map
     const baseFilteredProperties = useMemo(() => {
-        let sortedProperties = [...properties];
+        const filtered = filterProperties(properties, filters);
 
         // Sorting
         switch (filters.sortBy) {
             case 'price_asc':
-                sortedProperties.sort((a, b) => a.price - b.price);
-                break;
+                return filtered.sort((a, b) => a.price - b.price);
             case 'price_desc':
-                sortedProperties.sort((a, b) => b.price - a.price);
-                break;
+                return filtered.sort((a, b) => b.price - a.price);
             case 'beds_desc':
-                sortedProperties.sort((a, b) => b.beds - a.beds);
-                break;
+                return filtered.sort((a, b) => b.beds - a.beds);
             case 'newest':
-                sortedProperties.sort((a, b) => {
+                 return filtered.sort((a, b) => {
                     const effectiveDateA = Math.max(a.createdAt || 0, a.lastRenewed || 0);
                     const effectiveDateB = Math.max(b.createdAt || 0, b.lastRenewed || 0);
                     return effectiveDateB - effectiveDateA;
                 });
-                break;
             default:
-                break;
+                return filtered;
         }
-
-        return sortedProperties.filter(p => {
-            const queryMatch = filters.query ? 
-                p.address.toLowerCase().includes(filters.query.toLowerCase()) || 
-                p.city.toLowerCase().includes(filters.query.toLowerCase()) : true;
-            
-            const minPriceMatch = filters.minPrice ? p.price >= filters.minPrice : true;
-            const maxPriceMatch = filters.maxPrice ? p.price <= filters.maxPrice : true;
-            const bedsMatch = filters.beds ? p.beds >= filters.beds : true;
-            const bathsMatch = filters.baths ? p.baths >= filters.baths : true;
-            const minSqftMatch = filters.minSqft ? p.sqft >= filters.minSqft : true;
-            const maxSqftMatch = filters.maxSqft ? p.sqft <= filters.maxSqft : true;
-            const sellerTypeMatch = filters.sellerType !== 'any' ? p.seller.type === filters.sellerType : true;
-            const propertyTypeMatch = filters.propertyType !== 'any' ? p.propertyType === filters.propertyType : true;
-            
-            return queryMatch && minPriceMatch && maxPriceMatch && bedsMatch && bathsMatch && sellerTypeMatch && propertyTypeMatch && minSqftMatch && maxSqftMatch;
-        });
-
     }, [properties, filters]);
 
     // Properties for the list, further filtered by map bounds if "search on move" is active
@@ -153,14 +104,11 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         return baseFilteredProperties.filter(p => mapBounds.contains([p.lat, p.lng]));
     }, [baseFilteredProperties, searchOnMove, mapBounds, recenterMap]);
 
-
-    const isSearchActive = useMemo(() => {
-        return filters.query.trim() !== '' || filters.minPrice !== null || filters.maxPrice !== null || filters.beds !== null || filters.baths !== null || filters.minSqft !== null || filters.maxSqft !== null || filters.sellerType !== 'any' || filters.propertyType !== 'any';
-    }, [filters]);
-
-    const handleFilterChange = useCallback((name: keyof Filters, value: string | number | null) => {
+    const handleFilterChange = useCallback((name: keyof Filters, value: string | number | null, shouldRecenter = true) => {
         setFilters(prev => ({ ...prev, [name]: value }));
-        setRecenterMap(true);
+        if (shouldRecenter) {
+            setRecenterMap(true);
+        }
     }, []);
 
     const handleResetFilters = useCallback(() => {
@@ -175,39 +123,48 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     
     const handleSaveSearch = useCallback(async () => {
         if (!isAuthenticated) {
-            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
-            return;
-        }
-
-        const hasExplicitFilters = 
-            filters.query.trim() !== '' || 
-            filters.minPrice !== null || 
-            filters.maxPrice !== null || 
-            filters.beds !== null || 
-            filters.baths !== null || 
-            filters.minSqft !== null || 
-            filters.maxSqft !== null || 
-            filters.sellerType !== 'any' ||
-            filters.propertyType !== 'any';
-
-        // A map-only search is also a valid search to save.
-        const isMapSearchWithResults = searchOnMove && listProperties.length > 0;
-
-        if (!hasExplicitFilters && !isMapSearchWithResults) {
-            showToast("Cannot save an empty search. Please add some criteria.", 'error');
+            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
             return;
         }
 
         setIsSaving(true);
         try {
-            const searchName = await generateSearchName(filters);
-            const newSearch: SavedSearch = {
-                id: `ss-${Date.now()}`,
-                name: searchName,
-                // Set the initial count to the number of properties found
-                newPropertyCount: listProperties.length,
-                properties: listProperties.slice(0, 5),
-            };
+            let newSearch: SavedSearch;
+
+            // If no filters are active, create a search based on the map's center city
+            if (!isSearchActive && mapBounds) {
+                const center = mapBounds.getCenter();
+                const closestCity = findClosestCity(center.lat, center.lng, allCities);
+
+                if (closestCity) {
+                    const cityName = closestCity.name;
+                    newSearch = {
+                        id: `ss-${Date.now()}`,
+                        name: cityName,
+                        filters: { ...initialFilters, query: cityName },
+                    };
+                } else {
+                    showToast("Could not determine a city from the map view.", 'error');
+                    setIsSaving(false);
+                    return;
+                }
+            } else {
+                // Otherwise, save based on the active filters
+                const isMapSearchWithResults = searchOnMove && listProperties.length > 0;
+                if (!isSearchActive && !isMapSearchWithResults) {
+                    showToast("Cannot save an empty search. Please add some criteria or move the map.", 'error');
+                    setIsSaving(false);
+                    return;
+                }
+                
+                const searchName = await generateSearchName(filters);
+                newSearch = {
+                    id: `ss-${Date.now()}`,
+                    name: searchName,
+                    filters: filters,
+                };
+            }
+
             dispatch({ type: 'ADD_SAVED_SEARCH', payload: newSearch });
             showToast("Search saved successfully!", 'success');
         } catch (e) {
@@ -216,25 +173,32 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         } finally {
             setIsSaving(false);
         }
-    }, [isAuthenticated, dispatch, filters, listProperties, showToast, searchOnMove]);
+    }, [isAuthenticated, dispatch, filters, listProperties, isSearchActive, mapBounds, searchOnMove, allCities, showToast]);
     
-    const handleMapMove = useCallback((newBounds: L.LatLngBounds) => {
+    const handleMapMove = useCallback((newBounds: L.LatLngBounds, newCenter: L.LatLng) => {
         setMapBounds(newBounds);
         setRecenterMap(false);
-    }, []);
+        
+        // Find the city at the center of the map and update the query input
+        const closestCity = findClosestCity(newCenter.lat, newCenter.lng, allCities);
+        if (closestCity && closestCity.name.toLowerCase() !== filters.query.toLowerCase()) {
+            // Update the filter but DO NOT recenter the map, preventing a feedback loop.
+            handleFilterChange('query', closestCity.name, false);
+        }
+    }, [allCities, filters.query, handleFilterChange]);
 
     const handleNewListingClick = () => {
       if (isAuthenticated) {
           dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'create-listing' });
       } else {
-          dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
+          dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
       }
     };
     const handleAccountClick = () => {
       if (isAuthenticated) {
           dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
       } else {
-          dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
+          dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
       }
     };
 
@@ -245,6 +209,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             maxPrice: aiQuery.maxPrice || null,
             beds: aiQuery.beds || null,
             baths: aiQuery.baths || null,
+            livingRooms: aiQuery.livingRooms || null,
             minSqft: aiQuery.minSqft || null,
             maxSqft: aiQuery.maxSqft || null,
         };
@@ -264,7 +229,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         properties: baseFilteredProperties,
         recenter: recenterMap,
         onMapMove: handleMapMove,
-        userLocation: userLocation,
         isSearchActive: isSearchActive,
         searchLocation: searchLocation,
     };
@@ -285,20 +249,22 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     };
 
     const MobileHeader = () => (
-        <div className="flex justify-between items-center">
-            <button onClick={onToggleSidebar} className="bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md">
-                <Bars3Icon className="w-6 h-6 text-neutral-800"/>
-            </button>
-            <div className="flex items-center gap-2">
-                <button onClick={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true })} className="bg-primary text-white px-4 py-2 text-sm font-semibold rounded-full shadow-md">Subscribe</button>
-                <button onClick={handleNewListingClick} className="bg-secondary text-white px-3 py-2 text-sm font-semibold rounded-full shadow-md">+ New Listing</button>
-                <button onClick={handleAccountClick} className="bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md">
-                    {isAuthenticated && currentUser?.avatarUrl ? (
-                        <img src={currentUser.avatarUrl} alt="avatar" className="w-6 h-6 rounded-full"/>
-                    ) : (
-                         <UserIcon className="w-6 h-6 text-neutral-800"/>
-                    )}
+        <div className="pointer-events-auto">
+            <div className="flex justify-between items-center">
+                <button onClick={onToggleSidebar} className="bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md">
+                    <Bars3Icon className="w-6 h-6 text-neutral-800"/>
                 </button>
+                <div className="flex items-center gap-2">
+                    <button onClick={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true })} className="bg-primary text-white px-4 py-2 text-sm font-semibold rounded-full shadow-md">Subscribe</button>
+                    <button onClick={handleNewListingClick} className="bg-secondary text-white px-3 py-2 text-sm font-semibold rounded-full shadow-md">+ New Listing</button>
+                    <button onClick={handleAccountClick} className="bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md">
+                        {isAuthenticated && currentUser?.avatarUrl ? (
+                            <img src={currentUser.avatarUrl} alt="avatar" className="w-6 h-6 rounded-full"/>
+                        ) : (
+                             <UserIcon className="w-6 h-6 text-neutral-800"/>
+                        )}
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -311,7 +277,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                     <XMarkIcon className="w-6 h-6" />
                 </button>
             </div>
-            <div className="flex-grow overflow-y-auto min-h-0">
+            <div className="flex-grow overflow-y-auto min-h-0 pt-4">
                 <PropertyList {...propertyListProps} isMobile={true} showFilters={true} showList={false} />
             </div>
             {searchMode === 'manual' && (
@@ -347,15 +313,17 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                 <div className="md:hidden w-full h-full relative">
                     {isFiltersOpen && <MobileFilters />}
                     
-                    {/* Map & List Container (Siblings for z-index control) */}
+                    {/* Z-Index Sibling Containers */}
+                    {/* Map Container */}
                     <div className="absolute inset-0 z-10">
                         <MapComponent {...mapProps} />
                     </div>
                     
+                    {/* List View Container */}
                     {mobileView === 'list' && (
                         <div className="absolute inset-0 z-20 flex w-full h-full bg-white flex-col">
                             {/* Spacer to push content below floating header/search */}
-                            <div className="h-[140px] flex-shrink-0"></div>
+                            <div className="h-[88px] flex-shrink-0"></div>
                             <div className="flex-grow min-h-0">
                                 <PropertyList {...propertyListProps} isMobile={true} showFilters={false} showList={true}/>
                             </div>
@@ -363,8 +331,8 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                     )}
 
                     {/* Floating UI Container */}
-                    <div className="absolute inset-0 z-30 pointer-events-none">
-                         <div className="absolute top-0 left-0 right-0 p-4 pointer-events-auto">
+                    <div className="absolute inset-0 z-30 pointer-events-none p-4 flex flex-col justify-between">
+                         <div className="pointer-events-auto">
                             <MobileHeader />
                          </div>
 
@@ -397,13 +365,13 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                             </button>
                         </div>
                         
-                        {mobileView === 'map' && (
-                            <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-neutral-900/80 text-white font-bold text-sm px-4 py-2 rounded-full shadow-lg backdrop-blur-sm pointer-events-auto">
-                                <span>{listProperties.length} results</span>
-                            </div>
-                        )}
+                        <div className="flex flex-col items-center pointer-events-auto">
+                            {mobileView === 'map' && (
+                                <div className="bg-neutral-900/80 text-white font-bold text-sm px-4 py-2 rounded-full shadow-lg backdrop-blur-sm mb-4">
+                                    <span>{listProperties.length} results</span>
+                                </div>
+                            )}
 
-                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-auto">
                             <button
                                 onClick={() => setMobileView(v => v === 'map' ? 'list' : 'map')}
                                 className="flex items-center gap-2 px-5 py-3 bg-neutral-900 text-white font-bold rounded-full shadow-lg hover:bg-black transition-transform hover:scale-105"

@@ -10,7 +10,9 @@ interface AiSearchProps {
 }
 
 const AiSearch: React.FC<AiSearchProps> = ({ properties, onApplyFilters, isMobile }) => {
-    const [history, setHistory] = useState<ChatMessage[]>([]);
+    const [history, setHistory] = useState<ChatMessage[]>([
+        { sender: 'ai', text: "Hello! Welcome to Balkan Estate. How can I help you find a property today?" }
+    ]);
     const [input, setInput] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [finalQuery, setFinalQuery] = useState<AiSearchQuery | null>(null);
@@ -55,53 +57,55 @@ const AiSearch: React.FC<AiSearchProps> = ({ properties, onApplyFilters, isMobil
     };
 
     return (
-        <div className={`flex flex-col ${isMobile ? 'h-full' : ''}`}>
+        <div className={`flex flex-col h-full bg-white`}>
             <div className="flex-grow p-4 space-y-4 overflow-y-auto">
-                {history.length === 0 && (
-                    <div className="text-center p-8 text-neutral-500">
-                        <SparklesIcon className="w-12 h-12 mx-auto text-primary/50 mb-4" />
-                        <p className="font-semibold">Chat with our AI Assistant</p>
-                        <p className="text-sm mt-1">Describe what you're looking for, e.g., "A modern apartment in Belgrade with 2 bedrooms for under €200,000."</p>
-                    </div>
-                )}
                 {history.map((msg, index) => (
-                    <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-xs md:max-w-md p-3 rounded-2xl ${msg.sender === 'user' ? 'bg-primary text-white rounded-br-lg' : 'bg-neutral-100 text-neutral-800 rounded-bl-lg'}`}>
+                    <div key={index} className={`flex items-end gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                         {msg.sender === 'ai' && (
+                            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                                <SparklesIcon className="w-5 h-5 text-white"/>
+                            </div>
+                         )}
+                        <div className={`max-w-xs md:max-w-md p-3 rounded-2xl shadow-sm ${msg.sender === 'user' ? 'bg-primary text-white rounded-br-none' : 'bg-neutral-100 text-neutral-800 rounded-bl-none'}`}>
                             <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
                         </div>
                     </div>
                 ))}
+
                 {isSearching && (
-                    <div className="flex justify-start">
-                        <div className="max-w-xs md:max-w-md p-3 rounded-lg bg-neutral-100 text-neutral-800">
+                    <div className="flex items-end gap-2 justify-start">
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0"><SparklesIcon className="w-5 h-5 text-white"/></div>
+                        <div className="p-3 rounded-2xl bg-white border shadow-sm">
                            <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-neutral-400 rounded-full animate-pulse [animation-delay:-0.3s]"></div>
-                                <div className="w-2 h-2 bg-neutral-400 rounded-full animate-pulse [animation-delay:-0.15s]"></div>
-                                <div className="w-2 h-2 bg-neutral-400 rounded-full animate-pulse"></div>
+                                <div className="w-2 h-2 bg-primary/40 rounded-full animate-pulse [animation-delay:-0.3s]"></div>
+                                <div className="w-2 h-2 bg-primary/40 rounded-full animate-pulse [animation-delay:-0.15s]"></div>
+                                <div className="w-2 h-2 bg-primary/40 rounded-full animate-pulse"></div>
                            </div>
                         </div>
                     </div>
                 )}
+
                 {finalQuery && (
-                    <div className="flex justify-center mt-4">
-                        <button onClick={handleApplyClick} className="px-6 py-2 bg-secondary text-white font-bold rounded-full shadow-md hover:bg-opacity-90">
-                            Apply Filters
+                    <div className="flex justify-center py-4">
+                        <button onClick={handleApplyClick} className="px-6 py-2 bg-secondary text-white font-bold rounded-full shadow-md hover:bg-opacity-90 transition-transform hover:scale-105">
+                            Apply Search
                         </button>
                     </div>
                 )}
                 <div ref={chatEndRef}></div>
             </div>
-            <div className="flex-shrink-0 p-4 border-t border-neutral-200 bg-white">
-                <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex items-center gap-2">
+            
+            <div className="flex-shrink-0 p-4 bg-white border-t">
+                <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="relative">
                     <input
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         placeholder="Tell me what you're looking for..."
-                        className="flex-grow px-4 py-2.5 border border-neutral-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full px-5 py-3 pr-14 text-base bg-neutral-100 border-neutral-200 border rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
                         disabled={isSearching}
                     />
-                    <button type="submit" disabled={isSearching || !input.trim()} className="bg-primary text-white rounded-full p-3 hover:bg-primary-dark disabled:bg-neutral-300">
+                    <button type="submit" disabled={isSearching || !input.trim()} className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-white rounded-full p-2.5 hover:bg-primary-dark disabled:bg-neutral-300 transition-colors">
                         <PaperAirplaneIcon className="w-5 h-5" />
                     </button>
                 </form>

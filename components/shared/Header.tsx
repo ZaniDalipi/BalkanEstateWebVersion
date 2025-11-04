@@ -15,7 +15,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
     if (isAuthenticated) {
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
     } else {
-        dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
+        dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
     }
   };
 
@@ -23,7 +23,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
     if (isAuthenticated) {
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'create-listing' });
     } else {
-        dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
+        dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
     }
   };
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Property } from '../../types';
-import { MapPinIcon, BedIcon, BathIcon, SqftIcon, UserCircleIcon, ScaleIcon } from '../../constants';
+import { MapPinIcon, BedIcon, BathIcon, SqftIcon, UserCircleIcon, ScaleIcon, LivingRoomIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
 
@@ -24,7 +24,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
   const handleFavoriteClick = (e: React.MouseEvent) => {
       e.stopPropagation(); // Prevent card click
       if (!state.isAuthenticated) {
-          dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
+          dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
       } else {
           dispatch({ type: 'TOGGLE_SAVED_HOME', payload: property });
       }
@@ -70,14 +70,18 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
                 <span className="truncate">{property.address}, {property.city}</span>
             </div>
         </button>
-        <div className="mt-4 flex flex-col items-start gap-2 text-sm sm:flex-row sm:justify-around sm:items-center sm:gap-0 text-neutral-800 border-t border-neutral-100 pt-3">
+        <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-neutral-800 border-t border-neutral-100 pt-3">
           <div className="flex items-center gap-2">
             <BedIcon className="w-5 h-5 text-primary" />
-            <span><span className="font-bold">{property.beds}</span> {property.beds === 1 ? 'bedroom' : 'bedrooms'}</span>
+            <span><span className="font-bold">{property.beds}</span> {property.beds === 1 ? 'bed' : 'beds'}</span>
           </div>
            <div className="flex items-center gap-2">
             <BathIcon className="w-5 h-5 text-primary" />
-            <span><span className="font-bold">{property.baths}</span> {property.baths === 1 ? 'bathroom' : 'bathrooms'}</span>
+            <span><span className="font-bold">{property.baths}</span> {property.baths === 1 ? 'bath' : 'baths'}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <LivingRoomIcon className="w-5 h-5 text-primary" />
+            <span><span className="font-bold">{property.livingRooms}</span> {property.livingRooms === 1 ? 'living rm' : 'living rms'}</span>
           </div>
            <div className="flex items-center gap-2">
             <SqftIcon className="w-5 h-5 text-primary" />

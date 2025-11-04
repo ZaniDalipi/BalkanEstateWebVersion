@@ -16,6 +16,7 @@ interface ListingData {
     price: number;
     bedrooms: number;
     bathrooms: number;
+    livingRooms: number;
     sq_meters: number;
     year_built: number;
     parking_spots: number;
@@ -41,6 +42,7 @@ const initialListingData: ListingData = {
     price: 0,
     bedrooms: 0,
     bathrooms: 0,
+    livingRooms: 0,
     sq_meters: 0,
     year_built: new Date().getFullYear(),
     parking_spots: 0,
@@ -114,474 +116,101 @@ const ImageTagSelector: React.FC<{
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full mt-2 bg-white border border-neutral-300 rounded-lg text-neutral-700 px-3 py-1.5 text-xs font-medium flex justify-between items-center hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                className="w-full bg-white border border-neutral-300 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-700 flex justify-between items-center capitalize"
             >
-                <span className="capitalize truncate">{selectedLabel}</span>
-                <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                {selectedLabel}
+                <svg className={`w-4 h-4 ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
             {isOpen && (
-                <div className="absolute bottom-full mb-1 w-full bg-white border border-neutral-200 rounded-md shadow-lg z-10 max-h-40 overflow-y-auto">
+                <ul className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
                     {options.map(tag => (
-                        <button
+                        <li
                             key={tag}
-                            type="button"
                             onClick={() => handleSelect(tag)}
-                            className="block w-full text-left px-3 py-2 text-xs text-neutral-700 hover:bg-primary-light hover:text-primary-dark capitalize"
+                            className="px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 cursor-pointer capitalize"
                         >
                             {tag.replace(/_/g, ' ')}
-                        </button>
+                        </li>
                     ))}
-                </div>
+                </ul>
             )}
         </div>
     );
 };
 
 
-const ChipInput = React.memo<{
+const TagListInput: React.FC<{
+    tags: string[];
+    setTags: (tags: string[]) => void;
     label: string;
-    items: string[];
-    onItemsChange: (items: string[]) => void;
-    placeholder: string;
-}>(({ label, items, onItemsChange, placeholder }) => {
+}> = ({ tags, setTags, label }) => {
     const [inputValue, setInputValue] = useState('');
 
-    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        setInputValue(e.target.value);
-    }, []);
-
-    const handleAddItem = useCallback(() => {
-        const trimmed = inputValue.trim();
-        if (trimmed && !items.includes(trimmed)) {
-            onItemsChange([...items, trimmed]);
-            setInputValue('');
-        }
-    }, [inputValue, items, onItemsChange]);
-    
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' || e.key === ',') {
             e.preventDefault();
-            handleAddItem();
+            const newTag = inputValue.trim();
+            if (newTag && !tags.includes(newTag)) {
+                setTags([...tags, newTag]);
+            }
+            setInputValue('');
         }
     };
 
-    const handleRemoveItem = (itemToRemove: string) => {
-        onItemsChange(items.filter(item => item !== itemToRemove));
+    const removeTag = (tagToRemove: string) => {
+        setTags(tags.filter(tag => tag !== tagToRemove));
     };
 
     return (
         <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">{label}</label>
-            <div className="flex items-center gap-2">
+             <label className="block text-sm font-medium text-neutral-700 mb-1">{label}</label>
+            <div className={`${inputBaseClasses} flex flex-wrap items-center gap-2 h-auto py-1`}>
+                {tags.map(tag => (
+                    <div key={tag} className="flex items-center gap-1 bg-primary-light text-primary-dark text-sm font-semibold px-2 py-1 rounded">
+                        <span>{tag}</span>
+                        <button type="button" onClick={() => removeTag(tag)} className="text-primary-dark/70 hover:text-primary-dark">&times;</button>
+                    </div>
+                ))}
                 <input
                     type="text"
                     value={inputValue}
-                    onChange={handleInputChange}
+                    onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder={placeholder}
-                    className={inputBaseClasses}
+                    placeholder={tags.length === 0 ? "Add tags..." : ""}
+                    className="flex-grow bg-transparent outline-none text-base h-8"
                 />
-                <button type="button" onClick={handleAddItem} className="px-4 py-2.5 bg-primary-light text-primary-dark font-semibold rounded-lg hover:bg-primary/20 transition-colors">Add</button>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-3">
-                {items.map(item => (
-                    <span key={item} className="bg-neutral-200 text-neutral-800 font-medium px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                        {item}
-                        <button type="button" onClick={() => handleRemoveItem(item)} className="text-neutral-500 hover:text-neutral-800">&times;</button>
-                    </span>
-                ))}
             </div>
         </div>
     );
-});
-
-
-const ModeToggle: React.FC<{mode: Mode, onModeChange: (mode: Mode) => void}> = ({ mode, onModeChange }) => (
-    <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm mx-auto mb-6">
-        <button
-            onClick={() => onModeChange('ai')}
-            className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${mode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}
-        ><SparklesIcon className="w-4 h-4" /> AI Assisted</button>
-        <button
-            onClick={() => onModeChange('manual')}
-            className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${mode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}
-        >Manual Entry</button>
-    </div>
-);
-    
-const InitStep: React.FC<{
-    mode: Mode, onModeChange: (mode: Mode) => void,
-    language: string, onLanguageChange: (lang: string) => void,
-    onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
-    imageData: ImageData[], onRemoveImage: (index: number) => void,
-    onGenerate: () => void, error: string,
-}> = ({ mode, onModeChange, language, onLanguageChange, onImageChange, imageData, onRemoveImage, onGenerate, error }) => (
-     <div className="space-y-6">
-        <ModeToggle mode={mode} onModeChange={onModeChange} />
-        <div className="p-6 bg-primary-light border border-primary/20 rounded-lg">
-            <h3 className="text-md font-bold text-primary-dark">Tips for the Best AI Results</h3>
-            <ul className="list-disc list-inside text-primary-dark/80 mt-2 text-sm space-y-1">
-                <li>Upload clear, well-lit photos of each main room.</li>
-                <li>Include photos of the property's exterior and any special features (balcony, garden).</li>
-            </ul>
-        </div>
-        <div className="relative">
-             <select id="language-select" value={language} onChange={(e) => onLanguageChange(e.target.value)} className={`${floatingInputClasses} border-neutral-300 focus:border-primary`}>
-                {LANGUAGES.map(lang => <option key={lang} value={lang}>{lang}</option>)}
-             </select>
-             <label htmlFor="language-select" className={`${floatingSelectLabelClasses} flex items-center gap-1.5 text-neutral-500`}>
-                Description Language
-                <span title="Selecting a language will tailor the AI-generated property description for that specific region and audience.">
-                   <InfoIcon className="w-4 h-4 text-neutral-400 cursor-help" />
-                </span>
-             </label>
-             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-            </div>
-        </div>
-        <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">Property Images</label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-neutral-300 border-dashed rounded-md">
-                <div className="space-y-1 text-center">
-                    <UploadIcon className="mx-auto h-12 w-12 text-neutral-400" />
-                    <div className="flex text-sm text-neutral-600">
-                        <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary-dark"><input id="file-upload" name="file-upload" type="file" className="sr-only" multiple accept="image/*" onChange={onImageChange} /><span>Upload files</span></label>
-                        <p className="pl-1">or drag and drop</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {imageData.length > 0 && (
-            <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
-                {imageData.map((img, index) => (
-                    <div key={index} className="relative group">
-                        <img src={img.previewUrl} alt={`preview ${index}`} className="h-24 w-24 object-cover rounded-md shadow-sm" />
-                        <button onClick={() => onRemoveImage(index)} className="absolute top-0 right-0 bg-red-600 text-white rounded-full p-0.5 w-5 h-5 flex items-center justify-center text-xs leading-none transform -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
-                    </div>
-                ))}
-            </div>
-        )}
-        
-        <button onClick={onGenerate} disabled={imageData.filter(i => i.file).length === 0} className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-md shadow-sm text-md font-medium text-white bg-primary hover:bg-primary-dark disabled:bg-opacity-50 disabled:cursor-not-allowed">Generate with AI</button>
-        {error && <p className="text-red-600 text-sm text-center font-medium bg-red-50 p-3 rounded-md">{error}</p>}
-    </div>
-);
-    
-const LoadingStep = () => (
-    <div className="text-center py-12 flex flex-col items-center justify-center">
-        <svg className="animate-spin h-10 w-10 text-primary mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-        <p className="text-lg font-semibold text-neutral-700">Analyzing your property...</p>
-        <p className="text-neutral-500">This may take a moment.</p>
-    </div>
-);
-
-const FormStep: React.FC<{
-    listingData: ListingData;
-    mode: Mode;
-    isEditing: boolean;
-    formErrors: Record<string, string>;
-    onModeChange: (mode: Mode) => void;
-    handleDataChange: (field: keyof ListingData, value: any) => void;
-    handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
-    handleImageTagChange: (index: number, tag: string) => void;
-    imageData: ImageData[];
-    onImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-    onRemoveImage: (index: number) => void;
-    onReorderImages: (dragIndex: number, hoverIndex: number) => void;
-    availableTags: string[];
-    newTagInput: string;
-    onNewTagInputChange: (value: string) => void;
-    onAddNewTag: () => void;
-    onStartOver: () => void;
-    onNextStep: () => void;
-    onBack: () => void;
-    availableCountries: string[];
-}> = ({ listingData, mode, isEditing, formErrors, onModeChange, handleDataChange, handleInputChange, handleImageTagChange, imageData, onImageChange, onRemoveImage, onReorderImages, availableTags, newTagInput, onNewTagInputChange, onAddNewTag, onStartOver, onNextStep, onBack, availableCountries }) => {
-
-    const onChipItemsChange = useCallback((items: string[]) => handleDataChange('specialFeatures', items), [handleDataChange]);
-    const onMaterialsChange = useCallback((items: string[]) => handleDataChange('materials', items), [handleDataChange]);
-    const draggedItemIndex = useRef<number | null>(null);
-    const dragOverItemIndex = useRef<number | null>(null);
-
-    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
-        draggedItemIndex.current = index;
-        e.dataTransfer.effectAllowed = 'move';
-    };
-    const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, index: number) => {
-        dragOverItemIndex.current = index;
-    };
-    const handleDragEnd = () => {
-        if (draggedItemIndex.current !== null && dragOverItemIndex.current !== null && draggedItemIndex.current !== dragOverItemIndex.current) {
-            onReorderImages(draggedItemIndex.current, dragOverItemIndex.current);
-        }
-        draggedItemIndex.current = null;
-        dragOverItemIndex.current = null;
-    };
-
-
-    const citiesForSelectedCountry = useMemo(() => {
-        if (!listingData.country || !CITY_DATA[listingData.country]) {
-            return [];
-        }
-        return CITY_DATA[listingData.country].map(c => c.name);
-    }, [listingData.country]);
-
-    return (
-        <div className="space-y-8 animate-fade-in">
-            {!isEditing && <ModeToggle mode={mode} onModeChange={onModeChange} />}
-            {mode === 'ai' && <p className="text-center text-neutral-600 -mt-4 mb-4">The AI has generated the details below. Review and edit as needed.</p>}
-            {isEditing && <p className="text-center text-neutral-600 -mt-4 mb-4">You are editing an existing listing. Make your changes and save.</p>}
-
-            <fieldset className="space-y-4 rounded-lg border p-6">
-                <legend className="text-lg font-semibold px-2 text-neutral-800">Location & Price</legend>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6 pt-4">
-                    <div className="relative">
-                         <select id="country" name="country" value={listingData.country} onChange={handleInputChange} className={`${floatingInputClasses} peer ${formErrors.country ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-primary'}`} required>
-                            <option value="" disabled>Select a country</option>
-                           {availableCountries.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                        <label htmlFor="country" className={`${floatingSelectLabelClasses} ${formErrors.country ? 'text-red-500' : 'text-neutral-500'}`}>Country</label>
-                         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                        </div>
-                        {formErrors.country && <p className="text-xs text-red-600 mt-1">{formErrors.country}</p>}
-                    </div>
-                     <div className="relative">
-                        <select id="city" name="city" value={listingData.city} onChange={handleInputChange} className={`${floatingInputClasses} peer ${formErrors.city ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-primary'}`} required disabled={!listingData.country}>
-                            <option value="" disabled>Select a city</option>
-                            {citiesForSelectedCountry.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                        <label htmlFor="city" className={`${floatingSelectLabelClasses} ${formErrors.city ? 'text-red-500' : 'text-neutral-500'}`}>City</label>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                        </div>
-                        {formErrors.city && <p className="text-xs text-red-600 mt-1">{formErrors.city}</p>}
-                    </div>
-
-                    <div className="relative">
-                         <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                            <span className="text-neutral-500">{getCurrencySymbol(listingData.country)}</span>
-                        </div>
-                        <input type="text" id="price" name="price" value={listingData.price > 0 ? listingData.price.toLocaleString('de-DE') : ''} onChange={handleInputChange} placeholder=" " className={`${floatingInputClasses} pl-12 peer ${formErrors.price ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-primary'}`} />
-                        <label htmlFor="price" className={`${floatingLabelClasses} ${formErrors.price ? 'text-red-500 peer-focus:text-red-500' : 'text-neutral-500 peer-focus:text-primary'}`}>Price</label>
-                        {formErrors.price && <p className="text-xs text-red-600 mt-1">{formErrors.price}</p>}
-                    </div>
-                    <div className="md:col-span-2 relative">
-                        <input id="address" name="address" value={listingData.address} onChange={handleInputChange} className={`${floatingInputClasses} peer ${formErrors.address ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-primary'}`} placeholder=" "/>
-                        <label htmlFor="address" className={`${floatingLabelClasses} ${formErrors.address ? 'text-red-500 peer-focus:text-red-500' : 'text-neutral-500 peer-focus:text-primary'}`}>Address</label>
-                        {formErrors.address && <p className="text-xs text-red-600 mt-1">{formErrors.address}</p>}
-                    </div>
-                    <div className="md:col-span-2 relative">
-                        <input type="text" id="tourUrl" name="tourUrl" value={listingData.tourUrl} onChange={handleInputChange} className={`${floatingInputClasses} peer border-neutral-300 focus:border-primary`} placeholder=" " />
-                         <label htmlFor="tourUrl" className={`${floatingLabelClasses} text-neutral-500 peer-focus:text-primary`}>3D Tour URL (Optional)</label>
-                    </div>
-                </div>
-            </fieldset>
-
-            <fieldset className="space-y-4 rounded-lg border p-6">
-                 <legend className="text-lg font-semibold px-2 text-neutral-800">Property Details</legend>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-x-6 gap-y-8 pt-4">
-                    <div><label htmlFor="bedrooms" className="block text-sm font-medium text-neutral-700 mb-1">Bedrooms</label><input type="number" id="bedrooms" name="bedrooms" min="0" value={listingData.bedrooms} onChange={handleInputChange} className={`${inputBaseClasses} border-neutral-300 focus:border-primary`} /></div>
-                    <div><label htmlFor="bathrooms" className="block text-sm font-medium text-neutral-700 mb-1">Bathrooms</label><input type="number" id="bathrooms" name="bathrooms" min="0" value={listingData.bathrooms} onChange={handleInputChange} className={`${inputBaseClasses} border-neutral-300 focus:border-primary`} /></div>
-                    <div><label htmlFor="sq_meters" className="block text-sm font-medium text-neutral-700 mb-1">Area (m²)</label><input type="number" id="sq_meters" name="sq_meters" min="0" value={listingData.sq_meters} onChange={handleInputChange} className={`${inputBaseClasses} ${formErrors.sq_meters ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-primary'}`} /><p className="text-xs text-red-600 mt-1">{formErrors.sq_meters}</p></div>
-                    <div><label htmlFor="year_built" className="block text-sm font-medium text-neutral-700 mb-1">Year Built</label><input type="number" id="year_built" name="year_built" min="0" value={listingData.year_built} onChange={handleInputChange} className={inputBaseClasses} /></div>
-                    <div><label htmlFor="parking_spots" className="block text-sm font-medium text-neutral-700 mb-1">Parking</label><input type="number" id="parking_spots" name="parking_spots" min="0" value={listingData.parking_spots} onChange={handleInputChange} className={inputBaseClasses} /></div>
-                    
-                    {listingData.propertyType === 'apartment' && (
-                        <div>
-                            <label htmlFor="floorNumber" className="block text-sm font-medium text-neutral-700 mb-1">Floor #</label>
-                            <input type="number" id="floorNumber" name="floorNumber" min="0" value={listingData.floorNumber} onChange={handleInputChange} className={`${inputBaseClasses} border-neutral-300 focus:border-primary`} />
-                        </div>
-                    )}
-                    {(listingData.propertyType === 'house' || listingData.propertyType === 'villa') && (
-                        <div>
-                            <label htmlFor="totalFloors" className="block text-sm font-medium text-neutral-700 mb-1"># of Floors</label>
-                            <input type="number" id="totalFloors" name="totalFloors" min="0" value={listingData.totalFloors} onChange={handleInputChange} className={`${inputBaseClasses} border-neutral-300 focus:border-primary`} />
-                        </div>
-                    )}
-                    
-                    <div className="col-span-2 md:col-span-5">
-                        <label className="block text-sm font-medium text-neutral-700 mb-1.5">Property Type</label>
-                        <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200">
-                            {(['house', 'apartment', 'villa', 'other'] as const).map(type => (
-                                <button
-                                    key={type}
-                                    type="button"
-                                    onClick={() => handleDataChange('propertyType', type)}
-                                    className={`px-2.5 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex-grow text-center capitalize ${
-                                        listingData.propertyType === type
-                                        ? 'bg-white text-primary shadow'
-                                        : 'text-neutral-600 hover:bg-neutral-200'
-                                    }`}
-                                >
-                                    {type}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </fieldset>
-            
-            <fieldset className="space-y-4 rounded-lg border p-6">
-                 <legend className="text-lg font-semibold px-2 text-neutral-800">Features & Materials</legend>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                    <ChipInput label="Special Features" items={listingData.specialFeatures} onItemsChange={onChipItemsChange} placeholder="e.g., Heated Pool"/>
-                    <ChipInput label="Building Materials" items={listingData.materials} onItemsChange={onMaterialsChange} placeholder="e.g., Brick"/>
-                </div>
-            </fieldset>
-            
-            <div>
-                <label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-1">Description</label>
-                <textarea id="description" name="description" rows={6} value={listingData.description} onChange={handleInputChange} className={`${inputBaseClasses} border-neutral-300 focus:border-primary`} />
-            </div>
-            
-            <div>
-                <h4 className="font-semibold text-neutral-700 mb-2">Property Images & Tags</h4>
-                {formErrors.images && <p className="text-red-600 text-sm mb-2 font-semibold bg-red-50 p-3 rounded-md">{formErrors.images}</p>}
-                <div className="mt-1 mb-4 flex justify-center px-6 pt-5 pb-6 border-2 border-neutral-300 border-dashed rounded-md">
-                     <div className="space-y-1 text-center">
-                        <UploadIcon className="mx-auto h-12 w-12 text-neutral-400" />
-                        <label htmlFor="file-upload-form" className="relative cursor-pointer rounded-md font-medium text-primary hover:text-primary-dark"><input id="file-upload-form" name="file-upload-form" type="file" className="sr-only" multiple accept="image/*" onChange={onImageChange} /><span>Upload more images</span></label>
-                    </div>
-                </div>
-                {imageData.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                        {imageData.map((img, index) => (
-                            <div 
-                                key={img.previewUrl} 
-                                className="relative group cursor-grab"
-                                draggable
-                                onDragStart={(e) => handleDragStart(e, index)}
-                                onDragEnter={(e) => handleDragEnter(e, index)}
-                                onDragEnd={handleDragEnd}
-                                onDragOver={(e) => e.preventDefault()}
-                            >
-                                <img src={img.previewUrl} alt={`preview ${index}`} className="h-32 w-full object-cover rounded-md shadow-sm border" />
-                                <button type="button" onClick={() => onRemoveImage(index)} className="absolute top-0 right-0 bg-red-600 text-white rounded-full p-0.5 w-5 h-5 flex items-center justify-center text-xs leading-none transform -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
-                                 <ImageTagSelector
-                                    value={listingData.image_tags.find(t => t.index === index)?.tag || ''}
-                                    options={availableTags}
-                                    onChange={(tag) => handleImageTagChange(index, tag)}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                ) : <p className="text-center text-neutral-500">Upload images to see them here.</p>}
-                 <div className="mt-4 p-4 bg-neutral-50 rounded-lg border">
-                    <label className="block text-sm font-medium text-neutral-700 mb-1">Add New Tag</label>
-                    <div className="flex items-center gap-2">
-                         <input type="text" value={newTagInput} onChange={(e) => onNewTagInputChange(e.target.value)} placeholder="e.g., Backyard" onKeyDown={(e) => e.key === 'Enter' && onAddNewTag()} className={inputBaseClasses} />
-                         <button type="button" onClick={onAddNewTag} className="px-4 py-2.5 bg-primary-light text-primary-dark font-semibold rounded-lg hover:bg-primary/20 transition-colors">Add</button>
-                    </div>
-                </div>
-            </div>
-
-            <div className="flex justify-between items-center border-t pt-6">
-                <button onClick={onStartOver} className="px-6 py-3 border border-neutral-300 rounded-md shadow-sm text-md font-medium text-neutral-700 bg-white hover:bg-neutral-50">Start Over</button>
-                <div className="flex items-center gap-4">
-                    {mode === 'ai' && !isEditing && (
-                        <button type="button" onClick={onBack} className="px-6 py-3 border border-neutral-300 rounded-md shadow-sm text-md font-medium text-neutral-700 bg-white hover:bg-neutral-50">
-                            Back
-                        </button>
-                    )}
-                    <button onClick={onNextStep} className="px-6 py-3 border border-transparent rounded-md shadow-sm text-md font-medium text-white bg-primary hover:bg-primary-dark">Next: Add Floor Plan</button>
-                </div>
-            </div>
-        </div>
-    )
 };
-    
-const FloorplanStep: React.FC<{
-    onBack: () => void;
-    onFinish: () => void;
-    onFloorplanChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    floorplanPreview: string | null;
-    onRemoveFloorplan: () => void;
-}> = ({ onBack, onFinish, onFloorplanChange, floorplanPreview, onRemoveFloorplan }) => (
-     <div className="space-y-6 pt-8 animate-fade-in text-center">
-        <h3 className="text-2xl font-bold text-neutral-800">Add a Floor Plan (Optional)</h3>
-        <p className="text-neutral-600 mt-2 max-w-lg mx-auto">A floor plan can significantly increase buyer interest. Upload an image of your property's layout.</p>
-        
-        {floorplanPreview ? (
-            <div className="relative inline-block group mt-4">
-                <img src={floorplanPreview} alt="Floor plan preview" className="max-h-80 rounded-lg shadow-md mx-auto border" />
-                <button 
-                    onClick={onRemoveFloorplan}
-                    className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm leading-none opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                    &times;
-                </button>
-            </div>
-        ) : (
-            <div className="mt-4 flex justify-center px-6 pt-5 pb-6 border-2 border-neutral-300 border-dashed rounded-md">
-                <div className="space-y-1 text-center">
-                    <UploadIcon className="mx-auto h-12 w-12 text-neutral-400" />
-                    <label htmlFor="floorplan-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary-dark">
-                        <input id="floorplan-upload" name="floorplan-upload" type="file" className="sr-only" accept="image/*,.pdf" onChange={onFloorplanChange} />
-                        <span>Upload floor plan</span>
-                    </label>
-                </div>
-            </div>
-        )}
-        
-        <div className="flex flex-row justify-center items-center gap-4 pt-6">
-            <button 
-                type="button"
-                onClick={onBack} 
-                className="px-8 py-3 border border-neutral-300 rounded-lg text-md font-semibold text-neutral-700 bg-white hover:bg-neutral-50 transition-colors shadow-sm"
-            >
-                Back
-            </button>
-            <button 
-                onClick={onFinish} 
-                className="px-8 py-3 border border-transparent rounded-lg text-md font-semibold text-white bg-primary hover:bg-primary-dark transition-colors shadow-sm"
-            >
-                Finish Listing
-            </button>
-        </div>
-     </div>
-);
-    
-const SuccessStep: React.FC<{isEditing: boolean, onStartOver: () => void, onViewListings: () => void}> = ({ isEditing, onStartOver, onViewListings }) => (
-    <div className="text-center py-12 flex flex-col items-center justify-center animate-fade-in">
-        <CheckCircleIcon className="h-16 w-16 text-green-500 mb-4" />
-        <h3 className="text-2xl font-bold text-neutral-800">{isEditing ? 'Listing Updated!' : 'Listing Published!'}</h3>
-        <p className="text-neutral-600 mt-2 max-w-md mx-auto">
-            {isEditing ? 'Your changes have been successfully saved.' : 'Your new property is now live. You can manage all your listings from your account page, or create another one.'}
-        </p>
-        <div className="mt-8 flex flex-col sm:flex-row gap-4 w-full max-w-md mx-auto">
-            <button onClick={onViewListings} className="w-full flex justify-center py-3 px-4 border border-primary text-primary rounded-lg shadow-sm text-md font-medium bg-white hover:bg-primary-light transition-colors">View My Listings</button>
-            <button onClick={onStartOver} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-md font-medium text-white bg-primary hover:bg-primary-dark transition-colors">Create Another Listing</button>
-        </div>
-    </div>
-);
 
 
-const GeminiDescriptionGenerator: React.FC = () => {
+// --- Main Component ---
+const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> = ({ propertyToEdit }) => {
     const { state, dispatch } = useAppContext();
-    const { propertyToEdit } = state;
-    
-    const [imageData, setImageData] = useState<ImageData[]>([]);
-    const [floorplan, setFloorplan] = useState<File | null>(null);
-    const [floorplanPreview, setFloorplanPreview] = useState<string | null>(null);
-    const [step, setStep] = useState<Step>('init');
+    const { currentUser } = state;
     const [mode, setMode] = useState<Mode>('ai');
+    const [step, setStep] = useState<Step>('init');
+    const [error, setError] = useState<string | null>(null);
+    const [images, setImages] = useState<ImageData[]>([]);
+    const [floorplanImage, setFloorplanImage] = useState<ImageData>({ file: null, previewUrl: '' });
+    const [listingData, setListingData] = useState<ListingData>(initialListingData);
     const [language, setLanguage] = useState('English');
-    const [listingData, setListingData] = useState<ListingData | null>(null);
-    const [error, setError] = useState('');
-    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-    const [availableTags, setAvailableTags] = useState<string[]>(INITIAL_ROOM_TAGS);
-    const [newTagInput, setNewTagInput] = useState('');
-    const [isEditing, setIsEditing] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const availableCountries = useMemo(() => Object.keys(CITY_DATA).sort(), []);
+    const [selectedCountry, setSelectedCountry] = useState(propertyToEdit ? propertyToEdit.country : '');
     
+    const availableCities = useMemo(() => {
+        if (!selectedCountry || !CITY_DATA[selectedCountry]) return [];
+        return CITY_DATA[selectedCountry].map(city => city.name).sort();
+    }, [selectedCountry]);
+
+    // Populate form if editing
     useEffect(() => {
         if (propertyToEdit) {
-            setIsEditing(true);
+            setMode('manual');
+            setStep('form');
             setListingData({
                 address: propertyToEdit.address,
                 city: propertyToEdit.city,
@@ -589,430 +218,485 @@ const GeminiDescriptionGenerator: React.FC = () => {
                 price: propertyToEdit.price,
                 bedrooms: propertyToEdit.beds,
                 bathrooms: propertyToEdit.baths,
+                livingRooms: propertyToEdit.livingRooms,
                 sq_meters: propertyToEdit.sqft,
                 year_built: propertyToEdit.yearBuilt,
                 parking_spots: propertyToEdit.parking,
-                specialFeatures: propertyToEdit.specialFeatures || [],
-                materials: propertyToEdit.materials || [],
-                description: propertyToEdit.description || '',
+                specialFeatures: propertyToEdit.specialFeatures,
+                materials: propertyToEdit.materials,
+                description: propertyToEdit.description,
                 tourUrl: propertyToEdit.tourUrl || '',
-                propertyType: propertyToEdit.propertyType,
-                image_tags: (propertyToEdit.images || []).map((img, index) => ({ index, tag: img.tag })),
+                propertyType: propertyToEdit.propertyType || 'house',
                 floorNumber: propertyToEdit.floorNumber || 0,
                 totalFloors: propertyToEdit.totalFloors || 0,
+                image_tags: [], // Images are handled separately
             });
-            const allImages = [
-                { url: propertyToEdit.imageUrl, tag: 'exterior' as PropertyImageTag },
-                ...(propertyToEdit.images || [])
-            ].filter((v, i, a) => a.findIndex(t => t.url === v.url) === i);
-
-            setImageData(allImages.map(img => ({ file: null, previewUrl: img.url })));
-
+            setSelectedCountry(propertyToEdit.country);
+            // Can't easily reconstruct the image files, so we'll just show the URLs
+            // FIX: Explicitly type `existingImages` as `ImageData[]` to prevent incorrect type inference
+            // where `file: null` was being treated as `file: unknown`.
+            const existingImages: ImageData[] = (propertyToEdit.images || []).map(img => ({ file: null, previewUrl: img.url }));
+            setImages(existingImages);
             if (propertyToEdit.floorplanUrl) {
-                setFloorplanPreview(propertyToEdit.floorplanUrl);
+                setFloorplanImage({ file: null, previewUrl: propertyToEdit.floorplanUrl });
             }
-            
-            setMode('manual');
-            setStep('form');
-            setError('');
-            setFormErrors({});
-        } else {
-             handleStartOver();
         }
-    }, [propertyToEdit]);
+    }, [propertyToEdit, availableCountries]);
 
-    const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files) {
-            const filesArray = Array.from(event.target.files);
-            // FIX: Explicitly type 'file' as File to resolve a TypeScript type inference issue where 'file' was being treated as 'unknown'.
-            const newImageData = filesArray.map((file: File) => ({ file, previewUrl: URL.createObjectURL(file) }));
-            setImageData(prev => [...prev, ...newImageData]);
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const files = Array.from(e.target.files).slice(0, 10); // Limit to 10 images
+            // FIX: Explicitly type `file` as `File` in the map function to prevent it from being inferred
+            // as `unknown`, which caused an error with `URL.createObjectURL`.
+            const newImages: ImageData[] = files.map((file: File) => ({
+                file,
+                previewUrl: URL.createObjectURL(file)
+            }));
+            setImages(newImages);
         }
     };
 
+    const handleFloorplanImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setFloorplanImage({ file, previewUrl: URL.createObjectURL(file) });
+        }
+    };
+    
     const removeImage = (index: number) => {
-        const itemToRemove = imageData[index];
-        if (itemToRemove.file) { // Only revoke if it's a blob URL
-            URL.revokeObjectURL(itemToRemove.previewUrl);
-        }
-
-        setImageData(prev => prev.filter((_, i) => i !== index));
-
-        if (listingData) {
-            const newTags = listingData.image_tags
-                .filter(tag => tag.index !== index)
-                .map(tag => ({
-                    ...tag,
-                    index: tag.index > index ? tag.index - 1 : tag.index
-                }));
-            handleDataChange('image_tags', newTags);
-        }
-    };
-    
-    const handleReorderImages = (dragIndex: number, hoverIndex: number) => {
-        setImageData(prev => {
-            const newImageData = [...prev];
-            const [draggedItem] = newImageData.splice(dragIndex, 1);
-            newImageData.splice(hoverIndex, 0, draggedItem);
-            return newImageData;
-        });
-
-        if (listingData) {
-            const newTags = [...listingData.image_tags];
-            const dragItemTag = newTags.find(t => t.index === dragIndex);
-            const hoverItemTag = newTags.find(t => t.index === hoverIndex);
-
-            // Simple swap logic might not be enough, need to re-order the whole array
-            const reorderedTags = [...listingData.image_tags];
-            const [draggedTag] = reorderedTags.splice(dragIndex, 1);
-            if (draggedTag) {
-                reorderedTags.splice(hoverIndex, 0, draggedTag);
-            }
-
-            // After reordering, remap all indices
-            const finalTags = reorderedTags.map((tag, index) => ({ ...tag, index }));
-
-            handleDataChange('image_tags', finalTags);
-        }
+        setImages(images.filter((_, i) => i !== index));
     };
 
-
-    const handleFloorplanChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files && event.target.files[0]) {
-            const file = event.target.files[0];
-            setFloorplan(file);
-            if (floorplanPreview && floorplanPreview.startsWith('blob:')) {
-                URL.revokeObjectURL(floorplanPreview);
-            }
-            const previewUrl = URL.createObjectURL(file);
-            setFloorplanPreview(previewUrl);
-        }
-    };
-
-    const handleRemoveFloorplan = () => {
-        if (floorplanPreview && floorplanPreview.startsWith('blob:')) {
-            URL.revokeObjectURL(floorplanPreview);
-        }
-        setFloorplan(null);
-        setFloorplanPreview(null);
-    };
-    
     const handleGenerate = async () => {
-        if (!state.isAuthenticated) {
-            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
+        if (images.length === 0) {
+            setError('Please upload at least one image.');
             return;
         }
-
-        const filesToProcess = imageData.map(d => d.file).filter((f): f is File => f !== null);
-
-        if (filesToProcess.length === 0) {
-            setError('Please upload at least one new image to use AI generation.');
-            return;
-        }
+        setError(null);
         setStep('loading');
-        setError('');
-
         try {
-            const analysisResult = await generateDescriptionFromImages(filesToProcess, language);
+            const imageFiles = images.map(img => img.file).filter((f): f is File => f !== null);
+            if (imageFiles.length === 0) {
+                setError("No new images were uploaded to analyze. Please add new image files.");
+                setStep('init');
+                return;
+            }
+
+            const result = await generateDescriptionFromImages(imageFiles, language);
+            
+            const validTags = result.image_tags
+                .filter(tagInfo => ALL_VALID_TAGS.includes(tagInfo.tag as PropertyImageTag))
+                .map(tagInfo => ({
+                    ...tagInfo,
+                    tag: tagInfo.tag as PropertyImageTag,
+                }));
+
             setListingData({
-                ...initialListingData,
-                bedrooms: analysisResult.bedrooms,
-                bathrooms: analysisResult.bathrooms,
-                sq_meters: analysisResult.sq_meters,
-                year_built: analysisResult.year_built,
-                parking_spots: analysisResult.parking_spots,
-                specialFeatures: [...(analysisResult.amenities || []), ...(analysisResult.key_features || [])],
-                materials: analysisResult.materials || [],
-                description: analysisResult.description,
-                image_tags: analysisResult.image_tags,
-                propertyType: analysisResult.property_type || 'house',
-                floorNumber: analysisResult.floor_number || 0,
-                totalFloors: analysisResult.total_floors || 0,
+                address: '',
+                city: '',
+                country: '',
+                price: 0,
+                bedrooms: result.bedrooms,
+                bathrooms: result.bathrooms,
+                livingRooms: result.living_rooms,
+                sq_meters: result.sq_meters,
+                year_built: result.year_built,
+                parking_spots: result.parking_spots,
+                specialFeatures: [...result.amenities, ...result.key_features],
+                materials: result.materials,
+                description: result.description,
+                image_tags: validTags,
+                tourUrl: '',
+                propertyType: result.property_type,
+                floorNumber: result.floor_number || 0,
+                totalFloors: result.total_floors || 0,
             });
             setStep('form');
-        } catch (e) {
-            if (e instanceof Error) setError(e.message);
-            else setError('An unknown error occurred.');
+        } catch (e: any) {
+            setError(e.message || 'An unexpected error occurred.');
             setStep('init');
         }
     };
     
-    const handleStartOver = () => {
-        imageData.forEach(img => {
-            if (img.file) URL.revokeObjectURL(img.previewUrl);
-        });
-        if (floorplanPreview && floorplanPreview.startsWith('blob:')) {
-            URL.revokeObjectURL(floorplanPreview);
-        }
-
-        setImageData([]);
-        setFloorplan(null);
-        setFloorplanPreview(null);
-        setListingData(null);
-        setError('');
-        setFormErrors({});
-        setMode('ai');
-        setIsEditing(false);
-        dispatch({ type: 'SET_PROPERTY_TO_EDIT', payload: null });
-        setStep('init');
-    };
-
-    const handleModeChange = (newMode: Mode) => {
-        setMode(newMode);
-        if (newMode === 'manual') {
-            setListingData(initialListingData);
-            imageData.forEach(img => { if (img.file) URL.revokeObjectURL(img.previewUrl); });
-            setImageData([]);
-            setError('');
-            setFormErrors({});
-            setStep('form');
-        } else {
-            handleStartOver();
-        }
-    };
-
-    const handleDataChange = useCallback((field: keyof ListingData, value: any) => {
-        setListingData(currentData => {
-            if (!currentData) return null;
-            return { ...currentData, [field]: value };
-        });
-    }, []);
-
-    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
-        const key = name as keyof ListingData;
+        const isNumeric = type === 'number';
+        setListingData(prev => ({
+            ...prev,
+            [name]: isNumeric ? (value === '' ? '' : Number(value)) : value
+        }));
+    };
+
+    const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const rawValue = e.target.value;
+        // Remove dots and any other non-digit characters to get the number
+        const numericString = rawValue.replace(/[^0-9]/g, '');
+        const numberValue = numericString === '' ? 0 : Number(numericString);
         
-        setListingData(currentData => {
-            if (!currentData) return null;
+        setListingData(prev => ({
+            ...prev,
+            price: numberValue
+        }));
+    };
+
+    const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setSelectedCountry(e.target.value);
+        setListingData(prev => ({ ...prev, city: '' })); // Reset city on country change
+    };
+    
+    const handleImageTagChange = (index: number, tag: string) => {
+        const newImageTags = [...listingData.image_tags];
+        const existingTagIndex = newImageTags.findIndex(t => t.index === index);
+        if (existingTagIndex > -1) {
+            newImageTags[existingTagIndex].tag = tag;
+        } else {
+            newImageTags.push({ index, tag });
+        }
+        setListingData(prev => ({ ...prev, image_tags: newImageTags }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!currentUser) {
+            setError("You must be logged in to create a listing.");
+            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'signup' } });
+            return;
+        }
+        setIsSubmitting(true);
+        setError(null);
+
+        try {
+            // In a real app, you'd upload images to a storage service and get back URLs.
+            // Here, we'll just use the preview URLs for simplicity.
+            const imageUrls: PropertyImage[] = images.map((img, index) => {
+                const tagInfo = listingData.image_tags.find(t => t.index === index);
+                return {
+                    url: img.previewUrl,
+                    tag: (tagInfo?.tag as PropertyImageTag) || 'other',
+                };
+            });
             
-            let parsedValue: string | number = value;
-            if (type === 'number') {
-                const num = parseInt(value, 10);
-                parsedValue = Math.max(0, num || 0);
-            } else if (name === 'price') {
-                const num = parseInt(value.replace(/\D/g, ''), 10);
-                parsedValue = isNaN(num) ? 0 : num;
+            const finalCountry = selectedCountry;
+            const finalCity = listingData.city;
+
+            if (!finalCountry || !finalCity) {
+                setError("Please select a country and city.");
+                setIsSubmitting(false);
+                return;
             }
-    
-            const updatedData = { ...currentData, [key]: parsedValue };
-    
-            if (key === 'country') {
-                updatedData.city = '';
-            }
-    
-            return updatedData;
-        });
-    }, []);
-    
-    const handleImageTagChange = useCallback((index: number, tag: string) => {
-        if (!listingData) return;
-        const newTags = [...listingData.image_tags];
-        const existingTagIndex = newTags.findIndex(t => t.index === index);
-        if (tag === '') {
-            if (existingTagIndex > -1) newTags.splice(existingTagIndex, 1);
-        } else {
-            if (existingTagIndex > -1) newTags[existingTagIndex] = { index, tag };
-            else newTags.push({ index, tag });
-        }
-        handleDataChange('image_tags', newTags);
-    }, [listingData, handleDataChange]);
-
-    const validateForm = useCallback((): Record<string, string> => {
-        const errors: Record<string, string> = {};
-        if (!listingData) {
-            errors.form = "Listing data is missing. Please start over.";
-            return errors;
-        }
-
-        if (!listingData.country) errors.country = 'Country is required.';
-        if (!listingData.city) errors.city = 'City is required.';
-        if (!listingData.address.trim()) errors.address = 'Address is required.';
-        if (!listingData.price || listingData.price <= 0) errors.price = 'Price must be greater than zero.';
-        
-        if (!listingData.sq_meters || listingData.sq_meters <= 0) errors.sq_meters = 'Area must be greater than 0.';
-        
-        if (imageData.length === 0) errors.images = 'Please upload at least one property image.';
-
-        return errors;
-    }, [listingData, imageData]);
-
-    const handleProceedToFloorplan = useCallback(() => {
-        const errors = validateForm();
-        setFormErrors(errors);
-        if (Object.keys(errors).length === 0) {
-            setStep('floorplan');
-        }
-    }, [validateForm]);
-
-    const handleFinalizeListing = () => {
-        if (!state.isAuthenticated || !state.currentUser) {
-            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
-            return;
-        }
-
-        const errors = validateForm();
-        setFormErrors(errors);
-        if (Object.keys(errors).length > 0) {
-            setStep('form');
-            return;
-        }
-        
-        if (!listingData) return;
-
-        const cityData = CITY_DATA[listingData.country]?.find(c => c.name.toLowerCase() === listingData.city.toLowerCase());
-
-        const newImages: PropertyImage[] = imageData.map((data, index) => {
-            const tagInfo = listingData.image_tags.find(t => t.index === index);
-            let tag: PropertyImageTag = 'other';
-            if (tagInfo && ALL_VALID_TAGS.includes(tagInfo.tag as PropertyImageTag)) {
-                tag = tagInfo.tag as PropertyImageTag;
-            }
-            return { url: data.previewUrl, tag };
-        });
-        
-        const newTimestamp = Date.now();
-        
-        if (isEditing && propertyToEdit) {
-            const updatedProperty: Property = {
-                ...propertyToEdit,
-                price: listingData.price,
-                address: listingData.address,
-                city: listingData.city,
-                country: listingData.country,
-                beds: listingData.bedrooms,
-                baths: listingData.bathrooms,
-                sqft: listingData.sq_meters,
-                yearBuilt: listingData.year_built,
-                parking: listingData.parking_spots,
-                description: listingData.description,
-                specialFeatures: listingData.specialFeatures,
-                materials: listingData.materials,
-                tourUrl: listingData.tourUrl,
-                imageUrl: imageData[0]?.previewUrl || 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=2070&auto-format=fit=crop',
-                images: newImages.slice(1), // Exclude main image from the array as per schema
-                propertyType: listingData.propertyType,
-                floorplanUrl: floorplanPreview || undefined,
-                createdAt: newTimestamp, // Update timestamp to show as recent
-                floorNumber: listingData.floorNumber > 0 ? listingData.floorNumber : undefined,
-                totalFloors: listingData.totalFloors > 0 ? listingData.totalFloors : undefined,
-            };
-            dispatch({ type: 'UPDATE_PROPERTY', payload: updatedProperty });
-            dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
-        } else {
-            const sellerFromUser: Seller = {
-                type: state.currentUser.role === UserRole.AGENT ? 'agent' : 'private',
-                name: state.currentUser.name,
-                avatarUrl: state.currentUser.avatarUrl,
-                phone: state.currentUser.phone,
-                agencyName: state.currentUser.agencyName,
-            };
 
             const newProperty: Property = {
-                id: Date.now().toString(),
-                sellerId: state.currentUser.id,
+                id: propertyToEdit ? propertyToEdit.id : `prop-${Date.now()}`,
+                sellerId: currentUser.id,
                 status: 'active',
-                price: listingData.price,
+                price: Number(listingData.price),
                 address: listingData.address,
-                city: listingData.city,
-                country: listingData.country,
-                beds: listingData.bedrooms,
-                baths: listingData.bathrooms,
-                sqft: listingData.sq_meters,
-                yearBuilt: listingData.year_built,
-                parking: listingData.parking_spots,
+                city: finalCity,
+                country: finalCountry,
+                beds: Number(listingData.bedrooms),
+                baths: Number(listingData.bathrooms),
+                livingRooms: Number(listingData.livingRooms),
+                sqft: Number(listingData.sq_meters),
+                yearBuilt: Number(listingData.year_built),
+                parking: Number(listingData.parking_spots),
                 description: listingData.description,
                 specialFeatures: listingData.specialFeatures,
                 materials: listingData.materials,
                 tourUrl: listingData.tourUrl,
-                imageUrl: imageData[0]?.previewUrl || 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=2070&auto-format=fit=crop',
-                images: newImages.slice(1),
-                lat: cityData?.lat || 44.2,
-                lng: cityData?.lng || 19.9,
-                seller: sellerFromUser,
+                imageUrl: imageUrls.length > 0 ? imageUrls[0].url : 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=500',
+                images: imageUrls,
+                lat: CITY_DATA[finalCountry]?.find(c => c.name === finalCity)?.lat || 0,
+                lng: CITY_DATA[finalCountry]?.find(c => c.name === finalCity)?.lng || 0,
+                seller: {
+                    type: currentUser.role === UserRole.AGENT ? 'agent' : 'private',
+                    name: currentUser.name,
+                    phone: currentUser.phone,
+                    avatarUrl: currentUser.avatarUrl,
+                },
                 propertyType: listingData.propertyType,
-                floorplanUrl: floorplanPreview || undefined,
-                createdAt: newTimestamp,
-                floorNumber: listingData.floorNumber > 0 ? listingData.floorNumber : undefined,
-                totalFloors: listingData.totalFloors > 0 ? listingData.totalFloors : undefined,
+                floorNumber: Number(listingData.floorNumber) || undefined,
+                totalFloors: Number(listingData.totalFloors) || undefined,
+                floorplanUrl: floorplanImage.previewUrl || undefined,
+                createdAt: propertyToEdit ? propertyToEdit.createdAt : Date.now(),
+                lastRenewed: Date.now(),
+                views: propertyToEdit?.views || 0,
+                saves: propertyToEdit?.saves || 0,
+                inquiries: propertyToEdit?.inquiries || 0,
             };
-            dispatch({ type: 'ADD_PROPERTY', payload: newProperty });
-            dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: true } });
+
+            if (propertyToEdit) {
+                dispatch({ type: 'UPDATE_PROPERTY', payload: newProperty });
+            } else {
+                dispatch({ type: 'ADD_PROPERTY', payload: newProperty });
+                // Show pricing offer after first listing
+                dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: true } });
+            }
+
             setStep('success');
+            setTimeout(() => {
+                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
+            }, 3000);
+
+        } catch (err: any) {
+            setError(err.message || "Failed to submit listing.");
+        } finally {
+            setIsSubmitting(false);
         }
-    };
-
-    const handleAddNewTag = useCallback(() => {
-        const trimmedTag = newTagInput.trim().toLowerCase().replace(/\s+/g, '_');
-        if (trimmedTag && !availableTags.includes(trimmedTag)) {
-            setAvailableTags(prev => [...prev, trimmedTag]);
-            setNewTagInput('');
-        }
-    }, [newTagInput, availableTags]);
-
-    const handleViewListings = () => {
-        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
-    };
-
-    const handleBackFromForm = () => {
-        setListingData(null);
-        setStep('init');
-    };
-
-    const handleBackFromFloorplan = () => {
-        setStep('form');
     };
     
-    const renderStep = () => {
-        switch (step) {
-            case 'init': 
-                return <InitStep 
-                    mode={mode} onModeChange={handleModeChange}
-                    language={language} onLanguageChange={setLanguage}
-                    onImageChange={handleImageChange} imageData={imageData} onRemoveImage={removeImage}
-                    onGenerate={handleGenerate} error={error}
-                />;
-            case 'loading': 
-                return <LoadingStep />;
-            case 'form': 
-                if (!listingData) return null;
-                return <FormStep 
-                    listingData={listingData}
-                    mode={mode}
-                    isEditing={isEditing}
-                    onModeChange={handleModeChange}
-                    formErrors={formErrors}
-                    handleDataChange={handleDataChange}
-                    handleInputChange={handleInputChange}
-                    handleImageTagChange={handleImageTagChange}
-                    imageData={imageData} onImageChange={handleImageChange} onRemoveImage={removeImage}
-                    onReorderImages={handleReorderImages}
-                    availableTags={availableTags} newTagInput={newTagInput} onNewTagInputChange={setNewTagInput} onAddNewTag={handleAddNewTag}
-                    onStartOver={handleStartOver}
-                    onNextStep={handleProceedToFloorplan}
-                    onBack={handleBackFromForm}
-                    availableCountries={availableCountries}
-                />;
-            case 'floorplan': 
-                return <FloorplanStep 
-                    onFinish={handleFinalizeListing} 
-                    onFloorplanChange={handleFloorplanChange}
-                    floorplanPreview={floorplanPreview}
-                    onRemoveFloorplan={handleRemoveFloorplan}
-                    onBack={handleBackFromFloorplan}
-                />;
-            case 'success': 
-                return <SuccessStep isEditing={isEditing} onStartOver={handleStartOver} onViewListings={handleViewListings} />;
-            default: 
-                return <InitStep 
-                    mode={mode} onModeChange={handleModeChange}
-                    language={language} onLanguageChange={setLanguage}
-                    onImageChange={handleImageChange} imageData={imageData} onRemoveImage={removeImage}
-                    onGenerate={handleGenerate} error={error}
-                />;
-        }
+    // RENDER LOGIC
+    if (step === 'success') {
+        return (
+            <div className="text-center py-12 flex flex-col items-center">
+                <CheckCircleIcon className="w-16 h-16 text-green-500 mb-4" />
+                <h3 className="text-2xl font-bold text-neutral-800">Listing {propertyToEdit ? 'Updated' : 'Published'} Successfully!</h3>
+                <p className="text-neutral-600 mt-2">Redirecting you to your dashboard...</p>
+            </div>
+        )
     }
-    
-    return <div>{renderStep()}</div>;
+
+    return (
+        <form onSubmit={handleSubmit}>
+            <div className="bg-primary-light text-primary-dark/90 text-sm p-4 rounded-lg mb-6 border border-primary/20">
+                <p><strong>Photo Tips:</strong> For best results, include well-lit, high-resolution photos of the exterior, kitchen, living rooms, bedrooms, and bathrooms. The more details you show, the better your AI-generated listing will be!</p>
+            </div>
+            <div className="flex justify-center mb-6">
+                 <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm">
+                    <button type="button" onClick={() => setMode('ai')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap ${mode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><SparklesIcon className="w-4 h-4" /> AI Creator</button>
+                    <button type="button" onClick={() => setMode('manual')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap ${mode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Manual Entry</button>
+                </div>
+            </div>
+
+            {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">{error}</div>}
+
+            {/* --- AI MODE --- */}
+            {mode === 'ai' && step !== 'form' && (
+                <div className="animate-fade-in">
+                    {step === 'loading' && (
+                         <div className="text-center py-12 flex flex-col items-center">
+                            <SparklesIcon className="w-12 h-12 text-primary animate-pulse" />
+                            <h3 className="text-xl font-bold text-neutral-800 mt-4">Analyzing Property...</h3>
+                            <p className="text-neutral-600 mt-2">Our AI is generating your property description, categorizing rooms, and extracting key features. This may take a moment.</p>
+                        </div>
+                    )}
+                    {step === 'init' && (
+                        <div>
+                            <div className="mb-4">
+                                <label htmlFor="language" className="block text-sm font-medium text-neutral-700 mb-1">Description Language</label>
+                                <select id="language" value={language} onChange={(e) => setLanguage(e.target.value)} className={inputBaseClasses}>
+                                    {LANGUAGES.map(lang => <option key={lang} value={lang}>{lang}</option>)}
+                                </select>
+                            </div>
+                            <label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full h-48 border-2 border-neutral-300 border-dashed rounded-lg cursor-pointer bg-neutral-50 hover:bg-neutral-100">
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <UploadIcon className="w-10 h-10 mb-3 text-neutral-400" />
+                                    <p className="mb-2 text-sm text-neutral-500"><span className="font-semibold">Click to upload photos</span></p>
+                                    <p className="text-xs text-neutral-500">PNG, JPG or WEBP (MAX. 10 images)</p>
+                                </div>
+                                <input id="image-upload" type="file" multiple accept="image/*" className="hidden" onChange={handleImageChange} />
+                            </label>
+                            {images.length > 0 && (
+                                <div className="mt-4">
+                                    <p className="font-semibold text-sm mb-2">{images.length} image(s) selected:</p>
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                                        {images.map((img, index) => (
+                                            <div key={index} className="relative group">
+                                                <img src={img.previewUrl} alt={`preview ${index}`} className="w-full h-24 object-cover rounded-md" />
+                                                <button type="button" onClick={() => removeImage(index)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                             <button type="button" onClick={handleGenerate} className="w-full mt-6 py-3 text-lg font-bold text-white bg-primary rounded-lg shadow-md hover:bg-primary-dark transition-colors flex items-center justify-center gap-2" disabled={images.length === 0}>
+                                <SparklesIcon className="w-6 h-6"/>
+                                Generate Listing
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* --- MANUAL MODE OR AI FORM STEP --- */}
+            {(mode === 'manual' || (mode === 'ai' && step === 'form')) && (
+                 <div className="space-y-8 animate-fade-in">
+                    <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <div className="md:col-span-2">
+                             <div className="relative">
+                                <input type="text" name="address" value={listingData.address} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300 peer-focus:text-primary`} placeholder=" " required />
+                                <label htmlFor="address" className={`${floatingLabelClasses} text-neutral-500 peer-focus:text-primary`}>Address</label>
+                            </div>
+                         </div>
+                         <div className="relative md:col-span-2">
+                            <input 
+                                type="text"
+                                inputMode="numeric"
+                                name="price" 
+                                value={listingData.price > 0 ? new Intl.NumberFormat('de-DE').format(listingData.price) : ''} 
+                                onChange={handlePriceChange} 
+                                className={`${floatingInputClasses} border-neutral-300 pl-8`} 
+                                placeholder=" " 
+                                required 
+                            />
+                            <label htmlFor="price" className={floatingLabelClasses}>Price</label>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">{getCurrencySymbol(selectedCountry)}</span>
+                        </div>
+                        <div className="relative">
+                            <select id="country" name="country" value={selectedCountry} onChange={handleCountryChange} className={`${floatingInputClasses} border-neutral-300`} required>
+                                <option value="" disabled>Select a country</option>
+                                {availableCountries.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                            <label htmlFor="country" className={floatingSelectLabelClasses}>Country</label>
+                        </div>
+                        <div className="relative">
+                            <select id="city" name="city" value={listingData.city} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} disabled={!selectedCountry} required>
+                                <option value="" disabled>Select a city</option>
+                                {availableCities.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                            <label htmlFor="city" className={floatingSelectLabelClasses}>City</label>
+                        </div>
+                    </fieldset>
+
+                    <fieldset className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                        <div className="relative">
+                            <input type="number" name="bedrooms" value={listingData.bedrooms || ''} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " min="0" />
+                            <label htmlFor="bedrooms" className={floatingLabelClasses}>Bedrooms</label>
+                        </div>
+                        <div className="relative">
+                            <input type="number" name="bathrooms" value={listingData.bathrooms || ''} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " min="0" />
+                            <label htmlFor="bathrooms" className={floatingLabelClasses}>Bathrooms</label>
+                        </div>
+                         <div className="relative">
+                            <input type="number" name="livingRooms" value={listingData.livingRooms || ''} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " min="0" />
+                            <label htmlFor="livingRooms" className={floatingLabelClasses}>Living Rooms</label>
+                        </div>
+                    </fieldset>
+                    
+                     <fieldset className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                         <div className="relative">
+                            <input type="number" name="sq_meters" value={listingData.sq_meters || ''} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " min="0" />
+                            <label htmlFor="sq_meters" className={floatingLabelClasses}>Area (m²)</label>
+                        </div>
+                        <div className="relative">
+                            <input type="number" name="year_built" value={listingData.year_built || ''} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " min="1800" max={new Date().getFullYear()} />
+                            <label htmlFor="year_built" className={floatingLabelClasses}>Year Built</label>
+                        </div>
+                         <div className="relative">
+                            <input type="number" name="parking_spots" value={listingData.parking_spots || ''} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " min="0" />
+                            <label htmlFor="parking_spots" className={floatingLabelClasses}>Parking Spots</label>
+                        </div>
+                    </fieldset>
+
+                     <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+                        <div className="relative">
+                            <select name="propertyType" id="propertyType" value={listingData.propertyType} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`}>
+                                <option value="house">House</option>
+                                <option value="apartment">Apartment</option>
+                                <option value="villa">Villa</option>
+                                <option value="other">Other</option>
+                            </select>
+                            <label htmlFor="propertyType" className={floatingSelectLabelClasses}>Property Type</label>
+                        </div>
+                        {listingData.propertyType === 'apartment' && (
+                            <div className="relative">
+                                <input type="number" name="floorNumber" value={listingData.floorNumber || ''} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " min="0" />
+                                <label htmlFor="floorNumber" className={floatingLabelClasses}>Floor Number</label>
+                            </div>
+                        )}
+                         {(listingData.propertyType === 'house' || listingData.propertyType === 'villa') && (
+                            <div className="relative">
+                                <input type="number" name="totalFloors" value={listingData.totalFloors || ''} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " min="0" />
+                                <label htmlFor="totalFloors" className={floatingLabelClasses}>Total Floors</label>
+                            </div>
+                        )}
+                    </fieldset>
+                    
+                    <fieldset>
+                        <TagListInput label="Special Features" tags={listingData.specialFeatures} setTags={(tags) => setListingData(p => ({ ...p, specialFeatures: tags }))} />
+                    </fieldset>
+                     <fieldset>
+                        <TagListInput label="Materials" tags={listingData.materials} setTags={(tags) => setListingData(p => ({ ...p, materials: tags }))} />
+                    </fieldset>
+
+                    <fieldset>
+                         <label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-1">Description</label>
+                         <textarea name="description" value={listingData.description} onChange={handleInputChange} className={`${inputBaseClasses} h-48`} required />
+                    </fieldset>
+
+                     <fieldset>
+                         <label className="block text-sm font-medium text-neutral-700 mb-1">Image Management</label>
+                         <div className="p-4 border rounded-lg bg-neutral-50/70">
+                            {mode === 'ai' && images.length > 0 && (
+                                <div className="mb-4">
+                                     <h4 className="font-semibold text-neutral-800 mb-2">Tag Your Images</h4>
+                                      <div className="flex items-center gap-2 bg-blue-100 text-blue-800 text-sm p-3 rounded-lg mb-4">
+                                        <InfoIcon className="w-8 h-8 flex-shrink-0"/>
+                                        <p>AI has suggested tags for your images. Please review and adjust them as needed to ensure they are accurate.</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        {images.map((img, index) => (
+                                            <div key={index}>
+                                                <img src={img.previewUrl} alt={`preview ${index}`} className="w-full h-24 object-cover rounded-md mb-2" />
+                                                <ImageTagSelector
+                                                    value={listingData.image_tags.find(t => t.index === index)?.tag || ''}
+                                                    options={INITIAL_ROOM_TAGS}
+                                                    onChange={(tag) => handleImageTagChange(index, tag)}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                             {mode === 'manual' && (
+                                <div className="mb-4">
+                                    <label htmlFor="image-upload-manual" className="flex flex-col items-center justify-center w-full h-32 border-2 border-neutral-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-neutral-50">
+                                        <div className="flex flex-col items-center justify-center">
+                                            <UploadIcon className="w-8 h-8 mb-2 text-neutral-400" />
+                                            <p className="text-sm text-neutral-500">Upload or replace images</p>
+                                        </div>
+                                        <input id="image-upload-manual" type="file" multiple accept="image/*" className="hidden" onChange={handleImageChange} />
+                                    </label>
+                                    {images.length > 0 && (
+                                        <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                                            {images.map((img, index) => (
+                                                <div key={index} className="relative group">
+                                                    <img src={img.previewUrl} alt={`preview ${index}`} className="w-full h-24 object-cover rounded-md" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                             <div>
+                                <h4 className="font-semibold text-neutral-800 mb-2 mt-4">Floor Plan (Optional)</h4>
+                                <label htmlFor="floorplan-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-neutral-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-neutral-50">
+                                    <div className="flex flex-col items-center justify-center">
+                                        <UploadIcon className="w-8 h-8 mb-2 text-neutral-400" />
+                                        <p className="text-sm text-neutral-500">Upload floor plan image</p>
+                                    </div>
+                                    <input id="floorplan-upload" type="file" accept="image/*" className="hidden" onChange={handleFloorplanImageChange} />
+                                </label>
+                                {floorplanImage.previewUrl && (
+                                    <div className="mt-2 relative inline-block">
+                                        <img src={floorplanImage.previewUrl} alt="floorplan" className="w-32 h-32 object-cover rounded-md" />
+                                         <button type="button" onClick={() => setFloorplanImage({file: null, previewUrl: ''})} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">&times;</button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </fieldset>
+                    
+                    <div className="flex justify-end pt-4">
+                        <button type="submit" disabled={isSubmitting} className="px-8 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors w-full sm:w-auto">
+                            {isSubmitting ? 'Saving...' : (propertyToEdit ? 'Update Listing' : 'Publish Listing')}
+                        </button>
+                    </div>
+                 </div>
+            )}
+        </form>
+    );
 };
 
+// FIX: Add default export for the component.
 export default GeminiDescriptionGenerator;

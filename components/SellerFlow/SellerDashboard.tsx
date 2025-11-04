@@ -1,14 +1,18 @@
 import React from 'react';
-import { useAppContext } from '../../context/AppContext';
-import GeminiDescriptionGenerator from './GeminiDescriptionGenerator';
 import { CurrencyDollarIcon, SparklesIcon } from '../../constants';
 import PropertyCalculator from './PropertyCalculator';
+import GeminiDescriptionGenerator from './GeminiDescriptionGenerator';
+import { useAppContext } from '../../context/AppContext';
 
 const CreateListingPage: React.FC = () => {
+  const { state } = useAppContext();
+
   return (
     <div className="min-h-full bg-neutral-50">
       <main className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-800 mb-8">Create a New Listing</h2>
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-800 mb-8">
+          {state.propertyToEdit ? 'Edit Your Listing' : 'Create a New Listing'}
+        </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-2">
@@ -22,7 +26,7 @@ const CreateListingPage: React.FC = () => {
                     <p className="text-neutral-600 mb-6">
                         Upload photos of your property to automatically generate a detailed listing, or fill out the form manually. You can review and edit all details before publishing.
                     </p>
-                    <GeminiDescriptionGenerator />
+                    <GeminiDescriptionGenerator propertyToEdit={state.propertyToEdit} />
                 </div>
             </div>
             <div className="md:col-span-1">

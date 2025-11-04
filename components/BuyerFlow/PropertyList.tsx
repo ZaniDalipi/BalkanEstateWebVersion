@@ -46,7 +46,7 @@ const FilterButtonGroup: React.FC<{
   onChange: (value: string | number | null) => void;
 }> = ({ label, options, selectedValue, onChange }) => (
   <div>
-    <label className="block text-xs font-medium text-neutral-700 mb-1.5">{label}</label>
+    <label className="block text-xs font-medium text-neutral-700 mb-1">{label}</label>
     <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200">
       {options.map(({ value, label: optionLabel }) => (
         <FilterButton
@@ -94,7 +94,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
     const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors";
 
     return (
-         <div className="space-y-3">
+         <div className="space-y-2">
             {!isMobile && (
                 <div className="relative">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -110,9 +110,9 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                     />
                 </div>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                    <label htmlFor="minPrice" className="block text-xs font-medium text-neutral-700 mb-1.5">Min Price</label>
+                    <label htmlFor="minPrice" className="block text-xs font-medium text-neutral-700 mb-1">Min Price</label>
                     <div className="relative">
                         <select
                             id="minPrice"
@@ -132,7 +132,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                     </div>
                 </div>
                  <div>
-                    <label htmlFor="maxPrice" className="block text-xs font-medium text-neutral-700 mb-1.5">Max Price</label>
+                    <label htmlFor="maxPrice" className="block text-xs font-medium text-neutral-700 mb-1">Max Price</label>
                     <div className="relative">
                         <select
                             id="maxPrice"
@@ -153,7 +153,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                 </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                  <FilterButtonGroup 
                     label="Bedrooms"
                     options={[
@@ -177,11 +177,21 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                     selectedValue={filters.baths}
                     onChange={(value) => onFilterChange('baths', value)}
                 />
+                <FilterButtonGroup 
+                    label="Living Rooms"
+                    options={[
+                        {value: null, label: 'Any'},
+                        {value: 1, label: '1+'},
+                        {value: 2, label: '2+'},
+                    ]}
+                    selectedValue={filters.livingRooms}
+                    onChange={(value) => onFilterChange('livingRooms', value)}
+                />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                    <label htmlFor="minSqft" className="block text-xs font-medium text-neutral-700 mb-1.5">Min Size (m²)</label>
+                    <label htmlFor="minSqft" className="block text-xs font-medium text-neutral-700 mb-1">Min Size (m²)</label>
                     <div className="relative">
                         <select
                             id="minSqft"
@@ -201,7 +211,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                     </div>
                 </div>
                  <div>
-                    <label htmlFor="maxSqft" className="block text-xs font-medium text-neutral-700 mb-1.5">Max Size (m²)</label>
+                    <label htmlFor="maxSqft" className="block text-xs font-medium text-neutral-700 mb-1">Max Size (m²)</label>
                     <div className="relative">
                         <select
                             id="maxSqft"
@@ -222,7 +232,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FilterButtonGroup 
                     label="Listing Type"
                     options={[
@@ -246,7 +256,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                 />
             </div>
             
-            <div className="flex items-center pt-2">
+            <div className="flex items-center pt-1">
                  <input
                     type="checkbox"
                     id="search-on-move"
@@ -260,7 +270,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
             </div>
 
             {!isMobile && (
-                 <div className="pt-2 flex items-center gap-2">
+                 <div className="pt-1 flex items-center gap-2">
                      <button 
                         onClick={onResetFilters}
                         className="py-2.5 px-4 border border-neutral-300 text-neutral-600 rounded-lg text-sm font-bold bg-white hover:bg-neutral-100 transition-colors"

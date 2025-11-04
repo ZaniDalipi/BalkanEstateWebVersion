@@ -46,7 +46,7 @@ const SavedHomesPage: React.FC = () => {
                 <h3 className="text-xl font-semibold text-neutral-800">Log in to view your saved homes</h3>
                 <p className="text-neutral-500 mt-2">Save your favorite properties and access them anytime, anywhere.</p>
                 <button
-                    onClick={() => dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true })}
+                    onClick={() => dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } })}
                     className="mt-6 px-6 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
                 >
                     Login / Register
