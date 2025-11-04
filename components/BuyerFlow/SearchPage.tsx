@@ -39,9 +39,12 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const [searchOnMove, setSearchOnMove] = useState(true);
     const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
 
+    const [isQueryInputFocused, setIsQueryInputFocused] = useState(false);
     const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
     const [isSaving, setIsSaving] = useState(false);
     const [recenterMap, setRecenterMap] = useState(true);
+    const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+    const [isMapSyncActive, setIsMapSyncActive] = useState(false);
 
     const isModalOpen = isAuthModalOpen || isPricingModalOpen || isSubscriptionModalOpen;
 
@@ -50,6 +53,50 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const [isFiltersOpen, setFiltersOpen] = useState(false);
     const [searchMode, setSearchMode] = useState<'manual' | 'ai'>('manual');
 
+    useEffect(() => {
+        let timeoutId: number;
+
+        const getLocation = () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        // Use a functional state update to read the latest filters state
+                        // without adding a dependency. This prevents overriding an active search.
+                        setFilters(currentFilters => {
+                            if (!currentFilters.query.trim()) {
+                                setUserLocation([latitude, longitude]);
+                                setRecenterMap(true);
+                            }
+                            return currentFilters; // No change, just reading the state
+                        });
+                    },
+                    (error) => {
+                        console.error("Geolocation error:", error);
+                    }
+                );
+            }
+        };
+
+        // First call on initial load
+        getLocation();
+
+        // Second call after 5 seconds for better accuracy
+        timeoutId = window.setTimeout(getLocation, 5000);
+
+        // Cleanup the timeout on component unmount
+        return () => {
+            clearTimeout(timeoutId);
+        };
+    }, []); // Empty dependency array ensures this runs only once on mount
+    
+    useEffect(() => {
+        const syncTimer = setTimeout(() => {
+            setIsMapSyncActive(true);
+        }, 7000); // 7-second delay
+
+        return () => clearTimeout(syncTimer);
+    }, []);
 
     const allCities = useMemo(() => Object.values(CITY_DATA).flat(), []);
 
@@ -179,13 +226,18 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         setMapBounds(newBounds);
         setRecenterMap(false);
         
+        // If the user is actively typing in the search box, or if the initial delay is not over, don't override the input.
+        if (isQueryInputFocused || !isMapSyncActive) {
+            return;
+        }
+
         // Find the city at the center of the map and update the query input
         const closestCity = findClosestCity(newCenter.lat, newCenter.lng, allCities);
         if (closestCity && closestCity.name.toLowerCase() !== filters.query.toLowerCase()) {
             // Update the filter but DO NOT recenter the map, preventing a feedback loop.
             handleFilterChange('query', closestCity.name, false);
         }
-    }, [allCities, filters.query, handleFilterChange]);
+    }, [allCities, filters.query, handleFilterChange, isQueryInputFocused, isMapSyncActive]);
 
     const handleNewListingClick = () => {
       if (isAuthenticated) {
@@ -231,6 +283,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         onMapMove: handleMapMove,
         isSearchActive: isSearchActive,
         searchLocation: searchLocation,
+        userLocation: userLocation,
     };
     
     const propertyListProps = {
@@ -245,6 +298,8 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         onSearchOnMoveChange: setSearchOnMove,
         searchMode,
         onSearchModeChange: setSearchMode,
+        onQueryFocus: () => setIsQueryInputFocused(true),
+        onQueryBlur: () => setIsQueryInputFocused(false),
         onApplyAiFilters: handleApplyAiFilters,
     };
 
@@ -347,6 +402,8 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                                     placeholder="Search city, address..."
                                     value={filters.query}
                                     onChange={(e) => handleFilterChange('query', e.target.value)}
+                                    onFocus={() => setIsQueryInputFocused(true)}
+                                    onBlur={() => setIsQueryInputFocused(false)}
                                     className="block w-full text-base bg-white border-neutral-200 rounded-full text-neutral-900 shadow-lg px-12 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
                                 />
                                 {filters.query && (

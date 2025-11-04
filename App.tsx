@@ -59,14 +59,8 @@ const MainLayout: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   
-  const isLayoutVisible = !state.isInitialLaunch;
-  const isFullHeightView = state.activeView === 'search' || state.activeView === 'inbox' || !!state.selectedProperty;
-  const showHeader = !(isMobile && (state.activeView === 'search' || !!state.selectedProperty));
-
-
-  if (!isLayoutVisible) {
-    return <Onboarding />;
-  }
+  const isFullHeightView = state.isInitialLaunch || state.activeView === 'search' || state.activeView === 'inbox' || !!state.selectedProperty;
+  const showHeader = state.isInitialLaunch || !(isMobile && (state.activeView === 'search' || !!state.selectedProperty));
 
   return (
     <div className="min-h-screen bg-neutral-50 font-sans">
