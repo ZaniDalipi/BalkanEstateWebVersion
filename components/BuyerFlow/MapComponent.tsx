@@ -4,6 +4,7 @@ import { Property } from '../../types';
 import L from 'leaflet';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
+import { BellIcon } from '../../constants';
 
 
 // Fix for default icon issue with bundlers
@@ -37,6 +38,9 @@ interface MapComponentProps {
   isSearchActive: boolean;
   searchLocation: [number, number] | null;
   userLocation: [number, number] | null;
+  onSaveSearch: () => void;
+  isSaving: boolean;
+  isAuthenticated: boolean;
 }
 
 const ChangeView: React.FC<{center: [number, number], zoom: number, enabled: boolean}> = ({ center, zoom, enabled }) => {
@@ -55,9 +59,6 @@ const MapEvents: React.FC<{ onMove: (bounds: L.LatLngBounds, center: L.LatLng) =
 
     useEffect(() => {
         const resizeObserver = new ResizeObserver(() => {
-            // Use a timeout to ensure the map container has finished resizing
-            // before invalidating the map size. This is a robust way to handle
-            // containers that are conditionally shown/hidden or resized.
             setTimeout(() => {
                 map.invalidateSize();
             }, 0);
@@ -66,11 +67,11 @@ const MapEvents: React.FC<{ onMove: (bounds: L.LatLngBounds, center: L.LatLng) =
         const mapContainer = map.getContainer();
         resizeObserver.observe(mapContainer);
         
-        // Cleanup observer on component unmount
         return () => {
             resizeObserver.unobserve(mapContainer);
         };
     }, [map]);
+
 
     useMapEvents({
         load: () => {
@@ -185,7 +186,7 @@ const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) => {
     );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove, isSearchActive, searchLocation, userLocation }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove, isSearchActive, searchLocation, userLocation, onSaveSearch, isSaving, isAuthenticated }) => {
   const { dispatch } = useAppContext();
   const [tileLayer, setTileLayer] = useState<TileLayerType>('street');
 
@@ -245,7 +246,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
   const bottomControlsOffset = 112; // 80px for floating button + 32px padding
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full relative">
       <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full" maxZoom={14} minZoom={5}>
         <ChangeView center={center} zoom={zoom} enabled={recenter} />
         <MapEvents onMove={onMapMove} />
@@ -255,6 +256,20 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
         />
         <Markers properties={validProperties} onPopupClick={handlePopupClick} />
       </MapContainer>
+      
+      {isAuthenticated && (
+        <div className="absolute top-4 right-4 z-[1000] hidden md:flex">
+          <button 
+            onClick={onSaveSearch} 
+            disabled={isSaving}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+          >
+            <BellIcon className="w-5 h-5" />
+            <span>{isSaving ? 'Saving...' : 'Save Search'}</span>
+          </button>
+        </div>
+      )}
+
       <div className="absolute left-4 z-[1000] bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-neutral-200" style={{ bottom: `${bottomControlsOffset}px` }}>
         <h4 className="font-bold text-sm mb-2 text-neutral-800">Legend</h4>
         <div className="space-y-1.5">

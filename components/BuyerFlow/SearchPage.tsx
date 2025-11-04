@@ -7,7 +7,7 @@ import { getAiChatResponse, generateSearchName } from '../../services/geminiServ
 import Toast from '../shared/Toast';
 import L from 'leaflet';
 import { CITY_DATA } from '../../services/propertyService';
-import { Bars3Icon, SearchIcon, UserIcon, XMarkIcon, AdjustmentsHorizontalIcon, MapPinIcon, Squares2x2Icon } from '../../constants';
+import { Bars3Icon, SearchIcon, UserIcon, XMarkIcon, AdjustmentsHorizontalIcon, MapPinIcon, Squares2x2Icon, BellIcon } from '../../constants';
 import { findClosestCity } from '../../utils/location';
 import { filterProperties } from '../../utils/propertyUtils';
 
@@ -144,12 +144,11 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
 
     // Properties for the list, further filtered by map bounds if "search on move" is active
     const listProperties = useMemo(() => {
-        // If we are about to recenter the map, the current bounds are stale, so don't filter by them yet.
-        if (recenterMap || !searchOnMove || !mapBounds) {
+        if (!searchOnMove || !mapBounds) {
             return baseFilteredProperties;
         }
         return baseFilteredProperties.filter(p => mapBounds.contains([p.lat, p.lng]));
-    }, [baseFilteredProperties, searchOnMove, mapBounds, recenterMap]);
+    }, [baseFilteredProperties, searchOnMove, mapBounds]);
 
     const handleFilterChange = useCallback((name: keyof Filters, value: string | number | null, shouldRecenter = true) => {
         setFilters(prev => ({ ...prev, [name]: value }));
@@ -170,7 +169,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     
     const handleSaveSearch = useCallback(async () => {
         if (!isAuthenticated) {
-            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
+            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'signup' } });
             return;
         }
 
@@ -243,14 +242,14 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
       if (isAuthenticated) {
           dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'create-listing' });
       } else {
-          dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
+          dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'signup' } });
       }
     };
     const handleAccountClick = () => {
       if (isAuthenticated) {
           dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
       } else {
-          dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
+          dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'login' } });
       }
     };
 
@@ -284,6 +283,9 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         isSearchActive: isSearchActive,
         searchLocation: searchLocation,
         userLocation: userLocation,
+        onSaveSearch: handleSaveSearch,
+        isSaving: isSaving,
+        isAuthenticated: isAuthenticated,
     };
     
     const propertyListProps = {
@@ -427,6 +429,17 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                                 <div className="bg-neutral-900/80 text-white font-bold text-sm px-4 py-2 rounded-full shadow-lg backdrop-blur-sm mb-4">
                                     <span>{listProperties.length} results</span>
                                 </div>
+                            )}
+
+                            {mobileView === 'map' && isAuthenticated && (
+                                <button
+                                    onClick={handleSaveSearch}
+                                    disabled={isSaving}
+                                    className="flex items-center gap-2 px-5 py-3 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-transform hover:scale-105 mb-4"
+                                >
+                                    <BellIcon className="w-5 h-5" />
+                                    <span>{isSaving ? 'Saving...' : 'Save Search'}</span>
+                                </button>
                             )}
 
                             <button
