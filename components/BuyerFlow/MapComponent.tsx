@@ -36,6 +36,7 @@ interface MapComponentProps {
   onMapMove: (bounds: L.LatLngBounds, center: L.LatLng) => void;
   isSearchActive: boolean;
   searchLocation: [number, number] | null;
+  userLocation: [number, number] | null;
 }
 
 const ChangeView: React.FC<{center: [number, number], zoom: number, enabled: boolean}> = ({ center, zoom, enabled }) => {
@@ -184,7 +185,7 @@ const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) => {
     );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove, isSearchActive, searchLocation }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove, isSearchActive, searchLocation, userLocation }) => {
   const { dispatch } = useAppContext();
   const [tileLayer, setTileLayer] = useState<TileLayerType>('street');
 
@@ -196,6 +197,15 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
   }, [properties]);
   
   const { center, zoom } = useMemo(() => {
+    // HIGHEST PRIORITY: If we are explicitly recentering and have a user location, use it.
+    // This ensures geolocation overrides the map's current position or a query derived from it.
+    if (recenter && userLocation) {
+        return {
+            center: userLocation,
+            zoom: 13, // Zoom a bit closer for user's location
+        };
+    }
+      
     // 1. Prioritize explicit search location from the query input
     if (searchLocation) {
         return {
@@ -204,14 +214,22 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
         };
     }
     
-    // 2. If a search is active and has results, focus on them.
+    // 2. If user's location is available (but we aren't explicitly recentering to it)
+    if (userLocation) {
+        return {
+            center: userLocation,
+            zoom: 13,
+        };
+    }
+
+    // 3. If a search is active and has results, focus on them.
     if (isSearchActive && validProperties.length > 0) {
       return {
         center: [validProperties[0].lat, validProperties[0].lng] as [number, number],
         zoom: validProperties.length === 1 ? 14 : 12,
       };
     }
-    // 3. Fallback to properties if no user location.
+    // 4. Fallback to properties if no user location.
     if (validProperties.length > 0) {
       return {
         center: [validProperties[0].lat, validProperties[0].lng] as [number, number],
@@ -220,10 +238,10 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
     }
     // Absolute fallback
     return {
-      center: [44.2, 19.9] as [number, number],
+      center: [44.2, 19.9] as [number, number], // Center of Balkans
       zoom: 10,
     };
-  }, [validProperties, isSearchActive, searchLocation]);
+  }, [validProperties, isSearchActive, searchLocation, userLocation, recenter]);
     
   const handlePopupClick = (propertyId: string) => {
     dispatch({ type: 'SET_SELECTED_PROPERTY', payload: propertyId });

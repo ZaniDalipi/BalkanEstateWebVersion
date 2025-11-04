@@ -7,7 +7,7 @@ import AiSearch from './AiSearch';
 interface PropertyListProps {
   properties: Property[];
   filters: Filters;
-  onFilterChange: (name: keyof Filters, value: string | number | null) => void;
+  onFilterChange: (name: keyof Filters, value: string | number | null, shouldRecenter?: boolean) => void;
   onResetFilters: () => void;
   onSortChange: (value: string) => void;
   onSaveSearch: () => void;
@@ -20,6 +20,8 @@ interface PropertyListProps {
   searchMode: 'manual' | 'ai';
   onSearchModeChange: (mode: 'manual' | 'ai') => void;
   onApplyAiFilters: (query: AiSearchQuery) => void;
+  onQueryFocus: () => void;
+  onQueryBlur: () => void;
 }
 
 const FilterButton: React.FC<{
@@ -68,7 +70,7 @@ const formatNumber = (num: number) => new Intl.NumberFormat('de-DE').format(num)
 const ITEMS_PER_PAGE = 20;
 
 const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'>> = ({
-    filters, onFilterChange, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile
+    filters, onFilterChange, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, onQueryFocus, onQueryBlur
 }) => {
 
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -88,7 +90,9 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
             }
         }
         
-        onFilterChange(name as keyof Filters, finalValue);
+        // Only recenter the map when the main text query changes
+        const shouldRecenter = name === 'query';
+        onFilterChange(name as keyof Filters, finalValue, shouldRecenter);
     }, [onFilterChange]);
     
     const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors";
@@ -106,6 +110,8 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                         placeholder="Search city, address..."
                         value={filters.query}
                         onChange={handleInputChange}
+                        onFocus={onQueryFocus}
+                        onBlur={onQueryBlur}
                         className={`${inputBaseClasses} pl-9`}
                     />
                 </div>
@@ -164,7 +170,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                         {value: 4, label: '4+'},
                     ]}
                     selectedValue={filters.beds}
-                    onChange={(value) => onFilterChange('beds', value)}
+                    onChange={(value) => onFilterChange('beds', value, false)}
                 />
                 <FilterButtonGroup 
                     label="Bathrooms"
@@ -175,7 +181,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                         {value: 3, label: '3+'},
                     ]}
                     selectedValue={filters.baths}
-                    onChange={(value) => onFilterChange('baths', value)}
+                    onChange={(value) => onFilterChange('baths', value, false)}
                 />
                 <FilterButtonGroup 
                     label="Living Rooms"
@@ -185,7 +191,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                         {value: 2, label: '2+'},
                     ]}
                     selectedValue={filters.livingRooms}
-                    onChange={(value) => onFilterChange('livingRooms', value)}
+                    onChange={(value) => onFilterChange('livingRooms', value, false)}
                 />
             </div>
 
@@ -241,7 +247,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                         {value: 'private', label: 'Private'},
                     ]}
                     selectedValue={filters.sellerType}
-                    onChange={(value) => onFilterChange('sellerType', (value as SellerType) || 'any')}
+                    onChange={(value) => onFilterChange('sellerType', (value as SellerType) || 'any', false)}
                 />
                 <FilterButtonGroup
                     label="Property Type"
@@ -252,7 +258,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                         { value: 'villa', label: 'Villa' },
                     ]}
                     selectedValue={filters.propertyType}
-                    onChange={(value) => onFilterChange('propertyType', (value as Filters['propertyType']) || 'any')}
+                    onChange={(value) => onFilterChange('propertyType', (value as Filters['propertyType']) || 'any', false)}
                 />
             </div>
             
