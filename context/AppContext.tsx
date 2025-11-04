@@ -18,16 +18,7 @@ const initialState: AppState = {
   savedSearches: [],
   savedHomes: [],
   comparisonList: [],
-  conversations: [
-    {
-        id: 'convo1',
-        propertyId: 'prop1',
-        messages: [
-            { id: 'msg1', senderId: 'user_seller_1', text: 'Hello! I saw you were interested in the Knez Mihailova property. Do you have any questions?', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), isRead: false },
-            { id: 'msg2', senderId: 'user', text: 'Yes, I was wondering about the monthly utility costs.', timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), isRead: true },
-        ],
-    },
-  ],
+  conversations: [],
   selectedAgentId: null,
 };
 
