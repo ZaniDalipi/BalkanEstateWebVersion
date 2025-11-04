@@ -36,10 +36,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const { activeView, isAuthenticated, currentUser } = state;
 
     const handleNavClick = (view: AppView) => {
-        if (state.isInitialLaunch) {
-            dispatch({ type: 'COMPLETE_ONBOARDING' });
-        }
-
         const needsAuth = ['inbox', 'account', 'saved-searches', 'saved-homes'].includes(view);
         if (needsAuth && !isAuthenticated) {
             dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
@@ -50,9 +46,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     };
 
     const handleNewListingClick = () => {
-        if (state.isInitialLaunch) {
-            dispatch({ type: 'COMPLETE_ONBOARDING' });
-        }
         if (isAuthenticated) {
             dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'create-listing' });
         } else {
