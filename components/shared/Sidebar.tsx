@@ -36,19 +36,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const { activeView, isAuthenticated, currentUser } = state;
 
     const handleNavClick = (view: AppView) => {
-        if ((view === 'inbox' || view === 'account' || view === 'saved-searches' || view === 'saved-homes') && !isAuthenticated) {
-            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
-            return;
+        if (state.isInitialLaunch) {
+            dispatch({ type: 'COMPLETE_ONBOARDING' });
         }
-        dispatch({ type: 'SET_ACTIVE_VIEW', payload: view });
+
+        const needsAuth = ['inbox', 'account', 'saved-searches', 'saved-homes'].includes(view);
+        if (needsAuth && !isAuthenticated) {
+            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
+        } else {
+            dispatch({ type: 'SET_ACTIVE_VIEW', payload: view });
+        }
         onClose(); // Close sidebar on mobile after navigation
     };
 
     const handleNewListingClick = () => {
+        if (state.isInitialLaunch) {
+            dispatch({ type: 'COMPLETE_ONBOARDING' });
+        }
         if (isAuthenticated) {
             dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'create-listing' });
         } else {
-            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
+            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'signup' } });
         }
         onClose();
     };
@@ -137,7 +145,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                             </button>
                         </div>
                     ) : (
-                         <button onClick={() => { dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true }); onClose(); }} className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-left text-neutral-700 hover:bg-neutral-100 md:justify-center group-hover:md:justify-start">
+                         <button onClick={() => { dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'login' } }); onClose(); }} className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-left text-neutral-700 hover:bg-neutral-100 md:justify-center group-hover:md:justify-start">
                             <UserCircleIcon className="w-6 h-6 text-neutral-700 flex-shrink-0" />
                             <span className="md:hidden group-hover:md:inline whitespace-nowrap">Login / Register</span>
                         </button>
