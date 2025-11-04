@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Property } from '../../types';
+import { BuildingOfficeIcon } from '../../constants';
 
 interface ComparisonBarProps {
     properties: Property[];
@@ -7,6 +8,34 @@ interface ComparisonBarProps {
     onRemove: (id: string) => void;
     onClear: () => void;
 }
+
+const CompareImage: React.FC<{ prop: Property; onRemove: (id: string) => void; }> = ({ prop, onRemove }) => {
+    const [error, setError] = useState(false);
+    useEffect(() => { setError(false); }, [prop.imageUrl]);
+
+    return (
+        <div className="relative group">
+            {error ? (
+                <div className="w-12 h-12 object-cover rounded-full border-2 border-white shadow-md bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center">
+                    <BuildingOfficeIcon className="w-6 h-6 text-neutral-400" />
+                </div>
+            ) : (
+                 <img 
+                    src={prop.imageUrl} 
+                    alt={prop.address} 
+                    className="w-12 h-12 object-cover rounded-full border-2 border-white shadow-md"
+                    onError={() => setError(true)}
+                />
+            )}
+            <button 
+                onClick={() => onRemove(prop.id)}
+                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+                &times;
+            </button>
+        </div>
+    )
+};
 
 const ComparisonBar: React.FC<ComparisonBarProps> = ({ properties, onCompareNow, onRemove, onClear }) => {
     const propertyCount = properties.length;
@@ -18,19 +47,7 @@ const ComparisonBar: React.FC<ComparisonBarProps> = ({ properties, onCompareNow,
                 <div className="w-full sm:w-auto flex items-center gap-4 flex-grow">
                     <div className="flex -space-x-3">
                         {properties.map(prop => (
-                            <div key={prop.id} className="relative group">
-                                <img 
-                                    src={prop.imageUrl} 
-                                    alt={prop.address} 
-                                    className="w-12 h-12 object-cover rounded-full border-2 border-white shadow-md"
-                                />
-                                <button 
-                                    onClick={() => onRemove(prop.id)}
-                                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group:opacity-100 transition-opacity"
-                                >
-                                    &times;
-                                </button>
-                            </div>
+                           <CompareImage key={prop.id} prop={prop} onRemove={onRemove} />
                         ))}
                     </div>
                     <div>

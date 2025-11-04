@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '../../constants';
+import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon, BuildingOfficeIcon } from '../../constants';
 
 interface ImageViewerModalProps {
     images: { url: string; tag: string }[];
@@ -9,6 +9,7 @@ interface ImageViewerModalProps {
 
 const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ images, startIndex, onClose }) => {
     const [currentIndex, setCurrentIndex] = useState(startIndex);
+    const [imageError, setImageError] = useState(false);
     const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
     const [touchMove, setTouchMove] = useState<{ x: number; y: number } | null>(null);
 
@@ -21,6 +22,10 @@ const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ images, startIndex,
     const handlePrev = useCallback(() => {
         setCurrentIndex(prev => (prev - 1 + images.length) % images.length);
     }, [images.length]);
+
+    useEffect(() => {
+        setImageError(false);
+    }, [currentIndex, images]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -92,12 +97,20 @@ const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ images, startIndex,
                 </button>
                 
                 <div className="w-full h-full flex items-center justify-center">
-                    <img
-                        key={images[currentIndex].url}
-                        src={images[currentIndex].url}
-                        alt={`Property view ${currentIndex + 1}`}
-                        className="max-w-full max-h-full object-contain animate-fade-in"
-                    />
+                    {imageError ? (
+                        <div className="max-w-full max-h-full w-full h-full bg-gradient-to-br from-neutral-600 to-neutral-700 flex flex-col items-center justify-center text-white p-8 rounded-lg">
+                            <BuildingOfficeIcon className="w-24 h-24 text-neutral-400" />
+                            <p className="mt-4 font-semibold">Image could not be loaded</p>
+                        </div>
+                    ) : (
+                        <img
+                            key={images[currentIndex].url}
+                            src={images[currentIndex].url}
+                            alt={`Property view ${currentIndex + 1}`}
+                            className="max-w-full max-h-full object-contain animate-fade-in"
+                            onError={() => setImageError(true)}
+                        />
+                    )}
                 </div>
                 
                 <button onClick={handleNext} className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-white/20 backdrop-blur-sm p-3 rounded-full hover:bg-white/40 transition-colors z-10">

@@ -331,6 +331,36 @@ const DetailItem: React.FC<{icon: React.ReactNode, label: string, children: Reac
     </div>
 );
 
+const Thumbnail: React.FC<{
+    img: { url: string; tag: string },
+    altText: string,
+    className: string,
+    onClick: () => void,
+}> = ({ img, altText, className, onClick }) => {
+    const [error, setError] = useState(false);
+
+    useEffect(() => {
+        setError(false);
+    }, [img.url]);
+
+    return (
+        <div className={className} onClick={onClick}>
+            {error ? (
+                <div className="w-full h-full bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center rounded-lg">
+                    <BuildingOfficeIcon className="w-8 h-8 text-neutral-400" />
+                </div>
+            ) : (
+                <img 
+                    src={img.url} 
+                    alt={altText}
+                    className="w-full h-full object-cover rounded-lg"
+                    onError={() => setError(true)}
+                />
+            )}
+        </div>
+    )
+};
+
 const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => {
   const { state, dispatch } = useAppContext();
   
@@ -339,6 +369,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [isFloorPlanOpen, setIsFloorPlanOpen] = useState(false);
+  const [mainImageError, setMainImageError] = useState(false);
   
   const allImages = useMemo(() => {
     const images = property.images || [];
@@ -366,6 +397,10 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
   }, [activeCategory, allImages, categorizedImages]);
 
   const currentImageUrl = imagesForCurrentCategory[currentImageIndex]?.url || property.imageUrl;
+
+  useEffect(() => {
+    setMainImageError(false);
+  }, [currentImageUrl]);
   
   const handleCategorySelect = useCallback((tag: PropertyImageTag | 'all') => {
     setActiveCategory(tag);
@@ -420,11 +455,18 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
             <div className="bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden">
               <div className="relative">
                 <button onClick={() => setIsViewerOpen(true)} className="w-full h-[250px] sm:h-[400px] lg:h-[450px] block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-t-xl">
-                    <img 
-                        src={currentImageUrl}
-                        alt={property.address} 
-                        className="w-full h-full object-cover"
-                    />
+                    {mainImageError ? (
+                        <div className="w-full h-full bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center">
+                            <BuildingOfficeIcon className="w-24 h-24 text-neutral-400" />
+                        </div>
+                    ) : (
+                        <img 
+                            src={currentImageUrl}
+                            alt={property.address} 
+                            className="w-full h-full object-cover"
+                            onError={() => setMainImageError(true)}
+                        />
+                    )}
                 </button>
                 <div className="absolute top-4 right-4 flex flex-col gap-2">
                     <button onClick={() => setIsEditorOpen(true)} className="flex items-center gap-2 bg-white/80 backdrop-blur-sm text-neutral-800 font-semibold px-4 py-2 rounded-full hover:scale-105 transition-transform shadow-md">
@@ -477,11 +519,11 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {imagesForCurrentCategory.map((img, index) => (
-                        <img 
-                            key={img.url} 
-                            src={img.url} 
-                            alt={`${property.address} - ${img.tag} ${index + 1}`}
-                            className={`w-full h-32 object-cover rounded-lg cursor-pointer border-2 transition-colors ${index === currentImageIndex ? 'border-primary' : 'border-transparent hover:border-primary/50'}`}
+                        <Thumbnail
+                            key={img.url}
+                            img={img}
+                            altText={`${property.address} - ${img.tag} ${index + 1}`}
+                            className={`w-full h-32 cursor-pointer border-2 transition-colors ${index === currentImageIndex ? 'border-primary' : 'border-transparent hover:border-primary/50'}`}
                             onClick={() => setCurrentImageIndex(index)}
                         />
                     ))}

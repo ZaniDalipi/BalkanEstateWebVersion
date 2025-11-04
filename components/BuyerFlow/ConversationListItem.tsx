@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Conversation } from '../../types';
 import { useAppContext } from '../../context/AppContext';
+import { BuildingOfficeIcon } from '../../constants';
 
 interface ConversationListItemProps {
     conversation: Conversation;
@@ -10,6 +11,7 @@ interface ConversationListItemProps {
 
 const ConversationListItem: React.FC<ConversationListItemProps> = ({ conversation, isSelected, onSelect }) => {
     const { state, dispatch } = useAppContext();
+    const [imageError, setImageError] = useState(false);
     const property = state.properties.find(p => p.id === conversation.propertyId);
 
     if (!property) {
@@ -33,11 +35,18 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({ conversatio
                 isSelected ? 'bg-primary-light' : 'hover:bg-neutral-50'
             }`}
         >
-            <img 
-                src={property.imageUrl} 
-                alt={property.address}
-                className="w-16 h-16 object-cover rounded-md flex-shrink-0"
-            />
+            {imageError ? (
+                <div className="w-16 h-16 bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center rounded-md flex-shrink-0">
+                    <BuildingOfficeIcon className="w-8 h-8 text-neutral-400" />
+                </div>
+            ) : (
+                <img 
+                    src={property.imageUrl} 
+                    alt={property.address}
+                    className="w-16 h-16 object-cover rounded-md flex-shrink-0"
+                    onError={() => setImageError(true)}
+                />
+            )}
             <div className="flex-grow overflow-hidden">
                 <div className="flex justify-between items-center">
                     <p className={`font-bold text-sm truncate ${isSelected ? 'text-primary-dark' : 'text-neutral-800'}`}>{property.address}</p>

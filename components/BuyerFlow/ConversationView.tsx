@@ -1,17 +1,29 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Conversation, Message } from '../../types';
 import { useAppContext } from '../../context/AppContext';
 import MessageInput from './MessageInput';
 import { formatPrice } from '../../utils/currency';
-import { CalendarIcon, UserCircleIcon, ChevronLeftIcon } from '../../constants';
+import { CalendarIcon, UserCircleIcon, ChevronLeftIcon, BuildingOfficeIcon } from '../../constants';
 
 interface ConversationViewProps {
     conversation: Conversation;
     onBack?: () => void; // Optional callback for mobile back button
 }
 
+const MessageImage: React.FC<{imageUrl: string}> = ({imageUrl}) => {
+    const [error, setError] = useState(false);
+    useEffect(() => { setError(false); }, [imageUrl]);
+
+    if(error) {
+        return <div className="p-4 bg-neutral-200 rounded-lg text-neutral-500 text-xs">Image failed to load.</div>
+    }
+
+    return <img src={imageUrl} alt="Annotated property" className="max-w-full h-auto rounded-lg" onError={() => setError(true)} />
+}
+
 const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBack }) => {
     const { state, dispatch } = useAppContext();
+    const [imageError, setImageError] = useState(false);
     const property = state.properties.find(p => p.id === conversation.propertyId);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -48,7 +60,13 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
                         <ChevronLeftIcon className="w-6 h-6" />
                     </button>
                 )}
-                <img src={property.imageUrl} alt={property.address} className="w-12 h-12 object-cover rounded-lg" />
+                {imageError ? (
+                    <div className="w-12 h-12 bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center rounded-lg flex-shrink-0">
+                        <BuildingOfficeIcon className="w-6 h-6 text-neutral-400" />
+                    </div>
+                ) : (
+                    <img src={property.imageUrl} alt={property.address} className="w-12 h-12 object-cover rounded-lg" onError={() => setImageError(true)} />
+                )}
                 <div className="flex-grow">
                     <p className="font-bold text-neutral-800 truncate">{property.address}, {property.city}</p>
                     <p className="text-sm font-semibold text-primary">{formatPrice(property.price, property.country)}</p>
@@ -82,9 +100,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
                                 : 'bg-neutral-100 text-neutral-800 rounded-bl-lg'
                             }`}>
                                 {msg.text && <p className="text-sm">{msg.text}</p>}
-                                {msg.imageUrl && (
-                                    <img src={msg.imageUrl} alt="Annotated property" className="max-w-full h-auto rounded-lg" />
-                                )}
+                                {msg.imageUrl && <MessageImage imageUrl={msg.imageUrl} />}
                             </div>
                         </div>
                     );
