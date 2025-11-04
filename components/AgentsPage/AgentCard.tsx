@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Agent } from '../../types';
 import StarRating from '../shared/StarRating';
 import { TrophyIcon, UserCircleIcon, CheckCircleIcon } from '../../constants';
@@ -9,6 +9,23 @@ interface AgentCardProps {
   agent: Agent;
   rank: number;
 }
+
+const AgentAvatar: React.FC<{ agent: Agent }> = ({ agent }) => {
+    const [error, setError] = useState(false);
+
+    if (!agent.avatarUrl || error) {
+        return <UserCircleIcon className="w-16 h-16 text-neutral-300" />;
+    }
+
+    return (
+        <img 
+            src={agent.avatarUrl} 
+            alt={agent.name} 
+            className="w-16 h-16 rounded-full object-cover"
+            onError={() => setError(true)}
+        />
+    );
+};
 
 const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
   const { dispatch } = useAppContext();
@@ -33,11 +50,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
       <div className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            {agent.avatarUrl ? (
-              <img src={agent.avatarUrl} alt={agent.name} className="w-16 h-16 rounded-full object-cover" />
-            ) : (
-              <UserCircleIcon className="w-16 h-16 text-neutral-300" />
-            )}
+            <AgentAvatar agent={agent} />
             <div>
               <h3 className="text-lg font-bold text-neutral-900">{agent.name}</h3>
               {agent.city && agent.country && (

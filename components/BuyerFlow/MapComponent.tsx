@@ -246,7 +246,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
   const bottomControlsOffset = 112; // 80px for floating button + 32px padding
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full relative">
       <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full" maxZoom={14} minZoom={5}>
         <ChangeView center={center} zoom={zoom} enabled={recenter} />
         <MapEvents onMove={onMapMove} />

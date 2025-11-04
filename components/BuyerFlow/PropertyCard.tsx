@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Property } from '../../types';
-import { MapPinIcon, BedIcon, BathIcon, SqftIcon, UserCircleIcon, ScaleIcon, LivingRoomIcon } from '../../constants';
+import { MapPinIcon, BedIcon, BathIcon, SqftIcon, UserCircleIcon, ScaleIcon, LivingRoomIcon, BuildingOfficeIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
 
@@ -12,6 +12,7 @@ interface PropertyCardProps {
 
 const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCompareButton }) => {
   const { state, dispatch } = useAppContext();
+  const [imageError, setImageError] = useState(false);
   const isFavorited = state.savedHomes.some(p => p.id === property.id);
   const isInComparison = state.comparisonList.includes(property.id);
   const isNew = property.createdAt && (Date.now() - property.createdAt < 3 * 24 * 60 * 60 * 1000);
@@ -49,7 +50,13 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
     >
       <div className="block w-full relative">
         <button onClick={handleCardClick} className="block w-full">
-            <img src={property.imageUrl} alt={property.address} className="w-full h-48 object-cover" />
+            {imageError ? (
+                <div className="w-full h-48 bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center">
+                    <BuildingOfficeIcon className="w-12 h-12 text-neutral-400" />
+                </div>
+            ) : (
+                <img src={property.imageUrl} alt={property.address} className="w-full h-48 object-cover" onError={() => setImageError(true)} />
+            )}
         </button>
         {isNew && (
             <div className="absolute top-2 left-2 bg-secondary text-white text-xs font-bold px-2 py-1 rounded-md shadow-md z-10">
@@ -57,7 +64,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
             </div>
         )}
         <div onClick={handleFavoriteClick} className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm p-2 rounded-full cursor-pointer hover:bg-white z-10">
-             <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 transition-colors duration-300 ${isFavorited ? 'text-red-500 fill-current' : 'text-neutral-500 hover:text-red-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             <svg xmlns="http://www.w.org/2000/svg" className={`h-6 w-6 transition-colors duration-300 ${isFavorited ? 'text-red-500 fill-current' : 'text-neutral-500 hover:text-red-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
         </div>

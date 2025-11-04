@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Property, PropertyStatus } from '../../types';
 import { formatPrice } from '../../utils/currency';
 import { useAppContext } from '../../context/AppContext';
-import { EyeIcon, HeartIcon, InboxIcon, PencilIcon, SparklesIcon, CheckCircleIcon, ClockIcon, ArrowPathIcon } from '../../constants';
+import { EyeIcon, HeartIcon, InboxIcon, PencilIcon, SparklesIcon, CheckCircleIcon, ClockIcon, ArrowPathIcon, BuildingOfficeIcon } from '../../constants';
 import Modal from './Modal';
 
 const StatusBadge: React.FC<{ status: PropertyStatus }> = ({ status }) => {
@@ -27,6 +27,7 @@ const ListingCard: React.FC<{
     onMarkAsSold: (id: string) => void,
 }> = ({ property, onRenew, onMarkAsSold }) => {
     const { dispatch } = useAppContext();
+    const [imageError, setImageError] = useState(false);
 
     const handleCardClick = () => {
         dispatch({ type: 'SET_SELECTED_PROPERTY', payload: property.id });
@@ -43,7 +44,13 @@ const ListingCard: React.FC<{
     return (
     <div className="bg-white p-4 rounded-xl border border-neutral-200 hover:shadow-lg transition-shadow duration-300 flex flex-col sm:flex-row gap-5">
         <button onClick={handleCardClick} className="block flex-shrink-0">
-             <img src={property.imageUrl} alt={property.address} className="w-full sm:w-48 h-40 object-cover rounded-lg" />
+             {imageError ? (
+                <div className="w-full sm:w-48 h-40 bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center rounded-lg">
+                    <BuildingOfficeIcon className="w-12 h-12 text-neutral-400" />
+                </div>
+            ) : (
+                <img src={property.imageUrl} alt={property.address} className="w-full sm:w-48 h-40 object-cover rounded-lg" onError={() => setImageError(true)} />
+            )}
         </button>
         <div className="flex-grow flex flex-col">
             <div className="flex justify-between items-start">

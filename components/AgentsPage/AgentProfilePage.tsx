@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Agent } from '../../types';
 import { useAppContext } from '../../context/AppContext';
-import { ArrowLeftIcon, BuildingOfficeIcon, ChartBarIcon, ChatBubbleBottomCenterTextIcon, EnvelopeIcon, PhoneIcon, CheckCircleIcon } from '../../constants';
+import { ArrowLeftIcon, BuildingOfficeIcon, ChartBarIcon, ChatBubbleBottomCenterTextIcon, EnvelopeIcon, PhoneIcon, CheckCircleIcon, UserCircleIcon } from '../../constants';
 import StarRating from '../shared/StarRating';
 import { formatPrice } from '../../utils/currency';
 import PropertyCard from '../BuyerFlow/PropertyCard';
@@ -22,6 +22,22 @@ const StatCard: React.FC<{ label: string; value: string | number; icon: React.Re
     </div>
 );
 
+const ProfileAvatar: React.FC<{ agent: Agent }> = ({ agent }) => {
+    const [error, setError] = useState(false);
+
+    if (!agent.avatarUrl || error) {
+        return <UserCircleIcon className="w-32 h-32 text-neutral-300" />;
+    }
+    
+    return (
+        <img 
+            src={agent.avatarUrl} 
+            alt={agent.name} 
+            className="w-32 h-32 rounded-full object-cover border-4 border-primary-light"
+            onError={() => setError(true)}
+        />
+    );
+};
 
 const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     const { state, dispatch } = useAppContext();
@@ -42,7 +58,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
       
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg border border-neutral-200 flex flex-col md:flex-row items-center gap-8 mb-8">
-            <img src={agent.avatarUrl} alt={agent.name} className="w-32 h-32 rounded-full object-cover border-4 border-primary-light" />
+            <ProfileAvatar agent={agent} />
             <div className="text-center md:text-left">
                 <div className="flex items-center justify-center md:justify-start gap-3 mb-2 flex-wrap">
                     <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900">{agent.name}</h1>

@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '../shared/Modal';
 import { Property } from '../../types';
 import { formatPrice } from '../../utils/currency';
+import { BuildingOfficeIcon } from '../../constants';
 
 interface ComparisonModalProps {
     isOpen: boolean;
@@ -14,6 +15,23 @@ const HighlightedCell: React.FC<{ children: React.ReactNode; isBest: boolean }> 
         {children}
     </td>
 );
+
+const CompareModalImage: React.FC<{ property: Property }> = ({ property }) => {
+    const [error, setError] = useState(false);
+    useEffect(() => { setError(false); }, [property.imageUrl]);
+    return (
+        <>
+            {error ? (
+                <div className="w-full h-24 bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center rounded-lg">
+                    <BuildingOfficeIcon className="w-10 h-10 text-neutral-400" />
+                </div>
+            ) : (
+                <img src={property.imageUrl} alt={property.address} className="w-full h-24 object-cover rounded-lg" onError={() => setError(true)} />
+            )}
+            <p className="font-semibold text-sm mt-2 truncate">{property.address}, {property.city}</p>
+        </>
+    )
+}
 
 const ComparisonModal: React.FC<ComparisonModalProps> = ({ isOpen, onClose, properties }) => {
     if (properties.length === 0) return null;
@@ -53,8 +71,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({ isOpen, onClose, prop
                             <th className="p-4 text-left font-bold text-neutral-800 w-[15%] sticky left-0 bg-white">Feature</th>
                             {properties.map(p => (
                                 <th key={p.id} className="p-4 w-[21.25%]">
-                                    <img src={p.imageUrl} alt={p.address} className="w-full h-24 object-cover rounded-lg" />
-                                    <p className="font-semibold text-sm mt-2 truncate">{p.address}, {p.city}</p>
+                                    <CompareModalImage property={p} />
                                 </th>
                             ))}
                         </tr>
