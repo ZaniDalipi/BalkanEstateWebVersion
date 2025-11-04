@@ -196,52 +196,47 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
     );
   }, [properties]);
   
-  const { center, zoom } = useMemo(() => {
-    // HIGHEST PRIORITY: If we are explicitly recentering and have a user location, use it.
-    // This ensures geolocation overrides the map's current position or a query derived from it.
-    if (recenter && userLocation) {
-        return {
-            center: userLocation,
-            zoom: 13, // Zoom a bit closer for user's location
-        };
-    }
-      
-    // 1. Prioritize explicit search location from the query input
-    if (searchLocation) {
-        return {
-            center: searchLocation,
-            zoom: 12, // A good zoom level for a city
-        };
-    }
-    
-    // 2. If user's location is available (but we aren't explicitly recentering to it)
-    if (userLocation) {
-        return {
-            center: userLocation,
-            zoom: 13,
-        };
-    }
+    const { center, zoom } = useMemo(() => {
+        // 1. HIGHEST PRIORITY: Explicit search location from the query input.
+        if (searchLocation) {
+            return {
+                center: searchLocation,
+                zoom: 12,
+            };
+        }
 
-    // 3. If a search is active and has results, focus on them.
-    if (isSearchActive && validProperties.length > 0) {
-      return {
-        center: [validProperties[0].lat, validProperties[0].lng] as [number, number],
-        zoom: validProperties.length === 1 ? 14 : 12,
-      };
-    }
-    // 4. Fallback to properties if no user location.
-    if (validProperties.length > 0) {
-      return {
-        center: [validProperties[0].lat, validProperties[0].lng] as [number, number],
-        zoom: 10,
-      };
-    }
-    // Absolute fallback
-    return {
-      center: [44.2, 19.9] as [number, number], // Center of Balkans
-      zoom: 10,
-    };
-  }, [validProperties, isSearchActive, searchLocation, userLocation, recenter]);
+        // 2. SECOND PRIORITY: User's detected location. Used for initial load
+        // or when the search query is cleared.
+        if (userLocation) {
+            return {
+                center: userLocation,
+                zoom: 13,
+            };
+        }
+
+        // 3. THIRD PRIORITY: If a search is active (with filters but no location)
+        // and has results, focus on the first result.
+        if (isSearchActive && validProperties.length > 0) {
+            return {
+                center: [validProperties[0].lat, validProperties[0].lng] as [number, number],
+                zoom: validProperties.length === 1 ? 14 : 12,
+            };
+        }
+
+        // 4. FOURTH PRIORITY: Fallback to the first property in the full list.
+        if (validProperties.length > 0) {
+            return {
+                center: [validProperties[0].lat, validProperties[0].lng] as [number, number],
+                zoom: 10,
+            };
+        }
+
+        // Absolute fallback if there are no properties at all.
+        return {
+            center: [44.2, 19.9] as [number, number], // Center of Balkans
+            zoom: 10,
+        };
+      }, [validProperties, isSearchActive, searchLocation, userLocation]);
     
   const handlePopupClick = (propertyId: string) => {
     dispatch({ type: 'SET_SELECTED_PROPERTY', payload: propertyId });
