@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { AppleIcon, DevicePhoneMobileIcon, EnvelopeIcon, FacebookIcon, GoogleIcon, LogoIcon, XMarkIcon } from '../../constants';
-import { mockUsers } from '../../services/propertyService';
-import { UserRole } from '../../types';
+import { User, UserRole } from '../../types';
 
 type View = 'login' | 'signup';
 type Method = 'email' | 'phone';
@@ -29,10 +28,27 @@ const AuthPage: React.FC = () => {
 
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // For demo purposes, log in as the first seller.
-        const loggedInUser = mockUsers['user_seller_1'];
+        const form = e.currentTarget as HTMLFormElement;
+        const emailInput = form.querySelector('#email') as HTMLInputElement;
+        const email = emailInput ? emailInput.value : `user${Date.now()}@example.com`;
+
+        if (!email) {
+            return;
+        }
         
-        dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user: loggedInUser } });
+        // Create a name from email
+        const name = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+        // Create a new user object. For this demo, login and signup will both create a new session with a new user.
+        const newUser: User = {
+            id: `user_${Date.now()}`,
+            name: name,
+            email: email,
+            phone: '', // Blank by default
+            role: view === 'signup' ? UserRole.PRIVATE_SELLER : UserRole.BUYER,
+        };
+
+        dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user: newUser } });
         handleClose();
     };
 
@@ -45,11 +61,11 @@ const AuthPage: React.FC = () => {
             return (
                 <div className="space-y-4">
                     <div className="relative">
-                        <input type="email" id="email" className={floatingInputClasses} placeholder=" " required defaultValue={'ana.k@example.com'} />
+                        <input type="email" id="email" className={floatingInputClasses} placeholder=" " required />
                         <label htmlFor="email" className={floatingLabelClasses}>Email Address</label>
                     </div>
                     <div className="relative">
-                        <input type="password" id="password" className={floatingInputClasses} placeholder=" " required defaultValue="password123" />
+                        <input type="password" id="password" className={floatingInputClasses} placeholder=" " required />
                         <label htmlFor="password" className={floatingLabelClasses}>Password</label>
                     </div>
                     {isLogin && (
