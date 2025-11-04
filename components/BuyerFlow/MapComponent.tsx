@@ -231,7 +231,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
 
   return (
     <div className="w-full h-full">
-      <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full" maxZoom={14} minZoom={5}>
+      <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full" maxZoom={14} minZoom={9}>
         <ChangeView center={center} zoom={zoom} enabled={recenter} />
         <MapEvents onMove={onMapMove} />
         <TileLayer
