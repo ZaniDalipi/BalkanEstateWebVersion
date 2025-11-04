@@ -45,6 +45,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const [recenterMap, setRecenterMap] = useState(true);
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [isMapSyncActive, setIsMapSyncActive] = useState(false);
+    const shownErrorToast = useRef(false);
 
     const isModalOpen = isAuthModalOpen || isPricingModalOpen || isSubscriptionModalOpen;
 
@@ -56,23 +57,55 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     useEffect(() => {
         let timeoutId: number;
 
-        const getLocation = () => {
+        const handleGeoError = (error: GeolocationPositionError) => {
+             // Silently fail on POSITION_UNAVAILABLE as it's common and not user-fixable
+            if (error.code === error.POSITION_UNAVAILABLE) {
+                console.warn(`Geolocation warning: ${error.message} (code: ${error.code})`);
+                return;
+            }
+            
+            // For other errors (like PERMISSION_DENIED), show a toast only once.
+            if (!shownErrorToast.current) {
+                let message = 'Could not determine your location.';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        message = 'Location access was denied.';
+                        break;
+                    case error.TIMEOUT:
+                        message = 'Location request timed out.';
+                        break;
+                }
+                showToast(message, 'error');
+                shownErrorToast.current = true;
+            }
+        };
+
+        const getLocation = (highAccuracy = true) => {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const { latitude, longitude } = position.coords;
-                        // Use a functional state update to read the latest filters state
-                        // without adding a dependency. This prevents overriding an active search.
                         setFilters(currentFilters => {
                             if (!currentFilters.query.trim()) {
                                 setUserLocation([latitude, longitude]);
                                 setRecenterMap(true);
                             }
-                            return currentFilters; // No change, just reading the state
+                            return currentFilters;
                         });
                     },
                     (error) => {
-                        console.error("Geolocation error:", error);
+                        // If high accuracy fails, try low accuracy as a fallback
+                        if (highAccuracy && error.code === error.POSITION_UNAVAILABLE) {
+                            console.warn("High accuracy geolocation failed, trying low accuracy.");
+                            getLocation(false); // Fallback to low accuracy
+                        } else {
+                            handleGeoError(error);
+                        }
+                    },
+                    {
+                        enableHighAccuracy: highAccuracy,
+                        timeout: 10000, // 10 seconds
+                        maximumAge: 0
                     }
                 );
             }
@@ -82,7 +115,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         getLocation();
 
         // Second call after 5 seconds for better accuracy
-        timeoutId = window.setTimeout(getLocation, 5000);
+        timeoutId = window.setTimeout(() => getLocation(), 5000);
 
         // Cleanup the timeout on component unmount
         return () => {
@@ -144,11 +177,16 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
 
     // Properties for the list, further filtered by map bounds if "search on move" is active
     const listProperties = useMemo(() => {
-        if (!searchOnMove || !mapBounds) {
-            return baseFilteredProperties;
+        if (!mapBounds) {
+             return baseFilteredProperties;
         }
-        return baseFilteredProperties.filter(p => mapBounds.contains([p.lat, p.lng]));
+        if (searchOnMove) {
+            return baseFilteredProperties.filter(p => mapBounds.contains([p.lat, p.lng]));
+        }
+        return baseFilteredProperties;
+
     }, [baseFilteredProperties, searchOnMove, mapBounds]);
+
 
     const handleFilterChange = useCallback((name: keyof Filters, value: string | number | null, shouldRecenter = true) => {
         setFilters(prev => ({ ...prev, [name]: value }));
@@ -196,9 +234,8 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                 }
             } else {
                 // Otherwise, save based on the active filters
-                const isMapSearchWithResults = searchOnMove && listProperties.length > 0;
-                if (!isSearchActive && !isMapSearchWithResults) {
-                    showToast("Cannot save an empty search. Please add some criteria or move the map.", 'error');
+                if (!isSearchActive) {
+                    showToast("Cannot save an empty search. Please add some criteria.", 'error');
                     setIsSaving(false);
                     return;
                 }
@@ -219,7 +256,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         } finally {
             setIsSaving(false);
         }
-    }, [isAuthenticated, dispatch, filters, listProperties, isSearchActive, mapBounds, searchOnMove, allCities, showToast]);
+    }, [isAuthenticated, dispatch, filters, isSearchActive, mapBounds, allCities, showToast]);
     
     const handleMapMove = useCallback((newBounds: L.LatLngBounds, newCenter: L.LatLng) => {
         setMapBounds(newBounds);
@@ -286,6 +323,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         onSaveSearch: handleSaveSearch,
         isSaving: isSaving,
         isAuthenticated: isAuthenticated,
+        mapBounds: mapBounds,
     };
     
     const propertyListProps = {
