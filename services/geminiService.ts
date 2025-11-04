@@ -29,6 +29,7 @@ export interface ImageTag {
 export interface PropertyAnalysisResult {
     bedrooms: number;
     bathrooms: number;
+    living_rooms: number;
     sq_meters: number;
     year_built: number;
     parking_spots: number;
@@ -51,16 +52,17 @@ export const generateDescriptionFromImages = async (images: File[], language: st
     1.  **description**: A compelling and detailed property description, starting with a short intro paragraph and then a bulleted list of "Key Features" and "Materials & Construction".
     2.  **bedrooms**: The number of bedrooms visible.
     3.  **bathrooms**: The number of bathrooms visible.
-    4.  **sq_meters**: An estimation of the total square meters.
-    5.  **year_built**: An estimation of the year the property was built.
-    6.  **parking_spots**: The number of parking spots available (e.g., garage, driveway).
-    7.  **amenities**: A list of amenities observed (e.g., "swimming pool", "balcony", "garden"). These will become "Special Features".
-    8.  **key_features**: A list of key selling points (e.g., "modern kitchen", "hardwood floors", "city view"). These will also become "Special Features".
-    9.  **materials**: A list of prominent building materials seen (e.g., "brick", "wood", "marble"). These will become "Materials".
-    10. **image_tags**: For each image provided, assign a tag from the following list: 'exterior', 'living_room', 'kitchen', 'bedroom', 'bathroom', 'other'. The output should be an array of objects, where each object has an 'index' (corresponding to the image order, starting from 0) and a 'tag'.
-    11. **property_type**: The type of property from this list: 'house', 'apartment', 'villa', 'other'.
-    12. **floor_number**: If the property is an 'apartment', estimate what floor it is on. Provide a single integer. If it's not an apartment or you cannot tell, omit this field.
-    13. **total_floors**: If the property is a 'house' or 'villa', estimate the total number of floors (e.g., 1, 2, 3). If it is not a house or villa or you cannot tell, omit this field.
+    4.  **living_rooms**: The number of living rooms visible.
+    5.  **sq_meters**: An estimation of the total square meters.
+    6.  **year_built**: An estimation of the year the property was built.
+    7.  **parking_spots**: The number of parking spots available (e.g., garage, driveway).
+    8.  **amenities**: A list of amenities observed (e.g., "swimming pool", "balcony", "garden"). These will become "Special Features".
+    9.  **key_features**: A list of key selling points (e.g., "modern kitchen", "hardwood floors", "city view"). These will also become "Special Features".
+    10. **materials**: A list of prominent building materials seen (e.g., "brick", "wood", "marble"). These will become "Materials".
+    11. **image_tags**: For each image provided, assign a tag from the following list: 'exterior', 'living_room', 'kitchen', 'bedroom', 'bathroom', 'other'. The output should be an array of objects, where each object has an 'index' (corresponding to the image order, starting from 0) and a 'tag'.
+    12. **property_type**: The type of property from this list: 'house', 'apartment', 'villa', 'other'.
+    13. **floor_number**: If the property is an 'apartment', estimate what floor it is on. Provide a single integer. If it's not an apartment or you cannot tell, omit this field.
+    14. **total_floors**: If the property is a 'house' or 'villa', estimate the total number of floors (e.g., 1, 2, 3). If it is not a house or villa or you cannot tell, omit this field.
 
     Please provide only the JSON object as a response.
     `;
@@ -71,6 +73,7 @@ export const generateDescriptionFromImages = async (images: File[], language: st
             description: { type: Type.STRING, description: 'A compelling and detailed property description with an intro and bulleted lists for "Key Features" and "Materials & Construction".' },
             bedrooms: { type: Type.INTEGER, description: 'The number of bedrooms visible.' },
             bathrooms: { type: Type.INTEGER, description: 'The number of bathrooms visible.' },
+            living_rooms: { type: Type.INTEGER, description: 'The number of living rooms visible.' },
             sq_meters: { type: Type.NUMBER, description: 'An estimation of the total square meters.' },
             year_built: { type: Type.INTEGER, description: 'An estimation of the year the property was built.' },
             parking_spots: { type: Type.INTEGER, description: 'The number of parking spots available.' },
@@ -120,7 +123,7 @@ export const generateDescriptionFromImages = async (images: File[], language: st
                 nullable: true,
             },
         },
-        required: ['description', 'bedrooms', 'bathrooms', 'sq_meters', 'year_built', 'parking_spots', 'amenities', 'key_features', 'materials', 'image_tags', 'property_type'],
+        required: ['description', 'bedrooms', 'bathrooms', 'living_rooms', 'sq_meters', 'year_built', 'parking_spots', 'amenities', 'key_features', 'materials', 'image_tags', 'property_type'],
     };
 
     const result = await ai.models.generateContent({
@@ -158,6 +161,7 @@ export const getAiChatResponse = async (history: ChatMessage[], properties: Prop
         country: p.country,
         beds: p.beds,
         baths: p.baths,
+        livingRooms: p.livingRooms,
         sqft: p.sqft,
         specialFeatures: p.specialFeatures,
     }));
@@ -169,13 +173,13 @@ export const getAiChatResponse = async (history: ChatMessage[], properties: Prop
 
         Your main goal is to understand the user's needs and convert their conversational request into a structured search query. Be concise and helpful. Never be salesy.
 
-        You have access to a list of properties. Use their attributes (city, country, price, beds, baths, sqft, specialFeatures) to understand what's available.
+        You have access to a list of properties. Use their attributes (city, country, price, beds, baths, livingRooms, sqft, specialFeatures) to understand what's available.
 
         **Your instructions are:**
         1.  **Engage Naturally:** Start with a friendly greeting if it's the beginning of the conversation.
         2.  **Language Matching:** Your entire 'responseMessage' MUST be in the same language as the user's last message. For example, if the user writes in Serbian, you must reply in Serbian. If you are unsure of the language, default to English.
         3.  **Understand Intent:** Interpret casual language (e.g., "something cozy" might mean a smaller apartment or house).
-        4.  **Ask Clarifying Questions:** If key details like budget, location, or number of bedrooms are missing, ask a SINGLE, brief follow-up question. Do not ask multiple questions at once.
+        4.  **Ask Clarifying Questions:** If key details like budget, location, or number of bedrooms/living rooms are missing, ask a SINGLE, brief follow-up question. Do not ask multiple questions at once.
         5.  **Formulate a Search Query:** Once you have enough information (usually location and price range), formulate a structured JSON search query. You can also ask about size in square meters (m²).
         6.  **Respond in JSON:** Your entire response MUST be a single JSON object.
         7.  **Crucially, when you set isFinalQuery to true, your responseMessage should ask the user to confirm by clicking the 'Apply Filters' button.** This gives them control.
@@ -183,14 +187,14 @@ export const getAiChatResponse = async (history: ChatMessage[], properties: Prop
         **JSON Output Structure:**
         You must return a JSON object with three fields:
         - \`responseMessage\`: A string containing your friendly, natural language message to the user, matching the user's language.
-        - \`searchQuery\`: A JSON object with the extracted search criteria (fields: location, minPrice, maxPrice, beds, baths, minSqft, maxSqft, features). Set this to \`null\` if you don't have enough information to search yet.
+        - \`searchQuery\`: A JSON object with the extracted search criteria (fields: location, minPrice, maxPrice, beds, baths, livingRooms, minSqft, maxSqft, features). Set this to \`null\` if you don't have enough information to search yet.
         - \`isFinalQuery\`: A boolean. Set to \`true\` only when you have sufficient information and have provided a \`searchQuery\`. Otherwise, set it to \`false\`.
 
         **Example Interactions:**
         User: "I'm looking for something quiet in Belgrade under 400k."
         Your JSON Response:
         {
-          "responseMessage": "Great! A quiet place in Belgrade for under 400,000 €. Are you looking for a specific number of bedrooms?",
+          "responseMessage": "Great! A quiet place in Belgrade for under 400,000 €. Are you looking for a specific number of bedrooms or living rooms?",
           "searchQuery": null,
           "isFinalQuery": false
         }
@@ -205,14 +209,15 @@ export const getAiChatResponse = async (history: ChatMessage[], properties: Prop
             "isFinalQuery": false
         }
 
-        User: "At least 3 bedrooms."
+        User: "At least 3 bedrooms and 1 living room."
         Your JSON Response:
         {
-          "responseMessage": "Okay, I've put together a search for a quiet property in Belgrade with at least 3 bedrooms, for under 400,000 €. Does that sound right? If so, just hit 'Apply Filters' below!",
+          "responseMessage": "Okay, I've put together a search for a quiet property in Belgrade with at least 3 bedrooms and 1 living room, for under 400,000 €. Does that sound right? If so, just hit 'Apply Filters' below!",
           "searchQuery": {
             "location": "Belgrade",
             "maxPrice": 400000,
             "beds": 3,
+            "livingRooms": 1,
             "features": ["quiet"]
           },
           "isFinalQuery": true
@@ -238,6 +243,7 @@ export const getAiChatResponse = async (history: ChatMessage[], properties: Prop
                     maxPrice: { type: Type.NUMBER },
                     beds: { type: Type.INTEGER },
                     baths: { type: Type.INTEGER },
+                    livingRooms: { type: Type.INTEGER },
                     minSqft: { type: Type.NUMBER, description: 'The minimum size in square meters.' },
                     maxSqft: { type: Type.NUMBER, description: 'The maximum size in square meters.' },
                     features: { type: Type.ARRAY, items: { type: Type.STRING } },
@@ -279,6 +285,7 @@ export const generateSearchName = async (filters: Filters): Promise<string> => {
     if (filters.maxPrice) relevantFilters.maxPrice = filters.maxPrice;
     if (filters.beds) relevantFilters.beds = filters.beds;
     if (filters.baths) relevantFilters.baths = filters.baths;
+    if (filters.livingRooms) relevantFilters.livingRooms = filters.livingRooms;
     if (filters.minSqft) relevantFilters.minSqft = filters.minSqft;
     if (filters.maxSqft) relevantFilters.maxSqft = filters.maxSqft;
     if (filters.sellerType !== 'any') relevantFilters.sellerType = filters.sellerType;
@@ -288,7 +295,7 @@ export const generateSearchName = async (filters: Filters): Promise<string> => {
 
         - If there's a query (location), start with that.
         - Describe price ranges like "€50k - €100k" or "over €200k" or "under €150k".
-        - Describe beds/baths like "3+ beds", "2+ baths".
+        - Describe beds/baths/living rooms like "3+ beds", "2+ baths", "1+ living rooms".
         - Describe size like "over 100m²" or "50-100m²".
         - Mention the seller type if it's not 'any'.
         - Combine these elements with commas.
@@ -300,9 +307,9 @@ export const generateSearchName = async (filters: Filters): Promise<string> => {
         Bitola, under €100k, by agent, 3+ beds, 2+ baths
 
         Example 2 Input:
-        { "minPrice": 250000, "beds": 4 }
+        { "minPrice": 250000, "beds": 4, "livingRooms": 2 }
         Example 2 Output:
-        Over €250k, 4+ beds
+        Over €250k, 4+ beds, 2+ living rooms
 
         Example 3 Input:
         { "query": "Belgrade", "sellerType": "private" }

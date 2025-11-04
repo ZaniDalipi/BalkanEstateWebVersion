@@ -10,7 +10,8 @@ import {
     // FIX: Imported ArrowUturnLeftIcon to resolve missing component error.
     ArrowUturnLeftIcon,
     BuildingOfficeIcon,
-    CubeTransparentIcon
+    CubeTransparentIcon,
+    LivingRoomIcon
 } from '../../constants';
 import { getNeighborhoodInsights } from '../../services/geminiService';
 import ImageViewerModal from './ImageViewerModal';
@@ -385,7 +386,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
 
   const handleFavoriteClick = () => {
       if (!state.isAuthenticated) {
-          dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true });
+          dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
       } else {
           dispatch({ type: 'TOGGLE_SAVED_HOME', payload: property });
       }
@@ -458,6 +459,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                 <div className="mt-6 flex flex-wrap justify-around text-base sm:text-lg text-neutral-800 border-t border-neutral-200 pt-4 gap-4">
                   <div className="flex items-center gap-3"><BedIcon className="w-6 h-6 text-primary" /><span><span className="font-bold">{property.beds}</span> beds</span></div>
                   <div className="flex items-center gap-3"><BathIcon className="w-6 h-6 text-primary" /><span><span className="font-bold">{property.baths}</span> baths</span></div>
+                  <div className="flex items-center gap-3"><LivingRoomIcon className="w-6 h-6 text-primary" /><span><span className="font-bold">{property.livingRooms}</span> {property.livingRooms === 1 ? 'living room' : 'living rooms'}</span></div>
                   <div className="flex items-center gap-3"><SqftIcon className="w-6 h-6 text-primary" /><span><span className="font-bold">{property.sqft}</span> m²</span></div>
                 </div>
               </div>

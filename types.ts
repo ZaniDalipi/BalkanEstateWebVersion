@@ -57,6 +57,7 @@ export interface Property {
   country: string;
   beds: number;
   baths: number;
+  livingRooms: number;
   sqft: number;
   yearBuilt: number;
   parking: number;
@@ -86,6 +87,7 @@ export interface Filters {
   maxPrice: number | null;
   beds: number | null;
   baths: number | null;
+  livingRooms: number | null;
   minSqft: number | null;
   maxSqft: number | null;
   sortBy: string;
@@ -96,8 +98,7 @@ export interface Filters {
 export interface SavedSearch {
   id: string;
   name: string;
-  newPropertyCount: number;
-  properties: Property[];
+  filters: Filters;
 }
 
 export interface ChatMessage {
@@ -111,6 +112,7 @@ export interface AiSearchQuery {
   maxPrice?: number;
   beds?: number;
   baths?: number;
+  livingRooms?: number;
   minSqft?: number;
   maxSqft?: number;
   features?: string[];
@@ -140,6 +142,7 @@ export interface AppState {
   isFirstLoginOffer: boolean;
   isSubscriptionModalOpen: boolean;
   isAuthModalOpen: boolean;
+  authModalView: 'login' | 'signup';
   properties: Property[];
   selectedProperty: Property | null;
   propertyToEdit: Property | null;
@@ -157,7 +160,7 @@ export type AppAction =
   | { type: 'SET_ACTIVE_VIEW'; payload: AppView }
   | { type: 'TOGGLE_PRICING_MODAL'; payload: { isOpen: boolean; isOffer?: boolean } }
   | { type: 'TOGGLE_SUBSCRIPTION_MODAL'; payload: boolean }
-  | { type: 'TOGGLE_AUTH_MODAL'; payload: boolean }
+  | { type: 'TOGGLE_AUTH_MODAL'; payload: { isOpen: boolean; view?: 'login' | 'signup' } }
   | { type: 'SET_SELECTED_PROPERTY'; payload: string | null }
   | { type: 'SET_PROPERTY_TO_EDIT'; payload: Property | null }
   | { type: 'ADD_SAVED_SEARCH'; payload: SavedSearch }
@@ -165,7 +168,6 @@ export type AppAction =
   | { type: 'ADD_TO_COMPARISON'; payload: string }
   | { type: 'REMOVE_FROM_COMPARISON'; payload: string }
   | { type: 'CLEAR_COMPARISON' }
-  | { type: 'MARK_ALL_SEARCHES_VIEWED' }
   | { type: 'CREATE_OR_ADD_MESSAGE', payload: { propertyId: string; message: Message } }
   | { type: 'MARK_CONVERSATION_AS_READ'; payload: string }
   | { type: 'ADD_MESSAGE'; payload: { conversationId: string; message: Message } }

@@ -9,6 +9,7 @@ const initialState: AppState = {
   isFirstLoginOffer: false,
   isSubscriptionModalOpen: false,
   isAuthModalOpen: false,
+  authModalView: 'login',
   properties: dummyProperties,
   selectedProperty: null,
   propertyToEdit: null,
@@ -55,7 +56,11 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     case 'TOGGLE_SUBSCRIPTION_MODAL':
       return { ...state, isSubscriptionModalOpen: action.payload };
     case 'TOGGLE_AUTH_MODAL':
-      return { ...state, isAuthModalOpen: action.payload };
+      return { 
+          ...state, 
+          isAuthModalOpen: action.payload.isOpen,
+          authModalView: action.payload.isOpen ? (action.payload.view || 'login') : state.authModalView,
+      };
     case 'SET_SELECTED_PROPERTY':
       return { ...state, selectedProperty: state.properties.find(p => p.id === action.payload) || null };
     case 'SET_PROPERTY_TO_EDIT':
@@ -63,9 +68,6 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     case 'SET_SELECTED_AGENT':
       return { ...state, selectedAgentId: action.payload };
     case 'ADD_SAVED_SEARCH':
-        if (!state.isAuthenticated) {
-            return { ...state, isAuthModalOpen: true };
-        }
       return { ...state, savedSearches: [action.payload, ...state.savedSearches] };
     case 'TOGGLE_SAVED_HOME':
         const isSaved = state.savedHomes.some(p => p.id === action.payload.id);
@@ -84,8 +86,6 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         return { ...state, comparisonList: state.comparisonList.filter(id => id !== action.payload) };
     case 'CLEAR_COMPARISON':
         return { ...state, comparisonList: [] };
-    case 'MARK_ALL_SEARCHES_VIEWED':
-        return { ...state, savedSearches: state.savedSearches.map(s => ({ ...s, newPropertyCount: 0 })) };
     case 'ADD_PROPERTY':
       return { ...state, properties: [action.payload, ...state.properties] };
     case 'UPDATE_PROPERTY':
