@@ -19,11 +19,6 @@ import PropertyDetailsPage from './components/BuyerFlow/PropertyDetailsPage';
 const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar }) => {
   const { state } = useAppContext();
 
-  // If no role is selected yet (first time user), show onboarding
-  if (state.isInitialLaunch) {
-    return <Onboarding />;
-  }
-
   // Global handler for selected property view
   if (state.selectedProperty) {
     return <PropertyDetailsPage property={state.selectedProperty} />;
@@ -59,8 +54,8 @@ const MainLayout: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   
-  const isFullHeightView = state.isInitialLaunch || state.activeView === 'search' || state.activeView === 'inbox' || !!state.selectedProperty;
-  const showHeader = state.isInitialLaunch || !(isMobile && (state.activeView === 'search' || !!state.selectedProperty));
+  const isFullHeightView = state.activeView === 'search' || state.activeView === 'inbox' || !!state.selectedProperty;
+  const showHeader = !(isMobile && (state.activeView === 'search' || !!state.selectedProperty));
 
   return (
     <div className="min-h-screen bg-neutral-50 font-sans">
@@ -89,6 +84,15 @@ const MainLayout: React.FC = () => {
 
 const AppWrapper: React.FC = () => {
     const { state } = useAppContext();
+
+    if (state.isInitialLaunch) {
+        return (
+            <>
+                <Onboarding />
+                {state.isAuthModalOpen && <AuthPage />}
+            </>
+        )
+    }
 
     return (
         <>

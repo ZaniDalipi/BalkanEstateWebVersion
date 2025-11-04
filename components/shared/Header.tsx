@@ -12,9 +12,6 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const { isAuthenticated, currentUser } = state;
   
   const handleAccountClick = () => {
-    if (state.isInitialLaunch) {
-        dispatch({ type: 'COMPLETE_ONBOARDING' });
-    }
     if (isAuthenticated) {
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
     } else {
@@ -23,9 +20,6 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   };
 
   const handleNewListingClick = () => {
-    if (state.isInitialLaunch) {
-        dispatch({ type: 'COMPLETE_ONBOARDING' });
-    }
     if (isAuthenticated) {
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'create-listing' });
     } else {
