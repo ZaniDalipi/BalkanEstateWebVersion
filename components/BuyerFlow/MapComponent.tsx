@@ -41,6 +41,7 @@ interface MapComponentProps {
   onSaveSearch: () => void;
   isSaving: boolean;
   isAuthenticated: boolean;
+  mapBounds: L.LatLngBounds | null;
 }
 
 const ChangeView: React.FC<{center: [number, number], zoom: number, enabled: boolean}> = ({ center, zoom, enabled }) => {
@@ -186,7 +187,7 @@ const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) => {
     );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove, isSearchActive, searchLocation, userLocation, onSaveSearch, isSaving, isAuthenticated }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove, isSearchActive, searchLocation, userLocation, onSaveSearch, isSaving, isAuthenticated, mapBounds }) => {
   const { dispatch } = useAppContext();
   const [tileLayer, setTileLayer] = useState<TileLayerType>('street');
 
@@ -196,6 +197,15 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
       p.lat != null && !isNaN(p.lat) && p.lng != null && !isNaN(p.lng)
     );
   }, [properties]);
+
+  const propertiesInView = useMemo(() => {
+    if (!mapBounds) {
+      return []; // Return empty array until map bounds are known
+    }
+    return validProperties
+      .filter(p => mapBounds.contains([p.lat, p.lng]))
+      .slice(0, 500); // Cap at 500 markers for performance
+  }, [validProperties, mapBounds]);
   
     const { center, zoom } = useMemo(() => {
         // 1. HIGHEST PRIORITY: Explicit search location from the query input.
@@ -254,7 +264,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
           attribution={TILE_LAYERS[tileLayer].attribution}
           url={TILE_LAYERS[tileLayer].url}
         />
-        <Markers properties={validProperties} onPopupClick={handlePopupClick} />
+        <Markers properties={propertiesInView} onPopupClick={handlePopupClick} />
       </MapContainer>
       
       {isAuthenticated && (
