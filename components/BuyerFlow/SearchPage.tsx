@@ -44,6 +44,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [recenterMap, setRecenterMap] = useState(true);
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+    const [isMapSyncActive, setIsMapSyncActive] = useState(false);
 
     const isModalOpen = isAuthModalOpen || isPricingModalOpen || isSubscriptionModalOpen;
 
@@ -88,6 +89,14 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             clearTimeout(timeoutId);
         };
     }, []); // Empty dependency array ensures this runs only once on mount
+    
+    useEffect(() => {
+        const syncTimer = setTimeout(() => {
+            setIsMapSyncActive(true);
+        }, 7000); // 7-second delay
+
+        return () => clearTimeout(syncTimer);
+    }, []);
 
     const allCities = useMemo(() => Object.values(CITY_DATA).flat(), []);
 
@@ -217,8 +226,8 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         setMapBounds(newBounds);
         setRecenterMap(false);
         
-        // If the user is actively typing in the search box, don't override their input.
-        if (isQueryInputFocused) {
+        // If the user is actively typing in the search box, or if the initial delay is not over, don't override the input.
+        if (isQueryInputFocused || !isMapSyncActive) {
             return;
         }
 
@@ -228,7 +237,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             // Update the filter but DO NOT recenter the map, preventing a feedback loop.
             handleFilterChange('query', closestCity.name, false);
         }
-    }, [allCities, filters.query, handleFilterChange, isQueryInputFocused]);
+    }, [allCities, filters.query, handleFilterChange, isQueryInputFocused, isMapSyncActive]);
 
     const handleNewListingClick = () => {
       if (isAuthenticated) {
