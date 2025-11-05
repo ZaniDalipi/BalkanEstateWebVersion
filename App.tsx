@@ -15,6 +15,7 @@ import Header from './components/shared/Header';
 import SubscriptionModal from './components/BuyerFlow/SubscriptionModal';
 import AgentsPage from './components/AgentsPage/AgentsPage';
 import PropertyDetailsPage from './components/BuyerFlow/PropertyDetailsPage';
+import { LogoIcon } from './constants';
 
 const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar }) => {
   const { state } = useAppContext();
@@ -68,7 +69,6 @@ const MainLayout: React.FC = () => {
             </main>
         </div>
         
-        {/* Global Modals that are NOT the auth page */}
         <PricingPlans 
             isOpen={state.isPricingModalOpen} 
             onClose={() => dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: false } })}
@@ -82,10 +82,27 @@ const MainLayout: React.FC = () => {
   );
 };
 
-const AppWrapper: React.FC = () => {
-    const { state } = useAppContext();
+const FullScreenLoader: React.FC = () => (
+    <div className="w-screen h-screen flex flex-col items-center justify-center bg-neutral-50">
+        <LogoIcon className="w-16 h-16 text-primary animate-pulse" />
+        <p className="mt-4 text-neutral-600 font-semibold">Loading Balkan Estate...</p>
+    </div>
+);
 
-    if (state.isInitialLaunch) {
+
+const AppWrapper: React.FC = () => {
+    const { state, checkAuthStatus } = useAppContext();
+
+    useEffect(() => {
+        checkAuthStatus();
+    }, [checkAuthStatus]);
+
+
+    if (state.isAuthenticating) {
+        return <FullScreenLoader />;
+    }
+
+    if (!state.onboardingComplete) {
         return (
             <>
                 <Onboarding />

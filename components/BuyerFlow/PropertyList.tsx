@@ -95,7 +95,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
         onFilterChange(name as keyof Filters, finalValue, shouldRecenter);
     }, [onFilterChange]);
     
-    const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors";
+    const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder:text-neutral-700";
 
     return (
          <div className="space-y-2">

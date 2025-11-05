@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { Agent, User, UserRole, Property } from '../../types';
-import { mockUsers } from '../../services/propertyService';
+// FIX: `mockUsers` is located in `apiService`, not `propertyService`. The import path has been corrected.
+import { mockUsers } from '../../services/apiService';
 import AgentCard from './AgentCard';
 import AgentProfilePage from './AgentProfilePage';
 import { Bars3Icon, Squares2x2Icon, TrophyIcon, CheckCircleIcon } from '../../constants';

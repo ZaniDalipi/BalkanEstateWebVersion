@@ -1,3 +1,4 @@
+// FIX: Removed a circular import of `UserRole` from this same file, which was causing a conflict.
 export enum UserRole {
   BUYER = 'buyer',
   PRIVATE_SELLER = 'private_seller',
@@ -134,16 +135,21 @@ export interface Conversation {
 }
 
 // --- App State & Actions ---
+export type AuthModalView = 'login' | 'signup' | 'forgotPassword' | 'forgotPasswordSuccess' | 'phoneCode' | 'phoneDetails';
+
 
 export interface AppState {
-  isInitialLaunch: boolean;
+  onboardingComplete: boolean;
+  isAuthenticating: boolean;
   activeView: AppView;
   isPricingModalOpen: boolean;
   isFirstLoginOffer: boolean;
   isSubscriptionModalOpen: boolean;
   isAuthModalOpen: boolean;
-  authModalView: 'login' | 'signup';
+  authModalView: AuthModalView;
   properties: Property[];
+  isLoadingProperties: boolean;
+  propertiesError: string | null;
   selectedProperty: Property | null;
   propertyToEdit: Property | null;
   isAuthenticated: boolean;
@@ -160,7 +166,8 @@ export type AppAction =
   | { type: 'SET_ACTIVE_VIEW'; payload: AppView }
   | { type: 'TOGGLE_PRICING_MODAL'; payload: { isOpen: boolean; isOffer?: boolean } }
   | { type: 'TOGGLE_SUBSCRIPTION_MODAL'; payload: boolean }
-  | { type: 'TOGGLE_AUTH_MODAL'; payload: { isOpen: boolean; view?: 'login' | 'signup' } }
+  | { type: 'TOGGLE_AUTH_MODAL'; payload: { isOpen: boolean; view?: AuthModalView } }
+  | { type: 'SET_AUTH_MODAL_VIEW'; payload: AuthModalView }
   | { type: 'SET_SELECTED_PROPERTY'; payload: string | null }
   | { type: 'SET_PROPERTY_TO_EDIT'; payload: Property | null }
   | { type: 'ADD_SAVED_SEARCH'; payload: SavedSearch }
@@ -177,4 +184,10 @@ export type AppAction =
   | { type: 'MARK_PROPERTY_SOLD'; payload: string }
   | { type: 'SET_SELECTED_AGENT', payload: string | null }
   | { type: 'UPDATE_USER'; payload: Partial<User> }
-  | { type: 'SET_AUTH_STATE'; payload: { isAuthenticated: boolean; user: User | null } };
+  | { type: 'SET_AUTH_STATE'; payload: { isAuthenticated: boolean; user: User | null } }
+  | { type: 'AUTH_CHECK_START' }
+  | { type: 'AUTH_CHECK_COMPLETE'; payload: { isAuthenticated: boolean; user: User | null } }
+  | { type: 'PROPERTIES_LOADING' }
+  | { type: 'PROPERTIES_SUCCESS'; payload: Property[] }
+  | { type: 'PROPERTIES_ERROR'; payload: string }
+  | { type: 'SET_USER_DATA'; payload: { savedHomes: Property[]; savedSearches: SavedSearch[]; conversations: Conversation[] } };

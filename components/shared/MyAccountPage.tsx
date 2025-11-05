@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import MyListings from './MyListings';
 import { User, UserRole } from '../../types';
-import PropertyDetailsPage from '../BuyerFlow/PropertyDetailsPage';
 import { BuildingOfficeIcon, ChartBarIcon, UserCircleIcon, ArrowLeftOnRectangleIcon } from '../../constants';
 
 type AccountTab = 'listings' | 'performance' | 'profile' | 'subscription';
@@ -58,8 +57,9 @@ const RoleSelector: React.FC<{
 
 
 const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
-    const { dispatch } = useAppContext();
+    const { updateUser } = useAppContext();
     const [formData, setFormData] = useState<User>(user);
+    const [isSaving, setIsSaving] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
 
     useEffect(() => {
@@ -75,15 +75,22 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
         setFormData(prev => ({ ...prev, role }));
     };
 
-    const handleSaveChanges = (e: React.FormEvent) => {
+    const handleSaveChanges = async (e: React.FormEvent) => {
         e.preventDefault();
-        dispatch({ type: 'UPDATE_USER', payload: formData });
-        setIsSaved(true);
-        setTimeout(() => setIsSaved(false), 2000);
+        setIsSaving(true);
+        try {
+            await updateUser(formData);
+            setIsSaved(true);
+            setTimeout(() => setIsSaved(false), 2000);
+        } catch (error) {
+            console.error("Failed to update user", error);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const floatingInputClasses = "block px-2.5 pb-2.5 pt-4 w-full text-base text-neutral-900 bg-white rounded-lg border border-neutral-300 appearance-none focus:outline-none focus:ring-0 focus:border-primary peer";
-    const floatingLabelClasses = "absolute text-base text-neutral-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1";
+    const floatingLabelClasses = "absolute text-base text-neutral-700 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1";
 
     return (
         <form onSubmit={handleSaveChanges} className="space-y-8">
@@ -134,8 +141,8 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
             )}
 
             <div className="flex justify-end pt-4">
-                <button type="submit" className="px-6 py-2.5 bg-primary text-white font-semibold rounded-lg shadow-sm hover:bg-primary-dark transition-colors w-32">
-                    {isSaved ? 'Saved!' : 'Save Changes'}
+                <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-primary text-white font-semibold rounded-lg shadow-sm hover:bg-primary-dark transition-colors w-36 disabled:opacity-50">
+                    {isSaving ? 'Saving...' : (isSaved ? 'Saved!' : 'Save Changes')}
                 </button>
             </div>
         </form>
@@ -143,7 +150,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
 };
 
 const MyAccountPage: React.FC = () => {
-    const { state, dispatch } = useAppContext();
+    const { state, dispatch, logout } = useAppContext();
     const [activeTab, setActiveTab] = useState<AccountTab>('listings');
 
     if (!state.currentUser) {
@@ -163,7 +170,7 @@ const MyAccountPage: React.FC = () => {
     }, [isSellerProfile, activeTab]);
     
     const handleLogout = () => {
-        dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null } });
+        logout();
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
     };
 

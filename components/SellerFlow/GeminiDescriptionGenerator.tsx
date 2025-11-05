@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Property, PropertyImage, PropertyImageTag, Seller, UserRole } from '../../types';
 import { generateDescriptionFromImages, PropertyAnalysisResult } from '../../services/geminiService';
-import { sellers, CITY_DATA } from '../../services/propertyService';
+import { CITY_DATA } from '../../services/propertyService';
 import { SparklesIcon } from '../../constants';
 import { getCurrencySymbol } from '../../utils/currency';
 import { useAppContext } from '../../context/AppContext';
@@ -80,8 +80,8 @@ const InfoIcon: React.FC<{className?: string}> = ({className}) => (
 
 const inputBaseClasses = "block w-full text-base bg-neutral-50 border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors focus:bg-white";
 const floatingInputClasses = "block px-2.5 pb-2.5 pt-4 w-full text-base text-neutral-900 bg-white rounded-lg border appearance-none focus:outline-none focus:ring-0 peer";
-const floatingLabelClasses = "absolute text-base duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1";
-const floatingSelectLabelClasses = "absolute text-base text-neutral-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 start-1";
+const floatingLabelClasses = "absolute text-base text-neutral-700 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1 peer-focus:text-primary";
+const floatingSelectLabelClasses = "absolute text-base text-neutral-700 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 start-1";
 
 // --- Sub-components ---
 const ImageTagSelector: React.FC<{
@@ -177,7 +177,7 @@ const TagListInput: React.FC<{
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={tags.length === 0 ? "Add tags..." : ""}
-                    className="flex-grow bg-transparent outline-none text-base h-8"
+                    className="flex-grow bg-transparent outline-none text-base h-8 placeholder:text-neutral-700"
                 />
             </div>
         </div>
@@ -481,11 +481,19 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                     )}
                     {step === 'init' && (
                         <div>
-                            <div className="mb-4">
-                                <label htmlFor="language" className="block text-sm font-medium text-neutral-700 mb-1">Description Language</label>
-                                <select id="language" value={language} onChange={(e) => setLanguage(e.target.value)} className={inputBaseClasses}>
+                            <div className="relative mb-4">
+                                <select
+                                    id="language"
+                                    value={language}
+                                    onChange={(e) => setLanguage(e.target.value)}
+                                    className={`${floatingInputClasses} border-neutral-300`}
+                                >
                                     {LANGUAGES.map(lang => <option key={lang} value={lang}>{lang}</option>)}
                                 </select>
+                                <label htmlFor="language" className={floatingSelectLabelClasses}>Description Language</label>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
+                                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                </div>
                             </div>
                             <label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full h-48 border-2 border-neutral-300 border-dashed rounded-lg cursor-pointer bg-neutral-50 hover:bg-neutral-100">
                                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -523,8 +531,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                     <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6">
                          <div className="md:col-span-2">
                              <div className="relative">
-                                <input type="text" name="address" value={listingData.address} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300 peer-focus:text-primary`} placeholder=" " required />
-                                <label htmlFor="address" className={`${floatingLabelClasses} text-neutral-500 peer-focus:text-primary`}>Address</label>
+                                <input type="text" name="address" value={listingData.address} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " required />
+                                <label htmlFor="address" className={floatingLabelClasses}>Address</label>
                             </div>
                          </div>
                          <div className="relative md:col-span-2">
@@ -698,5 +706,4 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     );
 };
 
-// FIX: Add default export for the component.
 export default GeminiDescriptionGenerator;

@@ -32,7 +32,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-    const { state, dispatch } = useAppContext();
+    const { state, dispatch, logout } = useAppContext();
     const { activeView, isAuthenticated, currentUser } = state;
 
     const handleNavClick = (view: AppView) => {
@@ -55,7 +55,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     };
 
     const handleLogout = () => {
-        dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null } });
+        logout();
         // After logout, reset to a default public view
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
         onClose();
