@@ -45,7 +45,8 @@ const InboxPage: React.FC = () => {
                     Communicate with sellers and agents about your favorite properties.
                 </p>
                 <button
-                    onClick={() => dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: true })}
+                    // FIX: The payload for TOGGLE_AUTH_MODAL must be an object.
+                    onClick={() => dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } })}
                     className="mt-8 px-6 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
                 >
                     Login / Register

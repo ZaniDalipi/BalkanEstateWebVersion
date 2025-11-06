@@ -6,9 +6,9 @@ import { SavedSearch, ChatMessage, AiSearchQuery, Filters } from '../../types';
 import { getAiChatResponse, generateSearchName } from '../../services/geminiService';
 import Toast from '../shared/Toast';
 import L from 'leaflet';
-import { CITY_DATA } from '../../services/propertyService';
+import { MUNICIPALITY_DATA } from '../../services/propertyService';
 import { Bars3Icon, SearchIcon, UserIcon, XMarkIcon, AdjustmentsHorizontalIcon, MapPinIcon, Squares2x2Icon, BellIcon } from '../../constants';
-import { findClosestCity } from '../../utils/location';
+import { findClosestSettlement } from '../../utils/location';
 import { filterProperties } from '../../utils/propertyUtils';
 
 const initialFilters: Filters = {
@@ -31,10 +31,11 @@ interface SearchPageProps {
 }
 
 const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
-    const { state, dispatch } = useAppContext();
-    const { properties, isAuthenticated, isAuthModalOpen, isPricingModalOpen, isSubscriptionModalOpen, currentUser } = state;
+    const { state, dispatch, fetchProperties } = useAppContext();
+    const { properties, isAuthenticated, isAuthModalOpen, isPricingModalOpen, isSubscriptionModalOpen, currentUser, allMunicipalities } = state;
 
-    const [filters, setFilters] = useState<Filters>(initialFilters);
+    const [filters, setFilters] = useState<Filters>(initialFilters); // Draft filters from the form
+    const [activeFilters, setActiveFilters] = useState<Filters>(initialFilters); // Filters applied to results
     
     const [searchOnMove, setSearchOnMove] = useState(true);
     const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
@@ -53,6 +54,10 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const [mobileView, setMobileView] = useState<'map' | 'list'>('map');
     const [isFiltersOpen, setFiltersOpen] = useState(false);
     const [searchMode, setSearchMode] = useState<'manual' | 'ai'>('manual');
+
+    useEffect(() => {
+        fetchProperties();
+    }, [fetchProperties]);
 
     useEffect(() => {
         let timeoutId: number;
@@ -131,33 +136,36 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         return () => clearTimeout(syncTimer);
     }, []);
 
-    const allCities = useMemo(() => Object.values(CITY_DATA).flat(), []);
+    const allSettlements = useMemo(() => {
+        return Object.values(allMunicipalities).flat().flatMap(m => m.settlements.map(s => ({...s, municipalityName: m.name})));
+    }, [allMunicipalities]);
 
     const searchLocation = useMemo<[number, number] | null>(() => {
-        const query = filters.query.trim().toLowerCase();
+        const query = activeFilters.query.trim().toLowerCase();
         if (!query) return null;
-        const city = allCities.find(c => 
-            c.name.toLowerCase() === query || 
-            c.localNames.some(ln => ln.toLowerCase() === query)
+        const settlement = allSettlements.find(s => 
+            s.name.toLowerCase() === query ||
+            `${s.name}, ${s.municipalityName}`.toLowerCase() === query ||
+            s.localNames.some(ln => ln.toLowerCase() === query)
         );
-        return city ? [city.lat, city.lng] : null;
-    }, [filters.query, allCities]);
+        return settlement ? [settlement.lat, settlement.lng] : null;
+    }, [activeFilters.query, allSettlements]);
 
     const showToast = useCallback((message: string, type: 'success' | 'error') => {
         setToast({ show: true, message, type });
     }, []);
 
     const isSearchActive = useMemo(() => {
-        return filters.query.trim() !== '' || filters.minPrice !== null || filters.maxPrice !== null || filters.beds !== null || filters.baths !== null || filters.livingRooms !== null || filters.minSqft !== null || filters.maxSqft !== null || filters.sellerType !== 'any' || filters.propertyType !== 'any';
-    }, [filters]);
+        return activeFilters.query.trim() !== '' || activeFilters.minPrice !== null || activeFilters.maxPrice !== null || activeFilters.beds !== null || activeFilters.baths !== null || activeFilters.livingRooms !== null || activeFilters.minSqft !== null || activeFilters.maxSqft !== null || activeFilters.sellerType !== 'any' || activeFilters.propertyType !== 'any';
+    }, [activeFilters]);
 
     
     // Properties filtered by form inputs (price, beds, etc.), used to populate the map
     const baseFilteredProperties = useMemo(() => {
-        const filtered = filterProperties(properties, filters);
+        const filtered = filterProperties(properties, activeFilters, allMunicipalities);
 
         // Sorting
-        switch (filters.sortBy) {
+        switch (activeFilters.sortBy) {
             case 'price_asc':
                 return filtered.sort((a, b) => a.price - b.price);
             case 'price_desc':
@@ -173,7 +181,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             default:
                 return filtered;
         }
-    }, [properties, filters]);
+    }, [properties, activeFilters, allMunicipalities]);
 
     // Properties for the list, further filtered by map bounds if "search on move" is active
     const listProperties = useMemo(() => {
@@ -188,22 +196,31 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     }, [baseFilteredProperties, searchOnMove, mapBounds]);
 
 
-    const handleFilterChange = useCallback((name: keyof Filters, value: string | number | null, shouldRecenter = true) => {
+    const handleFilterChange = useCallback((name: keyof Filters, value: string | number | null) => {
         setFilters(prev => ({ ...prev, [name]: value }));
-        if (shouldRecenter) {
-            setRecenterMap(true);
-        }
     }, []);
+    
+    const handleSearch = useCallback(() => {
+        setActiveFilters(filters);
+        setRecenterMap(true);
+    }, [filters]);
 
     const handleResetFilters = useCallback(() => {
         setFilters(initialFilters);
+        setActiveFilters(initialFilters);
         setRecenterMap(true);
     }, []);
 
     const handleSortChange = useCallback((value: string) => {
         setFilters(prev => ({ ...prev, sortBy: value }));
+        // Also apply immediately to active filters for instant sort feedback
+        setActiveFilters(prev => ({ ...prev, sortBy: value }));
         setRecenterMap(false);
     }, []);
+    
+    const isFormSearchActive = useMemo(() => {
+        return filters.query.trim() !== '' || filters.minPrice !== null || filters.maxPrice !== null || filters.beds !== null || filters.baths !== null || filters.livingRooms !== null || filters.minSqft !== null || filters.maxSqft !== null || filters.sellerType !== 'any' || filters.propertyType !== 'any';
+    }, [filters]);
     
     const handleSaveSearch = useCallback(async () => {
         if (!isAuthenticated) {
@@ -215,26 +232,24 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         try {
             let newSearch: SavedSearch;
 
-            // If no filters are active, create a search based on the map's center city
-            if (!isSearchActive && mapBounds) {
+            if (!isFormSearchActive && mapBounds) {
                 const center = mapBounds.getCenter();
-                const closestCity = findClosestCity(center.lat, center.lng, allCities);
+                const closest = findClosestSettlement(center.lat, center.lng, allMunicipalities);
 
-                if (closestCity) {
-                    const cityName = closestCity.name;
+                if (closest) {
+                    const locationName = `${closest.settlement.name}, ${closest.municipality.name}`;
                     newSearch = {
                         id: `ss-${Date.now()}`,
-                        name: cityName,
-                        filters: { ...initialFilters, query: cityName },
+                        name: locationName,
+                        filters: { ...initialFilters, query: locationName },
                     };
                 } else {
-                    showToast("Could not determine a city from the map view.", 'error');
+                    showToast("Could not determine a location from the map view.", 'error');
                     setIsSaving(false);
                     return;
                 }
             } else {
-                // Otherwise, save based on the active filters
-                if (!isSearchActive) {
+                if (!isFormSearchActive) {
                     showToast("Cannot save an empty search. Please add some criteria.", 'error');
                     setIsSaving(false);
                     return;
@@ -256,24 +271,24 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         } finally {
             setIsSaving(false);
         }
-    }, [isAuthenticated, dispatch, filters, isSearchActive, mapBounds, allCities, showToast]);
+    }, [isAuthenticated, dispatch, filters, isFormSearchActive, mapBounds, allMunicipalities, showToast]);
     
     const handleMapMove = useCallback((newBounds: L.LatLngBounds, newCenter: L.LatLng) => {
         setMapBounds(newBounds);
         setRecenterMap(false);
         
-        // If the user is actively typing in the search box, or if the initial delay is not over, don't override the input.
         if (isQueryInputFocused || !isMapSyncActive) {
             return;
         }
 
-        // Find the city at the center of the map and update the query input
-        const closestCity = findClosestCity(newCenter.lat, newCenter.lng, allCities);
-        if (closestCity && closestCity.name.toLowerCase() !== filters.query.toLowerCase()) {
-            // Update the filter but DO NOT recenter the map, preventing a feedback loop.
-            handleFilterChange('query', closestCity.name, false);
+        const closest = findClosestSettlement(newCenter.lat, newCenter.lng, allMunicipalities);
+        if (closest) {
+            const locationName = `${closest.settlement.name}, ${closest.municipality.name}`;
+             if (locationName.toLowerCase() !== filters.query.toLowerCase()) {
+                handleFilterChange('query', locationName);
+            }
         }
-    }, [allCities, filters.query, handleFilterChange, isQueryInputFocused, isMapSyncActive]);
+    }, [allMunicipalities, filters.query, handleFilterChange, isQueryInputFocused, isMapSyncActive]);
 
     const handleNewListingClick = () => {
       if (isAuthenticated) {
@@ -301,7 +316,9 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             minSqft: aiQuery.minSqft || null,
             maxSqft: aiQuery.maxSqft || null,
         };
-        setFilters(prev => ({ ...prev, ...newFilters }));
+        const updatedFilters = { ...initialFilters, ...newFilters };
+        setFilters(updatedFilters);
+        setActiveFilters(updatedFilters);
         setSearchMode('manual');
         setFiltersOpen(false); 
         setRecenterMap(true);
@@ -309,8 +326,8 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
 
 
     const handleApplyFiltersFromModal = () => {
+        handleSearch();
         setFiltersOpen(false);
-        setRecenterMap(true); 
     };
     
     const mapProps = {
@@ -330,6 +347,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         properties: listProperties,
         filters,
         onFilterChange: handleFilterChange,
+        onSearchClick: handleSearch,
         onResetFilters: handleResetFilters,
         onSortChange: handleSortChange,
         onSaveSearch: handleSaveSearch,
@@ -339,7 +357,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         searchMode,
         onSearchModeChange: setSearchMode,
         onQueryFocus: () => setIsQueryInputFocused(true),
-        onQueryBlur: () => setIsQueryInputFocused(false),
+        onBlur: () => setIsQueryInputFocused(false),
         onApplyAiFilters: handleApplyAiFilters,
     };
 
@@ -380,7 +398,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                      <button onClick={handleResetFilters} className="px-4 py-3 border border-neutral-300 rounded-lg text-sm font-semibold text-neutral-700 hover:bg-neutral-100">Reset</button>
                      <button onClick={handleSaveSearch} disabled={isSaving} className="px-4 py-3 border border-neutral-300 rounded-lg text-sm font-semibold text-neutral-700 hover:bg-neutral-100">Save Search</button>
                      <button onClick={handleApplyFiltersFromModal} className="flex-grow px-4 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark">
-                        Show {listProperties.length} Results
+                        Show Results
                     </button>
                 </div>
             )}
@@ -442,6 +460,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                                     placeholder="Search city, address..."
                                     value={filters.query}
                                     onChange={(e) => handleFilterChange('query', e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                     onFocus={() => setIsQueryInputFocused(true)}
                                     onBlur={() => setIsQueryInputFocused(false)}
                                     className="block w-full text-base bg-white border-neutral-200 rounded-full text-neutral-900 shadow-lg px-12 py-3 focus:outline-none focus:ring-2 focus:ring-primary"

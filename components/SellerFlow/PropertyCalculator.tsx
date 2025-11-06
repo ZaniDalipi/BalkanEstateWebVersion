@@ -1,19 +1,20 @@
 import React, { useState, useMemo } from 'react';
 import { formatPrice } from '../../utils/currency';
 import { allProperties as dummyProperties } from '../../services/apiService';
-import { CITY_DATA } from '../../services/propertyService';
+// FIX: Imported MUNICIPALITY_DATA instead of the non-existent CITY_DATA.
+import { MUNICIPALITY_DATA } from '../../services/propertyService';
 
 const PropertyCalculator: React.FC = () => {
   const [result, setResult] = useState<{value: number, country: string} | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const availableCountries = useMemo(() => Object.keys(CITY_DATA).sort(), []);
+  const availableCountries = useMemo(() => Object.keys(MUNICIPALITY_DATA).sort(), []);
   const [selectedCountry, setSelectedCountry] = useState('');
 
   const availableCities = useMemo(() => {
-    if (!selectedCountry || !CITY_DATA[selectedCountry]) return [];
-    return CITY_DATA[selectedCountry].map(city => city.name).sort();
+    if (!selectedCountry || !MUNICIPALITY_DATA[selectedCountry]) return [];
+    return MUNICIPALITY_DATA[selectedCountry].map(city => city.name).sort();
   }, [selectedCountry]);
 
 
@@ -28,9 +29,17 @@ const PropertyCalculator: React.FC = () => {
     // Simulate API call and calculation
     setTimeout(() => {
         const formData = new FormData(form); // Use the captured variable
+        const address = formData.get('address') as string;
         const country = formData.get('country') as string;
         const city = formData.get('city') as string;
         const sqft = Math.max(0, Number(formData.get('sqft')));
+
+        // Validation
+        if (!address || address.trim().length < 3) {
+            setError('Please enter a valid address or suburb.');
+            setLoading(false);
+            return;
+        }
 
         if (!city || !country) {
             setError('Please select a country and city.');

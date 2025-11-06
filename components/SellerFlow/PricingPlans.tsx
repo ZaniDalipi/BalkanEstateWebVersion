@@ -5,6 +5,7 @@ import { BuildingOfficeIcon, ChartBarIcon, CurrencyDollarIcon, BoltIcon } from '
 interface PricingPlansProps {
   isOpen: boolean;
   onClose: () => void;
+  onSubscribe?: () => void;
   isOffer?: boolean;
 }
 
@@ -12,7 +13,7 @@ const TickIcon: React.FC = () => (
     <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
 );
 
-const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer }) => {
+const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscribe, isOffer }) => {
   const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes in seconds
   const [showConfirmation, setShowConfirmation] = useState(false);
 
@@ -127,7 +128,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer })
                         <li className="flex items-center"><TickIcon /> Professional photography tips</li>
                         <li className="flex items-center"><TickIcon /> Priority customer support</li>
                     </ul>
-                    <button className="w-full mt-8 py-3.5 rounded-lg font-bold text-white bg-indigo-500 hover:bg-indigo-600 transition-colors shadow-md text-base sm:text-lg">
+                    <button onClick={onSubscribe} className="w-full mt-8 py-3.5 rounded-lg font-bold text-white bg-indigo-500 hover:bg-indigo-600 transition-colors shadow-md text-base sm:text-lg">
                         {isOffer ? 'Get Pro Annual - €80/year' : 'Get Pro Annual - €200/year'}
                     </button>
                 </div>
@@ -181,7 +182,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer })
                             <p className="text-neutral-600 text-sm">Manage on the go</p>
                         </div>
                     </div>
-                     <button className="w-full mt-8 py-3.5 rounded-lg font-bold bg-white border border-neutral-300 text-neutral-700 hover:bg-neutral-100 transition-colors shadow-sm text-base sm:text-lg">
+                     <button onClick={onSubscribe} className="w-full mt-8 py-3.5 rounded-lg font-bold bg-white border border-neutral-300 text-neutral-700 hover:bg-neutral-100 transition-colors shadow-sm text-base sm:text-lg">
                         {isOffer ? 'Get Pro Monthly - €12.50/month' : 'Get Pro Monthly - €25/month'}
                     </button>
                 </div>
@@ -230,7 +231,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, isOffer })
                             <p className="text-neutral-300 text-sm">Personal support for your business</p>
                         </div>
                     </div>
-                     <button className="w-full mt-8 py-3.5 rounded-lg font-bold bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-md text-base sm:text-lg">
+                     <button onClick={onSubscribe} className="w-full mt-8 py-3.5 rounded-lg font-bold bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-md text-base sm:text-lg">
                          {isOffer ? 'Contact Sales - €800/year' : 'Perfect for Real Estate Companies'}
                     </button>
                 </div>

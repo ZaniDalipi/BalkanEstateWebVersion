@@ -3,11 +3,14 @@ import { Property, ChatMessage, AiSearchQuery, Filters, SellerType } from '../..
 import PropertyCard from './PropertyCard';
 import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon } from '../../constants';
 import AiSearch from './AiSearch';
+import PropertyCardSkeleton from './PropertyCardSkeleton';
+import { useAppContext } from '../../context/AppContext';
 
 interface PropertyListProps {
   properties: Property[];
   filters: Filters;
-  onFilterChange: (name: keyof Filters, value: string | number | null, shouldRecenter?: boolean) => void;
+  onFilterChange: (name: keyof Filters, value: string | number | null) => void;
+  onSearchClick: () => void;
   onResetFilters: () => void;
   onSortChange: (value: string) => void;
   onSaveSearch: () => void;
@@ -21,7 +24,7 @@ interface PropertyListProps {
   onSearchModeChange: (mode: 'manual' | 'ai') => void;
   onApplyAiFilters: (query: AiSearchQuery) => void;
   onQueryFocus: () => void;
-  onQueryBlur: () => void;
+  onBlur: () => void;
 }
 
 const FilterButton: React.FC<{
@@ -70,7 +73,7 @@ const formatNumber = (num: number) => new Intl.NumberFormat('de-DE').format(num)
 const ITEMS_PER_PAGE = 20;
 
 const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'>> = ({
-    filters, onFilterChange, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, onQueryFocus, onQueryBlur
+    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, onQueryFocus, onBlur
 }) => {
 
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -90,9 +93,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
             }
         }
         
-        // Only recenter the map when the main text query changes
-        const shouldRecenter = name === 'query';
-        onFilterChange(name as keyof Filters, finalValue, shouldRecenter);
+        onFilterChange(name as keyof Filters, finalValue);
     }, [onFilterChange]);
     
     const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder:text-neutral-700";
@@ -111,7 +112,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                         value={filters.query}
                         onChange={handleInputChange}
                         onFocus={onQueryFocus}
-                        onBlur={onQueryBlur}
+                        onBlur={onBlur}
                         className={`${inputBaseClasses} pl-9`}
                     />
                 </div>
@@ -170,7 +171,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                         {value: 4, label: '4+'},
                     ]}
                     selectedValue={filters.beds}
-                    onChange={(value) => onFilterChange('beds', value, false)}
+                    onChange={(value) => onFilterChange('beds', value)}
                 />
                 <FilterButtonGroup 
                     label="Bathrooms"
@@ -181,7 +182,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                         {value: 3, label: '3+'},
                     ]}
                     selectedValue={filters.baths}
-                    onChange={(value) => onFilterChange('baths', value, false)}
+                    onChange={(value) => onFilterChange('baths', value)}
                 />
                 <FilterButtonGroup 
                     label="Living Rooms"
@@ -191,7 +192,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                         {value: 2, label: '2+'},
                     ]}
                     selectedValue={filters.livingRooms}
-                    onChange={(value) => onFilterChange('livingRooms', value, false)}
+                    onChange={(value) => onFilterChange('livingRooms', value)}
                 />
             </div>
 
@@ -247,7 +248,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                         {value: 'private', label: 'Private'},
                     ]}
                     selectedValue={filters.sellerType}
-                    onChange={(value) => onFilterChange('sellerType', (value as SellerType) || 'any', false)}
+                    onChange={(value) => onFilterChange('sellerType', (value as SellerType) || 'any')}
                 />
                 <FilterButtonGroup
                     label="Property Type"
@@ -258,7 +259,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                         { value: 'villa', label: 'Villa' },
                     ]}
                     selectedValue={filters.propertyType}
-                    onChange={(value) => onFilterChange('propertyType', (value as Filters['propertyType']) || 'any', false)}
+                    onChange={(value) => onFilterChange('propertyType', (value as Filters['propertyType']) || 'any')}
                 />
             </div>
             
@@ -276,30 +277,38 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
             </div>
 
             {!isMobile && (
-                 <div className="pt-1 flex items-center gap-2">
+                 <div className="pt-2 space-y-2">
                      <button 
-                        onClick={onResetFilters}
-                        className="py-2.5 px-4 border border-neutral-300 text-neutral-600 rounded-lg text-sm font-bold bg-white hover:bg-neutral-100 transition-colors"
+                        onClick={onSearchClick}
+                        className="w-full py-2.5 px-4 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
                     >
-                        Reset
+                        Search
                     </button>
-                    <button 
-                        onClick={onSaveSearch} 
-                        disabled={isSaving}
-                        className="flex-grow py-2.5 px-4 border border-primary text-primary rounded-lg shadow-sm text-sm font-bold bg-white hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-2"
-                    >
-                        {isSaving ? (
-                            <>
-                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Saving...
-                            </>
-                        ) : (
-                            'Save Search'
-                        )}
-                    </button>
+                     <div className="flex items-center gap-2">
+                        <button 
+                            onClick={onResetFilters}
+                            className="flex-grow py-2.5 px-4 border border-neutral-300 text-neutral-600 rounded-lg text-sm font-bold bg-white hover:bg-neutral-100 transition-colors"
+                        >
+                            Reset
+                        </button>
+                        <button 
+                            onClick={onSaveSearch} 
+                            disabled={isSaving}
+                            className="flex-grow py-2.5 px-4 border border-primary text-primary rounded-lg shadow-sm text-sm font-bold bg-white hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-2"
+                        >
+                            {isSaving ? (
+                                <>
+                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Saving...
+                                </>
+                            ) : (
+                                'Save Search'
+                            )}
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
@@ -308,6 +317,8 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
 
 
 const PropertyList: React.FC<PropertyListProps> = (props) => {
+    const { state } = useAppContext();
+    const { isLoadingProperties } = state;
 
     const { properties, filters, onSortChange, isMobile, showFilters, showList, searchMode, onSearchModeChange, onApplyAiFilters } = props;
 
@@ -405,7 +416,13 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
 
                             {/* Property Grid */}
                             <div className="p-4">
-                                {properties.length > 0 ? (
+                                {isLoadingProperties ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {Array.from({ length: isMobile ? 4 : 6 }).map((_, index) => (
+                                            <PropertyCardSkeleton key={index} />
+                                        ))}
+                                    </div>
+                                ) : properties.length > 0 ? (
                                     <>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {properties.slice(0, visibleCount).map(prop => (

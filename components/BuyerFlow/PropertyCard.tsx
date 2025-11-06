@@ -64,38 +64,41 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
             </div>
         )}
         <div onClick={handleFavoriteClick} className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm p-2 rounded-full cursor-pointer hover:bg-white z-10">
-             <svg xmlns="http://www.w.org/2000/svg" className={`h-6 w-6 transition-colors duration-300 ${isFavorited ? 'text-red-500 fill-current' : 'text-neutral-500 hover:text-red-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 transition-colors duration-300 ${isFavorited ? 'text-red-500 fill-current' : 'text-neutral-500 hover:text-red-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
         </div>
       </div>
       <div className="p-4 flex flex-col flex-grow">
         <button onClick={handleCardClick} className="text-left flex-grow">
-            <p className="text-2xl font-bold text-neutral-900">{formatPrice(property.price, property.country)}</p>
-            <div className="flex items-center text-neutral-600 mt-1">
+            <div className="flex items-center text-neutral-600">
                 <MapPinIcon className="w-4 h-4 mr-1.5 text-neutral-400 flex-shrink-0" />
-                <span className="truncate">{property.address}, {property.city}</span>
+                <span className="truncate text-sm">{property.address}, {property.city}</span>
+            </div>
+            <p className="text-3xl font-bold text-neutral-900 my-2">{formatPrice(property.price, property.country)}</p>
+            <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-neutral-700">
+                <div className="flex items-center gap-1.5" title={`${property.beds} bedrooms`}>
+                    <BedIcon className="w-5 h-5 text-neutral-500" />
+                    <span className="font-semibold text-sm">{property.beds}</span>
+                </div>
+                <div className="flex items-center gap-1.5" title={`${property.baths} bathrooms`}>
+                    <BathIcon className="w-5 h-5 text-neutral-500" />
+                    <span className="font-semibold text-sm">{property.baths}</span>
+                </div>
+                <div className="flex items-center gap-1.5" title={`${property.livingRooms} living rooms`}>
+                    <LivingRoomIcon className="w-5 h-5 text-neutral-500" />
+                    <span className="font-semibold text-sm">{property.livingRooms}</span>
+                </div>
+                <div className="flex items-center gap-1.5" title={`${property.sqft} square meters`}>
+                    <SqftIcon className="w-5 h-5 text-neutral-500" />
+                    <span className="font-semibold text-sm">{property.sqft} m²</span>
+                </div>
             </div>
         </button>
-        <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-neutral-800 border-t border-neutral-100 pt-3">
-          <div className="flex items-center gap-2">
-            <BedIcon className="w-5 h-5 text-primary" />
-            <span><span className="font-bold">{property.beds}</span> {property.beds === 1 ? 'bed' : 'beds'}</span>
-          </div>
-           <div className="flex items-center gap-2">
-            <BathIcon className="w-5 h-5 text-primary" />
-            <span><span className="font-bold">{property.baths}</span> {property.baths === 1 ? 'bath' : 'baths'}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <LivingRoomIcon className="w-5 h-5 text-primary" />
-            <span><span className="font-bold">{property.livingRooms}</span> {property.livingRooms === 1 ? 'living rm' : 'living rms'}</span>
-          </div>
-           <div className="flex items-center gap-2">
-            <SqftIcon className="w-5 h-5 text-primary" />
-            <span><span className="font-bold">{property.sqft}</span> m²</span>
-          </div>
-        </div>
-        <div className="mt-4 pt-3 border-t border-neutral-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
+
+        <div className="flex-grow"></div> 
+        
+        <div className="mt-4 pt-4 border-t border-neutral-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
             {showCompareButton && (
                 <button
                     onClick={handleCompareClick}

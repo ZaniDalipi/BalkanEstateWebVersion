@@ -45,7 +45,7 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
 };
 
 const MainLayout: React.FC = () => {
-  const { state, dispatch } = useAppContext();
+  const { state, dispatch, updateUser, createListing } = useAppContext();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -57,6 +57,33 @@ const MainLayout: React.FC = () => {
   
   const isFullHeightView = state.activeView === 'search' || state.activeView === 'inbox' || !!state.selectedProperty;
   const showHeader = !(isMobile && (state.activeView === 'search' || !!state.selectedProperty));
+
+  const handleSubscribe = async () => {
+    try {
+        await updateUser({ isSubscribed: true });
+        
+        // If a property was pending, create it now
+        if (state.pendingProperty) {
+            await createListing(state.pendingProperty);
+            dispatch({ type: 'SET_PENDING_PROPERTY', payload: null });
+            // Optionally, show a success toast here
+        }
+    } catch (error) {
+        console.error("Subscription update failed:", error);
+        // Optionally show an error toast
+    } finally {
+        dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: false } });
+    }
+  };
+
+  const handlePricingClose = () => {
+    // If a property was pending and the user closes the modal, we clear it.
+    // The component that initiated this will show an error message.
+    if (state.pendingProperty) {
+        dispatch({ type: 'SET_PENDING_PROPERTY', payload: null });
+    }
+    dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: false } });
+  };
 
   return (
     <div className="min-h-screen bg-neutral-50 font-sans">
@@ -71,7 +98,8 @@ const MainLayout: React.FC = () => {
         
         <PricingPlans 
             isOpen={state.isPricingModalOpen} 
-            onClose={() => dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: false } })}
+            onClose={handlePricingClose}
+            onSubscribe={handleSubscribe}
             isOffer={state.isFirstLoginOffer}
         />
         <SubscriptionModal

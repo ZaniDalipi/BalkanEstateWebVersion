@@ -1,6 +1,7 @@
 import React, { createContext, useReducer, useContext, Dispatch, useCallback } from 'react';
-import { User, Property, SavedSearch, Conversation, AppState, AppAction, Filters, Message, AuthModalView } from '../types';
+import { User, Property, SavedSearch, Conversation, AppState, AppAction, Filters, Message, AuthModalView, MunicipalityData } from '../types';
 import * as api from '../services/apiService';
+import { MUNICIPALITY_DATA } from '../services/propertyService';
 
 const initialState: AppState = {
   onboardingComplete: false,
@@ -17,12 +18,15 @@ const initialState: AppState = {
   selectedProperty: null,
   propertyToEdit: null,
   isAuthenticated: false,
+  isLoadingUserData: false,
   currentUser: null,
   savedSearches: [],
   savedHomes: [],
   comparisonList: [],
   conversations: [],
   selectedAgentId: null,
+  allMunicipalities: MUNICIPALITY_DATA,
+  pendingProperty: null,
 };
 
 
@@ -31,6 +35,9 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     case 'AUTH_CHECK_START':
       return { ...state, isAuthenticating: true };
     case 'AUTH_CHECK_COMPLETE':
+      if (!action.payload.isAuthenticated) {
+        return { ...state, isAuthenticating: false, isAuthenticated: false, currentUser: null, onboardingComplete: state.onboardingComplete };
+      }
       return { ...state, isAuthenticating: false, isAuthenticated: action.payload.isAuthenticated, currentUser: action.payload.user, onboardingComplete: state.onboardingComplete || action.payload.isAuthenticated };
     case 'COMPLETE_ONBOARDING':
       return { ...state, onboardingComplete: true };
@@ -60,8 +67,10 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         return { ...state, isLoadingProperties: false, properties: action.payload };
     case 'PROPERTIES_ERROR':
         return { ...state, isLoadingProperties: false, propertiesError: action.payload };
-    case 'SET_USER_DATA':
-        return { ...state, ...action.payload };
+    case 'USER_DATA_LOADING':
+        return { ...state, isLoadingUserData: true };
+    case 'USER_DATA_SUCCESS':
+        return { ...state, ...action.payload, isLoadingUserData: false };
     case 'ADD_SAVED_SEARCH':
       return { ...state, savedSearches: [action.payload, ...state.savedSearches] };
     case 'TOGGLE_SAVED_HOME':
@@ -75,11 +84,43 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     case 'CLEAR_COMPARISON':
         return { ...state, comparisonList: [] };
     case 'SET_AUTH_STATE':
-        return { ...state, isAuthenticated: action.payload.isAuthenticated, currentUser: action.payload.user, savedHomes: [], savedSearches: [], onboardingComplete: true };
+        if (!action.payload.isAuthenticated) { // logging out
+            return { ...state, isAuthenticated: false, currentUser: null, savedHomes: [], savedSearches: [], conversations: [] };
+        }
+        // logging in
+        return { ...state, isAuthenticated: true, currentUser: action.payload.user, onboardingComplete: true, isLoadingUserData: true };
+    case 'ADD_PROPERTY':
+      // Add the new property to the beginning of the list to ensure it's visible.
+      return { ...state, properties: [action.payload, ...state.properties] };
+    case 'UPDATE_PROPERTY':
+      return {
+        ...state,
+        properties: state.properties.map(p =>
+          p.id === action.payload.id ? action.payload : p
+        ),
+      };
+    case 'RENEW_PROPERTY':
+        // Find the property and update its lastRenewed timestamp.
+        return {
+            ...state,
+            properties: state.properties.map(p =>
+                p.id === action.payload ? { ...p, lastRenewed: Date.now() } : p
+            ),
+        };
+    case 'MARK_PROPERTY_SOLD':
+        // Find the property and update its status to 'sold'.
+        return {
+            ...state,
+            properties: state.properties.map(p =>
+                p.id === action.payload ? { ...p, status: 'sold' } : p
+            ),
+        };
     case 'UPDATE_USER':
       return { ...state, currentUser: state.currentUser ? { ...state.currentUser, ...action.payload } : null };
     case 'ADD_MESSAGE':
         return { ...state, conversations: state.conversations.map(c => c.id === action.payload.conversationId ? { ...c, messages: [...c.messages, action.payload.message] } : c ) };
+    case 'SET_PENDING_PROPERTY':
+        return { ...state, pendingProperty: action.payload };
     default:
       return state;
   }
@@ -117,22 +158,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const user = await api.checkAuth();
     dispatch({ type: 'AUTH_CHECK_COMPLETE', payload: { isAuthenticated: !!user, user } });
     if (user) {
+        dispatch({ type: 'USER_DATA_LOADING' });
         const userData = await api.getMyData();
-        dispatch({ type: 'SET_USER_DATA', payload: userData });
+        dispatch({ type: 'USER_DATA_SUCCESS', payload: userData });
     }
   }, []);
 
   const login = useCallback(async (email: string, pass: string) => {
     const user = await api.login(email, pass);
     dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user } });
+    dispatch({ type: 'USER_DATA_LOADING' });
     const userData = await api.getMyData();
-    dispatch({ type: 'SET_USER_DATA', payload: userData });
+    dispatch({ type: 'USER_DATA_SUCCESS', payload: userData });
     return user;
   }, []);
 
   const signup = useCallback(async (email: string, pass: string) => {
     const user = await api.signup(email, pass);
     dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user } });
+    dispatch({ type: 'USER_DATA_SUCCESS', payload: { savedHomes: [], savedSearches: [], conversations: [] } });
     return user;
   }, []);
 
@@ -148,8 +192,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loginWithSocial = useCallback(async (provider: 'google' | 'facebook' | 'apple') => {
     const user = await api.loginWithSocial(provider);
     dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user } });
+    dispatch({ type: 'USER_DATA_LOADING' });
     const userData = await api.getMyData();
-    dispatch({ type: 'SET_USER_DATA', payload: userData });
+    dispatch({ type: 'USER_DATA_SUCCESS', payload: userData });
     return user;
   }, []);
   
@@ -161,8 +206,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const result = await api.verifyPhoneCode(phone, code);
       if (result.user && !result.isNew) {
           dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user: result.user } });
+          dispatch({ type: 'USER_DATA_LOADING' });
           const userData = await api.getMyData();
-          dispatch({ type: 'SET_USER_DATA', payload: userData });
+          dispatch({ type: 'USER_DATA_SUCCESS', payload: userData });
       }
       return result;
   }, []);
@@ -170,18 +216,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const completePhoneSignup = useCallback(async (phone: string, name: string, email: string) => {
       const user = await api.completePhoneSignup(phone, name, email);
       dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user } });
+      dispatch({ type: 'USER_DATA_SUCCESS', payload: { savedHomes: [], savedSearches: [], conversations: [] } });
       return user;
   }, []);
 
   const fetchProperties = useCallback(async (filters?: Filters) => {
       dispatch({ type: 'PROPERTIES_LOADING' });
       try {
-          const properties = await api.getProperties(filters);
+          const properties = await api.getProperties(filters, state.allMunicipalities);
           dispatch({ type: 'PROPERTIES_SUCCESS', payload: properties });
       } catch (e: any) {
           dispatch({ type: 'PROPERTIES_ERROR', payload: e.message || 'Failed to fetch properties.'});
       }
-  }, []);
+  }, [state.allMunicipalities]);
 
   const toggleSavedHome = useCallback(async (property: Property) => {
     const isSaved = state.savedHomes.some(p => p.id === property.id);

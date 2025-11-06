@@ -34,6 +34,7 @@ export interface User {
   agencyName?: string;
   agentId?: string;
   licenseNumber?: string;
+  isSubscribed: boolean;
 }
 
 export interface Agent extends User {
@@ -54,7 +55,7 @@ export interface Property {
   status: PropertyStatus;
   price: number;
   address: string;
-  city: string;
+  city: string; // Will now store "Town, Municipality" e.g., "Krani, Resen"
   country: string;
   beds: number;
   baths: number;
@@ -137,6 +138,35 @@ export interface Conversation {
 // --- App State & Actions ---
 export type AuthModalView = 'login' | 'signup' | 'forgotPassword' | 'forgotPasswordSuccess' | 'phoneCode' | 'phoneDetails';
 
+export interface SettlementData {
+    name: string;
+    localNames: string[];
+    lat: number;
+    lng: number;
+}
+
+export interface MunicipalityData {
+    name: string;
+    localNames: string[];
+    lat: number;
+    lng: number;
+    settlements: SettlementData[];
+}
+
+// Raw data structure from cityData.ts
+export interface Settlement {
+  name: string;
+  localNames?: string[];
+  latitude: number;
+  longitude: number;
+}
+export interface Municipality {
+  name: string;
+  localNames?: string[];
+  latitude: number;
+  longitude: number;
+  settlements: Settlement[];
+}
 
 export interface AppState {
   onboardingComplete: boolean;
@@ -153,12 +183,15 @@ export interface AppState {
   selectedProperty: Property | null;
   propertyToEdit: Property | null;
   isAuthenticated: boolean;
+  isLoadingUserData: boolean;
   currentUser: User | null;
   savedSearches: SavedSearch[];
   savedHomes: Property[];
   comparisonList: string[]; // array of property IDs
   conversations: Conversation[];
   selectedAgentId: string | null;
+  allMunicipalities: Record<string, MunicipalityData[]>;
+  pendingProperty: Property | null;
 }
 
 export type AppAction =
@@ -190,4 +223,6 @@ export type AppAction =
   | { type: 'PROPERTIES_LOADING' }
   | { type: 'PROPERTIES_SUCCESS'; payload: Property[] }
   | { type: 'PROPERTIES_ERROR'; payload: string }
-  | { type: 'SET_USER_DATA'; payload: { savedHomes: Property[]; savedSearches: SavedSearch[]; conversations: Conversation[] } };
+  | { type: 'USER_DATA_LOADING' }
+  | { type: 'USER_DATA_SUCCESS'; payload: { savedHomes: Property[]; savedSearches: SavedSearch[]; conversations: Conversation[] } }
+  | { type: 'SET_PENDING_PROPERTY', payload: Property | null };

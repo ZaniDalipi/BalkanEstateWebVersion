@@ -4,6 +4,7 @@ import { formatPrice } from '../../utils/currency';
 import { useAppContext } from '../../context/AppContext';
 import { EyeIcon, HeartIcon, InboxIcon, PencilIcon, SparklesIcon, CheckCircleIcon, ClockIcon, ArrowPathIcon, BuildingOfficeIcon } from '../../constants';
 import Modal from './Modal';
+import ListingCardSkeleton from './ListingCardSkeleton';
 
 const StatusBadge: React.FC<{ status: PropertyStatus }> = ({ status }) => {
     const statusStyles: Record<PropertyStatus, { bg: string, text: string, icon?: React.ReactNode }> = {
@@ -125,6 +126,7 @@ const FilterPill: React.FC<{
 
 const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
     const { state, dispatch } = useAppContext();
+    const { isLoadingProperties } = state;
     const [showSoldConfirm, setShowSoldConfirm] = useState(false);
     const [propertyToMarkSold, setPropertyToMarkSold] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<PropertyStatus | 'all'>('all');
@@ -207,7 +209,13 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
                 ))}
             </div>
 
-            {filteredAndSortedProperties.length > 0 ? (
+            {isLoadingProperties ? (
+                <div className="space-y-4">
+                    <ListingCardSkeleton />
+                    <ListingCardSkeleton />
+                    <ListingCardSkeleton />
+                </div>
+            ) : filteredAndSortedProperties.length > 0 ? (
                 <div className="space-y-4">
                     {filteredAndSortedProperties.map(prop => 
                         <ListingCard 
