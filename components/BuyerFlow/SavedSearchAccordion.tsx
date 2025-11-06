@@ -4,6 +4,7 @@ import PropertyCard from './PropertyCard';
 import { ChevronUpIcon, ChevronDownIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { filterProperties } from '../../utils/propertyUtils';
+import PropertyCardSkeleton from './PropertyCardSkeleton';
 
 interface SavedSearchAccordionProps {
   search: SavedSearch;
@@ -12,10 +13,11 @@ interface SavedSearchAccordionProps {
 const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { state } = useAppContext();
+  const { isLoadingProperties, allMunicipalities, properties } = state;
 
   const matchingProperties = useMemo(() => {
-      return filterProperties(state.properties, search.filters);
-  }, [state.properties, search.filters]);
+      return filterProperties(properties, search.filters, allMunicipalities);
+  }, [properties, search.filters, allMunicipalities]);
 
   const propertyCount = matchingProperties.length;
 
@@ -40,7 +42,13 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search }) =
       {/* Expanded Content */}
       {isOpen && (
         <div className="p-4 bg-neutral-50/70 border-t border-neutral-200 animate-fade-in">
-          {propertyCount > 0 ? (
+          {isLoadingProperties ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {Array.from({ length: 4 }).map((_, index) => (
+                   <PropertyCardSkeleton key={index} />
+               ))}
+           </div>
+          ) : propertyCount > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {matchingProperties.map((prop) => (
                 <PropertyCard key={prop.id} property={prop} />

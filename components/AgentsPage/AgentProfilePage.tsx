@@ -5,6 +5,7 @@ import { ArrowLeftIcon, BuildingOfficeIcon, ChartBarIcon, ChatBubbleBottomCenter
 import StarRating from '../shared/StarRating';
 import { formatPrice } from '../../utils/currency';
 import PropertyCard from '../BuyerFlow/PropertyCard';
+import PropertyCardSkeleton from '../BuyerFlow/PropertyCardSkeleton';
 
 interface AgentProfilePageProps {
   agent: Agent;
@@ -41,6 +42,7 @@ const ProfileAvatar: React.FC<{ agent: Agent }> = ({ agent }) => {
 
 const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     const { state, dispatch } = useAppContext();
+    const { isLoadingProperties } = state;
     const agentProperties = state.properties.filter(p => p.sellerId === agent.id && p.status === 'active');
     
     const handleBack = () => {
@@ -90,7 +92,12 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
                 <h2 className="text-xl sm:text-2xl font-bold text-neutral-800 mb-4">Active Listings</h2>
-                {agentProperties.length > 0 ? (
+                {isLoadingProperties ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <PropertyCardSkeleton />
+                        <PropertyCardSkeleton />
+                    </div>
+                ) : agentProperties.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {agentProperties.map(prop => <PropertyCard key={prop.id} property={prop} />)}
                     </div>

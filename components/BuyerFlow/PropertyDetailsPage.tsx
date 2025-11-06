@@ -16,6 +16,7 @@ import {
 import { getNeighborhoodInsights } from '../../services/geminiService';
 import ImageViewerModal from './ImageViewerModal';
 import FloorPlanViewerModal from './FloorPlanViewerModal';
+import PropertyLocationMap from './PropertyLocationMap';
 
 
 // --- Image Editor Modal ---
@@ -577,6 +578,13 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                             ) : 'Not listed'}
                         </DetailItem>
                     </div>
+                </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
+                <h3 className="text-lg sm:text-xl font-bold text-neutral-800 mb-4">Location on Map</h3>
+                <div className="h-80 rounded-lg overflow-hidden border">
+                    <PropertyLocationMap lat={property.lat} lng={property.lng} address={property.address} />
                 </div>
             </div>
             

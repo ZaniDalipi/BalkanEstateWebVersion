@@ -6,10 +6,11 @@ import { HeartIcon } from '../../constants';
 import ComparisonBar from './ComparisonBar';
 import ComparisonModal from './ComparisonModal';
 import Toast from '../shared/Toast';
+import PropertyCardSkeleton from './PropertyCardSkeleton';
 
 const SavedHomesPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
-  const { savedHomes, comparisonList, properties, isAuthenticated } = state;
+  const { savedHomes, comparisonList, properties, isAuthenticated, isLoadingUserData } = state;
   const [isComparisonModalOpen, setComparisonModalOpen] = useState(false);
   const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
 
@@ -51,6 +52,16 @@ const SavedHomesPage: React.FC = () => {
                 >
                     Login / Register
                 </button>
+            </div>
+        );
+    }
+
+    if (isLoadingUserData) {
+        return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {Array.from({ length: 4 }).map((_, index) => (
+                    <PropertyCardSkeleton key={index} />
+                ))}
             </div>
         );
     }

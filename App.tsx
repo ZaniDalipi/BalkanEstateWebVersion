@@ -15,6 +15,7 @@ import Header from './components/shared/Header';
 import SubscriptionModal from './components/BuyerFlow/SubscriptionModal';
 import AgentsPage from './components/AgentsPage/AgentsPage';
 import PropertyDetailsPage from './components/BuyerFlow/PropertyDetailsPage';
+import { LogoIcon } from './constants';
 
 const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar }) => {
   const { state } = useAppContext();
@@ -44,7 +45,7 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
 };
 
 const MainLayout: React.FC = () => {
-  const { state, dispatch } = useAppContext();
+  const { state, dispatch, updateUser, createListing } = useAppContext();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -57,6 +58,33 @@ const MainLayout: React.FC = () => {
   const isFullHeightView = state.activeView === 'search' || state.activeView === 'inbox' || !!state.selectedProperty;
   const showHeader = !(isMobile && (state.activeView === 'search' || !!state.selectedProperty));
 
+  const handleSubscribe = async () => {
+    try {
+        await updateUser({ isSubscribed: true });
+        
+        // If a property was pending, create it now
+        if (state.pendingProperty) {
+            await createListing(state.pendingProperty);
+            dispatch({ type: 'SET_PENDING_PROPERTY', payload: null });
+            // Optionally, show a success toast here
+        }
+    } catch (error) {
+        console.error("Subscription update failed:", error);
+        // Optionally show an error toast
+    } finally {
+        dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: false } });
+    }
+  };
+
+  const handlePricingClose = () => {
+    // If a property was pending and the user closes the modal, we clear it.
+    // The component that initiated this will show an error message.
+    if (state.pendingProperty) {
+        dispatch({ type: 'SET_PENDING_PROPERTY', payload: null });
+    }
+    dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: false } });
+  };
+
   return (
     <div className="min-h-screen bg-neutral-50 font-sans">
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
@@ -68,10 +96,10 @@ const MainLayout: React.FC = () => {
             </main>
         </div>
         
-        {/* Global Modals that are NOT the auth page */}
         <PricingPlans 
             isOpen={state.isPricingModalOpen} 
-            onClose={() => dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: false } })}
+            onClose={handlePricingClose}
+            onSubscribe={handleSubscribe}
             isOffer={state.isFirstLoginOffer}
         />
         <SubscriptionModal
@@ -82,10 +110,27 @@ const MainLayout: React.FC = () => {
   );
 };
 
-const AppWrapper: React.FC = () => {
-    const { state } = useAppContext();
+const FullScreenLoader: React.FC = () => (
+    <div className="w-screen h-screen flex flex-col items-center justify-center bg-neutral-50">
+        <LogoIcon className="w-16 h-16 text-primary animate-pulse" />
+        <p className="mt-4 text-neutral-600 font-semibold">Loading Balkan Estate...</p>
+    </div>
+);
 
-    if (state.isInitialLaunch) {
+
+const AppWrapper: React.FC = () => {
+    const { state, checkAuthStatus } = useAppContext();
+
+    useEffect(() => {
+        checkAuthStatus();
+    }, [checkAuthStatus]);
+
+
+    if (state.isAuthenticating) {
+        return <FullScreenLoader />;
+    }
+
+    if (!state.onboardingComplete) {
         return (
             <>
                 <Onboarding />

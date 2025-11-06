@@ -9,6 +9,12 @@ interface AiSearchProps {
     isMobile: boolean;
 }
 
+const FilterPill: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div className="bg-primary-light text-primary-dark text-xs font-semibold px-2.5 py-1.5 rounded-full flex items-center justify-center text-center">
+        {children}
+    </div>
+);
+
 const AiSearch: React.FC<AiSearchProps> = ({ properties, onApplyFilters, isMobile }) => {
     const [history, setHistory] = useState<ChatMessage[]>([
         { sender: 'ai', text: "Hello! Welcome to Balkan Estate. How can I help you find a property today?" }
@@ -56,6 +62,30 @@ const AiSearch: React.FC<AiSearchProps> = ({ properties, onApplyFilters, isMobil
         }
     };
 
+    const renderFilters = (query: AiSearchQuery) => {
+        const formatCurrency = (val: number) => `€${new Intl.NumberFormat('de-DE').format(val)}`;
+        const pills = [];
+
+        if (query.location) pills.push(<FilterPill key="loc">📍 {query.location}</FilterPill>);
+        if (query.minPrice && query.maxPrice) pills.push(<FilterPill key="price">{formatCurrency(query.minPrice)} - {formatCurrency(query.maxPrice)}</FilterPill>);
+        else if (query.minPrice) pills.push(<FilterPill key="price">≥ {formatCurrency(query.minPrice)}</FilterPill>);
+        else if (query.maxPrice) pills.push(<FilterPill key="price">≤ {formatCurrency(query.maxPrice)}</FilterPill>);
+        
+        if (query.beds) pills.push(<FilterPill key="beds">🛏️ {query.beds}+ beds</FilterPill>);
+        if (query.baths) pills.push(<FilterPill key="baths">🛁 {query.baths}+ baths</FilterPill>);
+        if (query.livingRooms) pills.push(<FilterPill key="lr">🛋️ {query.livingRooms}+ living</FilterPill>);
+
+        if (query.minSqft && query.maxSqft) pills.push(<FilterPill key="sqft">{query.minSqft}-{query.maxSqft} m²</FilterPill>);
+        else if (query.minSqft) pills.push(<FilterPill key="sqft">≥ {query.minSqft} m²</FilterPill>);
+        else if (query.maxSqft) pills.push(<FilterPill key="sqft">≤ {query.maxSqft} m²</FilterPill>);
+
+        if (query.features && query.features.length > 0) {
+            query.features.forEach(f => pills.push(<FilterPill key={f}>✨ {f}</FilterPill>));
+        }
+
+        return pills;
+    };
+
     return (
         <div className={`flex flex-col h-full bg-white`}>
             <div className="flex-grow p-4 space-y-4 overflow-y-auto">
@@ -84,32 +114,43 @@ const AiSearch: React.FC<AiSearchProps> = ({ properties, onApplyFilters, isMobil
                         </div>
                     </div>
                 )}
-
-                {finalQuery && (
-                    <div className="flex justify-center py-4">
-                        <button onClick={handleApplyClick} className="px-6 py-2 bg-secondary text-white font-bold rounded-full shadow-md hover:bg-opacity-90 transition-transform hover:scale-105">
-                            Apply Search
-                        </button>
-                    </div>
-                )}
                 <div ref={chatEndRef}></div>
             </div>
             
-            <div className="flex-shrink-0 p-4 bg-white border-t">
-                <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="relative">
+            <form 
+                onSubmit={(e) => { 
+                    e.preventDefault(); 
+                    if (!finalQuery) handleSendMessage();
+                }} 
+                className="flex-shrink-0 p-4 bg-white border-t space-y-3"
+            >
+                 {finalQuery && (
+                    <div className="animate-fade-in py-3 border-y border-neutral-200">
+                        <div className="flex flex-wrap items-center gap-2">
+                            {renderFilters(finalQuery)}
+                        </div>
+                    </div>
+                )}
+                <div className="flex items-end gap-2">
                     <input
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         placeholder="Tell me what you're looking for..."
-                        className="w-full px-5 py-3 pr-14 text-base bg-neutral-100 border-neutral-200 border rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="flex-grow px-5 py-3 text-base text-neutral-900 bg-neutral-100 border-neutral-200 border rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
                         disabled={isSearching}
                     />
-                    <button type="submit" disabled={isSearching || !input.trim()} className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-white rounded-full p-2.5 hover:bg-primary-dark disabled:bg-neutral-300 transition-colors">
-                        <PaperAirplaneIcon className="w-5 h-5" />
-                    </button>
-                </form>
-            </div>
+                    {finalQuery ? (
+                         <button type="button" onClick={handleApplyClick} className="px-6 py-3 bg-primary text-white font-bold rounded-full shadow-md hover:bg-primary-dark transition-colors whitespace-nowrap">
+                            Proceed
+                        </button>
+                    ) : (
+                        <button type="submit" disabled={isSearching || !input.trim()} className="bg-primary text-white rounded-full p-3.5 hover:bg-primary-dark disabled:bg-neutral-300 transition-colors flex-shrink-0">
+                            <PaperAirplaneIcon className="w-5 h-5" />
+                        </button>
+                    )}
+                </div>
+            </form>
         </div>
     );
 };
