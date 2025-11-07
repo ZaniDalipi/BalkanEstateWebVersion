@@ -67,6 +67,12 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         updateSearchPageState({ drawnBoundsJSON: null });
     };
 
+    const handleDrawComplete = useCallback((bounds: L.LatLngBounds | null) => {
+        updateSearchPageState({ drawnBoundsJSON: bounds ? JSON.stringify(bounds) : null });
+        setIsDrawing(false);
+    }, [updateSearchPageState]);
+
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (fabRef.current && !fabRef.current.contains(event.target as Node)) {
@@ -280,34 +286,23 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             let newSearch: SavedSearch;
             const now = Date.now();
 
-            if (drawnBounds && isAreaOnly) {
+            if (drawnBounds) { // If there's a drawn area
                 const center = drawnBounds.getCenter();
                 const name = await generateSearchNameFromCoords(center.lat, center.lng);
                 newSearch = {
                     id: `ss-${now}`,
                     name,
-                    filters: initialFilters,
+                    filters: isAreaOnly ? initialFilters : filters, // Use initialFilters if only saving area
                     drawnBoundsJSON: drawnBoundsJSON,
                     createdAt: now,
                     lastAccessed: now,
                 };
-            } else if (drawnBounds) {
-                const center = drawnBounds.getCenter();
-                const name = await generateSearchNameFromCoords(center.lat, center.lng);
+            } else if (isFormSearchActive) { // No drawn area, but filters are active
+                const name = await generateSearchName(filters);
                 newSearch = {
                     id: `ss-${now}`,
                     name,
                     filters,
-                    drawnBoundsJSON: drawnBoundsJSON,
-                    createdAt: now,
-                    lastAccessed: now,
-                };
-            } else if (isFormSearchActive) {
-                const name = await generateSearchName(filters);
-                newSearch = { 
-                    id: `ss-${now}`, 
-                    name, 
-                    filters, 
                     drawnBoundsJSON: null,
                     createdAt: now,
                     lastAccessed: now,
@@ -412,11 +407,9 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         isAuthenticated: isAuthenticated,
         mapBounds: mapBounds,
         drawnBounds,
-        onDrawComplete: (bounds: L.LatLngBounds | null) => {
-            updateSearchPageState({ drawnBoundsJSON: bounds ? JSON.stringify(bounds) : null })
-            setIsDrawing(false);
-        },
+        onDrawComplete: handleDrawComplete,
         isDrawing: isDrawing,
+        onDrawStart: toggleDrawing,
         tileLayer: tileLayer,
         recenterTo: recenterTo,
         onRecenterComplete: () => setRecenterTo(null),
@@ -494,20 +487,19 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                             
                              <div className="relative" ref={fabRef}>
                                 <button type="button" onClick={() => setIsFabOpen(prev => !prev)} className="p-2 rounded-full flex-shrink-0 hover:bg-neutral-100">
-                                    {isFabOpen ? <XMarkIcon className="w-6 h-6 text-neutral-800" /> : <PlusIcon className="w-6 h-6 text-neutral-800" />}
+                                    <PlusIcon className="w-6 h-6 text-neutral-800" />
                                 </button>
                                 {isFabOpen && mobileView === 'map' && (
-                                    <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border z-10 p-2">
+                                    <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border z-10 p-2 animate-fade-in">
                                         {fabActions.filter(a => a.show).map((action, index) => {
                                             if (action.label === 'divider') {
-                                                return <div key={index} className="my-1 border-t border-neutral-100 animate-fade-in" style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'backwards' }} />;
+                                                return <div key={index} className="my-1 border-t border-neutral-100" style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'backwards' }} />;
                                             }
                                             return (
                                                 <button
                                                     key={action.label}
                                                     onClick={action.handler as () => void}
-                                                    className="w-full text-left flex items-center gap-3 px-3 py-2.5 text-base font-semibold rounded-lg transition-colors animate-fade-in text-neutral-700 hover:bg-neutral-100"
-                                                    style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'backwards' }}
+                                                    className="w-full text-left flex items-center gap-3 px-3 py-2.5 text-base font-semibold rounded-lg transition-colors text-neutral-700 hover:bg-neutral-100"
                                                 >
                                                     {action.icon}
                                                     <span>{action.label}</span>

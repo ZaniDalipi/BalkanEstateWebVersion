@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Rectangle } from 'react-leaflet';
 import { Property } from '../../types';
-import L from 'leaflet';
+import L, { LeafletMouseEvent } from 'leaflet';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
 import { BellIcon, PencilIcon, XCircleIcon } from '../../constants';
@@ -45,6 +45,7 @@ interface MapComponentProps {
   drawnBounds: L.LatLngBounds | null;
   onDrawComplete: (bounds: L.LatLngBounds | null) => void;
   isDrawing: boolean;
+  onDrawStart: () => void;
   tileLayer: TileLayerType;
   recenterTo: [number, number] | null;
   onRecenterComplete: () => void;
@@ -107,61 +108,95 @@ const MapEvents: React.FC<{ onMove: (bounds: L.LatLngBounds, center: L.LatLng) =
 
 const MapDrawEvents: React.FC<{
     isDrawing: boolean;
-    onDrawComplete: (bounds: L.LatLngBounds) => void;
+    onDrawComplete: (bounds: L.LatLngBounds | null) => void;
 }> = ({ isDrawing, onDrawComplete }) => {
     const map = useMap();
-    const [startPos, setStartPos] = useState<L.LatLng | null>(null);
-    const [tempRect, setTempRect] = useState<L.Rectangle | null>(null);
 
     useEffect(() => {
+        if (!isDrawing) {
+            return;
+        }
+
         const mapContainer = map.getContainer();
-        if (isDrawing) {
-            map.dragging.disable();
-            map.scrollWheelZoom.disable();
-            mapContainer.style.cursor = 'crosshair';
-        } else {
+        map.dragging.disable();
+        map.scrollWheelZoom.disable();
+        mapContainer.style.cursor = 'crosshair';
+
+        let startPos: L.LatLng | null = null;
+        let tempRect: L.Rectangle | null = null;
+
+        const handleMove = (clientX: number, clientY: number) => {
+            if (!startPos || !tempRect) return;
+            const point = map.containerPointToLayerPoint(L.point(clientX, clientY));
+            const currentPos = map.layerPointToLatLng(point);
+            tempRect.setBounds(L.latLngBounds(startPos, currentPos));
+        };
+
+        const handleUp = () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+            window.removeEventListener('touchmove', onTouchMove);
+            window.removeEventListener('touchend', onTouchEnd);
+
+            if (tempRect) {
+                const bounds = tempRect.getBounds();
+                if (!bounds.getSouthWest().equals(bounds.getNorthEast())) {
+                    onDrawComplete(bounds);
+                } else {
+                    onDrawComplete(null);
+                }
+            } else {
+                onDrawComplete(null);
+            }
+        };
+        
+        const handleStart = (clientX: number, clientY: number, e: MouseEvent | TouchEvent) => {
+            e.preventDefault();
+            const point = map.containerPointToLayerPoint(L.point(clientX, clientY));
+            startPos = map.layerPointToLatLng(point);
+
+            tempRect = L.rectangle(L.latLngBounds(startPos, startPos), {
+                color: '#0252CD', weight: 2, dashArray: '5, 5', fillOpacity: 0.1
+            }).addTo(map);
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+            window.addEventListener('touchmove', onTouchMove, { passive: false });
+            window.addEventListener('touchend', onTouchEnd);
+        };
+
+        const onMouseDown = (e: MouseEvent) => { if (e.button === 0) handleStart(e.clientX, e.clientY, e); };
+        const onMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
+        const onMouseUp = () => handleUp();
+
+        const onTouchStart = (e: TouchEvent) => { if (e.touches.length === 1) handleStart(e.touches[0].clientX, e.touches[0].clientY, e); };
+        const onTouchMove = (e: TouchEvent) => { if (e.touches.length === 1) handleMove(e.touches[0].clientX, e.touches[0].clientY); };
+        const onTouchEnd = () => handleUp();
+        
+        mapContainer.addEventListener('mousedown', onMouseDown);
+        mapContainer.addEventListener('touchstart', onTouchStart, { passive: false });
+        
+        return () => { // Cleanup
+            mapContainer.removeEventListener('mousedown', onMouseDown);
+            mapContainer.removeEventListener('touchstart', onTouchStart);
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+            window.removeEventListener('touchmove', onTouchMove);
+            window.removeEventListener('touchend', onTouchEnd);
+            
             map.dragging.enable();
             map.scrollWheelZoom.enable();
             mapContainer.style.cursor = '';
             
             if (tempRect) {
                 map.removeLayer(tempRect);
-                setTempRect(null);
             }
-            setStartPos(null);
-        }
-    }, [isDrawing, map]);
-
-    useMapEvents({
-        mousedown(e) {
-            if (isDrawing) {
-                setStartPos(e.latlng);
-                const rect = L.rectangle([e.latlng, e.latlng], {
-                    color: '#0252CD',
-                    weight: 2,
-                    dashArray: '5, 5',
-                    fillOpacity: 0.1,
-                }).addTo(map);
-                setTempRect(rect);
-            }
-        },
-        mousemove(e) {
-            if (isDrawing && startPos && tempRect) {
-                tempRect.setBounds(L.latLngBounds(startPos, e.latlng));
-            }
-        },
-        mouseup() {
-            if (isDrawing && startPos && tempRect) {
-                onDrawComplete(tempRect.getBounds());
-                map.removeLayer(tempRect);
-                setTempRect(null);
-                setStartPos(null);
-            }
-        },
-    });
+        };
+    }, [isDrawing, map, onDrawComplete]);
 
     return null;
 };
+
 
 
 const formatMarkerPrice = (price: number): string => {
@@ -266,7 +301,7 @@ const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) => {
     );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove, isSearchActive, searchLocation, userLocation, onSaveSearch, isSaving, isAuthenticated, mapBounds, drawnBounds, onDrawComplete, isDrawing, tileLayer, recenterTo, onRecenterComplete }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove, isSearchActive, searchLocation, userLocation, onSaveSearch, isSaving, isAuthenticated, mapBounds, drawnBounds, onDrawComplete, isDrawing, onDrawStart, tileLayer, recenterTo, onRecenterComplete }) => {
   const { dispatch } = useAppContext();
   
   const validProperties = useMemo(() => {
@@ -307,8 +342,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
         <ChangeView center={center} zoom={zoom} enabled={recenter} />
         <RecenterView center={recenterTo} onComplete={onRecenterComplete} />
         <MapEvents onMove={onMapMove} />
-        <MapDrawEvents isDrawing={isDrawing} onDrawComplete={(bounds) => { onDrawComplete(bounds); }} />
-        {drawnBounds && (
+        <MapDrawEvents isDrawing={isDrawing} onDrawComplete={onDrawComplete} />
+        {drawnBounds && !isDrawing && (
             <Rectangle
                 bounds={drawnBounds}
                 pathOptions={{ color: '#0252CD', weight: 3, fillOpacity: 0.2 }}
@@ -323,25 +358,47 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
       </MapContainer>
       
       <div className="absolute top-4 right-4 z-[1000] hidden md:flex flex-col items-end gap-2">
-        {isAuthenticated && drawnBounds && (
-            <button 
-                onClick={onSaveSearch} 
-                disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50 animate-fade-in"
-            >
-                <BellIcon className="w-5 h-5" />
-                <span>{isSaving ? 'Saving...' : 'Save Search'}</span>
-            </button>
-        )}
-        
+        <button 
+            onClick={onDrawStart}
+            className={`flex items-center gap-2 px-4 py-2 text-white font-bold rounded-full shadow-lg transition-colors ${
+                isDrawing 
+                ? 'bg-red-600 hover:bg-red-700' 
+                : 'bg-neutral-800 hover:bg-neutral-900'
+            }`}
+        >
+            {isDrawing ? (
+                <>
+                    <XCircleIcon className="w-5 h-5" />
+                    <span>Cancel Draw</span>
+                </>
+            ) : (
+                <>
+                    <PencilIcon className="w-5 h-5" />
+                    <span>Draw Area</span>
+                </>
+            )}
+        </button>
+
         {drawnBounds && !isDrawing && (
-            <button
-                onClick={() => onDrawComplete(null)}
-                className="flex items-center gap-2 px-4 py-2 bg-neutral-800 text-white font-bold rounded-full shadow-lg hover:bg-neutral-900 animate-fade-in"
-            >
-                <XCircleIcon className="w-5 h-5" />
-                <span className="hidden md:inline">Clear Area</span>
-            </button>
+            <>
+                {isAuthenticated && (
+                    <button 
+                        onClick={onSaveSearch} 
+                        disabled={isSaving}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50 animate-fade-in"
+                    >
+                        <BellIcon className="w-5 h-5" />
+                        <span>{isSaving ? 'Saving...' : 'Save Search'}</span>
+                    </button>
+                )}
+                <button
+                    onClick={() => onDrawComplete(null)}
+                    className="flex items-center gap-2 px-4 py-2 bg-neutral-800 text-white font-bold rounded-full shadow-lg hover:bg-neutral-900 animate-fade-in"
+                >
+                    <XCircleIcon className="w-5 h-5" />
+                    <span className="hidden md:inline">Clear Area</span>
+                </button>
+            </>
         )}
       </div>
 
