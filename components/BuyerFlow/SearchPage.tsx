@@ -2,24 +2,41 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useAppContext } from '../../context/AppContext';
 import MapComponent from './MapComponent';
 import PropertyList from './PropertyList';
-import { SavedSearch, ChatMessage, AiSearchQuery, Filters, initialFilters, SearchPageState } from '../../types';
+import { SavedSearch, ChatMessage, AiSearchQuery, Filters, initialFilters, SearchPageState, Property } from '../../types';
 import { getAiChatResponse, generateSearchName, generateSearchNameFromCoords } from '../../services/geminiService';
 import Toast from '../shared/Toast';
 import L from 'leaflet';
 import { MUNICIPALITY_DATA } from '../../services/propertyService';
-import { Bars3Icon, SearchIcon, UserIcon, XMarkIcon, AdjustmentsHorizontalIcon, MapPinIcon, Squares2x2Icon, BellIcon } from '../../constants';
+import { Bars3Icon, SearchIcon, UserIcon, XMarkIcon, AdjustmentsHorizontalIcon, MapPinIcon, Squares2x2Icon, BellIcon, PencilIcon, PlusIcon, SparklesIcon, CrosshairsIcon, XCircleIcon } from '../../constants';
 import { findClosestSettlement } from '../../utils/location';
 import { filterProperties } from '../../utils/propertyUtils';
+import AiSearch from './AiSearch';
+import Modal from '../shared/Modal';
 
 interface SearchPageProps {
     onToggleSidebar: () => void;
 }
 
+const AiChatModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    properties: Property[];
+    onApplyFilters: (query: AiSearchQuery) => void;
+    history: ChatMessage[];
+    onHistoryChange: (history: ChatMessage[]) => void;
+}> = ({ isOpen, onClose, ...aiSearchProps }) => (
+    <Modal isOpen={isOpen} onClose={onClose} size="lg" title="AI Property Search">
+        <div className="h-[70vh] flex flex-col">
+            <AiSearch {...aiSearchProps} isMobile={true} />
+        </div>
+    </Modal>
+);
+
 const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
-    const { state, dispatch, fetchProperties, updateSearchPageState } = useAppContext();
+    const { state, dispatch, fetchProperties, updateSearchPageState, addSavedSearch } = useAppContext();
     const { properties, isAuthenticated, isAuthModalOpen, isPricingModalOpen, isSubscriptionModalOpen, currentUser, allMunicipalities, searchPageState } = state;
 
-    const { filters, activeFilters, searchOnMove, mapBoundsJSON, drawnBoundsJSON, mobileView, searchMode, aiChatHistory } = searchPageState;
+    const { filters, activeFilters, searchOnMove, mapBoundsJSON, drawnBoundsJSON, mobileView, searchMode, aiChatHistory, isAiChatModalOpen } = searchPageState;
     
     // Local, non-persistent state
     const [isQueryInputFocused, setIsQueryInputFocused] = useState(false);
@@ -30,10 +47,36 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const [isMapSyncActive, setIsMapSyncActive] = useState(false);
     const shownErrorToast = useRef(false);
     const [isFiltersOpen, setFiltersOpen] = useState(false);
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [isFabOpen, setIsFabOpen] = useState(false);
+    const fabRef = useRef<HTMLDivElement>(null);
+    const [tileLayer, setTileLayer] = useState<'street' | 'satellite'>('street');
+    const [recenterTo, setRecenterTo] = useState<[number, number] | null>(null);
     
     const isModalOpen = isAuthModalOpen || isPricingModalOpen || isSubscriptionModalOpen;
     
-    // Convert JSON strings from context back to L.LatLngBounds objects
+    const toggleDrawing = () => {
+        const nextIsDrawing = !isDrawing;
+        setIsDrawing(nextIsDrawing);
+        if (nextIsDrawing) {
+            setIsFabOpen(false); // Close menu when drawing starts
+        }
+    };
+
+    const handleClearDrawnArea = () => {
+        updateSearchPageState({ drawnBoundsJSON: null });
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (fabRef.current && !fabRef.current.contains(event.target as Node)) {
+                setIsFabOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+    
     const mapBounds = useMemo(() => {
         if (!mapBoundsJSON) return null;
         try {
@@ -58,7 +101,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
 
 
     useEffect(() => {
-        // Only fetch properties if they haven't been loaded yet.
         if (properties.length === 0) {
             fetchProperties();
         }
@@ -68,13 +110,11 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         let timeoutId: number;
 
         const handleGeoError = (error: GeolocationPositionError) => {
-             // Silently fail on POSITION_UNAVAILABLE as it's common and not user-fixable
             if (error.code === error.POSITION_UNAVAILABLE) {
                 console.warn(`Geolocation warning: ${error.message} (code: ${error.code})`);
                 return;
             }
             
-            // For other errors (like PERMISSION_DENIED), show a toast only once.
             if (!shownErrorToast.current) {
                 let message = 'Could not determine your location.';
                 switch(error.code) {
@@ -95,10 +135,11 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const { latitude, longitude } = position.coords;
-                        // Only set user location if not already set or query is empty
                         if (!userLocation && !filters.query.trim()) {
                            setUserLocation([latitude, longitude]);
                            setRecenterMap(true);
+                        } else if (!userLocation) {
+                           setUserLocation([latitude, longitude]);
                         }
                     },
                     (error) => {
@@ -117,12 +158,12 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         getLocation();
         timeoutId = window.setTimeout(() => getLocation(), 5000);
         return () => clearTimeout(timeoutId);
-    }, []); // This effect should only run once.
+    }, []); 
     
     useEffect(() => {
         const syncTimer = setTimeout(() => {
             setIsMapSyncActive(true);
-        }, 7000); // 7-second delay
+        }, 7000);
 
         return () => clearTimeout(syncTimer);
     }, []);
@@ -133,8 +174,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     
         let bestMatch: { lat: number; lng: number; score: number } | null = null;
     
-        // This logic iterates through all municipalities and settlements to find the best match for the query.
-        // It uses a scoring system to prioritize more exact matches.
         for (const country in allMunicipalities) {
             for (const mun of allMunicipalities[country]) {
                 for (const set of mun.settlements) {
@@ -142,21 +181,13 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                     const fullName = `${set.name}, ${mun.name}`.toLowerCase();
                     let score = 0;
     
-                    if (fullName === query) {
-                        score = 100; // Exact full name match
-                    } else if (settlementName === query) {
-                        score = 90; // Exact settlement name match
-                    } else if (set.localNames.some(ln => ln.toLowerCase() === query)) {
-                        score = 95; // Exact local name match
-                    } else if (fullName.startsWith(query)) {
-                        score = 80;
-                    } else if (settlementName.startsWith(query)) {
-                        score = 70;
-                    } else if (fullName.includes(query)) {
-                        score = 40;
-                    } else if (settlementName.includes(query)) {
-                        score = 30;
-                    }
+                    if (fullName === query) score = 100;
+                    else if (settlementName === query) score = 90;
+                    else if (set.localNames.some(ln => ln.toLowerCase() === query)) score = 95;
+                    else if (fullName.startsWith(query)) score = 80;
+                    else if (settlementName.startsWith(query)) score = 70;
+                    else if (fullName.includes(query)) score = 40;
+                    else if (settlementName.includes(query)) score = 30;
                     
                     if (score > (bestMatch?.score || 0)) {
                         bestMatch = { lat: set.lat, lng: set.lng, score };
@@ -197,8 +228,17 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
 
 
     const handleFilterChange = useCallback((name: keyof Filters, value: string | number | null) => {
-        updateSearchPageState({ filters: { ...filters, [name]: value } });
-    }, [filters, updateSearchPageState]);
+        const newFilters = { ...filters, [name]: value };
+        
+        if (name === 'query' && (value === '' || value === null)) {
+            updateSearchPageState({ 
+                filters: newFilters, 
+                activeFilters: { ...activeFilters, query: '' } 
+            });
+        } else {
+            updateSearchPageState({ filters: newFilters });
+        }
+    }, [filters, activeFilters, updateSearchPageState]);
     
     const handleSearch = useCallback(() => {
         updateSearchPageState({ activeFilters: filters, drawnBoundsJSON: null });
@@ -230,7 +270,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         return filters.query.trim() !== '' || filters.minPrice !== null || filters.maxPrice !== null || filters.beds !== null || filters.baths !== null || filters.livingRooms !== null || filters.minSqft !== null || filters.maxSqft !== null || filters.sellerType !== 'any' || filters.propertyType !== 'any';
     }, [filters]);
     
-    const handleSaveSearch = useCallback(async () => {
+    const handleSaveSearch = useCallback(async (isAreaOnly: boolean = false) => {
         if (!isAuthenticated) {
             dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'signup' } });
             return;
@@ -238,31 +278,47 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         setIsSaving(true);
         try {
             let newSearch: SavedSearch;
+            const now = Date.now();
 
-            if (drawnBounds) {
+            if (drawnBounds && isAreaOnly) {
                 const center = drawnBounds.getCenter();
                 const name = await generateSearchNameFromCoords(center.lat, center.lng);
                 newSearch = {
-                    id: `ss-${Date.now()}`,
+                    id: `ss-${now}`,
+                    name,
+                    filters: initialFilters,
+                    drawnBoundsJSON: drawnBoundsJSON,
+                    createdAt: now,
+                    lastAccessed: now,
+                };
+            } else if (drawnBounds) {
+                const center = drawnBounds.getCenter();
+                const name = await generateSearchNameFromCoords(center.lat, center.lng);
+                newSearch = {
+                    id: `ss-${now}`,
                     name,
                     filters,
                     drawnBoundsJSON: drawnBoundsJSON,
+                    createdAt: now,
+                    lastAccessed: now,
                 };
             } else if (isFormSearchActive) {
                 const name = await generateSearchName(filters);
                 newSearch = { 
-                    id: `ss-${Date.now()}`, 
+                    id: `ss-${now}`, 
                     name, 
                     filters, 
-                    drawnBoundsJSON: null 
+                    drawnBoundsJSON: null,
+                    createdAt: now,
+                    lastAccessed: now,
                 };
             } else {
-                showToast("Cannot save an empty search. Please add some criteria or draw an area.", 'error');
+                showToast("Cannot save an empty search. Please add some criteria.", 'error');
                 setIsSaving(false);
                 return;
             }
 
-            dispatch({ type: 'ADD_SAVED_SEARCH', payload: newSearch });
+            await addSavedSearch(newSearch);
             showToast("Search saved successfully!", 'success');
         } catch (e) {
             console.error("Failed to save search:", e);
@@ -270,7 +326,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         } finally {
             setIsSaving(false);
         }
-    }, [isAuthenticated, dispatch, filters, isFormSearchActive, showToast, drawnBounds, drawnBoundsJSON]);
+    }, [isAuthenticated, dispatch, addSavedSearch, filters, isFormSearchActive, showToast, drawnBounds, drawnBoundsJSON]);
     
     const handleMapMove = useCallback((newBounds: L.LatLngBounds, newCenter: L.LatLng) => {
         updateSearchPageState({ mapBoundsJSON: JSON.stringify(newBounds) });
@@ -290,10 +346,25 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const handleNewListingClick = () => {
       if (isAuthenticated) dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'create-listing' });
       else dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'signup' } });
+      setIsFabOpen(false);
     };
     const handleAccountClick = () => {
       if (isAuthenticated) dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
       else dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'login' } });
+      setIsFabOpen(false);
+    };
+
+    const handleSubscribeClick = () => {
+        dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true });
+        setIsFabOpen(false);
+    };
+
+    const handleRecenterOnUser = () => {
+        if (userLocation) {
+            setRecenterTo(userLocation);
+        } else {
+            showToast("Your location is not available.", "error");
+        }
     };
 
     const handleApplyAiFilters = useCallback((aiQuery: AiSearchQuery) => {
@@ -308,7 +379,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             maxSqft: aiQuery.maxSqft || null,
         };
         const updatedFilters = { ...initialFilters, ...newFilters };
-        updateSearchPageState({ filters: updatedFilters, activeFilters: updatedFilters, searchMode: 'manual' });
+        updateSearchPageState({ filters: updatedFilters, activeFilters: updatedFilters, searchMode: 'manual', isAiChatModalOpen: false });
         setFiltersOpen(false); 
         setRecenterMap(true);
     }, [updateSearchPageState]);
@@ -318,6 +389,16 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         handleSearch();
         setFiltersOpen(false);
     };
+
+    const fabActions = [
+        { label: 'New Listing', icon: <PencilIcon className="w-5 h-5 text-neutral-500"/>, handler: handleNewListingClick, show: true },
+        { label: 'Subscribe', icon: <BellIcon className="w-5 h-5 text-neutral-500"/>, handler: handleSubscribeClick, show: true },
+        { label: 'Draw Area', icon: <Squares2x2Icon className="w-5 h-5 text-neutral-500"/>, handler: toggleDrawing, show: mobileView === 'map' && !isDrawing },
+        { label: 'Cancel Draw', icon: <XMarkIcon className="w-5 h-5 text-red-500"/>, handler: toggleDrawing, show: mobileView === 'map' && isDrawing },
+        { label: 'Clear Area', icon: <XCircleIcon className="w-5 h-5 text-neutral-500"/>, handler: handleClearDrawnArea, show: mobileView === 'map' && drawnBoundsJSON },
+        { label: 'divider', show: true },
+        { label: 'My Account', icon: <UserIcon className="w-5 h-5 text-neutral-500"/>, handler: handleAccountClick, show: true },
+    ];
     
     const mapProps = {
         properties: baseFilteredProperties,
@@ -326,12 +407,19 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         isSearchActive: isSearchActive,
         searchLocation: searchLocation,
         userLocation: userLocation,
-        onSaveSearch: handleSaveSearch,
+        onSaveSearch: () => handleSaveSearch(false),
         isSaving: isSaving,
         isAuthenticated: isAuthenticated,
         mapBounds: mapBounds,
         drawnBounds,
-        onDrawComplete: (bounds: L.LatLngBounds | null) => updateSearchPageState({ drawnBoundsJSON: bounds ? JSON.stringify(bounds) : null }),
+        onDrawComplete: (bounds: L.LatLngBounds | null) => {
+            updateSearchPageState({ drawnBoundsJSON: bounds ? JSON.stringify(bounds) : null })
+            setIsDrawing(false);
+        },
+        isDrawing: isDrawing,
+        tileLayer: tileLayer,
+        recenterTo: recenterTo,
+        onRecenterComplete: () => setRecenterTo(null),
     };
     
     const propertyListProps = {
@@ -341,7 +429,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         onSearchClick: handleSearch,
         onResetFilters: handleResetFilters,
         onSortChange: handleSortChange,
-        onSaveSearch: handleSaveSearch,
+        onSaveSearch: () => handleSaveSearch(false),
         isSaving,
         searchOnMove,
         onSearchOnMoveChange: handleSearchOnMoveChange,
@@ -355,21 +443,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         onAiChatHistoryChange: (newHistory: ChatMessage[]) => updateSearchPageState({ aiChatHistory: newHistory }),
     };
 
-    const MobileHeader = () => (
-        <div className="pointer-events-auto">
-            <div className="flex justify-between items-center">
-                <button onClick={onToggleSidebar} className="bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md"><Bars3Icon className="w-6 h-6 text-neutral-800"/></button>
-                <div className="flex items-center gap-2">
-                    <button onClick={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true })} className="bg-primary text-white px-4 py-2 text-sm font-semibold rounded-full shadow-md">Subscribe</button>
-                    <button onClick={handleNewListingClick} className="bg-secondary text-white px-3 py-2 text-sm font-semibold rounded-full shadow-md">+ New Listing</button>
-                    <button onClick={handleAccountClick} className="bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md">
-                        {isAuthenticated && currentUser?.avatarUrl ? <img src={currentUser.avatarUrl} alt="avatar" className="w-6 h-6 rounded-full"/> : <UserIcon className="w-6 h-6 text-neutral-800"/>}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-
     const MobileFilters = () => (
         <div className="fixed inset-0 bg-white z-50 flex flex-col animate-fade-in">
             <div className="flex-shrink-0 p-4 border-b border-neutral-200 flex justify-between items-center"><h2 className="text-lg font-bold text-neutral-800">Filters</h2><button onClick={() => setFiltersOpen(false)} className="p-2 text-neutral-500 hover:text-neutral-800"><XMarkIcon className="w-6 h-6" /></button></div>
@@ -377,7 +450,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             {searchMode === 'manual' && (
                 <div className="flex-shrink-0 p-4 border-t border-neutral-200 bg-white flex items-center gap-2">
                      <button onClick={handleResetFilters} className="px-4 py-3 border border-neutral-300 rounded-lg text-sm font-semibold text-neutral-700 hover:bg-neutral-100">Reset</button>
-                     <button onClick={handleSaveSearch} disabled={isSaving} className="px-4 py-3 border border-neutral-300 rounded-lg text-sm font-semibold text-neutral-700 hover:bg-neutral-100">Save Search</button>
+                     <button onClick={() => handleSaveSearch(false)} disabled={isSaving} className="px-4 py-3 border border-neutral-300 rounded-lg text-sm font-semibold text-neutral-700 hover:bg-neutral-100">Save Search</button>
                      <button onClick={handleApplyFiltersFromModal} className="flex-grow px-4 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark">Show Results</button>
                 </div>
             )}
@@ -387,6 +460,14 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     return (
         <div className="flex flex-col flex-grow overflow-hidden">
             <Toast show={toast.show} message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, show: false })} />
+            <AiChatModal
+                isOpen={isAiChatModalOpen}
+                onClose={() => updateSearchPageState({ isAiChatModalOpen: false })}
+                properties={properties}
+                onApplyFilters={handleApplyAiFilters}
+                history={aiChatHistory}
+                onHistoryChange={(newHistory: ChatMessage[]) => updateSearchPageState({ aiChatHistory: newHistory })}
+            />
             <main className="flex-grow flex flex-row overflow-hidden relative">
                 <div className="hidden md:block w-3/5 h-full overflow-y-auto bg-white"><PropertyList {...propertyListProps} isMobile={false} showFilters={true} showList={true} /></div>
                 <div className={`hidden md:block relative w-2/5 h-full ${isModalOpen ? 'z-0' : 'z-10'}`}><MapComponent {...mapProps} /></div>
@@ -397,27 +478,121 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                     
                     {mobileView === 'list' && (
                         <div className="absolute inset-0 z-20 flex w-full h-full bg-white flex-col">
-                            <div className="h-[88px] flex-shrink-0"></div>
+                            <div className="h-24 flex-shrink-0"></div>
                             <div className="flex-grow min-h-0"><PropertyList {...propertyListProps} isMobile={true} showFilters={false} showList={true}/></div>
                         </div>
                     )}
 
                     <div className="absolute inset-0 z-30 pointer-events-none p-4 flex flex-col justify-between">
-                         <div className="pointer-events-auto"><MobileHeader /></div>
-                        <div className="absolute top-[88px] left-4 right-4 flex items-center gap-2 pointer-events-auto">
-                            <div className="relative flex-grow">
-                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4"><SearchIcon className="h-5 w-5 text-neutral-500" /></div>
-                                <input type="text" name="query" placeholder="Search city, address..." value={filters.query} onChange={(e) => handleFilterChange('query', e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} onFocus={() => setIsQueryInputFocused(true)} onBlur={() => setIsQueryInputFocused(false)} className="block w-full text-base bg-white border-neutral-200 rounded-full text-neutral-900 shadow-lg px-12 py-3 focus:outline-none focus:ring-2 focus:ring-primary"/>
-                                {filters.query && (<div className="absolute inset-y-0 right-0 flex items-center pr-4"><button onClick={() => handleFilterChange('query', '')} className="text-neutral-400 hover:text-neutral-800"><XMarkIcon className="h-5 w-5" /></button></div>)}
+                         <div className="pointer-events-auto w-full bg-white/80 backdrop-blur-sm rounded-full shadow-lg p-2 flex items-center gap-2">
+                             <button onClick={onToggleSidebar} className="p-2 flex-shrink-0"><Bars3Icon className="w-6 h-6 text-neutral-800"/></button>
+                             <div className="relative flex-grow">
+                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2"><SearchIcon className="h-5 w-5 text-neutral-500" /></div>
+                                <input type="text" name="query" placeholder="Search city, address..." value={filters.query} onChange={(e) => handleFilterChange('query', e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} onFocus={() => setIsQueryInputFocused(true)} onBlur={() => setIsQueryInputFocused(false)} className="block w-full text-base bg-transparent border-none text-neutral-900 px-9 py-1 focus:outline-none focus:ring-0"/>
+                                {filters.query && (<div className="absolute inset-y-0 right-0 flex items-center pr-2"><button onClick={() => handleFilterChange('query', '')} className="text-neutral-400 hover:text-neutral-800"><XMarkIcon className="h-5 w-5" /></button></div>)}
                             </div>
-                            <button onClick={() => setFiltersOpen(true)} className="p-3 bg-white rounded-full shadow-lg flex-shrink-0 hover:bg-neutral-100 transition-colors"><AdjustmentsHorizontalIcon className="w-6 h-6 text-neutral-800"/></button>
+                            
+                             <div className="relative" ref={fabRef}>
+                                <button type="button" onClick={() => setIsFabOpen(prev => !prev)} className="p-2 rounded-full flex-shrink-0 hover:bg-neutral-100">
+                                    {isFabOpen ? <XMarkIcon className="w-6 h-6 text-neutral-800" /> : <PlusIcon className="w-6 h-6 text-neutral-800" />}
+                                </button>
+                                {isFabOpen && mobileView === 'map' && (
+                                    <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border z-10 p-2">
+                                        {fabActions.filter(a => a.show).map((action, index) => {
+                                            if (action.label === 'divider') {
+                                                return <div key={index} className="my-1 border-t border-neutral-100 animate-fade-in" style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'backwards' }} />;
+                                            }
+                                            return (
+                                                <button
+                                                    key={action.label}
+                                                    onClick={action.handler as () => void}
+                                                    className="w-full text-left flex items-center gap-3 px-3 py-2.5 text-base font-semibold rounded-lg transition-colors animate-fade-in text-neutral-700 hover:bg-neutral-100"
+                                                    style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'backwards' }}
+                                                >
+                                                    {action.icon}
+                                                    <span>{action.label}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+
+                            <button onClick={() => setFiltersOpen(true)} className="p-2 flex-shrink-0 hover:bg-neutral-100 rounded-full"><AdjustmentsHorizontalIcon className="w-6 h-6 text-neutral-800"/></button>
                         </div>
-                        <div className="flex flex-col items-center pointer-events-auto">
-                            {mobileView === 'map' && (<div className="bg-neutral-900/80 text-white font-bold text-sm px-4 py-2 rounded-full shadow-lg backdrop-blur-sm mb-4"><span>{listProperties.length} results</span></div>)}
-                            {mobileView === 'map' && isAuthenticated && ( <button onClick={handleSaveSearch} disabled={isSaving} className="flex items-center gap-2 px-5 py-3 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-transform hover:scale-105 mb-4"><BellIcon className="w-5 h-5" /><span>{isSaving ? 'Saving...' : 'Save Search'}</span></button>)}
-                            <button onClick={() => updateSearchPageState({ mobileView: mobileView === 'map' ? 'list' : 'map' })} className="flex items-center gap-2 px-5 py-3 bg-neutral-900 text-white font-bold rounded-full shadow-lg hover:bg-black transition-transform hover:scale-105">
-                                {mobileView === 'map' ? ( <> <Squares2x2Icon className="w-5 h-5" /> <span>List</span> </> ) : ( <> <MapPinIcon className="w-5 h-5" /> <span>Map</span> </> )}
-                            </button>
+                        
+                        <div className="pointer-events-auto">
+                            {mobileView === 'map' && !isDrawing && drawnBoundsJSON && (
+                                <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4 animate-fade-in">
+                                    <button onClick={() => handleSaveSearch(true)} disabled={isSaving} className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50">
+                                        <BellIcon className="w-5 h-5" />
+                                        <span>{isSaving ? 'Saving...' : 'Save Area'}</span>
+                                    </button>
+                                    <button onClick={handleClearDrawnArea} className="flex items-center gap-2 px-4 py-2 bg-neutral-800 text-white font-bold rounded-full shadow-lg hover:bg-neutral-900">
+                                        <XCircleIcon className="w-5 h-5" />
+                                        <span>Clear Area</span>
+                                    </button>
+                                </div>
+                            )}
+                            {mobileView === 'map' ? (
+                                <div className="w-full flex justify-between items-center">
+                                    <div className="bg-white/80 text-neutral-800 p-2 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
+                                        <div className="font-bold text-sm px-3 py-1.5 whitespace-nowrap">
+                                            <span>{listProperties.length} results</span>
+                                        </div>
+                                        <button onClick={() => updateSearchPageState({ mobileView: 'list' })} className="flex items-center gap-2 px-4 py-1.5 bg-white text-neutral-900 font-bold rounded-full shadow hover:bg-neutral-200 transition-colors">
+                                            <Squares2x2Icon className="w-5 h-5" />
+                                            <span>List</span>
+                                        </button>
+                                    </div>
+
+                                    <div className="bg-white/80 text-neutral-800 p-2 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
+                                        <div className="bg-neutral-900/10 p-1 rounded-full flex space-x-1">
+                                            <button onClick={() => setTileLayer('street')} className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${tileLayer === 'street' ? 'bg-white text-primary shadow-sm' : 'text-neutral-600'}`}>Street</button>
+                                            <button onClick={() => setTileLayer('satellite')} className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${tileLayer === 'satellite' ? 'bg-white text-primary shadow-sm' : 'text-neutral-600'}`}>Satellite</button>
+                                        </div>
+                                        <div className="h-6 w-px bg-neutral-900/20 mx-1"></div>
+                                        <button onClick={handleRecenterOnUser} className="p-2.5 rounded-full hover:bg-black/10 transition-colors" title="My Location"><CrosshairsIcon className="w-5 h-5" /></button>
+                                        {isAuthenticated && !drawnBoundsJSON && (<button onClick={() => handleSaveSearch(false)} disabled={isSaving || (!isFormSearchActive && !drawnBounds)} className="p-2.5 rounded-full hover:bg-black/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="Save Search"><BellIcon className="w-5 h-5" /></button>)}
+                                        <button onClick={() => updateSearchPageState({ isAiChatModalOpen: true })} className="p-2.5 rounded-full hover:bg-black/10 transition-colors" title="AI Search"><SparklesIcon className="w-5 h-5 text-primary" /></button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="w-full flex justify-between items-center">
+                                    <button onClick={() => updateSearchPageState({ mobileView: 'map' })} className="flex items-center gap-2 px-4 py-2 bg-white text-neutral-900 font-bold rounded-full shadow-lg hover:bg-neutral-200 transition-colors">
+                                        <MapPinIcon className="w-5 h-5" />
+                                        <span>Map</span>
+                                    </button>
+
+                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-4" ref={fabRef}>
+                                        <button type="button" onClick={() => setIsFabOpen(prev => !prev)} className="p-4 rounded-full flex-shrink-0 bg-primary text-white shadow-lg hover:bg-primary-dark transition-transform hover:scale-105">
+                                            {isFabOpen ? <XMarkIcon className="w-6 h-6" /> : <PlusIcon className="w-6 h-6" />}
+                                        </button>
+                                        {isFabOpen && (
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-white rounded-xl shadow-2xl border z-10 p-2">
+                                                {fabActions.filter(a => a.show).map((action, index) => {
+                                                    if (action.label === 'divider') return <div key={index} className="my-1 border-t border-neutral-100" />;
+                                                    return (
+                                                        <button
+                                                            key={action.label}
+                                                            onClick={action.handler as () => void}
+                                                            className="w-full text-left flex items-center gap-3 px-3 py-2.5 text-base font-semibold rounded-lg transition-colors text-neutral-700 hover:bg-neutral-100"
+                                                        >
+                                                            {action.icon}
+                                                            <span>{action.label}</span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex items-center gap-2 px-4 py-2 invisible">
+                                        <MapPinIcon className="w-5 h-5" />
+                                        <span>Map</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

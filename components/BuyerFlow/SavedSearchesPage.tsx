@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import SavedSearchAccordion from './SavedSearchAccordion';
 import { MagnifyingGlassPlusIcon } from '../../constants';
@@ -18,10 +18,45 @@ const initialFilters: Filters = {
     propertyType: 'any',
 };
 
+const SortButton: React.FC<{
+    label: string;
+    isActive: boolean;
+    onClick: () => void;
+}> = ({ label, isActive, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex-grow text-center ${
+            isActive
+                ? 'bg-white text-primary shadow'
+                : 'text-neutral-600 hover:bg-neutral-200'
+        }`}
+    >
+        {label}
+    </button>
+);
+
 
 const SavedSearchesPage: React.FC = () => {
-  const { state, dispatch } = useAppContext();
+  const { state, dispatch, updateSavedSearchAccessTime } = useAppContext();
   const { savedSearches, isAuthenticated } = state;
+  const [sortBy, setSortBy] = useState<'createdAt' | 'name' | 'lastAccessed'>('createdAt');
+
+  const sortedSearches = useMemo(() => {
+    const sorted = [...savedSearches];
+    sorted.sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'lastAccessed':
+          return b.lastAccessed - a.lastAccessed;
+        case 'createdAt':
+        default:
+          return b.createdAt - a.createdAt;
+      }
+    });
+    return sorted;
+  }, [savedSearches, sortBy]);
+
 
   const renderContent = () => {
     if (!isAuthenticated) {
@@ -42,11 +77,14 @@ const SavedSearchesPage: React.FC = () => {
     
     if (savedSearches.length === 0) {
         const handleSaveExample = () => {
+            const now = Date.now();
             const exampleSearch: SavedSearch = {
                 id: 'ss-example',
                 name: 'Belgrade, under €400k',
                 filters: { ...initialFilters, query: 'Belgrade', maxPrice: 400000 },
                 drawnBoundsJSON: null,
+                createdAt: now,
+                lastAccessed: now,
             };
             dispatch({ type: 'ADD_SAVED_SEARCH', payload: exampleSearch });
         };
@@ -79,9 +117,20 @@ const SavedSearchesPage: React.FC = () => {
     
     return (
         <>
+            <div className="flex justify-center mb-8">
+                <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200">
+                    <SortButton label="Newest" isActive={sortBy === 'createdAt'} onClick={() => setSortBy('createdAt')} />
+                    <SortButton label="Name" isActive={sortBy === 'name'} onClick={() => setSortBy('name')} />
+                    <SortButton label="Last Active" isActive={sortBy === 'lastAccessed'} onClick={() => setSortBy('lastAccessed')} />
+                </div>
+            </div>
             <div className="space-y-4">
-              {savedSearches.map((search) => (
-                <SavedSearchAccordion key={search.id} search={search} />
+              {sortedSearches.map((search) => (
+                <SavedSearchAccordion 
+                    key={search.id} 
+                    search={search}
+                    onOpen={() => updateSavedSearchAccessTime(search.id)}
+                />
               ))}
             </div>
         </>

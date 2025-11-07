@@ -9,9 +9,10 @@ import L from 'leaflet';
 
 interface SavedSearchAccordionProps {
   search: SavedSearch;
+  onOpen: () => void;
 }
 
-const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search }) => {
+const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onOpen }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { state } = useAppContext();
   const { isLoadingProperties, allMunicipalities, properties } = state;
@@ -36,11 +37,19 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search }) =
 
   const propertyCount = matchingProperties.length;
 
+  const handleToggle = () => {
+    const nextIsOpen = !isOpen;
+    if (nextIsOpen) {
+      onOpen();
+    }
+    setIsOpen(nextIsOpen);
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-md border border-neutral-200 overflow-hidden">
       {/* Header */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         className="w-full p-4 flex justify-between items-center text-left"
       >
         <h3 className="text-lg font-bold text-neutral-800">{search.name}</h3>

@@ -44,16 +44,34 @@ interface MapComponentProps {
   mapBounds: L.LatLngBounds | null;
   drawnBounds: L.LatLngBounds | null;
   onDrawComplete: (bounds: L.LatLngBounds | null) => void;
+  isDrawing: boolean;
+  tileLayer: TileLayerType;
+  recenterTo: [number, number] | null;
+  onRecenterComplete: () => void;
 }
 
 const ChangeView: React.FC<{center: [number, number], zoom: number, enabled: boolean}> = ({ center, zoom, enabled }) => {
     const map = useMap();
     useEffect(() => {
-        // Only set view if the map should be recentered, preventing conflicts with user interaction.
         if (enabled) {
            map.setView(center, zoom);
         }
     }, [center, zoom, enabled, map]);
+    return null;
+}
+
+const RecenterView: React.FC<{center: [number, number] | null, onComplete: () => void}> = ({center, onComplete}) => {
+    const map = useMap();
+    useEffect(() => {
+        if (center) {
+            const onMoveEnd = () => {
+                onComplete();
+                map.off('moveend', onMoveEnd);
+            };
+            map.on('moveend', onMoveEnd);
+            map.flyTo(center, 14, { animate: true, duration: 1.5 });
+        }
+    }, [center, map, onComplete]);
     return null;
 }
 
@@ -157,10 +175,10 @@ const formatMarkerPrice = (price: number): string => {
 };
 
 const PROPERTY_TYPE_COLORS: Record<NonNullable<Property['propertyType']> | 'other', string> = {
-    house: '#0252CD',    // primary blue
-    apartment: '#28a745', // green
-    villa: '#6f42c1',     // purple
-    other: '#6c757d',     // grey
+    house: '#0252CD',
+    apartment: '#28a745',
+    villa: '#6f42c1',
+    other: '#6c757d',
 };
 
 const ZOOM_THRESHOLD = 12;
@@ -248,12 +266,9 @@ const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) => {
     );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove, isSearchActive, searchLocation, userLocation, onSaveSearch, isSaving, isAuthenticated, mapBounds, drawnBounds, onDrawComplete }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove, isSearchActive, searchLocation, userLocation, onSaveSearch, isSaving, isAuthenticated, mapBounds, drawnBounds, onDrawComplete, isDrawing, tileLayer, recenterTo, onRecenterComplete }) => {
   const { dispatch } = useAppContext();
-  const [tileLayer, setTileLayer] = useState<TileLayerType>('street');
-  const [isDrawing, setIsDrawing] = useState(false);
-
-  // Filter out properties with invalid coordinates to prevent map errors
+  
   const validProperties = useMemo(() => {
     return properties.filter(p => 
       p.lat != null && !isNaN(p.lat) && p.lng != null && !isNaN(p.lng)
@@ -265,84 +280,34 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
         return validProperties.filter(p => drawnBounds.contains([p.lat, p.lng])).slice(0, 500);
     }
     if (!mapBounds) {
-      return []; // Return empty array until map bounds are known
+      return [];
     }
     return validProperties
       .filter(p => mapBounds.contains([p.lat, p.lng]))
-      .slice(0, 500); // Cap at 500 markers for performance
+      .slice(0, 500);
   }, [validProperties, mapBounds, drawnBounds]);
   
     const { center, zoom } = useMemo(() => {
-        // 1. HIGHEST PRIORITY: Explicit search location from the query input.
-        if (searchLocation) {
-            return {
-                center: searchLocation,
-                zoom: 12,
-            };
-        }
-
-        // 2. SECOND PRIORITY: User's detected location. Used for initial load
-        // or when the search query is cleared.
-        if (userLocation) {
-            return {
-                center: userLocation,
-                zoom: 13,
-            };
-        }
-
-        // 3. THIRD PRIORITY: If a search is active (with filters but no location)
-        // and has results, focus on the first result.
-        if (isSearchActive && validProperties.length > 0) {
-            return {
-                center: [validProperties[0].lat, validProperties[0].lng] as [number, number],
-                zoom: validProperties.length === 1 ? 14 : 12,
-            };
-        }
-
-        // 4. FOURTH PRIORITY: Fallback to the first property in the full list.
-        if (validProperties.length > 0) {
-            return {
-                center: [validProperties[0].lat, validProperties[0].lng] as [number, number],
-                zoom: 10,
-            };
-        }
-
-        // Absolute fallback if there are no properties at all.
-        return {
-            center: [44.2, 19.9] as [number, number], // Center of Balkans
-            zoom: 10,
-        };
+        if (searchLocation) return { center: searchLocation, zoom: 12 };
+        if (userLocation) return { center: userLocation, zoom: 13 };
+        if (isSearchActive && validProperties.length > 0) return { center: [validProperties[0].lat, validProperties[0].lng] as [number, number], zoom: validProperties.length === 1 ? 14 : 12 };
+        if (validProperties.length > 0) return { center: [validProperties[0].lat, validProperties[0].lng] as [number, number], zoom: 10 };
+        return { center: [44.2, 19.9] as [number, number], zoom: 10 };
       }, [validProperties, isSearchActive, searchLocation, userLocation]);
     
   const handlePopupClick = (propertyId: string) => {
     dispatch({ type: 'SET_SELECTED_PROPERTY', payload: propertyId });
   };
 
-  const handleDrawButtonClick = () => {
-    const nextIsDrawing = !isDrawing;
-    setIsDrawing(nextIsDrawing);
-    // If we are cancelling a draw, clear any drawn bounds
-    if (!nextIsDrawing && drawnBounds) {
-        onDrawComplete(null);
-    }
-};
-
-const handleClearDrawnBounds = () => {
-    onDrawComplete(null);
-    setIsDrawing(false); // Ensure we exit drawing mode
-};
-
-  const bottomControlsOffset = 112; // 80px for floating button + 32px padding
+  const bottomControlsOffset = 112;
 
   return (
     <div className="w-full h-full relative">
-      <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full" maxZoom={18} minZoom={9}>
+      <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full" maxZoom={18} minZoom={9} zoomControl={false}>
         <ChangeView center={center} zoom={zoom} enabled={recenter} />
+        <RecenterView center={recenterTo} onComplete={onRecenterComplete} />
         <MapEvents onMove={onMapMove} />
-        <MapDrawEvents isDrawing={isDrawing} onDrawComplete={(bounds) => {
-            onDrawComplete(bounds);
-            setIsDrawing(false);
-        }} />
+        <MapDrawEvents isDrawing={isDrawing} onDrawComplete={(bounds) => { onDrawComplete(bounds); }} />
         {drawnBounds && (
             <Rectangle
                 bounds={drawnBounds}
@@ -350,39 +315,28 @@ const handleClearDrawnBounds = () => {
             />
         )}
         <TileLayer
+          key={tileLayer}
           attribution={TILE_LAYERS[tileLayer].attribution}
           url={TILE_LAYERS[tileLayer].url}
         />
         <Markers properties={propertiesInView} onPopupClick={handlePopupClick} />
       </MapContainer>
       
-      <div className="absolute top-4 right-4 z-[1000] flex flex-col items-end gap-2">
-        <div className="flex items-center gap-2">
-            <button
-                onClick={handleDrawButtonClick}
-                className={`flex items-center gap-2 px-4 py-2 text-white font-bold rounded-full shadow-lg transition-colors ${
-                    isDrawing ? 'bg-red-500 hover:bg-red-600' : 'bg-primary hover:bg-primary-dark'
-                }`}
+      <div className="absolute top-4 right-4 z-[1000] hidden md:flex flex-col items-end gap-2">
+        {isAuthenticated && drawnBounds && (
+            <button 
+                onClick={onSaveSearch} 
+                disabled={isSaving}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50 animate-fade-in"
             >
-                <PencilIcon className="w-5 h-5" />
-                <span className="hidden md:inline">{isDrawing ? 'Cancel' : 'Draw Area'}</span>
+                <BellIcon className="w-5 h-5" />
+                <span>{isSaving ? 'Saving...' : 'Save Search'}</span>
             </button>
-
-            {isAuthenticated && (
-                <button 
-                    onClick={onSaveSearch} 
-                    disabled={isSaving}
-                    className="hidden md:flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
-                >
-                    <BellIcon className="w-5 h-5" />
-                    <span>{isSaving ? 'Saving...' : 'Save Search'}</span>
-                </button>
-            )}
-        </div>
+        )}
         
         {drawnBounds && !isDrawing && (
             <button
-                onClick={handleClearDrawnBounds}
+                onClick={() => onDrawComplete(null)}
                 className="flex items-center gap-2 px-4 py-2 bg-neutral-800 text-white font-bold rounded-full shadow-lg hover:bg-neutral-900 animate-fade-in"
             >
                 <XCircleIcon className="w-5 h-5" />
@@ -404,20 +358,6 @@ const handleClearDrawnBounds = () => {
                 </div>
             ))}
         </div>
-      </div>
-      <div className="absolute right-4 z-[1000] bg-white/80 backdrop-blur-sm p-1 rounded-full shadow-lg flex space-x-1 border border-neutral-200" style={{ bottom: `${bottomControlsOffset}px` }}>
-        <button 
-          onClick={() => setTileLayer('street')} 
-          className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-colors ${tileLayer === 'street' ? 'bg-primary text-white shadow-md' : 'text-neutral-600 hover:bg-neutral-100'}`}
-        >
-          Street
-        </button>
-        <button 
-          onClick={() => setTileLayer('satellite')} 
-          className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-colors ${tileLayer === 'satellite' ? 'bg-primary text-white shadow-md' : 'text-neutral-600 hover:bg-neutral-100'}`}
-        >
-          Satellite
-        </button>
       </div>
     </div>
   );

@@ -198,9 +198,9 @@ const MyAccountPage: React.FC = () => {
     return (
         <div className="bg-neutral-50 min-h-full">
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                     {/* Sidebar */}
-                    <div className="md:col-span-1">
+                    <div className="lg:col-span-1">
                         <div className="bg-white p-4 rounded-xl shadow-md border border-neutral-200">
                              <div className="flex flex-col items-center text-center pb-4 mb-4 border-b">
                                 {state.currentUser.avatarUrl ? (
@@ -228,7 +228,7 @@ const MyAccountPage: React.FC = () => {
                     </div>
 
                     {/* Content */}
-                    <div className="md:col-span-3">
+                    <div className="lg:col-span-3">
                         <div className="bg-white p-6 rounded-xl shadow-md border border-neutral-200 min-h-[600px]">
                             {renderContent()}
                         </div>

@@ -44,7 +44,7 @@ const NumberInputWithSteppers: React.FC<NumberInputWithSteppersProps> = ({ label
                     type="button" 
                     onClick={handleDecrement} 
                     disabled={value <= min}
-                    className="px-6 py-2 text-3xl font-light text-neutral-600 hover:bg-neutral-100 disabled:text-neutral-300 disabled:cursor-not-allowed h-full rounded-l-lg focus:outline-none transition-colors"
+                    className="px-4 sm:px-6 py-2 text-2xl sm:text-3xl font-light text-neutral-600 hover:bg-neutral-100 disabled:text-neutral-300 disabled:cursor-not-allowed h-full rounded-l-lg focus:outline-none transition-colors"
                     aria-label={`Decrease ${label}`}
                 >
                     -
@@ -63,7 +63,7 @@ const NumberInputWithSteppers: React.FC<NumberInputWithSteppersProps> = ({ label
                     type="button" 
                     onClick={handleIncrement}
                     disabled={max !== undefined && value >= max}
-                    className="px-6 py-2 text-3xl font-light text-neutral-600 hover:bg-neutral-100 disabled:text-neutral-300 disabled:cursor-not-allowed h-full rounded-r-lg focus:outline-none transition-colors"
+                    className="px-4 sm:px-6 py-2 text-2xl sm:text-3xl font-light text-neutral-600 hover:bg-neutral-100 disabled:text-neutral-300 disabled:cursor-not-allowed h-full rounded-r-lg focus:outline-none transition-colors"
                     aria-label={`Increase ${label}`}
                 >
                     +

@@ -6,6 +6,89 @@ import AiSearch from './AiSearch';
 import PropertyCardSkeleton from './PropertyCardSkeleton';
 import { useAppContext } from '../../context/AppContext';
 
+interface RangeSliderProps {
+    min: number;
+    max: number;
+    step: number;
+    value: [number, number];
+    onChange: (value: [number, number]) => void;
+    label: string;
+    formatValue: (value: number) => string;
+}
+
+const RangeSlider: React.FC<RangeSliderProps> = ({ min, max, step, value, onChange, label, formatValue }) => {
+    const trackRef = useRef<HTMLDivElement>(null);
+    const [dragging, setDragging] = useState<'min' | 'max' | null>(null);
+
+    const valueToPercent = useCallback((val: number) => {
+        return ((val - min) / (max - min)) * 100;
+    }, [min, max]);
+
+    const handleMouseMove = useCallback((e: MouseEvent) => {
+        if (!dragging || !trackRef.current) return;
+        const rect = trackRef.current.getBoundingClientRect();
+        const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+        const newValue = Math.round((min + (percent / 100) * (max - min)) / step) * step;
+
+        const [currentMin, currentMax] = value;
+        if (dragging === 'min') {
+            onChange([Math.min(newValue, currentMax), currentMax]);
+        } else {
+            onChange([currentMin, Math.max(newValue, currentMin)]);
+        }
+    }, [dragging, min, max, step, value, onChange]);
+
+    const handleMouseUp = useCallback(() => {
+        setDragging(null);
+    }, []);
+
+    useEffect(() => {
+        if (dragging) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        }
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [dragging, handleMouseMove, handleMouseUp]);
+
+    const [minVal, maxVal] = value;
+    const minPercent = valueToPercent(minVal);
+    const maxPercent = valueToPercent(maxVal);
+
+    return (
+        <div>
+            <div className="flex justify-between items-center mb-2">
+                <label className="text-xs font-medium text-neutral-700">{label}</label>
+                <div className="text-xs font-bold text-neutral-800 bg-neutral-100 border border-neutral-200 px-2 py-1 rounded-md">
+                    {formatValue(minVal)} - {formatValue(maxVal)}
+                </div>
+            </div>
+            <div ref={trackRef} className="relative w-full h-8 flex items-center">
+                <div className="absolute w-full h-1 bg-neutral-200 rounded-full"></div>
+                <div
+                    className="absolute h-1 bg-primary rounded-full"
+                    style={{ left: `${minPercent}%`, width: `${maxPercent - minPercent}%` }}
+                ></div>
+                <button
+                    onMouseDown={() => setDragging('min')}
+                    className="absolute w-5 h-5 bg-white border-2 border-primary rounded-full shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    style={{ left: `${minPercent}%`, transform: 'translateX(-50%)' }}
+                    aria-label={`Minimum ${label}`}
+                ></button>
+                <button
+                    onMouseDown={() => setDragging('max')}
+                    className="absolute w-5 h-5 bg-white border-2 border-primary rounded-full shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    style={{ left: `${maxPercent}%`, transform: 'translateX(-50%)' }}
+                    aria-label={`Maximum ${label}`}
+                ></button>
+            </div>
+        </div>
+    );
+};
+
+
 interface PropertyListProps {
   properties: Property[];
   filters: Filters;
@@ -37,10 +120,10 @@ const FilterButton: React.FC<{
 }> = ({ onClick, isActive, children }) => (
   <button
     onClick={onClick}
-    className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-300 flex-grow text-center ${
+    className={`px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 flex-grow text-center ${
       isActive
-        ? 'bg-white text-primary shadow'
-        : 'text-neutral-600 hover:bg-neutral-200'
+        ? 'bg-primary text-white shadow'
+        : 'bg-neutral-200/70 text-neutral-700 hover:bg-neutral-300/70'
     }`}
   >
     {children}
@@ -69,40 +152,30 @@ const FilterButtonGroup: React.FC<{
   </div>
 );
 
-const PRICE_RANGES = [50000, 75000, 100000, 125000, 150000, 175000, 200000, 250000, 300000, 400000, 500000, 750000, 1000000];
-const SQFT_RANGES = [30, 50, 70, 90, 120, 150, 200, 250, 300, 400];
-const formatNumber = (num: number) => new Intl.NumberFormat('de-DE').format(num);
-
-const ITEMS_PER_PAGE = 20;
+const formatNumber = (val: number) => val >= 1000000 ? `${(val / 1000000).toFixed(1)}M` : val >= 1000 ? `${Math.round(val / 1000)}k` : `${val}`;
 
 const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList' | 'aiChatHistory' | 'onAiChatHistoryChange'>> = ({
     filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, onQueryFocus, onBlur, isAreaDrawn
 }) => {
-
+    
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        
-        let finalValue: string | number | null = value;
-        
-        const isNumericSelect = e.target.nodeName === 'SELECT' && (name === 'minPrice' || name === 'maxPrice' || name === 'minSqft' || name === 'maxSqft');
-        const isNumericInput = e.target.getAttribute('type') === 'number';
+        onFilterChange(e.target.name as keyof Filters, e.target.value);
+    }, [onFilterChange]);
+    
+    const handlePriceChange = useCallback(([min, max]: [number, number]) => {
+        onFilterChange('minPrice', min === 0 ? null : min);
+        onFilterChange('maxPrice', max === 2000000 ? null : max);
+    }, [onFilterChange]);
 
-        if (isNumericInput || isNumericSelect) {
-            if (value === '') {
-                finalValue = null;
-            } else {
-                const numValue = Number(value);
-                finalValue = numValue < 0 ? 0 : numValue;
-            }
-        }
-        
-        onFilterChange(name as keyof Filters, finalValue);
+    const handleSqftChange = useCallback(([min, max]: [number, number]) => {
+        onFilterChange('minSqft', min === 0 ? null : min);
+        onFilterChange('maxSqft', max === 500 ? null : max);
     }, [onFilterChange]);
     
     const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder:text-neutral-700";
 
     return (
-         <div className="space-y-2">
+         <div className="space-y-6">
             {!isMobile && (
                 <div className="relative">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -120,48 +193,26 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                     />
                 </div>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                    <label htmlFor="minPrice" className="block text-xs font-medium text-neutral-700 mb-1">Min Price</label>
-                    <div className="relative">
-                        <select
-                            id="minPrice"
-                            name="minPrice"
-                            value={filters.minPrice || ''}
-                            onChange={handleInputChange}
-                            className={`${inputBaseClasses} appearance-none`}
-                        >
-                            <option value="">Any</option>
-                            {PRICE_RANGES.map(price => (
-                                <option key={`min-${price}`} value={price}>€{formatNumber(price)}</option>
-                            ))}
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
-                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                        </div>
-                    </div>
-                </div>
-                 <div>
-                    <label htmlFor="maxPrice" className="block text-xs font-medium text-neutral-700 mb-1">Max Price</label>
-                    <div className="relative">
-                        <select
-                            id="maxPrice"
-                            name="maxPrice"
-                            value={filters.maxPrice || ''}
-                            onChange={handleInputChange}
-                            className={`${inputBaseClasses} appearance-none`}
-                        >
-                            <option value="">Any</option>
-                            {PRICE_RANGES.map(price => (
-                                <option key={`max-${price}`} value={price}>€{formatNumber(price)}</option>
-                            ))}
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
-                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            
+            <RangeSlider
+                min={0}
+                max={2000000}
+                step={10000}
+                value={[filters.minPrice ?? 0, filters.maxPrice ?? 2000000]}
+                onChange={handlePriceChange}
+                label="Price Range"
+                formatValue={(val) => `€${formatNumber(val)}`}
+            />
+
+            <RangeSlider
+                min={0}
+                max={500}
+                step={10}
+                value={[filters.minSqft ?? 0, filters.maxSqft ?? 500]}
+                onChange={handleSqftChange}
+                label="Area (m²)"
+                formatValue={(val) => `${val} m²`}
+            />
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                  <FilterButtonGroup 
@@ -197,49 +248,6 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                     selectedValue={filters.livingRooms}
                     onChange={(value) => onFilterChange('livingRooms', value)}
                 />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                    <label htmlFor="minSqft" className="block text-xs font-medium text-neutral-700 mb-1">Min Size (m²)</label>
-                    <div className="relative">
-                        <select
-                            id="minSqft"
-                            name="minSqft"
-                            value={filters.minSqft || ''}
-                            onChange={handleInputChange}
-                            className={`${inputBaseClasses} appearance-none`}
-                        >
-                            <option value="">Any</option>
-                            {SQFT_RANGES.map(size => (
-                                <option key={`min-${size}`} value={size}>{size} m²</option>
-                            ))}
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
-                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                        </div>
-                    </div>
-                </div>
-                 <div>
-                    <label htmlFor="maxSqft" className="block text-xs font-medium text-neutral-700 mb-1">Max Size (m²)</label>
-                    <div className="relative">
-                        <select
-                            id="maxSqft"
-                            name="maxSqft"
-                            value={filters.maxSqft || ''}
-                            onChange={handleInputChange}
-                            className={`${inputBaseClasses} appearance-none`}
-                        >
-                            <option value="">Any</option>
-                            {SQFT_RANGES.map(size => (
-                                <option key={`max-${size}`} value={size}>{size} m²</option>
-                            ))}
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
-                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -319,6 +327,8 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
     );
 };
 
+
+const ITEMS_PER_PAGE = 20;
 
 const PropertyList: React.FC<PropertyListProps> = (props) => {
     const { state } = useAppContext();

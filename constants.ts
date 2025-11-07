@@ -432,3 +432,16 @@ export const WhatsappIcon: React.FC<{ className?: string }> = ({ className }) =>
         React.createElement('path', { d: "M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.38 1.25 4.81L2 22l5.3-1.38c1.37.71 2.93 1.12 4.56 1.12h.13c5.46 0 9.91-4.45 9.91-9.91S17.63 2 12.04 2zm.01 16.89c-1.5 0-2.93-.4-4.2-1.12l-.3-.18-3.12.81.83-3.04-.2-.32c-.8-1.35-1.28-2.88-1.28-4.55 0-4.33 3.53-7.86 7.86-7.86 2.1 0 4.08.82 5.56 2.3 1.48 1.48 2.3 3.46 2.3 5.56-.02 4.33-3.55 7.86-7.85 7.86zm3.8-5.32c-.22-.11-1.3-.65-1.5-.72s-.35-.11-.5.11c-.15.22-.57.72-.7.86s-.26.17-.48.06c-.22-.11-1.3-.48-2.48-1.53s-1.85-2.22-2.07-2.58-.17-.3-.06-.41c.11-.11.24-.28.35-.41.11-.13.17-.22.26-.37.08-.15.04-.28-.02-.39-.06-.11-.5-1.2-.68-1.64s-.37-.37-.5-.37h-.5c-.17 0-.44.06-.68.33s-.92.9-.92 2.2c0 1.3.94 2.55 1.07 2.72s1.85 2.83 4.5 3.97c.62.26 1.1.42 1.48.53.59.18 1.13.15 1.55.09.47-.06 1.3-.53 1.48-.92.18-.39.18-.72.13-.79s-.17-.11-.37-.22z" })
     )
 );
+
+export const PlusIcon: React.FC<{ className?: string }> = ({ className }) => (
+    React.createElement(Icon, { className: className },
+        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M12 4.5v15m7.5-7.5h-15" })
+    )
+);
+
+export const CrosshairsIcon: React.FC<{ className?: string }> = ({ className }) => (
+    React.createElement(Icon, { className: className },
+        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M19.5 10.5a7.5 7.5 0 11-15 0 7.5 7.5 0 0115 0z" }),
+        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M12 3v2.25m0 13.5V21m-9-9h2.25m13.5 0H21" })
+    )
+);

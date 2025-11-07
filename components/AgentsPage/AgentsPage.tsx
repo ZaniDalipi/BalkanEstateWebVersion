@@ -113,7 +113,7 @@ const AgentsPage: React.FC = () => {
                             id="location-filter"
                             value={locationFilter}
                             onChange={(e) => setLocationFilter(e.target.value)}
-                            className="appearance-none block w-full bg-neutral-100 border border-neutral-200 text-neutral-800 py-2 pl-3 pr-8 rounded-md leading-tight focus:outline-none focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/50 text-sm font-semibold"
+                            className="appearance-none block w-full bg-neutral-100 border border-neutral-200 text-neutral-800 py-1.5 sm:py-2 pl-3 pr-8 rounded-md leading-tight focus:outline-none focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/50 text-sm font-semibold"
                         >
                             {uniqueLocations.map(loc => <option key={loc} value={loc === 'All Locations' ? 'all' : loc}>{loc}</option>)}
                         </select>
@@ -129,7 +129,7 @@ const AgentsPage: React.FC = () => {
                             id="sort-by"
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value as SortKey)}
-                            className="appearance-none block w-full bg-neutral-100 border border-neutral-200 text-neutral-800 py-2 pl-3 pr-8 rounded-md leading-tight focus:outline-none focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/50 text-sm font-semibold"
+                            className="appearance-none block w-full bg-neutral-100 border border-neutral-200 text-neutral-800 py-1.5 sm:py-2 pl-3 pr-8 rounded-md leading-tight focus:outline-none focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/50 text-sm font-semibold"
                         >
                             <option value="sales">Total Sales</option>
                             <option value="sold">Properties Sold</option>

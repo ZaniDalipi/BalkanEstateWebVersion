@@ -87,15 +87,20 @@ const WhackAnIconAnimation: React.FC<WhackAnIconAnimationProps> = ({ mode = 'loa
 
 
     const handleWhack = (index: number) => {
-        if (isGameActive && index === activeMole) {
+        if (index !== activeMole) return; // Only allow whacking the active mole
+
+        // Always provide visual feedback
+        setActiveMole(null);
+        setHitIndex(index);
+        setTimeout(() => setHitIndex(null), 300);
+
+        // Only update score if it's an active game
+        if (isGameActive) {
             setScore(s => {
                 const newScore = s + 1;
                 scoreRef.current = newScore; // Keep ref in sync
                 return newScore;
             });
-            setActiveMole(null);
-            setHitIndex(index);
-            setTimeout(() => setHitIndex(null), 300);
         }
     };
 
@@ -116,11 +121,11 @@ const WhackAnIconAnimation: React.FC<WhackAnIconAnimationProps> = ({ mode = 'loa
         }
         
         return (
-             <div className="relative">
-                <div className="grid grid-cols-3 gap-4 w-64 h-64 bg-green-200/50 p-4 rounded-lg border-2 border-green-300/50">
+             <div className="relative w-full max-w-[20rem] sm:max-w-xs aspect-square">
+                <div className="grid grid-cols-3 gap-2 sm:gap-4 w-full h-full bg-green-200/50 p-2 sm:p-4 rounded-lg border-2 border-green-300/50">
                     {Array.from({ length: GRID_SIZE }).map((_, index) => (
                         <div key={index} className="relative w-full h-full bg-green-800/20 rounded-full flex items-center justify-center overflow-hidden">
-                            <div className="w-12 h-12 bg-black/20 rounded-full" />
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black/20 rounded-full" />
                             <div
                                 onClick={() => handleWhack(index)}
                                 className={`absolute bottom-0 w-full flex justify-center transition-transform duration-200 ease-out ${
@@ -153,7 +158,7 @@ const WhackAnIconAnimation: React.FC<WhackAnIconAnimationProps> = ({ mode = 'loa
 
     return (
         <div className="flex flex-col items-center justify-center py-8 w-full">
-            <h3 className="text-xl font-bold text-neutral-800">
+            <h3 className="text-lg sm:text-xl font-bold text-neutral-800">
                 {mode === 'game' ? 'Whack-an-Icon!' : 'Analyzing Property...'}
             </h3>
             <p className="text-neutral-600 mt-2 mb-6 max-w-sm mx-auto text-center">
