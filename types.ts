@@ -1,40 +1,49 @@
-// FIX: Removed a circular import of `UserRole` from this same file, which was causing a conflict.
+// --- Enums and Simple Types ---
 export enum UserRole {
-  BUYER = 'buyer',
-  PRIVATE_SELLER = 'private_seller',
-  AGENT = 'agent',
+    BUYER = 'buyer',
+    PRIVATE_SELLER = 'private_seller',
+    AGENT = 'agent',
 }
 
-export type AppView = 'search' | 'saved-searches' | 'saved-homes' | 'inbox' | 'account' | 'dashboard' | 'create-listing' | 'agents';
+export type PropertyStatus = 'active' | 'pending' | 'sold' | 'draft';
 
 export type PropertyImageTag = 'exterior' | 'living_room' | 'kitchen' | 'bedroom' | 'bathroom' | 'other';
 
-export type PropertyStatus = 'active' | 'draft' | 'pending' | 'sold';
+export type AppView = 'search' | 'saved-searches' | 'saved-homes' | 'inbox' | 'account' | 'create-listing' | 'agents';
+
+export type AuthModalView = 'login' | 'signup' | 'forgotPassword' | 'forgotPasswordSuccess' | 'phoneCode' | 'phoneDetails';
 
 export type SellerType = 'any' | 'agent' | 'private';
 
+// --- Data Models ---
+
 export interface Seller {
-  type: 'agent' | 'private';
-  name: string;
-  avatarUrl?: string;
-  phone: string;
-  agencyName?: string;
+    type: 'agent' | 'private';
+    name: string;
+    avatarUrl?: string;
+    phone: string;
+    agencyName?: string;
+}
+
+export interface Testimonial {
+    quote: string;
+    clientName: string;
 }
 
 export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl?: string;
-  phone: string;
-  role: UserRole; // Role can still be used for user-specific data, but not for app flow
-  city?: string;
-  country?: string;
-  testimonials?: { quote: string; clientName: string; }[];
-  agencyName?: string;
-  agentId?: string;
-  licenseNumber?: string;
-  isSubscribed: boolean;
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl?: string;
+    phone: string;
+    role: UserRole;
+    city?: string;
+    country?: string;
+    agencyName?: string;
+    agentId?: string;
+    licenseNumber?: string;
+    testimonials?: Testimonial[];
+    isSubscribed: boolean;
 }
 
 export interface Agent extends User {
@@ -45,98 +54,129 @@ export interface Agent extends User {
 }
 
 export interface PropertyImage {
-  url: string;
-  tag: PropertyImageTag;
+    url: string;
+    tag: PropertyImageTag;
 }
 
 export interface Property {
-  id: string;
-  sellerId: string;
-  status: PropertyStatus;
-  price: number;
-  address: string;
-  city: string; // Will now store "Town, Municipality" e.g., "Krani, Resen"
-  country: string;
-  beds: number;
-  baths: number;
-  livingRooms: number;
-  sqft: number;
-  yearBuilt: number;
-  parking: number;
-  description: string;
-  specialFeatures: string[];
-  materials: string[];
-  tourUrl?: string;
-  imageUrl: string;
-  images: PropertyImage[];
-  lat: number;
-  lng: number;
-  seller: Seller;
-  propertyType: 'house' | 'apartment' | 'villa' | 'other';
-  floorplanUrl?: string;
-  createdAt?: number;
-  lastRenewed?: number;
-  views?: number;
-  saves?: number;
-  inquiries?: number;
-  floorNumber?: number;
-  totalFloors?: number;
-}
-
-export interface Filters {
-  query: string;
-  minPrice: number | null;
-  maxPrice: number | null;
-  beds: number | null;
-  baths: number | null;
-  livingRooms: number | null;
-  minSqft: number | null;
-  maxSqft: number | null;
-  sortBy: string;
-  sellerType: SellerType;
-  propertyType: 'any' | 'house' | 'apartment' | 'villa' | 'other';
-}
-
-export interface SavedSearch {
-  id: string;
-  name: string;
-  filters: Filters;
-}
-
-export interface ChatMessage {
-  sender: 'ai' | 'user';
-  text: string;
-}
-
-export interface AiSearchQuery {
-  location?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  beds?: number;
-  baths?: number;
-  livingRooms?: number;
-  minSqft?: number;
-  maxSqft?: number;
-  features?: string[];
+    id: string;
+    sellerId: string;
+    status: PropertyStatus;
+    price: number;
+    address: string;
+    city: string;
+    country: string;
+    beds: number;
+    baths: number;
+    livingRooms: number;
+    sqft: number;
+    yearBuilt: number;
+    parking: number;
+    description: string;
+    specialFeatures: string[];
+    materials: string[];
+    tourUrl?: string;
+    imageUrl: string;
+    images?: PropertyImage[];
+    lat: number;
+    lng: number;
+    seller: Seller;
+    propertyType: 'house' | 'apartment' | 'villa' | 'other';
+    floorNumber?: number;
+    totalFloors?: number;
+    floorplanUrl?: string;
+    createdAt?: number;
+    lastRenewed?: number;
+    views?: number;
+    saves?: number;
+    inquiries?: number;
 }
 
 export interface Message {
-  id: string;
-  senderId: string; // 'user' or sellerId
-  text?: string;
-  imageUrl?: string;
-  timestamp: string;
-  isRead: boolean;
+    id: string;
+    senderId: string; // 'user' or seller's user ID
+    text?: string;
+    imageUrl?: string;
+    timestamp: string;
+    isRead: boolean;
 }
 
 export interface Conversation {
-  id: string;
-  propertyId: string;
-  messages: Message[];
+    id: string;
+    propertyId: string;
+    participants: string[]; // user ID and seller ID
+    messages: Message[];
 }
 
-// --- App State & Actions ---
-export type AuthModalView = 'login' | 'signup' | 'forgotPassword' | 'forgotPasswordSuccess' | 'phoneCode' | 'phoneDetails';
+export interface Filters {
+    query: string;
+    minPrice: number | null;
+    maxPrice: number | null;
+    beds: number | null;
+    baths: number | null;
+    livingRooms: number | null;
+    minSqft: number | null;
+    maxSqft: number | null;
+    sortBy: string;
+    sellerType: SellerType;
+    propertyType: 'any' | 'house' | 'apartment' | 'villa' | 'other';
+}
+
+export const initialFilters: Filters = {
+    query: '',
+    minPrice: null,
+    maxPrice: null,
+    beds: null,
+    baths: null,
+    livingRooms: null,
+    minSqft: null,
+    maxSqft: null,
+    sortBy: 'newest',
+    sellerType: 'any',
+    propertyType: 'any',
+};
+
+export interface SavedSearch {
+    id: string;
+    name: string;
+    filters: Filters;
+    drawnBoundsJSON: string | null;
+}
+
+export interface ChatMessage {
+    sender: 'user' | 'ai';
+    text: string;
+}
+
+export interface AiSearchQuery {
+    location?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    beds?: number;
+    baths?: number;
+    livingRooms?: number;
+    minSqft?: number;
+    maxSqft?: number;
+    features?: string[];
+}
+
+// --- Location/Map Data ---
+
+export interface Settlement {
+    name: string;
+    localNames?: string[];
+    latitude: number;
+    longitude: number;
+}
+
+export interface Municipality {
+    name: string;
+    // FIX: Add optional `localNames` property to match usage in transformation logic.
+    localNames?: string[];
+    latitude: number;
+    longitude: number;
+    settlements: Settlement[];
+}
 
 export interface SettlementData {
     name: string;
@@ -153,76 +193,83 @@ export interface MunicipalityData {
     settlements: SettlementData[];
 }
 
-// Raw data structure from cityData.ts
-export interface Settlement {
-  name: string;
-  localNames?: string[];
-  latitude: number;
-  longitude: number;
-}
-export interface Municipality {
-  name: string;
-  localNames?: string[];
-  latitude: number;
-  longitude: number;
-  settlements: Settlement[];
+
+// --- App State Management ---
+
+export interface SearchPageState {
+    filters: Filters;
+    activeFilters: Filters;
+    searchOnMove: boolean;
+    mapBoundsJSON: string | null;
+    drawnBoundsJSON: string | null;
+    mobileView: 'map' | 'list';
+    searchMode: 'manual' | 'ai';
+    aiChatHistory: ChatMessage[];
 }
 
 export interface AppState {
-  onboardingComplete: boolean;
-  isAuthenticating: boolean;
-  activeView: AppView;
-  isPricingModalOpen: boolean;
-  isFirstLoginOffer: boolean;
-  isSubscriptionModalOpen: boolean;
-  isAuthModalOpen: boolean;
-  authModalView: AuthModalView;
-  properties: Property[];
-  isLoadingProperties: boolean;
-  propertiesError: string | null;
-  selectedProperty: Property | null;
-  propertyToEdit: Property | null;
-  isAuthenticated: boolean;
-  isLoadingUserData: boolean;
-  currentUser: User | null;
-  savedSearches: SavedSearch[];
-  savedHomes: Property[];
-  comparisonList: string[]; // array of property IDs
-  conversations: Conversation[];
-  selectedAgentId: string | null;
-  allMunicipalities: Record<string, MunicipalityData[]>;
-  pendingProperty: Property | null;
+    onboardingComplete: boolean;
+    isAuthenticating: boolean;
+    activeView: AppView;
+    isPricingModalOpen: boolean;
+    isFirstLoginOffer: boolean;
+    isSubscriptionModalOpen: boolean;
+    isAuthModalOpen: boolean;
+    authModalView: AuthModalView;
+    properties: Property[];
+    isLoadingProperties: boolean;
+    propertiesError: string | null;
+    selectedProperty: Property | null;
+    propertyToEdit: Property | null;
+    isAuthenticated: boolean;
+    isLoadingUserData: boolean;
+    currentUser: User | null;
+    savedSearches: SavedSearch[];
+    savedHomes: Property[];
+    comparisonList: string[]; // array of property IDs
+    conversations: Conversation[];
+    selectedAgentId: string | null;
+    allMunicipalities: Record<string, MunicipalityData[]>;
+    pendingProperty: Property | null;
+    searchPageState: SearchPageState;
+    activeDiscount: { proYearly: number; proMonthly: number; enterprise: number; } | null;
+    isListingLimitWarningOpen: boolean;
+    isDiscountGameOpen: boolean;
 }
 
 export type AppAction =
-  | { type: 'COMPLETE_ONBOARDING' }
-  | { type: 'SET_ACTIVE_VIEW'; payload: AppView }
-  | { type: 'TOGGLE_PRICING_MODAL'; payload: { isOpen: boolean; isOffer?: boolean } }
-  | { type: 'TOGGLE_SUBSCRIPTION_MODAL'; payload: boolean }
-  | { type: 'TOGGLE_AUTH_MODAL'; payload: { isOpen: boolean; view?: AuthModalView } }
-  | { type: 'SET_AUTH_MODAL_VIEW'; payload: AuthModalView }
-  | { type: 'SET_SELECTED_PROPERTY'; payload: string | null }
-  | { type: 'SET_PROPERTY_TO_EDIT'; payload: Property | null }
-  | { type: 'ADD_SAVED_SEARCH'; payload: SavedSearch }
-  | { type: 'TOGGLE_SAVED_HOME'; payload: Property }
-  | { type: 'ADD_TO_COMPARISON'; payload: string }
-  | { type: 'REMOVE_FROM_COMPARISON'; payload: string }
-  | { type: 'CLEAR_COMPARISON' }
-  | { type: 'CREATE_OR_ADD_MESSAGE', payload: { propertyId: string; message: Message } }
-  | { type: 'MARK_CONVERSATION_AS_READ'; payload: string }
-  | { type: 'ADD_MESSAGE'; payload: { conversationId: string; message: Message } }
-  | { type: 'ADD_PROPERTY'; payload: Property }
-  | { type: 'UPDATE_PROPERTY'; payload: Property }
-  | { type: 'RENEW_PROPERTY'; payload: string }
-  | { type: 'MARK_PROPERTY_SOLD'; payload: string }
-  | { type: 'SET_SELECTED_AGENT', payload: string | null }
-  | { type: 'UPDATE_USER'; payload: Partial<User> }
-  | { type: 'SET_AUTH_STATE'; payload: { isAuthenticated: boolean; user: User | null } }
-  | { type: 'AUTH_CHECK_START' }
-  | { type: 'AUTH_CHECK_COMPLETE'; payload: { isAuthenticated: boolean; user: User | null } }
-  | { type: 'PROPERTIES_LOADING' }
-  | { type: 'PROPERTIES_SUCCESS'; payload: Property[] }
-  | { type: 'PROPERTIES_ERROR'; payload: string }
-  | { type: 'USER_DATA_LOADING' }
-  | { type: 'USER_DATA_SUCCESS'; payload: { savedHomes: Property[]; savedSearches: SavedSearch[]; conversations: Conversation[] } }
-  | { type: 'SET_PENDING_PROPERTY', payload: Property | null };
+    | { type: 'AUTH_CHECK_START' }
+    | { type: 'AUTH_CHECK_COMPLETE', payload: { isAuthenticated: boolean, user: User | null } }
+    | { type: 'COMPLETE_ONBOARDING' }
+    | { type: 'SET_ACTIVE_VIEW', payload: AppView }
+    | { type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: boolean, isOffer?: boolean } }
+    | { type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: boolean }
+    | { type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: boolean, view?: AuthModalView } }
+    | { type: 'SET_AUTH_MODAL_VIEW', payload: AuthModalView }
+    | { type: 'SET_SELECTED_PROPERTY', payload: string | null }
+    | { type: 'SET_PROPERTY_TO_EDIT', payload: Property | null }
+    | { type: 'SET_SELECTED_AGENT', payload: string | null }
+    | { type: 'PROPERTIES_LOADING' }
+    | { type: 'PROPERTIES_SUCCESS', payload: Property[] }
+    | { type: 'PROPERTIES_ERROR', payload: string }
+    | { type: 'USER_DATA_LOADING' }
+    | { type: 'USER_DATA_SUCCESS', payload: { savedHomes: Property[], savedSearches: SavedSearch[], conversations: Conversation[] } }
+    | { type: 'ADD_SAVED_SEARCH', payload: SavedSearch }
+    | { type: 'TOGGLE_SAVED_HOME', payload: Property }
+    | { type: 'ADD_TO_COMPARISON', payload: string }
+    | { type: 'REMOVE_FROM_COMPARISON', payload: string }
+    | { type: 'CLEAR_COMPARISON' }
+    | { type: 'SET_AUTH_STATE', payload: { isAuthenticated: boolean, user: User | null } }
+    | { type: 'ADD_PROPERTY', payload: Property }
+    | { type: 'UPDATE_PROPERTY', payload: Property }
+    | { type: 'RENEW_PROPERTY', payload: string }
+    | { type: 'MARK_PROPERTY_SOLD', payload: string }
+    | { type: 'UPDATE_USER', payload: Partial<User> }
+    | { type: 'ADD_MESSAGE', payload: { conversationId: string, message: Message } }
+    | { type: 'CREATE_OR_ADD_MESSAGE', payload: { propertyId: string, message: Message } }
+    | { type: 'MARK_CONVERSATION_AS_READ', payload: string }
+    | { type: 'SET_PENDING_PROPERTY', payload: Property | null }
+    | { type: 'UPDATE_SEARCH_PAGE_STATE', payload: Partial<SearchPageState> }
+    | { type: 'SET_ACTIVE_DISCOUNT', payload: { proYearly: number; proMonthly: number; enterprise: number; } | null }
+    | { type: 'TOGGLE_LISTING_LIMIT_WARNING', payload: boolean }
+    | { type: 'TOGGLE_DISCOUNT_GAME', payload: boolean };

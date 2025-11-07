@@ -7,6 +7,8 @@ interface AiSearchProps {
     properties: Property[];
     onApplyFilters: (query: AiSearchQuery) => void;
     isMobile: boolean;
+    history: ChatMessage[];
+    onHistoryChange: (history: ChatMessage[]) => void;
 }
 
 const FilterPill: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -15,10 +17,7 @@ const FilterPill: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     </div>
 );
 
-const AiSearch: React.FC<AiSearchProps> = ({ properties, onApplyFilters, isMobile }) => {
-    const [history, setHistory] = useState<ChatMessage[]>([
-        { sender: 'ai', text: "Hello! Welcome to Balkan Estate. How can I help you find a property today?" }
-    ]);
+const AiSearch: React.FC<AiSearchProps> = ({ properties, onApplyFilters, isMobile, history, onHistoryChange }) => {
     const [input, setInput] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [finalQuery, setFinalQuery] = useState<AiSearchQuery | null>(null);
@@ -35,7 +34,7 @@ const AiSearch: React.FC<AiSearchProps> = ({ properties, onApplyFilters, isMobil
 
         const userMessage: ChatMessage = { sender: 'user', text: input };
         const newHistory = [...history, userMessage];
-        setHistory(newHistory);
+        onHistoryChange(newHistory);
         setInput('');
         setIsSearching(true);
         setFinalQuery(null);
@@ -43,18 +42,18 @@ const AiSearch: React.FC<AiSearchProps> = ({ properties, onApplyFilters, isMobil
         try {
             const result = await getAiChatResponse(newHistory, properties);
             const aiMessage: ChatMessage = { sender: 'ai', text: result.responseMessage };
-            setHistory(prev => [...prev, aiMessage]);
+            onHistoryChange([...newHistory, aiMessage]);
             if (result.isFinalQuery && result.searchQuery) {
                 setFinalQuery(result.searchQuery);
             }
         } catch (error) {
             console.error("AI chat error:", error);
             const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I'm having trouble connecting right now. Please try again in a moment." };
-            setHistory(prev => [...prev, errorMessage]);
+            onHistoryChange([...newHistory, errorMessage]);
         } finally {
             setIsSearching(false);
         }
-    }, [input, history, properties]);
+    }, [input, history, properties, onHistoryChange]);
 
     const handleApplyClick = () => {
         if (finalQuery) {

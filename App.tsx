@@ -16,6 +16,8 @@ import SubscriptionModal from './components/BuyerFlow/SubscriptionModal';
 import AgentsPage from './components/AgentsPage/AgentsPage';
 import PropertyDetailsPage from './components/BuyerFlow/PropertyDetailsPage';
 import { LogoIcon } from './constants';
+import ListingLimitWarningModal from './components/shared/ListingLimitWarningModal';
+import DiscountGameModal from './components/shared/DiscountGameModal';
 
 const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar }) => {
   const { state } = useAppContext();
@@ -73,6 +75,7 @@ const MainLayout: React.FC = () => {
         // Optionally show an error toast
     } finally {
         dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: false } });
+        dispatch({ type: 'SET_ACTIVE_DISCOUNT', payload: null });
     }
   };
 
@@ -83,6 +86,18 @@ const MainLayout: React.FC = () => {
         dispatch({ type: 'SET_PENDING_PROPERTY', payload: null });
     }
     dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: false } });
+    dispatch({ type: 'SET_ACTIVE_DISCOUNT', payload: null });
+  };
+  
+  const handleWarningConfirm = () => {
+    dispatch({ type: 'TOGGLE_LISTING_LIMIT_WARNING', payload: false });
+    dispatch({ type: 'TOGGLE_DISCOUNT_GAME', payload: true });
+  };
+
+  const handleGameComplete = (discounts: { proYearly: number; proMonthly: number; enterprise: number; }) => {
+    dispatch({ type: 'SET_ACTIVE_DISCOUNT', payload: discounts });
+    dispatch({ type: 'TOGGLE_DISCOUNT_GAME', payload: false });
+    dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: true } });
   };
 
   return (
@@ -96,6 +111,18 @@ const MainLayout: React.FC = () => {
             </main>
         </div>
         
+        <ListingLimitWarningModal
+            isOpen={state.isListingLimitWarningOpen}
+            onClose={() => {
+                dispatch({ type: 'SET_PENDING_PROPERTY', payload: null });
+                dispatch({ type: 'TOGGLE_LISTING_LIMIT_WARNING', payload: false });
+            }}
+            onConfirm={handleWarningConfirm}
+        />
+        <DiscountGameModal
+            isOpen={state.isDiscountGameOpen}
+            onGameComplete={handleGameComplete}
+        />
         <PricingPlans 
             isOpen={state.isPricingModalOpen} 
             onClose={handlePricingClose}

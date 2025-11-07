@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 interface NumberInputWithSteppersProps {
     label: string;
@@ -10,6 +10,7 @@ interface NumberInputWithSteppersProps {
 }
 
 const NumberInputWithSteppers: React.FC<NumberInputWithSteppersProps> = ({ label, value, onChange, min = 0, max, step = 1 }) => {
+    const id = useMemo(() => `number-input-${label.toLowerCase().replace(/\s+/g, '-')}`, [label]);
 
     const handleIncrement = () => {
         const newValue = (value || 0) + step;
@@ -37,7 +38,7 @@ const NumberInputWithSteppers: React.FC<NumberInputWithSteppersProps> = ({ label
 
     return (
         <div className="relative">
-            <label className="block text-sm font-medium text-neutral-700 mb-1">{label}</label>
+            <label htmlFor={id} className="block text-sm font-medium text-neutral-700 mb-1">{label}</label>
             <div className="flex items-center justify-between w-full h-[58px] bg-white rounded-lg border border-neutral-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
                 <button 
                     type="button" 
@@ -50,6 +51,7 @@ const NumberInputWithSteppers: React.FC<NumberInputWithSteppersProps> = ({ label
                 </button>
                 <input 
                     type="number" 
+                    id={id}
                     value={value || ''} 
                     onChange={handleChange}
                     className="w-full text-center text-lg font-semibold text-neutral-900 border-none focus:ring-0 bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"

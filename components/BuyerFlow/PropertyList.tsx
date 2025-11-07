@@ -25,6 +25,9 @@ interface PropertyListProps {
   onApplyAiFilters: (query: AiSearchQuery) => void;
   onQueryFocus: () => void;
   onBlur: () => void;
+  isAreaDrawn: boolean;
+  aiChatHistory: ChatMessage[];
+  onAiChatHistoryChange: (history: ChatMessage[]) => void;
 }
 
 const FilterButton: React.FC<{
@@ -72,8 +75,8 @@ const formatNumber = (num: number) => new Intl.NumberFormat('de-DE').format(num)
 
 const ITEMS_PER_PAGE = 20;
 
-const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'>> = ({
-    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, onQueryFocus, onBlur
+const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList' | 'aiChatHistory' | 'onAiChatHistoryChange'>> = ({
+    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, onQueryFocus, onBlur, isAreaDrawn
 }) => {
 
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -267,12 +270,13 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                  <input
                     type="checkbox"
                     id="search-on-move"
-                    checked={searchOnMove}
+                    checked={!isAreaDrawn && searchOnMove}
+                    disabled={isAreaDrawn}
                     onChange={(e) => onSearchOnMoveChange(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
                 />
-                <label htmlFor="search-on-move" className="ml-2 block text-xs text-neutral-600">
-                    Search as I move the map
+                <label htmlFor="search-on-move" className={`ml-2 block text-xs ${isAreaDrawn ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                    Search as I move the map {isAreaDrawn && '(area drawn)'}
                 </label>
             </div>
 
@@ -320,7 +324,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
     const { state } = useAppContext();
     const { isLoadingProperties } = state;
 
-    const { properties, filters, onSortChange, isMobile, showFilters, showList, searchMode, onSearchModeChange, onApplyAiFilters } = props;
+    const { properties, filters, onSortChange, isMobile, showFilters, showList, searchMode, onSearchModeChange, onApplyAiFilters, aiChatHistory, onAiChatHistoryChange } = props;
 
     const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
     const loadMoreRef = useRef(null);
@@ -380,7 +384,13 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
             
             {searchMode === 'ai' && showFilters ? (
                 <div className="flex-grow min-h-0">
-                    <AiSearch properties={properties} onApplyFilters={onApplyAiFilters} isMobile={isMobile} />
+                    <AiSearch 
+                        properties={properties} 
+                        onApplyFilters={onApplyAiFilters} 
+                        isMobile={isMobile}
+                        history={aiChatHistory}
+                        onHistoryChange={onAiChatHistoryChange}
+                    />
                 </div>
             ) : (
                 <>

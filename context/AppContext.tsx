@@ -1,7 +1,18 @@
 import React, { createContext, useReducer, useContext, Dispatch, useCallback } from 'react';
-import { User, Property, SavedSearch, Conversation, AppState, AppAction, Filters, Message, AuthModalView, MunicipalityData } from '../types';
+import { User, Property, SavedSearch, Conversation, AppState, AppAction, Filters, Message, AuthModalView, MunicipalityData, initialFilters, SearchPageState } from '../types';
 import * as api from '../services/apiService';
 import { MUNICIPALITY_DATA } from '../services/propertyService';
+
+const initialSearchPageState: SearchPageState = {
+    filters: initialFilters,
+    activeFilters: initialFilters,
+    searchOnMove: true,
+    mapBoundsJSON: null,
+    drawnBoundsJSON: null,
+    mobileView: 'map',
+    searchMode: 'manual',
+    aiChatHistory: [{ sender: 'ai', text: "Hello! Welcome to Balkan Estate. How can I help you find a property today?" }]
+};
 
 const initialState: AppState = {
   onboardingComplete: false,
@@ -27,6 +38,10 @@ const initialState: AppState = {
   selectedAgentId: null,
   allMunicipalities: MUNICIPALITY_DATA,
   pendingProperty: null,
+  searchPageState: initialSearchPageState,
+  activeDiscount: null,
+  isListingLimitWarningOpen: false,
+  isDiscountGameOpen: false,
 };
 
 
@@ -119,8 +134,57 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, currentUser: state.currentUser ? { ...state.currentUser, ...action.payload } : null };
     case 'ADD_MESSAGE':
         return { ...state, conversations: state.conversations.map(c => c.id === action.payload.conversationId ? { ...c, messages: [...c.messages, action.payload.message] } : c ) };
+    // FIX: Add missing reducer case for creating a new conversation or adding a message to an existing one.
+    case 'CREATE_OR_ADD_MESSAGE': {
+        const { propertyId, message } = action.payload;
+        const existingConversation = state.conversations.find(c => c.propertyId === propertyId);
+        if (existingConversation) {
+            return {
+                ...state,
+                conversations: state.conversations.map(c =>
+                    c.id === existingConversation.id ? { ...c, messages: [...c.messages, message] } : c
+                )
+            };
+        } else {
+            const property = state.properties.find(p => p.id === propertyId);
+            if (!property || !state.currentUser) return state;
+            const newConversation: Conversation = {
+                id: `conv-${Date.now()}`,
+                propertyId,
+                participants: [state.currentUser.id, property.sellerId],
+                messages: [message],
+            };
+            return { ...state, conversations: [newConversation, ...state.conversations] };
+        }
+    }
+    // FIX: Add missing reducer case for marking a conversation as read.
+    case 'MARK_CONVERSATION_AS_READ': {
+        const conversationId = action.payload;
+        return {
+            ...state,
+            conversations: state.conversations.map(c =>
+                c.id === conversationId
+                    ? { ...c, messages: c.messages.map(m => ({ ...m, isRead: true })) }
+                    : c
+            )
+        };
+    }
     case 'SET_PENDING_PROPERTY':
         return { ...state, pendingProperty: action.payload };
+    case 'UPDATE_SEARCH_PAGE_STATE':
+        return {
+            ...state,
+            searchPageState: {
+                ...state.searchPageState,
+                ...action.payload,
+            },
+        };
+    case 'SET_ACTIVE_DISCOUNT':
+        return { ...state, activeDiscount: action.payload };
+    case 'TOGGLE_LISTING_LIMIT_WARNING':
+        return { ...state, isListingLimitWarningOpen: action.payload };
+    case 'TOGGLE_DISCOUNT_GAME':
+        return { ...state, isDiscountGameOpen: action.payload };
     default:
       return state;
   }
@@ -145,6 +209,7 @@ interface AppContextType {
     createListing: (property: Property) => Promise<Property>;
     updateListing: (property: Property) => Promise<Property>;
     updateUser: (userData: Partial<User>) => Promise<User>;
+    updateSearchPageState: (newState: Partial<SearchPageState>) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -265,7 +330,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return updatedUser;
   }, []);
 
-  const value = { state, dispatch, checkAuthStatus, login, signup, logout, requestPasswordReset, loginWithSocial, sendPhoneCode, verifyPhoneCode, completePhoneSignup, fetchProperties, toggleSavedHome, addSavedSearch, sendMessage, createListing, updateListing, updateUser };
+  const updateSearchPageState = useCallback((newState: Partial<SearchPageState>) => {
+    dispatch({ type: 'UPDATE_SEARCH_PAGE_STATE', payload: newState });
+  }, []);
+
+  const value = { state, dispatch, checkAuthStatus, login, signup, logout, requestPasswordReset, loginWithSocial, sendPhoneCode, verifyPhoneCode, completePhoneSignup, fetchProperties, toggleSavedHome, addSavedSearch, sendMessage, createListing, updateListing, updateUser, updateSearchPageState };
 
   return (
     <AppContext.Provider value={value}>

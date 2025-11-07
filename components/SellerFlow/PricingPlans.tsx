@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../shared/Modal';
 import { BuildingOfficeIcon, ChartBarIcon, CurrencyDollarIcon, BoltIcon } from '../../constants';
+import { useAppContext } from '../../context/AppContext';
 
 interface PricingPlansProps {
   isOpen: boolean;
@@ -14,6 +15,8 @@ const TickIcon: React.FC = () => (
 );
 
 const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscribe, isOffer }) => {
+  const { state } = useAppContext();
+  const { activeDiscount } = state;
   const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes in seconds
   const [showConfirmation, setShowConfirmation] = useState(false);
 
@@ -52,6 +55,25 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
     return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
   };
 
+  const applyDiscount = (price: number, discount: number) => {
+    if (discount > 0) {
+        return Math.round(price * (1 - discount / 100));
+    }
+    return price;
+  };
+
+  const proYearlyPrice = 200;
+  const proMonthlyPrice = 25;
+  const enterprisePrice = 1000;
+
+  const proYearlyDiscount = isOffer && activeDiscount ? activeDiscount.proYearly : 0;
+  const proMonthlyDiscount = isOffer && activeDiscount ? activeDiscount.proMonthly : 0;
+  const enterpriseDiscount = isOffer && activeDiscount ? activeDiscount.enterprise : 0;
+
+  const discountedProYearly = applyDiscount(proYearlyPrice, proYearlyDiscount);
+  const discountedProMonthly = applyDiscount(proMonthlyPrice, proMonthlyDiscount);
+  const discountedEnterprise = applyDiscount(enterprisePrice, enterpriseDiscount);
+
 
   return (
     <Modal isOpen={isOpen} onClose={handleCloseAttempt} size="5xl">
@@ -59,7 +81,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
             {showConfirmation && (
                 <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-10 flex flex-col justify-center items-center p-8 text-center rounded-2xl">
                     <h3 className="text-2xl font-bold text-red-600">Are you sure?</h3>
-                    <p className="mt-2 text-neutral-700 max-w-sm text-sm sm:text-base">This is a one-time offer. If you leave now, you won't see this amazing discount again.</p>
+                    <p className="mt-2 text-neutral-700 max-w-sm text-sm sm:text-base">This is a one-time offer. If you leave now, you won't see these amazing discounts again.</p>
                     <div className="mt-6 flex gap-4">
                         <button onClick={onClose} className="px-8 py-2.5 border border-red-600 text-red-600 font-semibold rounded-lg hover:bg-red-50 transition-colors">Leave Offer</button>
                         <button onClick={() => setShowConfirmation(false)} className="px-8 py-2.5 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition-colors">Stay & Save!</button>
@@ -81,8 +103,8 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
             <div className="text-center mb-10">
                 {isOffer ? (
                     <>
-                        <h2 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">Congratulations on Your Listing!</h2>
-                        <p className="mt-4 text-base sm:text-lg text-neutral-600">As a special thank you, enjoy this one-time discount on our selling plans.</p>
+                        <h2 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">Congratulations! You've Unlocked Exclusive Discounts!</h2>
+                        <p className="mt-4 text-base sm:text-lg text-neutral-600">Enjoy this one-time offer on our selling plans as a thank you.</p>
                     </>
                 ) : (
                     <>
@@ -97,24 +119,24 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                 <div className="relative p-6 sm:p-8 rounded-2xl border-2 border-green-400 bg-gradient-to-br from-green-50 to-cyan-50 shadow-lg lg:-translate-y-4 flex flex-col h-full">
                     <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
                         <span className="inline-block bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
-                            {isOffer ? '60% OFF' : 'MOST POPULAR'}
+                            {isOffer && proYearlyDiscount > 0 ? `${proYearlyDiscount}% OFF` : 'MOST POPULAR'}
                         </span>
                     </div>
                     <div className="text-center pt-4">
                         <h3 className="text-xl sm:text-2xl font-bold text-neutral-800">Pro Yearly</h3>
                         <div className="mt-2 h-20 flex flex-col items-center justify-center">
-                            {isOffer ? (
+                            {isOffer && proYearlyDiscount > 0 ? (
                                 <>
                                     <div>
-                                        <span className="text-xl sm:text-2xl font-semibold text-neutral-500 line-through">€200</span>
-                                        <span className="text-4xl sm:text-5xl font-extrabold text-red-600 ml-2">€80</span>
+                                        <span className="text-xl sm:text-2xl font-semibold text-neutral-500 line-through">€{proYearlyPrice}</span>
+                                        <span className="text-4xl sm:text-5xl font-extrabold text-red-600 ml-2">€{discountedProYearly}</span>
                                         <span className="text-lg sm:text-xl font-semibold text-neutral-600">/year</span>
                                     </div>
-                                    <p className="mt-1 text-sm sm:text-base font-bold text-green-600">You save €120!</p>
+                                    <p className="mt-1 text-sm sm:text-base font-bold text-green-600">You save €{proYearlyPrice - discountedProYearly}!</p>
                                 </>
                             ) : (
                                 <p>
-                                    <span className="text-4xl sm:text-5xl font-extrabold text-neutral-900">€200</span>
+                                    <span className="text-4xl sm:text-5xl font-extrabold text-neutral-900">€{proYearlyPrice}</span>
                                     <span className="text-lg sm:text-xl font-semibold text-neutral-600">/year</span>
                                 </p>
                             )}
@@ -129,32 +151,32 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                         <li className="flex items-center"><TickIcon /> Priority customer support</li>
                     </ul>
                     <button onClick={onSubscribe} className="w-full mt-8 py-3.5 rounded-lg font-bold text-white bg-indigo-500 hover:bg-indigo-600 transition-colors shadow-md text-base sm:text-lg">
-                        {isOffer ? 'Get Pro Annual - €80/year' : 'Get Pro Annual - €200/year'}
+                        {isOffer ? `Get Pro Annual - €${discountedProYearly}/year` : `Get Pro Annual - €${proYearlyPrice}/year`}
                     </button>
                 </div>
 
                 {/* Pro Monthly Plan */}
                 <div className="relative p-6 sm:p-8 rounded-2xl border border-neutral-200 bg-white flex flex-col h-full">
-                     {isOffer && (
+                     {isOffer && proMonthlyDiscount > 0 && (
                         <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
-                             <span className="inline-block bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">50% OFF</span>
+                             <span className="inline-block bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">{proMonthlyDiscount}% OFF</span>
                         </div>
                     )}
                      <div className="text-center pt-4">
                         <h3 className="text-xl sm:text-2xl font-bold text-neutral-800">Pro Monthly</h3>
                         <div className="mt-2 h-20 flex flex-col items-center justify-center">
-                            {isOffer ? (
+                            {isOffer && proMonthlyDiscount > 0 ? (
                                 <>
                                     <div>
-                                        <span className="text-xl sm:text-2xl font-semibold text-neutral-500 line-through">€25</span>
-                                        <span className="text-4xl sm:text-5xl font-extrabold text-red-600 ml-2">€12.50</span>
+                                        <span className="text-xl sm:text-2xl font-semibold text-neutral-500 line-through">€{proMonthlyPrice}</span>
+                                        <span className="text-4xl sm:text-5xl font-extrabold text-red-600 ml-2">€{discountedProMonthly}</span>
                                         <span className="text-lg sm:text-xl font-semibold text-neutral-600">/month</span>
                                     </div>
-                                    <p className="mt-1 text-sm sm:text-base font-bold text-green-600">You save €12.50!</p>
+                                    <p className="mt-1 text-sm sm:text-base font-bold text-green-600">You save €{proMonthlyPrice - discountedProMonthly}!</p>
                                 </>
                             ) : (
                                 <p>
-                                    <span className="text-4xl sm:text-5xl font-extrabold text-neutral-900">€25</span>
+                                    <span className="text-4xl sm:text-5xl font-extrabold text-neutral-900">€{proMonthlyPrice}</span>
                                     <span className="text-lg sm:text-xl font-semibold text-neutral-600">/month</span>
                                 </p>
                             )}
@@ -183,35 +205,35 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                         </div>
                     </div>
                      <button onClick={onSubscribe} className="w-full mt-8 py-3.5 rounded-lg font-bold bg-white border border-neutral-300 text-neutral-700 hover:bg-neutral-100 transition-colors shadow-sm text-base sm:text-lg">
-                        {isOffer ? 'Get Pro Monthly - €12.50/month' : 'Get Pro Monthly - €25/month'}
+                        {isOffer ? `Get Pro Monthly - €${discountedProMonthly}/month` : `Get Pro Monthly - €${proMonthlyPrice}/month`}
                     </button>
                 </div>
 
                 {/* Enterprise Plan */}
                 <div className="relative p-6 sm:p-8 rounded-2xl bg-neutral-800 text-white flex flex-col h-full">
-                    <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
-                         <span className="inline-block bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
-                            {isOffer ? '20% OFF' : 'OFFER'}
-                         </span>
-                    </div>
+                    {isOffer && enterpriseDiscount > 0 && (
+                        <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
+                            <span className="inline-block bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">{enterpriseDiscount}% OFF</span>
+                        </div>
+                    )}
                      <div className="text-center pt-4">
                         <div className="flex justify-center items-center gap-2">
                            <BuildingOfficeIcon className="w-8 h-8 text-amber-400" />
                            <h3 className="text-xl sm:text-2xl font-bold">Enterprise Plan</h3>
                         </div>
                         <div className="mt-2 h-20 flex flex-col items-center justify-center">
-                            {isOffer ? (
+                            {isOffer && enterpriseDiscount > 0 ? (
                                 <>
                                     <div>
-                                        <span className="text-lg sm:text-xl font-semibold text-neutral-400 line-through">€1,000</span>
-                                        <span className="text-3xl sm:text-4xl font-extrabold ml-2">€800</span>
+                                        <span className="text-lg sm:text-xl font-semibold text-neutral-400 line-through">€{enterprisePrice}</span>
+                                        <span className="text-3xl sm:text-4xl font-extrabold ml-2">€{discountedEnterprise}</span>
                                         <span className="text-base sm:text-lg font-semibold text-neutral-300">/year</span>
                                     </div>
-                                    <p className="mt-1 text-sm sm:text-base font-bold text-green-500">You save €200!</p>
+                                    <p className="mt-1 text-sm sm:text-base font-bold text-green-500">You save €{enterprisePrice - discountedEnterprise}!</p>
                                 </>
                             ) : (
                                 <p>
-                                    <span className="text-3xl sm:text-4xl font-extrabold">€1,000</span>
+                                    <span className="text-3xl sm:text-4xl font-extrabold">€{enterprisePrice}</span>
                                     <span className="text-base sm:text-lg font-semibold text-neutral-300">/year</span>
                                 </p>
                             )}
@@ -232,7 +254,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                         </div>
                     </div>
                      <button onClick={onSubscribe} className="w-full mt-8 py-3.5 rounded-lg font-bold bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-md text-base sm:text-lg">
-                         {isOffer ? 'Contact Sales - €800/year' : 'Perfect for Real Estate Companies'}
+                         {isOffer ? `Contact Sales - €${discountedEnterprise}/year` : 'Perfect for Real Estate Companies'}
                     </button>
                 </div>
             </div>
