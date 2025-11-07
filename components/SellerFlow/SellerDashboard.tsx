@@ -14,8 +14,8 @@ const CreateListingPage: React.FC = () => {
           {state.propertyToEdit ? 'Edit Your Listing' : 'Create a New Listing'}
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
                  <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-xl shadow-lg border border-neutral-200">
                     <div className="flex items-center gap-4 mb-4">
                         <div className="bg-primary-light p-3 rounded-full">
@@ -29,7 +29,7 @@ const CreateListingPage: React.FC = () => {
                     <GeminiDescriptionGenerator propertyToEdit={state.propertyToEdit} />
                 </div>
             </div>
-            <div className="md:col-span-1">
+            <div className="lg:col-span-1">
                  <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-xl shadow-lg border border-neutral-200 h-full">
                     <div className="flex items-center gap-4 mb-4">
                         <div className="bg-secondary/20 p-3 rounded-full">

@@ -68,7 +68,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({ isOpen, onClose, prop
                 <table className="w-full border-collapse">
                     <thead>
                         <tr className="border-b-2 border-neutral-200">
-                            <th className="p-4 text-left font-bold text-neutral-800 w-[15%] sticky left-0 bg-white">Feature</th>
+                            <th className="p-4 text-left font-bold text-neutral-800 w-[15%] sticky left-0 bg-white z-10">Feature</th>
                             {properties.map(p => (
                                 <th key={p.id} className="p-4 w-[21.25%]">
                                     <CompareModalImage property={p} />
@@ -79,7 +79,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({ isOpen, onClose, prop
                     <tbody>
                         {rows.map(row => (
                             <tr key={row.label} className="border-b border-neutral-100 hover:bg-neutral-50">
-                                <td className="p-4 font-semibold text-neutral-700 sticky left-0 bg-white hover:bg-neutral-50">{row.label}</td>
+                                <td className="p-4 font-semibold text-neutral-700 sticky left-0 bg-white hover:bg-neutral-50 z-10">{row.label}</td>
                                 {properties.map(p => {
                                     const value = p[row.key as keyof Property];
                                     const displayValue = row.format(p);

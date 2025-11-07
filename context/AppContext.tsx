@@ -11,7 +11,8 @@ const initialSearchPageState: SearchPageState = {
     drawnBoundsJSON: null,
     mobileView: 'map',
     searchMode: 'manual',
-    aiChatHistory: [{ sender: 'ai', text: "Hello! Welcome to Balkan Estate. How can I help you find a property today?" }]
+    aiChatHistory: [{ sender: 'ai', text: "Hello! Welcome to Balkan Estate. How can I help you find a property today?" }],
+    isAiChatModalOpen: false,
 };
 
 const initialState: AppState = {
@@ -185,6 +186,13 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         return { ...state, isListingLimitWarningOpen: action.payload };
     case 'TOGGLE_DISCOUNT_GAME':
         return { ...state, isDiscountGameOpen: action.payload };
+    case 'UPDATE_SAVED_SEARCH_ACCESS_TIME':
+        return {
+            ...state,
+            savedSearches: state.savedSearches.map(s =>
+                s.id === action.payload ? { ...s, lastAccessed: Date.now() } : s
+            ),
+        };
     default:
       return state;
   }
@@ -210,6 +218,7 @@ interface AppContextType {
     updateListing: (property: Property) => Promise<Property>;
     updateUser: (userData: Partial<User>) => Promise<User>;
     updateSearchPageState: (newState: Partial<SearchPageState>) => void;
+    updateSavedSearchAccessTime: (searchId: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -334,7 +343,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'UPDATE_SEARCH_PAGE_STATE', payload: newState });
   }, []);
 
-  const value = { state, dispatch, checkAuthStatus, login, signup, logout, requestPasswordReset, loginWithSocial, sendPhoneCode, verifyPhoneCode, completePhoneSignup, fetchProperties, toggleSavedHome, addSavedSearch, sendMessage, createListing, updateListing, updateUser, updateSearchPageState };
+  const updateSavedSearchAccessTime = useCallback(async (searchId: string) => {
+    await api.updateSavedSearchAccessTime(searchId);
+    dispatch({ type: 'UPDATE_SAVED_SEARCH_ACCESS_TIME', payload: searchId });
+  }, []);
+
+  const value = { state, dispatch, checkAuthStatus, login, signup, logout, requestPasswordReset, loginWithSocial, sendPhoneCode, verifyPhoneCode, completePhoneSignup, fetchProperties, toggleSavedHome, addSavedSearch, sendMessage, createListing, updateListing, updateUser, updateSearchPageState, updateSavedSearchAccessTime };
 
   return (
     <AppContext.Provider value={value}>

@@ -336,3 +336,9 @@ export const updateUser = async(userData: Partial<User>): Promise<User> => {
     }
     return updatedUser;
 };
+
+export const updateSavedSearchAccessTime = async (searchId: string): Promise<{ success: true }> => {
+    await sleep(LATENCY / 4);
+    console.log(`Simulating update of lastAccessed for search: ${searchId}`);
+    return { success: true };
+};

@@ -141,6 +141,8 @@ export interface SavedSearch {
     name: string;
     filters: Filters;
     drawnBoundsJSON: string | null;
+    createdAt: number;
+    lastAccessed: number;
 }
 
 export interface ChatMessage {
@@ -205,6 +207,7 @@ export interface SearchPageState {
     mobileView: 'map' | 'list';
     searchMode: 'manual' | 'ai';
     aiChatHistory: ChatMessage[];
+    isAiChatModalOpen: boolean;
 }
 
 export interface AppState {
@@ -272,4 +275,5 @@ export type AppAction =
     | { type: 'UPDATE_SEARCH_PAGE_STATE', payload: Partial<SearchPageState> }
     | { type: 'SET_ACTIVE_DISCOUNT', payload: { proYearly: number; proMonthly: number; enterprise: number; } | null }
     | { type: 'TOGGLE_LISTING_LIMIT_WARNING', payload: boolean }
-    | { type: 'TOGGLE_DISCOUNT_GAME', payload: boolean };
+    | { type: 'TOGGLE_DISCOUNT_GAME', payload: boolean }
+    | { type: 'UPDATE_SAVED_SEARCH_ACCESS_TIME', payload: string };

@@ -64,7 +64,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
             </div>
         )}
         <div onClick={handleFavoriteClick} className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm p-2 rounded-full cursor-pointer hover:bg-white z-10">
-             <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 transition-colors duration-300 ${isFavorited ? 'text-red-500 fill-current' : 'text-neutral-500 hover:text-red-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             <svg xmlns="http://www.w.org/2000/svg" className={`h-6 w-6 transition-colors duration-300 ${isFavorited ? 'text-red-500 fill-current' : 'text-neutral-500 hover:text-red-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
         </div>
@@ -76,7 +76,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
                 <span className="truncate text-sm">{property.address}, {property.city}</span>
             </div>
             <p className="text-3xl font-bold text-neutral-900 my-2">{formatPrice(property.price, property.country)}</p>
-            <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-neutral-700">
+            <div className="flex items-center flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 text-neutral-700">
                 <div className="flex items-center gap-1.5" title={`${property.beds} bedrooms`}>
                     <BedIcon className="w-5 h-5 text-neutral-500" />
                     <span className="font-semibold text-sm">{property.beds}</span>

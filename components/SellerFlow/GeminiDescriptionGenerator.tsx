@@ -647,7 +647,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     if (step === 'loading') {
         return (
              <div className="text-center py-12 flex flex-col items-center">
-                <WhackAnIconAnimation mode="game" />
+                <WhackAnIconAnimation mode="loading" />
             </div>
         );
     }
@@ -742,7 +742,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                                         <InfoIcon className="w-8 h-8 flex-shrink-0"/>
                                         <p>Drag and drop images to reorder them. The first image will be the main cover photo for your listing.</p>
                                     </div>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
                                         {images.map((img, index) => (
                                             <div 
                                                 key={img.previewUrl}
