@@ -55,6 +55,26 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     
     const isModalOpen = isAuthModalOpen || isPricingModalOpen || isSubscriptionModalOpen;
     
+    const [priceRange, sqftRange] = useMemo(() => {
+        if (properties.length === 0) {
+            return [{ min: 0, max: 2000000 }, { min: 0, max: 500 }];
+        }
+        const prices = properties.map(p => p.price).filter(p => p > 0);
+        const sqfts = properties.map(p => p.sqft).filter(s => s > 0);
+
+        if (prices.length === 0 || sqfts.length === 0) {
+            return [{ min: 0, max: 2000000 }, { min: 0, max: 500 }];
+        }
+
+        const minPrice = Math.floor(Math.min(...prices) / 10000) * 10000;
+        const maxPrice = Math.ceil(Math.max(...prices) / 10000) * 10000;
+        
+        const minSqft = Math.floor(Math.min(...sqfts) / 10) * 10;
+        const maxSqft = Math.ceil(Math.max(...sqfts) / 10) * 10;
+
+        return [{ min: minPrice, max: maxPrice }, { min: minSqft, max: maxSqft }];
+    }, [properties]);
+    
     const toggleDrawing = () => {
         const nextIsDrawing = !isDrawing;
         setIsDrawing(nextIsDrawing);
@@ -67,7 +87,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         updateSearchPageState({ drawnBoundsJSON: null });
     };
 
-    const handleDrawComplete = useCallback((bounds: L.LatLngBounds | null) => {
+    const onDrawComplete = useCallback((bounds: L.LatLngBounds | null) => {
         updateSearchPageState({ drawnBoundsJSON: bounds ? JSON.stringify(bounds) : null });
         setIsDrawing(false);
     }, [updateSearchPageState]);
@@ -407,7 +427,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         isAuthenticated: isAuthenticated,
         mapBounds: mapBounds,
         drawnBounds,
-        onDrawComplete: handleDrawComplete,
+        onDrawComplete: onDrawComplete,
         isDrawing: isDrawing,
         onDrawStart: toggleDrawing,
         tileLayer: tileLayer,
@@ -434,6 +454,8 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         isAreaDrawn: !!drawnBounds,
         aiChatHistory: aiChatHistory,
         onAiChatHistoryChange: (newHistory: ChatMessage[]) => updateSearchPageState({ aiChatHistory: newHistory }),
+        priceRange,
+        sqftRange,
     };
 
     const MobileFilters = () => (
@@ -486,7 +508,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                             </div>
                             
                              <div className="relative" ref={fabRef}>
-                                <button type="button" onClick={() => setIsFabOpen(prev => !prev)} className="p-2 rounded-full flex-shrink-0 hover:bg-neutral-100">
+                                <button type="button" onClick={() => setIsFabOpen(prev => !prev)} className={`p-2 rounded-full flex-shrink-0 hover:bg-neutral-100 ${mobileView === 'list' ? 'hidden' : 'block'}`}>
                                     <PlusIcon className="w-6 h-6 text-neutral-800" />
                                 </button>
                                 {isFabOpen && mobileView === 'map' && (
