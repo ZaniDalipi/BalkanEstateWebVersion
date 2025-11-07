@@ -141,7 +141,7 @@ export const generateDescriptionFromImages = async (images: File[], language: st
         const parsedResult = JSON.parse(sanitizedJsonText);
         return parsedResult as PropertyAnalysisResult;
     } catch (e) {
-        console.error("Error parsing Gemini response:", e);
+        console.error("Error parsing Gemini response:", e instanceof Error ? e.message : String(e));
         console.error("Raw response text:", result.text);
         throw new Error("Failed to get a valid response from the AI. Please try again.");
     }
@@ -268,7 +268,7 @@ export const getAiChatResponse = async (history: ChatMessage[], properties: Prop
         const parsedResult = JSON.parse(jsonText);
         return parsedResult as AiChatResponse;
     } catch (e) {
-        console.error("Error parsing Gemini chat response:", e);
+        console.error("Error parsing Gemini chat response:", e instanceof Error ? e.message : String(e));
         console.error("Raw chat response text:", result.text);
         return {
             responseMessage: "I'm having a little trouble understanding. Could you please rephrase your request, or try using the manual filters?",
@@ -389,7 +389,7 @@ export const getNeighborhoodInsights = async (lat: number, lng: number, city: st
         });
         return result.text.trim();
     } catch (e) {
-        console.error("Error fetching neighborhood insights:", e);
+        console.error("Error fetching neighborhood insights:", e instanceof Error ? e.message : String(e));
         throw new Error("Could not retrieve neighborhood insights at this time.");
     }
 };
