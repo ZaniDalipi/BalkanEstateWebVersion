@@ -44,12 +44,12 @@ export interface PropertyAnalysisResult {
 }
 
 
-export const generateDescriptionFromImages = async (images: File[], language: string): Promise<PropertyAnalysisResult> => {
+export const generateDescriptionFromImages = async (images: File[], language: string, propertyType: 'house' | 'apartment' | 'villa' | 'other'): Promise<PropertyAnalysisResult> => {
     const imageParts = await Promise.all(images.map(fileToGenerativePart));
 
-    const prompt = `Analyze the following images of a property. Based on the images, provide a detailed analysis of the property. The property is located in the Balkans region. The description should be written in ${language}. Provide the following details in a JSON object:
+    const prompt = `Analyze the following images for a property that is a(n) "${propertyType}". Based on the images and knowing its type, provide a detailed analysis. The property is in the Balkans. The description should be written in ${language} and be tailored specifically for a(n) "${propertyType}". Provide the following details in a JSON object:
     
-    1.  **description**: A compelling and detailed property description, starting with a short intro paragraph and then a bulleted list of "Key Features" and "Materials & Construction".
+    1.  **description**: A compelling and detailed property description, starting with a short intro paragraph and then a bulleted list of "Key Features" and "Materials & Construction". Make sure the tone and focus of the description are appropriate for a(n) "${propertyType}".
     2.  **bedrooms**: The number of bedrooms visible.
     3.  **bathrooms**: The number of bathrooms visible.
     4.  **living_rooms**: The number of living rooms visible.
@@ -60,7 +60,7 @@ export const generateDescriptionFromImages = async (images: File[], language: st
     9.  **key_features**: A list of key selling points (e.g., "modern kitchen", "hardwood floors", "city view"). These will also become "Special Features".
     10. **materials**: A list of prominent building materials seen (e.g., "brick", "wood", "marble"). These will become "Materials".
     11. **image_tags**: For each image provided, assign a tag from the following list: 'exterior', 'living_room', 'kitchen', 'bedroom', 'bathroom', 'other'. The output should be an array of objects, where each object has an 'index' (corresponding to the image order, starting from 0) and a 'tag'.
-    12. **property_type**: The type of property from this list: 'house', 'apartment', 'villa', 'other'.
+    12. **property_type**: Confirm the property type based on my input. It must be "${propertyType}".
     13. **floor_number**: If the property is an 'apartment', estimate what floor it is on. Provide a single integer. If it's not an apartment or you cannot tell, omit this field.
     14. **total_floors**: If the property is a 'house' or 'villa', estimate the total number of floors (e.g., 1, 2, 3). If it is not a house or villa or you cannot tell, omit this field.
 
@@ -109,8 +109,8 @@ export const generateDescriptionFromImages = async (images: File[], language: st
             },
             property_type: {
                 type: Type.STRING,
-                enum: ['house', 'apartment', 'villa', 'other'],
-                description: 'The type of the property.',
+                enum: [propertyType],
+                description: `The type of the property, which must be '${propertyType}'.`,
             },
             floor_number: { 
                 type: Type.INTEGER, 
@@ -323,6 +323,29 @@ export const generateSearchName = async (filters: Filters): Promise<string> => {
 
         Now, generate a name for this filter object:
         ${JSON.stringify(relevantFilters)}
+
+        Return only the generated name string, without any markdown or extra text.
+    `;
+
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+    });
+
+    return result.text.trim();
+};
+
+export const generateSearchNameFromCoords = async (lat: number, lng: number): Promise<string> => {
+    const prompt = `
+        You are a helpful real estate assistant. Given the following latitude and longitude coordinates, generate a concise, human-readable name for the geographic area they represent. The name should be suitable for a saved search.
+
+        - Identify the most prominent feature at or very near these coordinates. This could be a village, a specific neighborhood, a mountain, a well-known park, or a coastal area.
+        - The name should be short and descriptive, under 5 words.
+        - For example: "Sirogojno Village Area", "Zlatibor Mountain Center", "Near Partizanska Street, Zlatibor", "Krani lakeside".
+
+        Coordinates:
+        Latitude: ${lat}
+        Longitude: ${lng}
 
         Return only the generated name string, without any markdown or extra text.
     `;

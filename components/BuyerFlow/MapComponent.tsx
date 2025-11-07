@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Rectangle } from 'react-leaflet';
 import { Property } from '../../types';
 import L from 'leaflet';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
-import { BellIcon } from '../../constants';
+import { BellIcon, PencilIcon, XCircleIcon } from '../../constants';
 
 
 // Fix for default icon issue with bundlers
@@ -42,6 +42,8 @@ interface MapComponentProps {
   isSaving: boolean;
   isAuthenticated: boolean;
   mapBounds: L.LatLngBounds | null;
+  drawnBounds: L.LatLngBounds | null;
+  onDrawComplete: (bounds: L.LatLngBounds | null) => void;
 }
 
 const ChangeView: React.FC<{center: [number, number], zoom: number, enabled: boolean}> = ({ center, zoom, enabled }) => {
@@ -84,6 +86,65 @@ const MapEvents: React.FC<{ onMove: (bounds: L.LatLngBounds, center: L.LatLng) =
     });
     return null;
 };
+
+const MapDrawEvents: React.FC<{
+    isDrawing: boolean;
+    onDrawComplete: (bounds: L.LatLngBounds) => void;
+}> = ({ isDrawing, onDrawComplete }) => {
+    const map = useMap();
+    const [startPos, setStartPos] = useState<L.LatLng | null>(null);
+    const [tempRect, setTempRect] = useState<L.Rectangle | null>(null);
+
+    useEffect(() => {
+        const mapContainer = map.getContainer();
+        if (isDrawing) {
+            map.dragging.disable();
+            map.scrollWheelZoom.disable();
+            mapContainer.style.cursor = 'crosshair';
+        } else {
+            map.dragging.enable();
+            map.scrollWheelZoom.enable();
+            mapContainer.style.cursor = '';
+            
+            if (tempRect) {
+                map.removeLayer(tempRect);
+                setTempRect(null);
+            }
+            setStartPos(null);
+        }
+    }, [isDrawing, map]);
+
+    useMapEvents({
+        mousedown(e) {
+            if (isDrawing) {
+                setStartPos(e.latlng);
+                const rect = L.rectangle([e.latlng, e.latlng], {
+                    color: '#0252CD',
+                    weight: 2,
+                    dashArray: '5, 5',
+                    fillOpacity: 0.1,
+                }).addTo(map);
+                setTempRect(rect);
+            }
+        },
+        mousemove(e) {
+            if (isDrawing && startPos && tempRect) {
+                tempRect.setBounds(L.latLngBounds(startPos, e.latlng));
+            }
+        },
+        mouseup() {
+            if (isDrawing && startPos && tempRect) {
+                onDrawComplete(tempRect.getBounds());
+                map.removeLayer(tempRect);
+                setTempRect(null);
+                setStartPos(null);
+            }
+        },
+    });
+
+    return null;
+};
+
 
 const formatMarkerPrice = (price: number): string => {
     if (price >= 1000000) {
@@ -187,9 +248,10 @@ const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) => {
     );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove, isSearchActive, searchLocation, userLocation, onSaveSearch, isSaving, isAuthenticated, mapBounds }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove, isSearchActive, searchLocation, userLocation, onSaveSearch, isSaving, isAuthenticated, mapBounds, drawnBounds, onDrawComplete }) => {
   const { dispatch } = useAppContext();
   const [tileLayer, setTileLayer] = useState<TileLayerType>('street');
+  const [isDrawing, setIsDrawing] = useState(false);
 
   // Filter out properties with invalid coordinates to prevent map errors
   const validProperties = useMemo(() => {
@@ -199,13 +261,16 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
   }, [properties]);
 
   const propertiesInView = useMemo(() => {
+    if (drawnBounds) {
+        return validProperties.filter(p => drawnBounds.contains([p.lat, p.lng])).slice(0, 500);
+    }
     if (!mapBounds) {
       return []; // Return empty array until map bounds are known
     }
     return validProperties
       .filter(p => mapBounds.contains([p.lat, p.lng]))
       .slice(0, 500); // Cap at 500 markers for performance
-  }, [validProperties, mapBounds]);
+  }, [validProperties, mapBounds, drawnBounds]);
   
     const { center, zoom } = useMemo(() => {
         // 1. HIGHEST PRIORITY: Explicit search location from the query input.
@@ -253,13 +318,37 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
     dispatch({ type: 'SET_SELECTED_PROPERTY', payload: propertyId });
   };
 
+  const handleDrawButtonClick = () => {
+    const nextIsDrawing = !isDrawing;
+    setIsDrawing(nextIsDrawing);
+    // If we are cancelling a draw, clear any drawn bounds
+    if (!nextIsDrawing && drawnBounds) {
+        onDrawComplete(null);
+    }
+};
+
+const handleClearDrawnBounds = () => {
+    onDrawComplete(null);
+    setIsDrawing(false); // Ensure we exit drawing mode
+};
+
   const bottomControlsOffset = 112; // 80px for floating button + 32px padding
 
   return (
     <div className="w-full h-full relative">
-      <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full" maxZoom={14} minZoom={5}>
+      <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full" maxZoom={18} minZoom={9}>
         <ChangeView center={center} zoom={zoom} enabled={recenter} />
         <MapEvents onMove={onMapMove} />
+        <MapDrawEvents isDrawing={isDrawing} onDrawComplete={(bounds) => {
+            onDrawComplete(bounds);
+            setIsDrawing(false);
+        }} />
+        {drawnBounds && (
+            <Rectangle
+                bounds={drawnBounds}
+                pathOptions={{ color: '#0252CD', weight: 3, fillOpacity: 0.2 }}
+            />
+        )}
         <TileLayer
           attribution={TILE_LAYERS[tileLayer].attribution}
           url={TILE_LAYERS[tileLayer].url}
@@ -267,18 +356,40 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
         <Markers properties={propertiesInView} onPopupClick={handlePopupClick} />
       </MapContainer>
       
-      {isAuthenticated && (
-        <div className="absolute top-4 right-4 z-[1000] hidden md:flex">
-          <button 
-            onClick={onSaveSearch} 
-            disabled={isSaving}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
-          >
-            <BellIcon className="w-5 h-5" />
-            <span>{isSaving ? 'Saving...' : 'Save Search'}</span>
-          </button>
+      <div className="absolute top-4 right-4 z-[1000] flex flex-col items-end gap-2">
+        <div className="flex items-center gap-2">
+            <button
+                onClick={handleDrawButtonClick}
+                className={`flex items-center gap-2 px-4 py-2 text-white font-bold rounded-full shadow-lg transition-colors ${
+                    isDrawing ? 'bg-red-500 hover:bg-red-600' : 'bg-primary hover:bg-primary-dark'
+                }`}
+            >
+                <PencilIcon className="w-5 h-5" />
+                <span className="hidden md:inline">{isDrawing ? 'Cancel' : 'Draw Area'}</span>
+            </button>
+
+            {isAuthenticated && (
+                <button 
+                    onClick={onSaveSearch} 
+                    disabled={isSaving}
+                    className="hidden md:flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+                >
+                    <BellIcon className="w-5 h-5" />
+                    <span>{isSaving ? 'Saving...' : 'Save Search'}</span>
+                </button>
+            )}
         </div>
-      )}
+        
+        {drawnBounds && !isDrawing && (
+            <button
+                onClick={handleClearDrawnBounds}
+                className="flex items-center gap-2 px-4 py-2 bg-neutral-800 text-white font-bold rounded-full shadow-lg hover:bg-neutral-900 animate-fade-in"
+            >
+                <XCircleIcon className="w-5 h-5" />
+                <span className="hidden md:inline">Clear Area</span>
+            </button>
+        )}
+      </div>
 
       <div className="absolute left-4 z-[1000] bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-neutral-200" style={{ bottom: `${bottomControlsOffset}px` }}>
         <h4 className="font-bold text-sm mb-2 text-neutral-800">Legend</h4>

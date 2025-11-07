@@ -75,6 +75,12 @@ export const SparklesIcon: React.FC<{ className?: string }> = ({ className }) =>
     )
 );
 
+export const KeyIcon: React.FC<{ className?: string }> = ({ className }) => (
+    React.createElement(Icon, { className: className },
+        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.967-.561 1.563-.43A6.002 6.002 0 0118.75 8.25z" })
+    )
+);
+
 export const BellIcon: React.FC<{ className?: string }> = ({ className }) => (
     React.createElement(Icon, { className: className },
         React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" })
@@ -328,7 +334,7 @@ export const DevicePhoneMobileIcon: React.FC<{ className?: string }> = ({ classN
 );
 
 export const FacebookIcon: React.FC<{ className?: string }> = ({ className }) => (
-    React.createElement('svg', { viewBox: "0 0 24 24", fill: "#1877F2", className: className },
+    React.createElement('svg', { viewBox: "0 0 24 24", fill: "currentColor", className: className },
         React.createElement('path', { d: "M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3l-.5 3h-2.5v6.8c4.56-.93 8-4.96 8-9.8z" })
     )
 );
@@ -412,5 +418,17 @@ export const CameraIcon: React.FC<{ className?: string }> = ({ className }) => (
     React.createElement(Icon, { className: className },
         React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.776 48.776 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" }),
         React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" })
+    )
+);
+
+export const TwitterIcon: React.FC<{ className?: string }> = ({ className }) => (
+    React.createElement('svg', { viewBox: "0 0 24 24", fill: "currentColor", className: className },
+        React.createElement('path', { d: "M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" })
+    )
+);
+
+export const WhatsappIcon: React.FC<{ className?: string }> = ({ className }) => (
+    React.createElement('svg', { viewBox: "0 0 24 24", fill: "currentColor", className: className },
+        React.createElement('path', { d: "M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.38 1.25 4.81L2 22l5.3-1.38c1.37.71 2.93 1.12 4.56 1.12h.13c5.46 0 9.91-4.45 9.91-9.91S17.63 2 12.04 2zm.01 16.89c-1.5 0-2.93-.4-4.2-1.12l-.3-.18-3.12.81.83-3.04-.2-.32c-.8-1.35-1.28-2.88-1.28-4.55 0-4.33 3.53-7.86 7.86-7.86 2.1 0 4.08.82 5.56 2.3 1.48 1.48 2.3 3.46 2.3 5.56-.02 4.33-3.55 7.86-7.85 7.86zm3.8-5.32c-.22-.11-1.3-.65-1.5-.72s-.35-.11-.5.11c-.15.22-.57.72-.7.86s-.26.17-.48.06c-.22-.11-1.3-.48-2.48-1.53s-1.85-2.22-2.07-2.58-.17-.3-.06-.41c.11-.11.24-.28.35-.41.11-.13.17-.22.26-.37.08-.15.04-.28-.02-.39-.06-.11-.5-1.2-.68-1.64s-.37-.37-.5-.37h-.5c-.17 0-.44.06-.68.33s-.92.9-.92 2.2c0 1.3.94 2.55 1.07 2.72s1.85 2.83 4.5 3.97c.62.26 1.1.42 1.48.53.59.18 1.13.15 1.55.09.47-.06 1.3-.53 1.48-.92.18-.39.18-.72.13-.79s-.17-.11-.37-.22z" })
     )
 );

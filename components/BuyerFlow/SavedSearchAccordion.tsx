@@ -5,6 +5,7 @@ import { ChevronUpIcon, ChevronDownIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { filterProperties } from '../../utils/propertyUtils';
 import PropertyCardSkeleton from './PropertyCardSkeleton';
+import L from 'leaflet';
 
 interface SavedSearchAccordionProps {
   search: SavedSearch;
@@ -16,8 +17,22 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search }) =
   const { isLoadingProperties, allMunicipalities, properties } = state;
 
   const matchingProperties = useMemo(() => {
-      return filterProperties(properties, search.filters, allMunicipalities);
-  }, [properties, search.filters, allMunicipalities]);
+      // Start with base filters
+      let filtered = filterProperties(properties, search.filters, allMunicipalities);
+
+      // If there's a drawn area, filter by it
+      if (search.drawnBoundsJSON) {
+          try {
+              const parsed = JSON.parse(search.drawnBoundsJSON);
+              const drawnBounds = L.latLngBounds(parsed._southWest, parsed._northEast);
+              filtered = filtered.filter(p => drawnBounds.contains([p.lat, p.lng]));
+          } catch (e) {
+              console.error("Failed to parse drawnBoundsJSON in SavedSearchAccordion", e);
+          }
+      }
+      
+      return filtered;
+  }, [properties, search.filters, search.drawnBoundsJSON, allMunicipalities]);
 
   const propertyCount = matchingProperties.length;
 
@@ -29,11 +44,11 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search }) =
         className="w-full p-4 flex justify-between items-center text-left"
       >
         <h3 className="text-lg font-bold text-neutral-800">{search.name}</h3>
-        <div className="flex items-center gap-3">
-          <span className="bg-indigo-600 text-white text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full">
+        <div className="flex items-center bg-indigo-600 text-white rounded-full transition-colors hover:bg-indigo-700">
+          <span className="text-sm font-bold px-3 py-1.5 text-center">
             {propertyCount}
           </span>
-          <div className="bg-indigo-600 text-white p-2 rounded-full">
+          <div className="border-l border-indigo-400 p-1.5">
             {isOpen ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
           </div>
         </div>

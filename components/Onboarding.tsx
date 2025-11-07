@@ -1,10 +1,122 @@
-import React from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { UserRole } from '../types';
-import { LogoIcon } from '../constants';
+import { LogoIcon, BuildingOfficeIcon, MapPinIcon, BedIcon, HeartIcon, SparklesIcon, KeyIcon } from '../constants';
+
+const baseIcons = [
+    { id: 1, icon: BuildingOfficeIcon },
+    { id: 2, icon: MapPinIcon },
+    { id: 3, icon: BedIcon },
+    { id: 4, icon: HeartIcon },
+    { id: 5, icon: SparklesIcon },
+    { id: 6, icon: KeyIcon },
+];
+
+const GRAVITY = 0.05;
+const DAMPING = 0.8;
+
+type Bot = {
+    id: number;
+    Icon: React.FC<{ className?: string }>;
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    rotation: number;
+    vr: number;
+    size: number;
+};
 
 const Onboarding: React.FC = () => {
   const { dispatch } = useAppContext();
+  
+  const containerRef = useRef<HTMLDivElement>(null);
+  const animationFrameId = useRef<number | null>(null);
+  const [bots, setBots] = useState<Bot[]>([]);
+
+  const initializeBots = useCallback((width: number, height: number) => {
+    setBots(baseIcons.flatMap(icon => Array.from({ length: 3 }).map((_, i) => {
+        const size = Math.random() * 30 + 30; // random size between 30 and 60
+        return {
+            id: icon.id * 10 + i,
+            Icon: icon.icon,
+            size,
+            x: Math.random() * (width - size),
+            y: Math.random() * (height - size),
+            vx: (Math.random() - 0.5) * 1,
+            vy: (Math.random() - 0.5) * 1,
+            rotation: Math.random() * 360,
+            vr: (Math.random() - 0.5) * 0.5,
+        };
+    })));
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Use a ResizeObserver to re-initialize on resize
+    const resizeObserver = new ResizeObserver(entries => {
+        if (entries[0]) {
+            const { width, height } = entries[0].contentRect;
+            initializeBots(width, height);
+        }
+    });
+
+    resizeObserver.observe(container);
+
+    return () => {
+        resizeObserver.disconnect();
+    };
+  }, [initializeBots]);
+
+  useEffect(() => {
+    let lastTime: number | null = null;
+    const animate = (timestamp: number) => {
+        if (!lastTime) {
+            lastTime = timestamp;
+            animationFrameId.current = requestAnimationFrame(animate);
+            return;
+        }
+        
+        const deltaTime = (timestamp - lastTime) / 16.67; // Normalize to 60fps
+        lastTime = timestamp;
+
+        setBots(prevBots => {
+            if (!containerRef.current) return prevBots;
+            const { width, height } = containerRef.current.getBoundingClientRect();
+
+            return prevBots.map(bot => {
+                let { x, y, vx, vy, rotation, vr, size } = bot;
+                
+                vy += GRAVITY * deltaTime;
+                x += vx * deltaTime;
+                y += vy * deltaTime;
+                rotation += vr * deltaTime;
+
+                if (x <= 0) { x = 0; vx *= -DAMPING; } 
+                else if (x >= width - size) { x = width - size; vx *= -DAMPING; }
+                
+                if (y <= 0) { y = 0; vy *= -DAMPING; }
+                else if (y >= height - size) { y = height - size; vy *= -DAMPING; }
+
+                vr *= 0.99;
+
+                return { ...bot, x, y, vx, vy, rotation, vr, size };
+            });
+        });
+        animationFrameId.current = requestAnimationFrame(animate);
+    };
+
+    if (bots.length > 0) {
+        animationFrameId.current = requestAnimationFrame(animate);
+    }
+
+    return () => {
+        if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
+    };
+  }, [bots.length]);
+
 
   const handleBuyChoice = () => {
     dispatch({ type: 'COMPLETE_ONBOARDING' });
@@ -18,8 +130,22 @@ const Onboarding: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col justify-center items-center p-4 overflow-y-auto">
-       <div className="text-center mb-12">
+    <div ref={containerRef} className="min-h-screen bg-neutral-50 flex flex-col justify-center items-center p-4 relative overflow-hidden">
+        {bots.map(bot => (
+            <div
+                key={bot.id}
+                className="absolute text-primary/10 z-0"
+                style={{
+                    width: `${bot.size}px`,
+                    height: `${bot.size}px`,
+                    transform: `translate(${bot.x}px, ${bot.y}px) rotate(${bot.rotation}deg)`,
+                    willChange: 'transform',
+                }}
+            >
+                <bot.Icon className="w-full h-full" />
+            </div>
+        ))}
+       <div className="text-center mb-12 relative z-10">
         <div className="flex items-center justify-center space-x-3 mb-4">
             <LogoIcon className="w-12 h-12 text-primary" />
             <h1 className="text-4xl sm:text-5xl font-extrabold text-neutral-800">
@@ -29,7 +155,7 @@ const Onboarding: React.FC = () => {
         <p className="text-lg sm:text-xl text-neutral-600 mt-2 max-w-xl">Your gateway to properties in the Balkans. Find your dream home or sell with confidence.</p>
        </div>
       
-      <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-4xl border border-neutral-200">
+      <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-4xl border border-neutral-200 relative z-10">
         <h2 className="text-2xl sm:text-3xl font-bold text-center text-neutral-800 mb-8">How can we help you today?</h2>
         <div className="grid md:grid-cols-2 gap-8">
           <div 
@@ -61,7 +187,7 @@ const Onboarding: React.FC = () => {
           </div>
         </div>
       </div>
-       <p className="text-center text-neutral-500 mt-8">&copy; 2024 Balkan Estate. All rights reserved.</p>
+       <p className="text-center text-neutral-500 mt-8 relative z-10">&copy; 2024 Balkan Estate. All rights reserved.</p>
     </div>
   );
 };

@@ -7,11 +7,14 @@ import {
     ParkingIcon, PhoneIcon, StarIcon, CubeIcon, VideoCameraIcon, UserCircleIcon, 
     SparklesIcon, ChevronLeftIcon, ChevronRightIcon,
     MagnifyingGlassPlusIcon, PencilIcon, ShareIcon, ArrowDownTrayIcon, XMarkIcon,
-    // FIX: Imported ArrowUturnLeftIcon to resolve missing component error.
     ArrowUturnLeftIcon,
     BuildingOfficeIcon,
     CubeTransparentIcon,
-    LivingRoomIcon
+    LivingRoomIcon,
+    TwitterIcon,
+    WhatsappIcon,
+    EnvelopeIcon,
+    FacebookIcon,
 } from '../../constants';
 import { getNeighborhoodInsights } from '../../services/geminiService';
 import ImageViewerModal from './ImageViewerModal';
@@ -362,6 +365,72 @@ const Thumbnail: React.FC<{
     )
 };
 
+const SharePopover: React.FC<{ property: Property, onClose: () => void }> = ({ property, onClose }) => {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopyLink = () => {
+        const propertyUrl = `${window.location.origin}${window.location.pathname}?propertyId=${property.id}`;
+        navigator.clipboard.writeText(propertyUrl).then(() => {
+            setCopied(true);
+            setTimeout(() => {
+                setCopied(false);
+                onClose();
+            }, 1500);
+        });
+    };
+
+    const getShareUrl = (service: 'facebook' | 'twitter' | 'whatsapp' | 'email') => {
+        const propertyUrl = encodeURIComponent(`${window.location.origin}${window.location.pathname}?propertyId=${property.id}`);
+        const text = encodeURIComponent(`Check out this property on Balkan Estate: ${property.address}, ${property.city}`);
+
+        switch(service) {
+            case 'facebook':
+                return `https://www.facebook.com/sharer/sharer.php?u=${propertyUrl}`;
+            case 'twitter':
+                return `https://twitter.com/intent/tweet?url=${propertyUrl}&text=${text}`;
+            case 'whatsapp':
+                return `https://api.whatsapp.com/send?text=${text}%20${propertyUrl}`;
+            case 'email':
+                return `mailto:?subject=${encodeURIComponent(`Property Listing: ${property.address}`)}&body=${text}%0A%0A${propertyUrl}`;
+        }
+    };
+    
+    const openShareWindow = (url: string, service: 'email' | 'other' = 'other') => {
+        if (service === 'email') {
+            window.location.href = url;
+        } else {
+            window.open(url, '_blank', 'noopener,noreferrer,width=600,height=400');
+        }
+        onClose();
+    };
+
+    return (
+        <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg shadow-xl border border-neutral-200 p-4 z-20 animate-fade-in">
+            <h4 className="font-bold text-neutral-800 mb-3 text-center">Share this Property</h4>
+            <button
+                onClick={handleCopyLink}
+                className="w-full text-left px-3 py-2 rounded-md hover:bg-neutral-100 font-semibold text-neutral-700 mb-2"
+            >
+                {copied ? '✅ Link Copied!' : '📋 Copy Link'}
+            </button>
+            <div className="border-t border-neutral-200 pt-2 flex items-center justify-around">
+                <a href={getShareUrl('facebook')} onClick={(e) => { e.preventDefault(); openShareWindow(getShareUrl('facebook'))}} className="p-2 rounded-full hover:bg-blue-50 text-[#1877F2]">
+                    <FacebookIcon className="w-7 h-7" />
+                </a>
+                <a href={getShareUrl('twitter')} onClick={(e) => { e.preventDefault(); openShareWindow(getShareUrl('twitter'))}} className="p-2 rounded-full hover:bg-neutral-100 text-black">
+                    <TwitterIcon className="w-6 h-6" />
+                </a>
+                 <a href={getShareUrl('whatsapp')} onClick={(e) => { e.preventDefault(); openShareWindow(getShareUrl('whatsapp'))}} className="p-2 rounded-full hover:bg-green-50 text-[#25D366]">
+                    <WhatsappIcon className="w-7 h-7" />
+                </a>
+                <a href={getShareUrl('email')} onClick={(e) => { e.preventDefault(); openShareWindow(getShareUrl('email'), 'email')}} className="p-2 rounded-full hover:bg-neutral-100 text-neutral-600">
+                    <EnvelopeIcon className="w-7 h-7" />
+                </a>
+            </div>
+        </div>
+    );
+};
+
 const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => {
   const { state, dispatch } = useAppContext();
   
@@ -371,6 +440,18 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [isFloorPlanOpen, setIsFloorPlanOpen] = useState(false);
   const [mainImageError, setMainImageError] = useState(false);
+  const [isSharePopoverOpen, setIsSharePopoverOpen] = useState(false);
+  const shareContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+        if (shareContainerRef.current && !shareContainerRef.current.contains(event.target as Node)) {
+            setIsSharePopoverOpen(false);
+        }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
   
   const allImages = useMemo(() => {
     const images = property.images || [];
@@ -474,6 +555,13 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                         <PencilIcon className="w-5 h-5" />
                         <span className="hidden sm:inline">Annotate</span>
                     </button>
+                    <div className="relative" ref={shareContainerRef}>
+                        <button onClick={() => setIsSharePopoverOpen(prev => !prev)} className="flex items-center gap-2 bg-white/80 backdrop-blur-sm text-neutral-800 font-semibold px-4 py-2 rounded-full hover:scale-105 transition-transform shadow-md">
+                            <ShareIcon className="w-5 h-5" />
+                            <span className="hidden sm:inline">Share</span>
+                        </button>
+                        {isSharePopoverOpen && <SharePopover property={property} onClose={() => setIsSharePopoverOpen(false)} />}
+                    </div>
                 </div>
 
                 {imagesForCurrentCategory.length > 1 && (
@@ -495,10 +583,15 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
               </div>
               <div className="p-6">
                 <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900">{formatPrice(property.price, property.country)}</p>
-                <div className="flex items-center text-neutral-600 mt-2">
-                    <MapPinIcon className="w-5 h-5 mr-2 text-neutral-400" />
-                    <span className="text-sm sm:text-base lg:text-lg">{property.address}, {property.city}, {property.country}</span>
-                </div>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${property.lat},${property.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-neutral-600 mt-2 group"
+                >
+                    <MapPinIcon className="w-5 h-5 mr-2 text-neutral-400 group-hover:text-primary transition-colors" />
+                    <span className="text-sm sm:text-base lg:text-lg group-hover:underline group-hover:text-primary transition-colors">{property.address}, {property.city}, {property.country}</span>
+                </a>
                 <div className="mt-6 flex flex-wrap justify-around text-base sm:text-lg text-neutral-800 border-t border-neutral-200 pt-4 gap-4">
                   <div className="flex items-center gap-3"><BedIcon className="w-6 h-6 text-primary" /><span><span className="font-bold">{property.beds}</span> beds</span></div>
                   <div className="flex items-center gap-3"><BathIcon className="w-6 h-6 text-primary" /><span><span className="font-bold">{property.baths}</span> baths</span></div>

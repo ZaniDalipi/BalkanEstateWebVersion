@@ -2,7 +2,7 @@ import React from 'react';
 import { useAppContext } from '../../context/AppContext';
 import SavedSearchAccordion from './SavedSearchAccordion';
 import { MagnifyingGlassPlusIcon } from '../../constants';
-import { SavedSearch, Filters } from '../../types';
+import { SavedSearch, Filters, SellerType } from '../../types';
 
 const initialFilters: Filters = {
     query: '',
@@ -46,6 +46,7 @@ const SavedSearchesPage: React.FC = () => {
                 id: 'ss-example',
                 name: 'Belgrade, under €400k',
                 filters: { ...initialFilters, query: 'Belgrade', maxPrice: 400000 },
+                drawnBoundsJSON: null,
             };
             dispatch({ type: 'ADD_SAVED_SEARCH', payload: exampleSearch });
         };
