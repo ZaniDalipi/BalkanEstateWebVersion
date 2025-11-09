@@ -260,11 +260,20 @@ const parseMarkdown = (text: string) => {
 };
 
 const NeighborhoodInsights: React.FC<{ lat: number; lng: number; city: string; country: string; }> = ({ lat, lng, city, country }) => {
+    const { state, dispatch } = useAppContext();
+    const { currentUser } = state;
     const [insights, setInsights] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const isSubscribed = currentUser?.isSubscribed ?? false;
+
     useEffect(() => {
+        if (!isSubscribed) {
+            setLoading(false);
+            return;
+        }
+
         const fetchInsights = async () => {
             try {
                 setLoading(true); setError(null);
@@ -278,7 +287,7 @@ const NeighborhoodInsights: React.FC<{ lat: number; lng: number; city: string; c
             }
         };
         fetchInsights();
-    }, [lat, lng, city, country]);
+    }, [lat, lng, city, country, isSubscribed]);
 
     const renderContent = () => {
         if (loading) {
@@ -306,6 +315,36 @@ const NeighborhoodInsights: React.FC<{ lat: number; lng: number; city: string; c
             );
         }
         return null;
+    }
+
+    if (!isSubscribed) {
+        return (
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
+                <div className="flex items-center mb-4">
+                    <div className="flex-shrink-0 w-8 h-8 mr-3 text-primary bg-primary-light rounded-full flex items-center justify-center">
+                        <SparklesIcon className="w-5 h-5" />
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-bold text-neutral-800">Neighborhood Insights</h3>
+                </div>
+                <div className="relative p-6 bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-lg text-center overflow-hidden">
+                    <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-4">
+                         <h4 className="font-bold text-lg text-primary-dark">Unlock with Buyer Pro</h4>
+                         <p className="text-sm text-neutral-600 mt-1 mb-4">Get detailed local insights, school info, and more.</p>
+                         <button 
+                             onClick={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true })}
+                             className="px-5 py-2 bg-secondary text-white font-bold rounded-lg shadow-md hover:bg-opacity-90 transition-transform hover:scale-105"
+                         >
+                             Subscribe Now
+                         </button>
+                    </div>
+                    {/* Blurred content behind */}
+                    <div className="h-4 bg-neutral-300 rounded w-3/4 mb-4"></div>
+                    <div className="h-3 bg-neutral-300 rounded w-full mb-2"></div>
+                    <div className="h-3 bg-neutral-300 rounded w-full mb-2"></div>
+                    <div className="h-3 bg-neutral-300 rounded w-5/6"></div>
+                </div>
+            </div>
+        );
     }
 
     return (

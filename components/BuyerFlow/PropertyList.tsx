@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useRef, useEffect } from 'react';
+import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react';
 import { Property, ChatMessage, AiSearchQuery, Filters, SellerType } from '../../types';
 import PropertyCard from './PropertyCard';
 import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon, ChevronUpIcon, ChevronDownIcon, SpinnerIcon } from '../../constants';
@@ -18,54 +18,75 @@ interface RangeSliderProps {
 
 const RangeSlider: React.FC<RangeSliderProps> = ({ min, max, step, value, onChange, label, formatValue }) => {
     const trackRef = useRef<HTMLDivElement>(null);
-    const [dragging, setDragging] = useState<'min' | 'max' | null>(null);
+    const minHandleRef = useRef<HTMLButtonElement>(null);
+    const maxHandleRef = useRef<HTMLButtonElement>(null);
+    const activeHandleRef = useRef<'min' | 'max' | null>(null);
 
-    const valueToPercent = useCallback((val: number) => ((val - min) / (max - min)) * 100, [min, max]);
+    const valueToPercent = useCallback((val: number) => {
+        if (max === min) return 0;
+        return ((val - min) / (max - min)) * 100;
+    }, [min, max]);
 
-    const handleDragStart = (e: React.MouseEvent | React.TouchEvent, handle: 'min' | 'max') => {
-        if ('touches' in e) {
-            document.body.style.overflow = 'hidden'; // prevent page scroll on touch
-        }
-        setDragging(handle);
-    };
-
-    const handleDragMove = useCallback((e: MouseEvent | TouchEvent) => {
-        if (!dragging || !trackRef.current) return;
-        
-        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const getNewValueFromClientX = useCallback((clientX: number) => {
+        if (!trackRef.current) return 0;
         const rect = trackRef.current.getBoundingClientRect();
         const percent = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
-        const newValue = Math.round((min + (percent / 100) * (max - min)) / step) * step;
+        return Math.round((min + (percent / 100) * (max - min)) / step) * step;
+    }, [min, max, step]);
+
+    const handleInteractionStart = (e: React.MouseEvent | React.TouchEvent, handle: 'min' | 'max') => {
+        e.preventDefault();
+        activeHandleRef.current = handle;
+
+        if (handle === 'min' && minHandleRef.current && maxHandleRef.current) {
+            minHandleRef.current.style.zIndex = '10';
+            maxHandleRef.current.style.zIndex = '5';
+        } else if (handle === 'max' && minHandleRef.current && maxHandleRef.current) {
+            minHandleRef.current.style.zIndex = '5';
+            maxHandleRef.current.style.zIndex = '10';
+        }
+        
+        document.body.style.cursor = 'grabbing';
+    };
+
+    const handleInteractionMove = useCallback((e: MouseEvent | TouchEvent) => {
+        if (!activeHandleRef.current) return;
+        
+        if (e.cancelable) e.preventDefault();
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        const newValue = getNewValueFromClientX(clientX);
 
         const [currentMin, currentMax] = value;
-        if (dragging === 'min') {
+        if (activeHandleRef.current === 'min') {
             onChange([Math.min(newValue, currentMax), currentMax]);
         } else {
             onChange([currentMin, Math.max(newValue, currentMin)]);
         }
-    }, [dragging, min, max, step, value, onChange]);
+    }, [getNewValueFromClientX, value, onChange]);
 
-    const handleDragEnd = useCallback(() => {
-        if (document.body.style.overflow === 'hidden') {
-            document.body.style.overflow = '';
-        }
-        setDragging(null);
+    const handleInteractionEnd = useCallback(() => {
+        activeHandleRef.current = null;
+        document.body.style.cursor = '';
     }, []);
 
     useEffect(() => {
-        if (dragging) {
-            window.addEventListener('mousemove', handleDragMove);
-            window.addEventListener('touchmove', handleDragMove);
-            window.addEventListener('mouseup', handleDragEnd);
-            window.addEventListener('touchend', handleDragEnd);
+        const moveHandler = (e: MouseEvent | TouchEvent) => handleInteractionMove(e);
+        const endHandler = () => handleInteractionEnd();
+
+        if (activeHandleRef.current) {
+            document.addEventListener('mousemove', moveHandler);
+            document.addEventListener('touchmove', moveHandler, { passive: false });
+            document.addEventListener('mouseup', endHandler);
+            document.addEventListener('touchend', endHandler);
         }
+
         return () => {
-            window.removeEventListener('mousemove', handleDragMove);
-            window.removeEventListener('touchmove', handleDragMove);
-            window.removeEventListener('mouseup', handleDragEnd);
-            window.removeEventListener('touchend', handleDragEnd);
+            document.removeEventListener('mousemove', moveHandler);
+            document.removeEventListener('touchmove', moveHandler);
+            document.removeEventListener('mouseup', endHandler);
+            document.removeEventListener('touchend', endHandler);
         };
-    }, [dragging, handleDragMove, handleDragEnd]);
+    }, [handleInteractionMove, handleInteractionEnd]);
 
     const [minVal, maxVal] = value;
     const minPercent = valueToPercent(minVal);
@@ -86,16 +107,18 @@ const RangeSlider: React.FC<RangeSliderProps> = ({ min, max, step, value, onChan
                     style={{ left: `${minPercent}%`, width: `${maxPercent - minPercent}%` }}
                 ></div>
                 <button
-                    onMouseDown={(e) => handleDragStart(e, 'min')}
-                    onTouchStart={(e) => handleDragStart(e, 'min')}
-                    className={`absolute w-4 h-4 bg-white border-2 border-primary rounded-full shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 ${dragging === 'min' ? 'z-10' : ''}`}
+                    ref={minHandleRef}
+                    onMouseDown={(e) => handleInteractionStart(e, 'min')}
+                    onTouchStart={(e) => handleInteractionStart(e, 'min')}
+                    className="absolute w-4 h-4 bg-white border-2 border-primary rounded-full shadow-md cursor-grab active:cursor-grabbing focus:outline-none focus:ring-2 focus:ring-primary/50"
                     style={{ left: `${minPercent}%`, transform: 'translateX(-50%)' }}
                     aria-label={`Minimum ${label}`}
                 ></button>
                 <button
-                    onMouseDown={(e) => handleDragStart(e, 'max')}
-                    onTouchStart={(e) => handleDragStart(e, 'max')}
-                    className={`absolute w-4 h-4 bg-white border-2 border-primary rounded-full shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 ${dragging === 'max' ? 'z-10' : ''}`}
+                    ref={maxHandleRef}
+                    onMouseDown={(e) => handleInteractionStart(e, 'max')}
+                    onTouchStart={(e) => handleInteractionStart(e, 'max')}
+                    className="absolute w-4 h-4 bg-white border-2 border-primary rounded-full shadow-md cursor-grab active:cursor-grabbing focus:outline-none focus:ring-2 focus:ring-primary/50"
                     style={{ left: `${maxPercent}%`, transform: 'translateX(-50%)' }}
                     aria-label={`Maximum ${label}`}
                 ></button>
@@ -174,6 +197,20 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
     filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, onQueryFocus, onBlur, isGeocoding
 }) => {
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+    const { state } = useAppContext();
+    const { properties: allProperties } = state;
+
+    const maxPriceValue = useMemo(() => {
+        if (!allProperties || allProperties.length === 0) return 2000000;
+        const max = Math.max(...allProperties.map(p => p.price));
+        return max > 0 ? max : 2000000;
+    }, [allProperties]);
+
+    const maxSqftValue = useMemo(() => {
+        if (!allProperties || allProperties.length === 0) return 500;
+        const max = Math.max(...allProperties.map(p => p.sqft));
+        return max > 0 ? max : 500;
+    }, [allProperties]);
     
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         onFilterChange(e.target.name as keyof Filters, e.target.value);
@@ -181,13 +218,13 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
     
     const handlePriceChange = useCallback(([min, max]: [number, number]) => {
         onFilterChange('minPrice', min === 0 ? null : min);
-        onFilterChange('maxPrice', max === 2000000 ? null : max);
-    }, [onFilterChange]);
+        onFilterChange('maxPrice', max === maxPriceValue ? null : max);
+    }, [onFilterChange, maxPriceValue]);
 
     const handleSqftChange = useCallback(([min, max]: [number, number]) => {
         onFilterChange('minSqft', min === 0 ? null : min);
-        onFilterChange('maxSqft', max === 500 ? null : max);
-    }, [onFilterChange]);
+        onFilterChange('maxSqft', max === maxSqftValue ? null : max);
+    }, [onFilterChange, maxSqftValue]);
     
     const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder:text-neutral-700";
 
@@ -213,9 +250,9 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
             
             <RangeSlider
                 min={0}
-                max={2000000}
+                max={maxPriceValue}
                 step={10000}
-                value={[filters.minPrice ?? 0, filters.maxPrice ?? 2000000]}
+                value={[filters.minPrice ?? 0, filters.maxPrice ?? maxPriceValue]}
                 onChange={handlePriceChange}
                 label="Price Range"
                 formatValue={(val) => `€${formatNumber(val)}`}
@@ -223,9 +260,9 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
 
             <RangeSlider
                 min={0}
-                max={500}
+                max={maxSqftValue}
                 step={10}
-                value={[filters.minSqft ?? 0, filters.maxSqft ?? 500]}
+                value={[filters.minSqft ?? 0, filters.maxSqft ?? maxSqftValue]}
                 onChange={handleSqftChange}
                 label="Area (m²)"
                 formatValue={(val) => `${val} m²`}

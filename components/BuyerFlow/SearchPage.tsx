@@ -2,8 +2,8 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useAppContext } from '../../context/AppContext';
 import MapComponent from './MapComponent';
 import PropertyList from './PropertyList';
-import { SavedSearch, ChatMessage, AiSearchQuery, Filters, initialFilters, SearchPageState, Property } from '../../types';
-import { getAiChatResponse, generateSearchName, getCoordinatesForLocation, getLocationNameForCoordinates } from '../../services/geminiService';
+import { SavedSearch, ChatMessage, AiSearchQuery, Filters, initialFilters, SearchPageState, Property, MunicipalityData } from '../../types';
+import { getAiChatResponse, getCoordinatesForLocation } from '../../services/geminiService';
 import Toast from '../shared/Toast';
 import L from 'leaflet';
 import { MUNICIPALITY_DATA } from '../../services/propertyService';
@@ -31,6 +31,70 @@ const AiChatModal: React.FC<{
         </div>
     </Modal>
 );
+
+const formatNumber = (val: number) => val >= 1000000 ? `${(val / 1000000).toFixed(1).replace('.0', '')}M` : val >= 1000 ? `${Math.round(val / 1000)}k` : `${val}`;
+
+const generateSearchNameFromFilters = (filters: Filters): string => {
+    const parts: string[] = [];
+
+    if (filters.query) parts.push(filters.query);
+    
+    if (filters.minPrice && filters.maxPrice) parts.push(`€${formatNumber(filters.minPrice)} - €${formatNumber(filters.maxPrice)}`);
+    else if (filters.minPrice) parts.push(`over €${formatNumber(filters.minPrice)}`);
+    else if (filters.maxPrice) parts.push(`under €${formatNumber(filters.maxPrice)}`);
+
+    if (filters.beds) parts.push(`${filters.beds}+ beds`);
+    if (filters.baths) parts.push(`${filters.baths}+ baths`);
+    if (filters.livingRooms) parts.push(`${filters.livingRooms}+ living`);
+
+    if (filters.minSqft && filters.maxSqft) parts.push(`${filters.minSqft}-${filters.maxSqft}m²`);
+    else if (filters.minSqft) parts.push(`over ${filters.minSqft}m²`);
+    else if (filters.maxSqft) parts.push(`under ${filters.maxSqft}m²`);
+
+    if (filters.sellerType !== 'any') parts.push(filters.sellerType === 'agent' ? 'by agent' : 'private listings');
+    
+    if (filters.propertyType !== 'any') parts.push(filters.propertyType.charAt(0).toUpperCase() + filters.propertyType.slice(1));
+
+    if (parts.length === 0) return "All Properties";
+
+    return parts.join(', ');
+};
+
+const findLocalLocation = (query: string, allMunicipalities: Record<string, MunicipalityData[]>): [number, number] | null => {
+    const lowerQuery = query.trim().toLowerCase();
+    if (!lowerQuery) return null;
+
+    let bestMatch: { lat: number; lng: number; score: number } | null = null;
+
+    for (const country in allMunicipalities) {
+        for (const mun of allMunicipalities[country]) {
+            for (const set of mun.settlements) {
+                const settlementName = set.name.toLowerCase();
+                const fullName = `${set.name}, ${mun.name}`.toLowerCase();
+                let score = 0;
+
+                if (fullName === lowerQuery) score = 100;
+                else if (settlementName === lowerQuery) score = 90;
+                else if ((set.localNames || []).some(ln => ln.toLowerCase() === lowerQuery)) score = 95;
+                else if (fullName.startsWith(lowerQuery)) score = 80;
+                else if (settlementName.startsWith(lowerQuery)) score = 70;
+                else if (fullName.includes(lowerQuery)) score = 40;
+                else if (settlementName.includes(lowerQuery)) score = 30;
+                
+                if (score > (bestMatch?.score || 0)) {
+                    bestMatch = { lat: set.lat, lng: set.lng, score };
+                }
+            }
+        }
+    }
+
+    // Only accept good matches to avoid wrong geocoding for arbitrary addresses
+    if (bestMatch && bestMatch.score >= 70) {
+        return [bestMatch.lat, bestMatch.lng];
+    }
+    return null;
+};
+
 
 const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const { state, dispatch, fetchProperties, updateSearchPageState, addSavedSearch } = useAppContext();
@@ -147,34 +211,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     }, []);
 
     const searchLocation = useMemo<[number, number] | null>(() => {
-        const query = activeFilters.query.trim().toLowerCase();
-        if (!query) return null;
-    
-        let bestMatch: { lat: number; lng: number; score: number } | null = null;
-    
-        for (const country in allMunicipalities) {
-            for (const mun of allMunicipalities[country]) {
-                for (const set of mun.settlements) {
-                    const settlementName = set.name.toLowerCase();
-                    const fullName = `${set.name}, ${mun.name}`.toLowerCase();
-                    let score = 0;
-    
-                    if (fullName === query) score = 100;
-                    else if (settlementName === query) score = 90;
-                    else if (set.localNames.some(ln => ln.toLowerCase() === query)) score = 95;
-                    else if (fullName.startsWith(query)) score = 80;
-                    else if (settlementName.startsWith(query)) score = 70;
-                    else if (fullName.includes(query)) score = 40;
-                    else if (settlementName.includes(query)) score = 30;
-                    
-                    if (score > (bestMatch?.score || 0)) {
-                        bestMatch = { lat: set.lat, lng: set.lng, score };
-                    }
-                }
-            }
-        }
-    
-        return bestMatch ? [bestMatch.lat, bestMatch.lng] : null;
+        return findLocalLocation(activeFilters.query, allMunicipalities);
     }, [activeFilters.query, allMunicipalities]);
 
     const showToast = useCallback((message: string, type: 'success' | 'error') => {
@@ -221,26 +258,35 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         setIsGeocoding(true);
         updateSearchPageState({ activeFilters: filters });
     
-        if (filters.query.trim()) {
-            try {
-                const coords = await getCoordinatesForLocation(filters.query);
-                if (coords) {
-                    setRecenterTo([coords.lat, coords.lng]);
-                } else {
-                    showToast(`Could not find location: ${filters.query}`, 'error');
-                    setRecenterMap(true); 
+        const query = filters.query.trim();
+        if (query) {
+            // Attempt local search first to save API calls
+            const localCoords = findLocalLocation(query, allMunicipalities);
+            
+            if (localCoords) {
+                setRecenterTo(localCoords);
+                setIsGeocoding(false);
+            } else {
+                // Fallback to Gemini API for specific addresses
+                try {
+                    const coords = await getCoordinatesForLocation(filters.query);
+                    if (coords) {
+                        setRecenterTo([coords.lat, coords.lng]);
+                    } else {
+                        showToast(`Could not find location: ${filters.query}`, 'error');
+                    }
+                } catch (error) {
+                    console.error("Geocoding failed:", error);
+                    showToast("Failed to fetch location data.", 'error');
+                } finally {
+                    setIsGeocoding(false);
                 }
-            } catch (error) {
-                console.error("Geocoding failed:", error);
-                showToast("Failed to fetch location data.", 'error');
-                setRecenterMap(true);
             }
         } else {
-            setRecenterMap(true);
+            setRecenterMap(true); // Recenter if query is empty
+            setIsGeocoding(false);
         }
-    
-        setIsGeocoding(false);
-    }, [filters, updateSearchPageState, showToast]);
+    }, [filters, updateSearchPageState, showToast, allMunicipalities]);
 
     const handleResetFilters = useCallback(() => {
         updateSearchPageState({ filters: initialFilters, activeFilters: initialFilters });
@@ -270,29 +316,24 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         }
         setIsSaving(true);
         try {
-            let newSearch: SavedSearch;
-            const now = Date.now();
-
             if (isFormSearchActive) {
-                const name = await generateSearchName(filters);
-                newSearch = {
+                const name = generateSearchNameFromFilters(filters);
+                const now = Date.now();
+                const newSearch: SavedSearch = {
                     id: `ss-${now}`,
                     name,
                     filters,
                     createdAt: now,
                     lastAccessed: now,
                 };
+                await addSavedSearch(newSearch);
+                showToast("Search saved successfully!", 'success');
             } else {
                 showToast("Cannot save an empty search. Please add some search criteria.", 'error');
-                setIsSaving(false);
-                return;
             }
-
-            await addSavedSearch(newSearch);
-            showToast("Search saved successfully!", 'success');
         } catch (e) {
             console.error("Failed to save search:", e);
-            showToast("Could not save search. AI might be busy.", 'error');
+            showToast("Could not save search. Please try again.", 'error');
         } finally {
             setIsSaving(false);
         }
@@ -309,18 +350,21 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         }
         setIsReverseGeocoding(true);
     
-        reverseGeocodeTimeoutRef.current = window.setTimeout(async () => {
+        reverseGeocodeTimeoutRef.current = window.setTimeout(() => {
             try {
-                const locationName = await getLocationNameForCoordinates(newCenter.lat, newCenter.lng);
-                if (locationName && locationName.toLowerCase() !== filters.query.toLowerCase()) {
-                    updateSearchPageState({ filters: { ...filters, query: locationName } });
+                const closest = findClosestSettlement(newCenter.lat, newCenter.lng, allMunicipalities);
+                if (closest) {
+                    const locationName = `${closest.settlement.name}, ${closest.municipality.name}`;
+                    if (locationName.toLowerCase() !== filters.query.toLowerCase()) {
+                        updateSearchPageState({ filters: { ...filters, query: locationName } });
+                    }
                 }
             } catch (error) {
-                console.error("Reverse geocoding failed", error);
+                console.error("Local reverse geocoding failed", error);
             } finally {
                 setIsReverseGeocoding(false);
             }
-        }, 750); // 750ms debounce
+        }, 250); // Shorter debounce for local function
     
     }, [allMunicipalities, filters, isQueryInputFocused, isMapSyncActive, updateSearchPageState]);
     
