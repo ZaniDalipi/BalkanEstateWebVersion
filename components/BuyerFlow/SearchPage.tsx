@@ -3,11 +3,11 @@ import { useAppContext } from '../../context/AppContext';
 import MapComponent from './MapComponent';
 import PropertyList from './PropertyList';
 import { SavedSearch, ChatMessage, AiSearchQuery, Filters, initialFilters, SearchPageState, Property } from '../../types';
-import { getAiChatResponse, generateSearchName, generateSearchNameFromCoords } from '../../services/geminiService';
+import { getAiChatResponse, generateSearchName, getCoordinatesForLocation, getLocationNameForCoordinates } from '../../services/geminiService';
 import Toast from '../shared/Toast';
 import L from 'leaflet';
 import { MUNICIPALITY_DATA } from '../../services/propertyService';
-import { Bars3Icon, SearchIcon, UserIcon, XMarkIcon, AdjustmentsHorizontalIcon, MapPinIcon, Squares2x2Icon, BellIcon, PencilIcon, PlusIcon, SparklesIcon, CrosshairsIcon, XCircleIcon } from '../../constants';
+import { Bars3Icon, SearchIcon, UserIcon, XMarkIcon, AdjustmentsHorizontalIcon, MapPinIcon, Squares2x2Icon, BellIcon, PlusIcon, SparklesIcon, CrosshairsIcon, SpinnerIcon } from '../../constants';
 import { findClosestSettlement } from '../../utils/location';
 import { filterProperties } from '../../utils/propertyUtils';
 import AiSearch from './AiSearch';
@@ -36,7 +36,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const { state, dispatch, fetchProperties, updateSearchPageState, addSavedSearch } = useAppContext();
     const { properties, isAuthenticated, isAuthModalOpen, isPricingModalOpen, isSubscriptionModalOpen, currentUser, allMunicipalities, searchPageState } = state;
 
-    const { filters, activeFilters, searchOnMove, mapBoundsJSON, drawnBoundsJSON, mobileView, searchMode, aiChatHistory, isAiChatModalOpen } = searchPageState;
+    const { filters, activeFilters, searchOnMove, mapBoundsJSON, mobileView, searchMode, aiChatHistory, isAiChatModalOpen } = searchPageState;
     
     // Local, non-persistent state
     const [isQueryInputFocused, setIsQueryInputFocused] = useState(false);
@@ -47,51 +47,15 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const [isMapSyncActive, setIsMapSyncActive] = useState(false);
     const shownErrorToast = useRef(false);
     const [isFiltersOpen, setFiltersOpen] = useState(false);
-    const [isDrawing, setIsDrawing] = useState(false);
     const [isFabOpen, setIsFabOpen] = useState(false);
     const fabRef = useRef<HTMLDivElement>(null);
     const [tileLayer, setTileLayer] = useState<'street' | 'satellite'>('street');
     const [recenterTo, setRecenterTo] = useState<[number, number] | null>(null);
+    const [isGeocoding, setIsGeocoding] = useState(false);
+    const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
+    const reverseGeocodeTimeoutRef = useRef<number | null>(null);
     
     const isModalOpen = isAuthModalOpen || isPricingModalOpen || isSubscriptionModalOpen;
-    
-    const [priceRange, sqftRange] = useMemo(() => {
-        if (properties.length === 0) {
-            return [{ min: 0, max: 2000000 }, { min: 0, max: 500 }];
-        }
-        const prices = properties.map(p => p.price).filter(p => p > 0);
-        const sqfts = properties.map(p => p.sqft).filter(s => s > 0);
-
-        if (prices.length === 0 || sqfts.length === 0) {
-            return [{ min: 0, max: 2000000 }, { min: 0, max: 500 }];
-        }
-
-        const minPrice = Math.floor(Math.min(...prices) / 10000) * 10000;
-        const maxPrice = Math.ceil(Math.max(...prices) / 10000) * 10000;
-        
-        const minSqft = Math.floor(Math.min(...sqfts) / 10) * 10;
-        const maxSqft = Math.ceil(Math.max(...sqfts) / 10) * 10;
-
-        return [{ min: minPrice, max: maxPrice }, { min: minSqft, max: maxSqft }];
-    }, [properties]);
-    
-    const toggleDrawing = () => {
-        const nextIsDrawing = !isDrawing;
-        setIsDrawing(nextIsDrawing);
-        if (nextIsDrawing) {
-            setIsFabOpen(false); // Close menu when drawing starts
-        }
-    };
-
-    const handleClearDrawnArea = () => {
-        updateSearchPageState({ drawnBoundsJSON: null });
-    };
-
-    const onDrawComplete = useCallback((bounds: L.LatLngBounds | null) => {
-        updateSearchPageState({ drawnBoundsJSON: bounds ? JSON.stringify(bounds) : null });
-        setIsDrawing(false);
-    }, [updateSearchPageState]);
-
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -113,18 +77,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             return null;
         }
     }, [mapBoundsJSON]);
-
-    const drawnBounds = useMemo(() => {
-        if (!drawnBoundsJSON) return null;
-        try {
-            const parsed = JSON.parse(drawnBoundsJSON);
-            return L.latLngBounds(parsed._southWest, parsed._northEast);
-        } catch (e) {
-            console.error("Failed to parse drawnBoundsJSON", e);
-            return null;
-        }
-    }, [drawnBoundsJSON]);
-
 
     useEffect(() => {
         if (properties.length === 0) {
@@ -246,11 +198,10 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     }, [properties, activeFilters, allMunicipalities]);
 
     const listProperties = useMemo(() => {
-        if (drawnBounds) return baseFilteredProperties.filter(p => drawnBounds.contains([p.lat, p.lng]));
         if (!mapBounds) return baseFilteredProperties;
         if (searchOnMove) return baseFilteredProperties.filter(p => mapBounds.contains([p.lat, p.lng]));
         return baseFilteredProperties;
-    }, [baseFilteredProperties, searchOnMove, mapBounds, drawnBounds]);
+    }, [baseFilteredProperties, searchOnMove, mapBounds]);
 
 
     const handleFilterChange = useCallback((name: keyof Filters, value: string | number | null) => {
@@ -266,13 +217,33 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         }
     }, [filters, activeFilters, updateSearchPageState]);
     
-    const handleSearch = useCallback(() => {
-        updateSearchPageState({ activeFilters: filters, drawnBoundsJSON: null });
-        setRecenterMap(true);
-    }, [filters, updateSearchPageState]);
+    const handleSearch = useCallback(async () => {
+        setIsGeocoding(true);
+        updateSearchPageState({ activeFilters: filters });
+    
+        if (filters.query.trim()) {
+            try {
+                const coords = await getCoordinatesForLocation(filters.query);
+                if (coords) {
+                    setRecenterTo([coords.lat, coords.lng]);
+                } else {
+                    showToast(`Could not find location: ${filters.query}`, 'error');
+                    setRecenterMap(true); 
+                }
+            } catch (error) {
+                console.error("Geocoding failed:", error);
+                showToast("Failed to fetch location data.", 'error');
+                setRecenterMap(true);
+            }
+        } else {
+            setRecenterMap(true);
+        }
+    
+        setIsGeocoding(false);
+    }, [filters, updateSearchPageState, showToast]);
 
     const handleResetFilters = useCallback(() => {
-        updateSearchPageState({ filters: initialFilters, activeFilters: initialFilters, drawnBoundsJSON: null });
+        updateSearchPageState({ filters: initialFilters, activeFilters: initialFilters });
         setRecenterMap(true);
     }, [updateSearchPageState]);
 
@@ -285,18 +256,14 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     }, [filters, activeFilters, updateSearchPageState]);
     
     const handleSearchOnMoveChange = (enabled: boolean) => {
-        if (enabled) {
-            updateSearchPageState({ searchOnMove: enabled, drawnBoundsJSON: null });
-        } else {
-            updateSearchPageState({ searchOnMove: enabled });
-        }
+        updateSearchPageState({ searchOnMove: enabled });
     };
 
     const isFormSearchActive = useMemo(() => {
         return filters.query.trim() !== '' || filters.minPrice !== null || filters.maxPrice !== null || filters.beds !== null || filters.baths !== null || filters.livingRooms !== null || filters.minSqft !== null || filters.maxSqft !== null || filters.sellerType !== 'any' || filters.propertyType !== 'any';
     }, [filters]);
     
-    const handleSaveSearch = useCallback(async (isAreaOnly: boolean = false) => {
+    const handleSaveSearch = useCallback(async () => {
         if (!isAuthenticated) {
             dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'signup' } });
             return;
@@ -306,29 +273,17 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             let newSearch: SavedSearch;
             const now = Date.now();
 
-            if (drawnBounds) { // If there's a drawn area
-                const center = drawnBounds.getCenter();
-                const name = await generateSearchNameFromCoords(center.lat, center.lng);
-                newSearch = {
-                    id: `ss-${now}`,
-                    name,
-                    filters: isAreaOnly ? initialFilters : filters, // Use initialFilters if only saving area
-                    drawnBoundsJSON: drawnBoundsJSON,
-                    createdAt: now,
-                    lastAccessed: now,
-                };
-            } else if (isFormSearchActive) { // No drawn area, but filters are active
+            if (isFormSearchActive) {
                 const name = await generateSearchName(filters);
                 newSearch = {
                     id: `ss-${now}`,
                     name,
                     filters,
-                    drawnBoundsJSON: null,
                     createdAt: now,
                     lastAccessed: now,
                 };
             } else {
-                showToast("Cannot save an empty search. Please add some criteria.", 'error');
+                showToast("Cannot save an empty search. Please add some search criteria.", 'error');
                 setIsSaving(false);
                 return;
             }
@@ -341,22 +296,42 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         } finally {
             setIsSaving(false);
         }
-    }, [isAuthenticated, dispatch, addSavedSearch, filters, isFormSearchActive, showToast, drawnBounds, drawnBoundsJSON]);
+    }, [isAuthenticated, dispatch, addSavedSearch, filters, isFormSearchActive, showToast]);
     
     const handleMapMove = useCallback((newBounds: L.LatLngBounds, newCenter: L.LatLng) => {
         updateSearchPageState({ mapBoundsJSON: JSON.stringify(newBounds) });
         setRecenterMap(false);
-        
+    
         if (isQueryInputFocused || !isMapSyncActive) return;
-
-        const closest = findClosestSettlement(newCenter.lat, newCenter.lng, allMunicipalities);
-        if (closest) {
-            const locationName = `${closest.settlement.name}, ${closest.municipality.name}`;
-             if (locationName.toLowerCase() !== filters.query.toLowerCase()) {
-                updateSearchPageState({ filters: { ...filters, query: locationName } });
-            }
+    
+        if (reverseGeocodeTimeoutRef.current) {
+            clearTimeout(reverseGeocodeTimeoutRef.current);
         }
+        setIsReverseGeocoding(true);
+    
+        reverseGeocodeTimeoutRef.current = window.setTimeout(async () => {
+            try {
+                const locationName = await getLocationNameForCoordinates(newCenter.lat, newCenter.lng);
+                if (locationName && locationName.toLowerCase() !== filters.query.toLowerCase()) {
+                    updateSearchPageState({ filters: { ...filters, query: locationName } });
+                }
+            } catch (error) {
+                console.error("Reverse geocoding failed", error);
+            } finally {
+                setIsReverseGeocoding(false);
+            }
+        }, 750); // 750ms debounce
+    
     }, [allMunicipalities, filters, isQueryInputFocused, isMapSyncActive, updateSearchPageState]);
+    
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (reverseGeocodeTimeoutRef.current) {
+                clearTimeout(reverseGeocodeTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const handleNewListingClick = () => {
       if (isAuthenticated) dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'create-listing' });
@@ -406,11 +381,8 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     };
 
     const fabActions = [
-        { label: 'New Listing', icon: <PencilIcon className="w-5 h-5 text-neutral-500"/>, handler: handleNewListingClick, show: true },
+        { label: 'New Listing', icon: <PlusIcon className="w-5 h-5 text-neutral-500"/>, handler: handleNewListingClick, show: true },
         { label: 'Subscribe', icon: <BellIcon className="w-5 h-5 text-neutral-500"/>, handler: handleSubscribeClick, show: true },
-        { label: 'Draw Area', icon: <Squares2x2Icon className="w-5 h-5 text-neutral-500"/>, handler: toggleDrawing, show: mobileView === 'map' && !isDrawing },
-        { label: 'Cancel Draw', icon: <XMarkIcon className="w-5 h-5 text-red-500"/>, handler: toggleDrawing, show: mobileView === 'map' && isDrawing },
-        { label: 'Clear Area', icon: <XCircleIcon className="w-5 h-5 text-neutral-500"/>, handler: handleClearDrawnArea, show: mobileView === 'map' && drawnBoundsJSON },
         { label: 'divider', show: true },
         { label: 'My Account', icon: <UserIcon className="w-5 h-5 text-neutral-500"/>, handler: handleAccountClick, show: true },
     ];
@@ -422,14 +394,10 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         isSearchActive: isSearchActive,
         searchLocation: searchLocation,
         userLocation: userLocation,
-        onSaveSearch: () => handleSaveSearch(false),
+        onSaveSearch: handleSaveSearch,
         isSaving: isSaving,
         isAuthenticated: isAuthenticated,
         mapBounds: mapBounds,
-        drawnBounds,
-        onDrawComplete: onDrawComplete,
-        isDrawing: isDrawing,
-        onDrawStart: toggleDrawing,
         tileLayer: tileLayer,
         recenterTo: recenterTo,
         onRecenterComplete: () => setRecenterTo(null),
@@ -442,7 +410,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         onSearchClick: handleSearch,
         onResetFilters: handleResetFilters,
         onSortChange: handleSortChange,
-        onSaveSearch: () => handleSaveSearch(false),
+        onSaveSearch: handleSaveSearch,
         isSaving,
         searchOnMove,
         onSearchOnMoveChange: handleSearchOnMoveChange,
@@ -451,11 +419,9 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         onQueryFocus: () => setIsQueryInputFocused(true),
         onBlur: () => setIsQueryInputFocused(false),
         onApplyAiFilters: handleApplyAiFilters,
-        isAreaDrawn: !!drawnBounds,
         aiChatHistory: aiChatHistory,
         onAiChatHistoryChange: (newHistory: ChatMessage[]) => updateSearchPageState({ aiChatHistory: newHistory }),
-        priceRange,
-        sqftRange,
+        isGeocoding: isGeocoding,
     };
 
     const MobileFilters = () => (
@@ -463,10 +429,10 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             <div className="flex-shrink-0 p-4 border-b border-neutral-200 flex justify-between items-center"><h2 className="text-lg font-bold text-neutral-800">Filters</h2><button onClick={() => setFiltersOpen(false)} className="p-2 text-neutral-500 hover:text-neutral-800"><XMarkIcon className="w-6 h-6" /></button></div>
             <div className="flex-grow overflow-y-auto min-h-0 pt-4"><PropertyList {...propertyListProps} isMobile={true} showFilters={true} showList={false} /></div>
             {searchMode === 'manual' && (
-                <div className="flex-shrink-0 p-4 border-t border-neutral-200 bg-white flex items-center gap-2">
-                     <button onClick={handleResetFilters} className="px-4 py-3 border border-neutral-300 rounded-lg text-sm font-semibold text-neutral-700 hover:bg-neutral-100">Reset</button>
-                     <button onClick={() => handleSaveSearch(false)} disabled={isSaving} className="px-4 py-3 border border-neutral-300 rounded-lg text-sm font-semibold text-neutral-700 hover:bg-neutral-100">Save Search</button>
-                     <button onClick={handleApplyFiltersFromModal} className="flex-grow px-4 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark">Show Results</button>
+                <div className="flex-shrink-0 p-3 border-t border-neutral-200 bg-white flex items-center gap-2">
+                     <button onClick={handleResetFilters} className="px-4 py-2.5 border border-neutral-300 rounded-lg text-sm font-semibold text-neutral-700 hover:bg-neutral-100">Reset</button>
+                     <button onClick={handleSaveSearch} disabled={isSaving} className="px-4 py-2.5 border border-neutral-300 rounded-lg text-sm font-semibold text-neutral-700 hover:bg-neutral-100">Save</button>
+                     <button onClick={handleApplyFiltersFromModal} className="flex-grow px-4 py-2.5 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark">Show Results</button>
                 </div>
             )}
         </div>
@@ -484,12 +450,16 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                 onHistoryChange={(newHistory: ChatMessage[]) => updateSearchPageState({ aiChatHistory: newHistory })}
             />
             <main className="flex-grow flex flex-row overflow-hidden relative">
-                <div className="hidden md:block w-3/5 h-full overflow-y-auto bg-white"><PropertyList {...propertyListProps} isMobile={false} showFilters={true} showList={true} /></div>
-                <div className={`hidden md:block relative w-2/5 h-full ${isModalOpen ? 'z-0' : 'z-10'}`}><MapComponent {...mapProps} /></div>
+                <div className="hidden md:block w-3/5 h-full bg-white border-r border-neutral-200"><PropertyList {...propertyListProps} isMobile={false} showFilters={true} showList={true} /></div>
+                <div className={`hidden md:block relative w-2/5 h-full ${isModalOpen ? 'z-0' : 'z-10'}`}>
+                    <MapComponent {...mapProps} />
+                </div>
 
                 <div className="md:hidden w-full h-full relative">
                     {isFiltersOpen && <MobileFilters />}
-                    <div className="absolute inset-0 z-10"><MapComponent {...mapProps} /></div>
+                    <div className="absolute inset-0 z-10">
+                        <MapComponent {...mapProps} />
+                    </div>
                     
                     {mobileView === 'list' && (
                         <div className="absolute inset-0 z-20 flex w-full h-full bg-white flex-col">
@@ -504,11 +474,16 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                              <div className="relative flex-grow">
                                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2"><SearchIcon className="h-5 w-5 text-neutral-500" /></div>
                                 <input type="text" name="query" placeholder="Search city, address..." value={filters.query} onChange={(e) => handleFilterChange('query', e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} onFocus={() => setIsQueryInputFocused(true)} onBlur={() => setIsQueryInputFocused(false)} className="block w-full text-base bg-transparent border-none text-neutral-900 px-9 py-1 focus:outline-none focus:ring-0"/>
-                                {filters.query && (<div className="absolute inset-y-0 right-0 flex items-center pr-2"><button onClick={() => handleFilterChange('query', '')} className="text-neutral-400 hover:text-neutral-800"><XMarkIcon className="h-5 w-5" /></button></div>)}
+                                {(isGeocoding || isReverseGeocoding) && (
+                                    <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                                        <SpinnerIcon className="h-5 w-5 text-primary" />
+                                    </div>
+                                )}
+                                {filters.query && !isGeocoding && !isReverseGeocoding && (<div className="absolute inset-y-0 right-0 flex items-center pr-2"><button onClick={() => handleFilterChange('query', '')} className="text-neutral-400 hover:text-neutral-800"><XMarkIcon className="h-5 w-5" /></button></div>)}
                             </div>
                             
                              <div className="relative" ref={fabRef}>
-                                <button type="button" onClick={() => setIsFabOpen(prev => !prev)} className={`p-2 rounded-full flex-shrink-0 hover:bg-neutral-100 ${mobileView === 'list' ? 'hidden' : 'block'}`}>
+                                <button type="button" onClick={() => setIsFabOpen(prev => !prev)} className="p-2 rounded-full flex-shrink-0 hover:bg-neutral-100">
                                     <PlusIcon className="w-6 h-6 text-neutral-800" />
                                 </button>
                                 {isFabOpen && mobileView === 'map' && (
@@ -536,18 +511,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                         </div>
                         
                         <div className="pointer-events-auto">
-                            {mobileView === 'map' && !isDrawing && drawnBoundsJSON && (
-                                <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4 animate-fade-in">
-                                    <button onClick={() => handleSaveSearch(true)} disabled={isSaving} className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50">
-                                        <BellIcon className="w-5 h-5" />
-                                        <span>{isSaving ? 'Saving...' : 'Save Area'}</span>
-                                    </button>
-                                    <button onClick={handleClearDrawnArea} className="flex items-center gap-2 px-4 py-2 bg-neutral-800 text-white font-bold rounded-full shadow-lg hover:bg-neutral-900">
-                                        <XCircleIcon className="w-5 h-5" />
-                                        <span>Clear Area</span>
-                                    </button>
-                                </div>
-                            )}
                             {mobileView === 'map' ? (
                                 <div className="w-full flex justify-between items-center">
                                     <div className="bg-white/80 text-neutral-800 p-2 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
@@ -567,7 +530,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                                         </div>
                                         <div className="h-6 w-px bg-neutral-900/20 mx-1"></div>
                                         <button onClick={handleRecenterOnUser} className="p-2.5 rounded-full hover:bg-black/10 transition-colors" title="My Location"><CrosshairsIcon className="w-5 h-5" /></button>
-                                        {isAuthenticated && !drawnBoundsJSON && (<button onClick={() => handleSaveSearch(false)} disabled={isSaving || (!isFormSearchActive && !drawnBounds)} className="p-2.5 rounded-full hover:bg-black/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="Save Search"><BellIcon className="w-5 h-5" /></button>)}
+                                        {isAuthenticated && (<button onClick={handleSaveSearch} disabled={isSaving || !isFormSearchActive} className="p-2.5 rounded-full hover:bg-black/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="Save Search"><BellIcon className="w-5 h-5" /></button>)}
                                         <button onClick={() => updateSearchPageState({ isAiChatModalOpen: true })} className="p-2.5 rounded-full hover:bg-black/10 transition-colors" title="AI Search"><SparklesIcon className="w-5 h-5 text-primary" /></button>
                                     </div>
                                 </div>

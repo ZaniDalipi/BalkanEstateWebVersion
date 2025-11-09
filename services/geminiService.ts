@@ -335,29 +335,6 @@ export const generateSearchName = async (filters: Filters): Promise<string> => {
     return result.text.trim();
 };
 
-export const generateSearchNameFromCoords = async (lat: number, lng: number): Promise<string> => {
-    const prompt = `
-        You are a helpful real estate assistant. Given the following latitude and longitude coordinates, generate a concise, human-readable name for the geographic area they represent. The name should be suitable for a saved search.
-
-        - Identify the most prominent feature at or very near these coordinates. This could be a village, a specific neighborhood, a mountain, a well-known park, or a coastal area.
-        - The name should be short and descriptive, under 5 words.
-        - For example: "Sirogojno Village Area", "Zlatibor Mountain Center", "Near Partizanska Street, Zlatibor", "Krani lakeside".
-
-        Coordinates:
-        Latitude: ${lat}
-        Longitude: ${lng}
-
-        Return only the generated name string, without any markdown or extra text.
-    `;
-
-    const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-    });
-
-    return result.text.trim();
-};
-
 export const getNeighborhoodInsights = async (lat: number, lng: number, city: string, country: string): Promise<string> => {
     const prompt = `
         You are a helpful local guide for the "Balkan Estate" real estate agency.
@@ -391,5 +368,71 @@ export const getNeighborhoodInsights = async (lat: number, lng: number, city: st
     } catch (e) {
         console.error("Error fetching neighborhood insights:", e instanceof Error ? e.message : String(e));
         throw new Error("Could not retrieve neighborhood insights at this time.");
+    }
+};
+
+export const getCoordinatesForLocation = async (locationQuery: string): Promise<{ lat: number; lng: number } | null> => {
+    const prompt = `
+        Based on real-world map data, find the geographic coordinates (latitude and longitude) for the following location: "${locationQuery}".
+        The location is likely in the Balkans region of Europe.
+        Return the coordinates as a JSON object with "lat" and "lng" keys. If the location cannot be found, return null.
+    `;
+
+    const responseSchema = {
+        type: Type.OBJECT,
+        properties: {
+            lat: { type: Type.NUMBER, description: 'The latitude of the location.' },
+            lng: { type: Type.NUMBER, description: 'The longitude of the location.' },
+        },
+        required: ['lat', 'lng'],
+        nullable: true,
+    };
+
+    try {
+        const result = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                tools: [{ googleMaps: {} }],
+                responseMimeType: 'application/json',
+                responseSchema: responseSchema,
+            },
+        });
+
+        const jsonText = result.text.trim();
+        if (jsonText === 'null') {
+            return null;
+        }
+        const parsedResult = JSON.parse(jsonText);
+        if (parsedResult && typeof parsedResult.lat === 'number' && typeof parsedResult.lng === 'number') {
+            return parsedResult;
+        }
+        return null;
+    } catch (e) {
+        console.error("Error fetching coordinates from Gemini:", e);
+        return null; // Return null on error
+    }
+};
+
+export const getLocationNameForCoordinates = async (lat: number, lng: number): Promise<string | null> => {
+    const prompt = `
+        Based on real-world map data, what is the name of the primary settlement (town, village, or city district) at the geographic coordinates latitude: ${lat}, longitude: ${lng}?
+        The location is in the Balkans region of Europe.
+        Return the name as a single string in the format "Settlement, Municipality". For example: "Stari Grad, Belgrade".
+        If you cannot determine a specific name, return null.
+    `;
+    try {
+        const result = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                tools: [{ googleMaps: {} }],
+            },
+        });
+        const text = result.text.trim();
+        return text.toLowerCase() !== 'null' ? text : null;
+    } catch (e) {
+        console.error("Error fetching location name from Gemini:", e);
+        return null;
     }
 };

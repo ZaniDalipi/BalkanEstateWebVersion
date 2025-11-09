@@ -18,22 +18,8 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onO
   const { isLoadingProperties, allMunicipalities, properties } = state;
 
   const matchingProperties = useMemo(() => {
-      // Start with base filters
-      let filtered = filterProperties(properties, search.filters, allMunicipalities);
-
-      // If there's a drawn area, filter by it
-      if (search.drawnBoundsJSON) {
-          try {
-              const parsed = JSON.parse(search.drawnBoundsJSON);
-              const drawnBounds = L.latLngBounds(parsed._southWest, parsed._northEast);
-              filtered = filtered.filter(p => drawnBounds.contains([p.lat, p.lng]));
-          } catch (e) {
-              console.error("Failed to parse drawnBoundsJSON in SavedSearchAccordion", e);
-          }
-      }
-      
-      return filtered;
-  }, [properties, search.filters, search.drawnBoundsJSON, allMunicipalities]);
+    return filterProperties(properties, search.filters, allMunicipalities);
+  }, [properties, search, allMunicipalities]);
 
   const propertyCount = matchingProperties.length;
 

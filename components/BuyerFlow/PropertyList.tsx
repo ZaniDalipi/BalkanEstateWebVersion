@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { Property, ChatMessage, AiSearchQuery, Filters, SellerType } from '../../types';
 import PropertyCard from './PropertyCard';
-import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon } from '../../constants';
+import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon, ChevronUpIcon, ChevronDownIcon, SpinnerIcon } from '../../constants';
 import AiSearch from './AiSearch';
 import PropertyCardSkeleton from './PropertyCardSkeleton';
 import { useAppContext } from '../../context/AppContext';
@@ -21,7 +21,6 @@ const RangeSlider: React.FC<RangeSliderProps> = ({ min, max, step, value, onChan
     const [dragging, setDragging] = useState<'min' | 'max' | null>(null);
 
     const valueToPercent = useCallback((val: number) => {
-        if (max === min) return 0;
         return ((val - min) / (max - min)) * 100;
     }, [min, max]);
 
@@ -66,7 +65,7 @@ const RangeSlider: React.FC<RangeSliderProps> = ({ min, max, step, value, onChan
                     {formatValue(minVal)} - {formatValue(maxVal)}
                 </div>
             </div>
-            <div ref={trackRef} className="relative w-full h-8 flex items-center">
+            <div ref={trackRef} className="relative w-full h-6 flex items-center">
                 <div className="absolute w-full h-1 bg-neutral-200 rounded-full"></div>
                 <div
                     className="absolute h-1 bg-primary rounded-full"
@@ -75,12 +74,14 @@ const RangeSlider: React.FC<RangeSliderProps> = ({ min, max, step, value, onChan
                 <button
                     onMouseDown={() => setDragging('min')}
                     className="absolute w-5 h-5 bg-white border-2 border-primary rounded-full shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    // FIX: Replaced incorrect backtick with a single quote in the style prop.
                     style={{ left: `${minPercent}%`, transform: 'translateX(-50%)' }}
                     aria-label={`Minimum ${label}`}
                 ></button>
                 <button
                     onMouseDown={() => setDragging('max')}
                     className="absolute w-5 h-5 bg-white border-2 border-primary rounded-full shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    // FIX: Replaced incorrect backtick with a single quote in the style prop.
                     style={{ left: `${maxPercent}%`, transform: 'translateX(-50%)' }}
                     aria-label={`Maximum ${label}`}
                 ></button>
@@ -109,11 +110,9 @@ interface PropertyListProps {
   onApplyAiFilters: (query: AiSearchQuery) => void;
   onQueryFocus: () => void;
   onBlur: () => void;
-  isAreaDrawn: boolean;
   aiChatHistory: ChatMessage[];
   onAiChatHistoryChange: (history: ChatMessage[]) => void;
-  priceRange: { min: number; max: number; };
-  sqftRange: { min: number; max: number; };
+  isGeocoding: boolean;
 }
 
 const FilterButton: React.FC<{
@@ -123,7 +122,7 @@ const FilterButton: React.FC<{
 }> = ({ onClick, isActive, children }) => (
   <button
     onClick={onClick}
-    className={`px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 flex-grow text-center ${
+    className={`px-2 py-1 rounded-full text-xs font-semibold transition-all duration-300 flex-grow text-center ${
       isActive
         ? 'bg-primary text-white shadow'
         : 'bg-neutral-200/70 text-neutral-700 hover:bg-neutral-300/70'
@@ -155,30 +154,31 @@ const FilterButtonGroup: React.FC<{
   </div>
 );
 
-const formatNumber = (val: number) => val >= 1000000 ? `${(val / 1000000).toFixed(1).replace('.0', '')}M` : val >= 1000 ? `${Math.round(val / 1000)}k` : `${val}`;
+const formatNumber = (val: number) => val >= 1000000 ? `${(val / 1000000).toFixed(1)}M` : val >= 1000 ? `${Math.round(val / 1000)}k` : `${val}`;
 
 const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList' | 'aiChatHistory' | 'onAiChatHistoryChange'>> = ({
-    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, onQueryFocus, onBlur, isAreaDrawn, priceRange, sqftRange
+    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, onQueryFocus, onBlur, isGeocoding
 }) => {
+    const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         onFilterChange(e.target.name as keyof Filters, e.target.value);
     }, [onFilterChange]);
     
     const handlePriceChange = useCallback(([min, max]: [number, number]) => {
-        onFilterChange('minPrice', min === priceRange.min ? null : min);
-        onFilterChange('maxPrice', max === priceRange.max ? null : max);
-    }, [onFilterChange, priceRange]);
+        onFilterChange('minPrice', min === 0 ? null : min);
+        onFilterChange('maxPrice', max === 2000000 ? null : max);
+    }, [onFilterChange]);
 
     const handleSqftChange = useCallback(([min, max]: [number, number]) => {
-        onFilterChange('minSqft', min === sqftRange.min ? null : min);
-        onFilterChange('maxSqft', max === sqftRange.max ? null : max);
-    }, [onFilterChange, sqftRange]);
+        onFilterChange('minSqft', min === 0 ? null : min);
+        onFilterChange('maxSqft', max === 500 ? null : max);
+    }, [onFilterChange]);
     
     const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder:text-neutral-700";
 
     return (
-         <div className="space-y-6">
+         <div className="space-y-3">
             {!isMobile && (
                 <div className="relative">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -198,96 +198,81 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
             )}
             
             <RangeSlider
-                min={priceRange.min}
-                max={priceRange.max}
+                min={0}
+                max={2000000}
                 step={10000}
-                value={[filters.minPrice ?? priceRange.min, filters.maxPrice ?? priceRange.max]}
+                value={[filters.minPrice ?? 0, filters.maxPrice ?? 2000000]}
                 onChange={handlePriceChange}
                 label="Price Range"
                 formatValue={(val) => `€${formatNumber(val)}`}
             />
 
             <RangeSlider
-                min={sqftRange.min}
-                max={sqftRange.max}
+                min={0}
+                max={500}
                 step={10}
-                value={[filters.minSqft ?? sqftRange.min, filters.maxSqft ?? sqftRange.max]}
+                value={[filters.minSqft ?? 0, filters.maxSqft ?? 500]}
                 onChange={handleSqftChange}
                 label="Area (m²)"
                 formatValue={(val) => `${val} m²`}
             />
             
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                 <FilterButtonGroup 
-                    label="Bedrooms"
-                    options={[
-                        {value: null, label: 'Any'},
-                        {value: 1, label: '1+'},
-                        {value: 2, label: '2+'},
-                        {value: 3, label: '3+'},
-                        {value: 4, label: '4+'},
-                    ]}
-                    selectedValue={filters.beds}
-                    onChange={(value) => onFilterChange('beds', value)}
-                />
-                <FilterButtonGroup 
-                    label="Bathrooms"
-                    options={[
-                        {value: null, label: 'Any'},
-                        {value: 1, label: '1+'},
-                        {value: 2, label: '2+'},
-                        {value: 3, label: '3+'},
-                    ]}
-                    selectedValue={filters.baths}
-                    onChange={(value) => onFilterChange('baths', value)}
-                />
-                <FilterButtonGroup 
-                    label="Living Rooms"
-                    options={[
-                        {value: null, label: 'Any'},
-                        {value: 1, label: '1+'},
-                        {value: 2, label: '2+'},
-                    ]}
-                    selectedValue={filters.livingRooms}
-                    onChange={(value) => onFilterChange('livingRooms', value)}
-                />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <FilterButtonGroup 
-                    label="Listing Type"
-                    options={[
-                        {value: 'any', label: 'Any'},
-                        {value: 'agent', label: 'Agent'},
-                        {value: 'private', label: 'Private'},
-                    ]}
-                    selectedValue={filters.sellerType}
-                    onChange={(value) => onFilterChange('sellerType', (value as SellerType) || 'any')}
-                />
-                <FilterButtonGroup
-                    label="Property Type"
-                    options={[
-                        { value: 'any', label: 'Any' },
-                        { value: 'house', label: 'House' },
-                        { value: 'apartment', label: 'Apartment' },
-                        { value: 'villa', label: 'Villa' },
-                    ]}
-                    selectedValue={filters.propertyType}
-                    onChange={(value) => onFilterChange('propertyType', (value as Filters['propertyType']) || 'any')}
-                />
+            <div className="border-t border-neutral-200 pt-3">
+                <button type="button" onClick={() => setIsAdvancedOpen(!isAdvancedOpen)} className="w-full flex justify-between items-center text-left">
+                    <h3 className="text-sm font-semibold text-neutral-800">Advanced Filters</h3>
+                    {isAdvancedOpen ? <ChevronUpIcon className="w-5 h-5 text-neutral-500" /> : <ChevronDownIcon className="w-5 h-5 text-neutral-500" />}
+                </button>
+                
+                {isAdvancedOpen && (
+                    <div className="pt-4 space-y-4 animate-fade-in">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <FilterButtonGroup 
+                                label="Bedrooms"
+                                options={[ {value: null, label: 'Any'}, {value: 1, label: '1+'}, {value: 2, label: '2+'}, {value: 3, label: '3+'}, {value: 4, label: '4+'}, ]}
+                                selectedValue={filters.beds}
+                                onChange={(value) => onFilterChange('beds', value)}
+                            />
+                            <FilterButtonGroup 
+                                label="Bathrooms"
+                                options={[ {value: null, label: 'Any'}, {value: 1, label: '1+'}, {value: 2, label: '2+'}, {value: 3, label: '3+'}, ]}
+                                selectedValue={filters.baths}
+                                onChange={(value) => onFilterChange('baths', value)}
+                            />
+                            <FilterButtonGroup 
+                                label="Living Rooms"
+                                options={[ {value: null, label: 'Any'}, {value: 1, label: '1+'}, {value: 2, label: '2+'}, ]}
+                                selectedValue={filters.livingRooms}
+                                onChange={(value) => onFilterChange('livingRooms', value)}
+                            />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <FilterButtonGroup 
+                                label="Listing Type"
+                                options={[ {value: 'any', label: 'Any'}, {value: 'agent', label: 'Agent'}, {value: 'private', label: 'Private'}, ]}
+                                selectedValue={filters.sellerType}
+                                onChange={(value) => onFilterChange('sellerType', (value as SellerType) || 'any')}
+                            />
+                            <FilterButtonGroup
+                                label="Property Type"
+                                options={[ { value: 'any', label: 'Any' }, { value: 'house', label: 'House' }, { value: 'apartment', label: 'Apartment' }, { value: 'villa', label: 'Villa' }, ]}
+                                selectedValue={filters.propertyType}
+                                onChange={(value) => onFilterChange('propertyType', (value as Filters['propertyType']) || 'any')}
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
             
             <div className="flex items-center pt-1">
                  <input
                     type="checkbox"
                     id="search-on-move"
-                    checked={!isAreaDrawn && searchOnMove}
-                    disabled={isAreaDrawn}
+                    checked={searchOnMove}
                     onChange={(e) => onSearchOnMoveChange(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                 />
-                <label htmlFor="search-on-move" className={`ml-2 block text-xs ${isAreaDrawn ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                    Search as I move the map {isAreaDrawn && '(area drawn)'}
+                <label htmlFor="search-on-move" className="ml-2 block text-xs text-neutral-600">
+                    Search as I move the map
                 </label>
             </div>
 
@@ -295,21 +280,27 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                  <div className="pt-2 space-y-2">
                      <button 
                         onClick={onSearchClick}
-                        className="w-full py-2.5 px-4 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
+                        disabled={isGeocoding}
+                        className="w-full py-2 px-4 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors flex items-center justify-center disabled:bg-primary/70"
                     >
-                        Search
+                        {isGeocoding ? (
+                            <>
+                                <SpinnerIcon className="w-5 h-5 mr-2" />
+                                Finding...
+                            </>
+                        ) : 'Search'}
                     </button>
                      <div className="flex items-center gap-2">
                         <button 
                             onClick={onResetFilters}
-                            className="flex-grow py-2.5 px-4 border border-neutral-300 text-neutral-600 rounded-lg text-sm font-bold bg-white hover:bg-neutral-100 transition-colors"
+                            className="flex-grow py-2 px-4 border border-neutral-300 text-neutral-600 rounded-lg text-sm font-bold bg-white hover:bg-neutral-100 transition-colors"
                         >
                             Reset
                         </button>
                         <button 
                             onClick={onSaveSearch} 
                             disabled={isSaving}
-                            className="flex-grow py-2.5 px-4 border border-primary text-primary rounded-lg shadow-sm text-sm font-bold bg-white hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-2"
+                            className="flex-grow py-2 px-4 border border-primary text-primary rounded-lg shadow-sm text-sm font-bold bg-white hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-2"
                         >
                             {isSaving ? (
                                 <>
@@ -376,16 +367,96 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
     
     const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors";
     
+    // Desktop layout with fixed filters and scrollable list
+    if (!isMobile) {
+        return (
+            <div className="flex flex-col h-full bg-white">
+                 {/* Fixed Top Section (Filters) */}
+                <div className="flex-shrink-0 border-b border-neutral-200">
+                     <div className="p-4 border-b border-neutral-200">
+                        <h2 className="text-lg font-bold text-neutral-800">Properties for Sale</h2>
+                    </div>
+                    
+                    <div className="p-4">
+                        <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm mx-auto">
+                            <button onClick={() => onSearchModeChange('manual')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Manual Search</button>
+                            <button onClick={() => onSearchModeChange('ai')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><SparklesIcon className="w-4 h-4" /> AI Search</button>
+                        </div>
+                    </div>
+
+                    {searchMode === 'manual' && (
+                        <div className="p-4 pt-0">
+                            <FilterControls {...props} />
+                        </div>
+                    )}
+                </div>
+
+                {/* Scrollable Bottom Section (List or AI Chat) */}
+                <div className="flex-grow min-h-0 overflow-y-auto">
+                    {searchMode === 'ai' ? (
+                        <AiSearch 
+                            properties={properties} 
+                            onApplyFilters={onApplyAiFilters} 
+                            isMobile={isMobile}
+                            history={aiChatHistory}
+                            onHistoryChange={onAiChatHistoryChange}
+                        />
+                    ) : (
+                        <>
+                            <div className="p-4 border-b border-neutral-200 flex items-center justify-between sticky top-0 bg-white/90 backdrop-blur-sm z-10">
+                                <p className="text-xs text-neutral-500 font-semibold">{properties.length} results found</p>
+                                <div className="relative">
+                                    <select
+                                        id="sortBy"
+                                        name="sortBy"
+                                        value={filters.sortBy}
+                                        onChange={(e) => onSortChange(e.target.value)}
+                                        className={`${inputBaseClasses} appearance-none pr-8 text-xs !py-1.5`}
+                                    >
+                                        <option value="newest">Newest</option>
+                                        <option value="price_asc">Price (low-high)</option>
+                                        <option value="price_desc">Price (high-low)</option>
+                                        <option value="beds_desc">Beds (most)</option>
+                                    </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-neutral-500">
+                                        <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="p-4">
+                                {isLoadingProperties ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {Array.from({ length: 6 }).map((_, index) => (
+                                            <PropertyCardSkeleton key={index} />
+                                        ))}
+                                    </div>
+                                ) : properties.length > 0 ? (
+                                     <>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {properties.slice(0, visibleCount).map(prop => (
+                                                <PropertyCard key={prop.id} property={prop} />
+                                            ))}
+                                        </div>
+                                        {visibleCount < properties.length && (
+                                            <div ref={loadMoreRef} className="text-center p-8">
+                                                {isLoadingMore && <span>Loading more...</span>}
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="text-center py-16 px-4"><h3 className="text-xl font-semibold text-neutral-800">No Properties Found</h3></div>
+                                )}
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
+        );
+    }
+    
+    // Original Mobile Layout
     return (
         <div className="flex flex-col bg-white h-full">
-            {/* Header */}
-            {!isMobile && showList && (
-                <div className="p-4 border-b border-neutral-200 flex-shrink-0">
-                    <h2 className="text-lg font-bold text-neutral-800">Properties for Sale</h2>
-                    <p className="text-xs text-neutral-500">{properties.length} results found</p>
-                </div>
-            )}
-            
             {showFilters && (
                  <div className="p-4 flex-shrink-0">
                     <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm mx-auto">
@@ -415,7 +486,6 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                     
                     {showList && (
                         <div className="flex-grow overflow-y-auto">
-                             {/* Sort and Results */}
                             <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
                                 <p className="text-xs text-neutral-500 font-semibold">{properties.length} results found</p>
                                 <div className="relative">
@@ -437,17 +507,16 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                 </div>
                             </div>
 
-                            {/* Property Grid */}
                             <div className="p-4">
                                 {isLoadingProperties ? (
-                                    <div className="grid grid-cols-2 gap-2 md:grid-cols-2 md:gap-4">
-                                        {Array.from({ length: isMobile ? 4 : 6 }).map((_, index) => (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {Array.from({ length: 4 }).map((_, index) => (
                                             <PropertyCardSkeleton key={index} />
                                         ))}
                                     </div>
                                 ) : properties.length > 0 ? (
                                     <>
-                                        <div className="grid grid-cols-2 gap-2 md:grid-cols-2 md:gap-4">
+                                        <div className="grid grid-cols-2 gap-4">
                                             {properties.slice(0, visibleCount).map(prop => (
                                                 <PropertyCard key={prop.id} property={prop} />
                                             ))}

@@ -79,61 +79,45 @@ const SavedSearchesPage: React.FC = () => {
         const handleSaveExample = () => {
             const now = Date.now();
             const exampleSearch: SavedSearch = {
-                id: 'ss-example',
-                name: 'Belgrade, under €400k',
-                filters: { ...initialFilters, query: 'Belgrade', maxPrice: 400000 },
-                drawnBoundsJSON: null,
+                id: 'ss-example-1',
+                name: 'Apartments in Belgrade, under €200k',
+                filters: {
+                    ...initialFilters,
+                    query: 'Belgrade',
+                    maxPrice: 200000,
+                    propertyType: 'apartment',
+                },
                 createdAt: now,
                 lastAccessed: now,
             };
             dispatch({ type: 'ADD_SAVED_SEARCH', payload: exampleSearch });
         };
-    
+
         return (
-             <div className="text-center py-16 px-4 bg-white rounded-lg shadow-md border">
+            <div className="text-center py-16 px-4 bg-white rounded-lg shadow-md border">
                 <MagnifyingGlassPlusIcon className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-neutral-800">You haven't saved any searches yet.</h3>
-                <p className="text-neutral-500 mt-2">Perform a search and click "Save Search" to get started, or save this example:</p>
-                
-                <div className="mt-6 bg-neutral-50 p-4 rounded-lg border max-w-md mx-auto flex items-center justify-between">
-                    <p className="font-semibold text-neutral-700">Example: Belgrade, under €400k</p>
-                    <button 
-                        onClick={handleSaveExample}
-                        className="px-4 py-2 bg-secondary text-white font-bold rounded-lg shadow-sm hover:bg-opacity-90 transition-colors text-sm"
-                    >
-                        + Save
-                    </button>
-                </div>
-    
-                 <button 
-                    onClick={() => dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' })}
-                    className="mt-8 px-6 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
+                <p className="text-neutral-500 mt-2">Click the "Save Search" button on the search page to get started.</p>
+                <button 
+                    onClick={handleSaveExample}
+                    className="mt-6 px-6 py-3 bg-primary-light text-primary-dark font-bold rounded-lg shadow-sm hover:bg-primary/20 transition-colors"
                 >
-                    Or, Start a New Search
+                    Save an Example Search
                 </button>
             </div>
         );
     }
-    
+
     return (
-        <>
-            <div className="flex justify-center mb-8">
-                <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200">
-                    <SortButton label="Newest" isActive={sortBy === 'createdAt'} onClick={() => setSortBy('createdAt')} />
-                    <SortButton label="Name" isActive={sortBy === 'name'} onClick={() => setSortBy('name')} />
-                    <SortButton label="Last Active" isActive={sortBy === 'lastAccessed'} onClick={() => setSortBy('lastAccessed')} />
-                </div>
-            </div>
-            <div className="space-y-4">
-              {sortedSearches.map((search) => (
+        <div className="space-y-4">
+            {sortedSearches.map(search => (
                 <SavedSearchAccordion 
                     key={search.id} 
                     search={search}
                     onOpen={() => updateSavedSearchAccessTime(search.id)}
                 />
-              ))}
-            </div>
-        </>
+            ))}
+        </div>
     );
   };
 
@@ -141,15 +125,27 @@ const SavedSearchesPage: React.FC = () => {
     <div className="bg-neutral-50 min-h-full">
       <main className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-neutral-900">Updates</h1>
-                <h2 className="text-xl font-semibold text-neutral-700 mt-1">Saved Searches</h2>
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-neutral-900">Saved Searches</h1>
+            <p className="text-lg text-neutral-600 mt-2">
+              Your custom property searches. Never miss a new listing.
+            </p>
+          </div>
+          {savedSearches.length > 0 && (
+            <div className="mb-6 flex justify-center">
+                 <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200 shadow-sm">
+                    <SortButton label="Newest" isActive={sortBy === 'createdAt'} onClick={() => setSortBy('createdAt')} />
+                    <SortButton label="Recently Viewed" isActive={sortBy === 'lastAccessed'} onClick={() => setSortBy('lastAccessed')} />
+                    <SortButton label="A-Z" isActive={sortBy === 'name'} onClick={() => setSortBy('name')} />
+                </div>
             </div>
-            {renderContent()}
+          )}
+          {renderContent()}
         </div>
       </main>
     </div>
   );
 };
 
+// FIX: Added default export for the component to be importable.
 export default SavedSearchesPage;
