@@ -8,7 +8,6 @@ const initialSearchPageState: SearchPageState = {
     activeFilters: initialFilters,
     searchOnMove: true,
     mapBoundsJSON: null,
-    drawnBoundsJSON: null,
     mobileView: 'map',
     searchMode: 'manual',
     aiChatHistory: [{ sender: 'ai', text: "Hello! Welcome to Balkan Estate. How can I help you find a property today?" }],

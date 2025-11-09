@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Property, PropertyImage, PropertyImageTag, Seller, UserRole, MunicipalityData, SettlementData } from '../../types';
-import { generateDescriptionFromImages, PropertyAnalysisResult } from '../../services/geminiService';
+import { generateDescriptionFromImages, PropertyAnalysisResult, getCoordinatesForLocation } from '../../services/geminiService';
 import { MUNICIPALITY_DATA } from '../../services/propertyService';
-import { SparklesIcon, MapPinIcon } from '../../constants';
+import { SparklesIcon, MapPinIcon, SpinnerIcon } from '../../constants';
 import { getCurrencySymbol } from '../../utils/currency';
 import { useAppContext } from '../../context/AppContext';
 import WhackAnIconAnimation from './WhackAnIconAnimation';
@@ -223,6 +223,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
     const [isLocationInputFocused, setIsLocationInputFocused] = useState(false);
     const locationContainerRef = useRef<HTMLDivElement>(null);
+    const [isFindingLocation, setIsFindingLocation] = useState(false);
     
     // Track modal state to react to it closing
     const wasModalOpen = useRef(isPricingModalOpen);
@@ -325,6 +326,28 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             lng: suggestion.settlement.lng,
         }));
         setIsLocationInputFocused(false);
+    };
+    
+    const handleFindOnMap = async () => {
+        if (!listingData.streetAddress || !locationSearchText || !selectedCountry) {
+            setError("Please fill in Street Address, City, and Country to find the location.");
+            return;
+        }
+        setError(null);
+        setIsFindingLocation(true);
+        try {
+            const fullAddress = `${listingData.streetAddress}, ${locationSearchText}, ${selectedCountry}`;
+            const coords = await getCoordinatesForLocation(fullAddress);
+            if (coords) {
+                setListingData(prev => ({ ...prev, lat: coords.lat, lng: coords.lng }));
+            } else {
+                setError(`Could not automatically find coordinates for "${fullAddress}". Please check the address.`);
+            }
+        } catch (e) {
+            setError("An error occurred while finding the location.");
+        } finally {
+            setIsFindingLocation(false);
+        }
     };
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -624,6 +647,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             }, 3000);
 
         } catch (err) {
+            // FIX: The caught error `err` is of type `unknown`. We must check if it's an instance of Error before accessing `err.message` to avoid a type error.
             if (err instanceof Error) {
                 setError(err.message || "Failed to submit listing.");
             } else {
@@ -706,6 +730,19 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('country')?.focus()}><select id="country" name="country" value={selectedCountry} onChange={handleCountryChange} className={`${floatingInputClasses} border-neutral-300`} required><option value="" disabled>Select a country</option>{availableCountries.map(c => <option key={c} value={c}>{c}</option>)}</select><label htmlFor="country" className={floatingSelectLabelClasses}>Country</label></div>
                         <div className="relative md:col-span-2" ref={locationContainerRef}><div className="relative cursor-text" onClick={() => document.getElementById('location')?.focus()}><input type="text" id="location" value={locationSearchText} onChange={(e) => setLocationSearchText(e.target.value)} onFocus={() => setIsLocationInputFocused(true)} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " required autoComplete="off" disabled={!selectedCountry} /><label htmlFor="location" className={floatingLabelClasses}>City / Town / Village</label></div>{isLocationInputFocused && locationSuggestions.length > 0 && (<ul className="absolute z-20 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">{locationSuggestions.map(suggestion => (<li key={`${suggestion.settlement.name}-${suggestion.municipality.name}`} onMouseDown={() => handleLocationSuggestionClick(suggestion)} className="px-4 py-3 text-sm text-neutral-700 hover:bg-neutral-100 cursor-pointer flex items-center gap-2"><MapPinIcon className="w-4 h-4 text-neutral-400 flex-shrink-0" /><span><strong>{suggestion.settlement.name}</strong>, {suggestion.municipality.name}</span></li>))}</ul>)}</div>
                         
+                        <div className="relative md:col-span-2">
+                            <div className="flex items-stretch gap-2">
+                                <div className="relative flex-grow cursor-text" onClick={() => document.getElementById('streetAddress')?.focus()}>
+                                    <input type="text" id="streetAddress" name="streetAddress" value={listingData.streetAddress} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300 !rounded-r-none`} placeholder=" " required />
+                                    <label htmlFor="streetAddress" className={floatingLabelClasses}>Street Address (e.g., Main Street 123)</label>
+                                </div>
+                                <button type="button" onClick={handleFindOnMap} disabled={isFindingLocation} className="flex-shrink-0 px-4 py-2 bg-primary text-white font-semibold rounded-r-lg border border-primary hover:bg-primary-dark transition-colors flex items-center gap-2 disabled:bg-primary/70">
+                                    {isFindingLocation ? <SpinnerIcon className="w-5 h-5"/> : <MapPinIcon className="w-5 h-5"/>}
+                                    <span className="hidden sm:inline">{isFindingLocation ? 'Finding...' : 'Find on Map'}</span>
+                                </button>
+                            </div>
+                        </div>
+
                         <div className="relative">
                             <input type="number" id="lat" value={listingData.lat !== 0 ? listingData.lat.toFixed(6) : ''} className={`${floatingInputClasses} border-neutral-300 bg-neutral-100 cursor-not-allowed`} placeholder=" " readOnly />
                             <label htmlFor="lat" className={floatingLabelClasses}>Latitude</label>
@@ -714,8 +751,6 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                             <input type="number" id="lng" value={listingData.lng !== 0 ? listingData.lng.toFixed(6) : ''} className={`${floatingInputClasses} border-neutral-300 bg-neutral-100 cursor-not-allowed`} placeholder=" " readOnly />
                             <label htmlFor="lng" className={floatingLabelClasses}>Longitude</label>
                         </div>
-
-                        <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('streetAddress')?.focus()}><input type="text" id="streetAddress" name="streetAddress" value={listingData.streetAddress} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " required /><label htmlFor="streetAddress" className={floatingLabelClasses}>Street Address (e.g., Main Street 123)</label></div>
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('price')?.focus()}><input type="text" id="price" inputMode="numeric" name="price" value={listingData.price > 0 ? new Intl.NumberFormat('de-DE').format(listingData.price) : ''} onChange={handlePriceChange} className={`${floatingInputClasses} border-neutral-300 pl-8`} placeholder=" " required /><label htmlFor="price" className={floatingLabelClasses}>Price</label><span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">{getCurrencySymbol(selectedCountry)}</span></div>
                     </fieldset>
 

@@ -140,7 +140,6 @@ export interface SavedSearch {
     id: string;
     name: string;
     filters: Filters;
-    drawnBoundsJSON: string | null;
     createdAt: number;
     lastAccessed: number;
 }
@@ -203,7 +202,6 @@ export interface SearchPageState {
     activeFilters: Filters;
     searchOnMove: boolean;
     mapBoundsJSON: string | null;
-    drawnBoundsJSON: string | null;
     mobileView: 'map' | 'list';
     searchMode: 'manual' | 'ai';
     aiChatHistory: ChatMessage[];
