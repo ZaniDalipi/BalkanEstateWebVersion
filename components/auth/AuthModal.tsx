@@ -21,7 +21,7 @@ const validatePassword = (password: string) => {
 };
 
 const SocialButton: React.FC<{ icon: React.ReactNode; label: string, onClick: () => void, disabled: boolean }> = ({ icon, label, onClick, disabled }) => (
-    <button type="button" onClick={onClick} disabled={disabled} className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors disabled:opacity-50">
+    <button type="button" onClick={onClick} disabled={disabled} className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors disabled:opacity-50">
         <div className="w-6 h-6">{icon}</div>
         <span className="text-base font-semibold text-neutral-700">{label}</span>
     </button>
@@ -166,8 +166,8 @@ const AuthPage: React.FC = () => {
         }
     };
 
-    const floatingInputClasses = "block px-2.5 pb-2.5 pt-4 w-full text-base text-neutral-900 bg-white rounded-lg border border-neutral-300 appearance-none focus:outline-none focus:ring-0 focus:border-primary peer";
-    const floatingLabelClasses = "absolute text-base text-neutral-700 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1";
+    const floatingInputClasses = "block px-2.5 pb-2 pt-3.5 w-full text-sm text-neutral-900 bg-white rounded-lg border border-neutral-300 appearance-none focus:outline-none focus:ring-0 focus:border-primary peer";
+    const floatingLabelClasses = "absolute text-sm text-neutral-700 duration-300 transform -translate-y-3 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-3 start-1";
 
     const renderContent = () => {
         switch (state.authModalView) {
@@ -176,12 +176,12 @@ const AuthPage: React.FC = () => {
                 return (
                     <>
                         <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm mb-4 sm:mb-6">
-                            <button onClick={() => dispatch({ type: 'SET_AUTH_MODAL_VIEW', payload: 'login' })} className={`w-1/2 px-4 py-2 rounded-full text-base font-semibold transition-all duration-300 ${state.authModalView === 'login' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Login</button>
-                            <button onClick={() => dispatch({ type: 'SET_AUTH_MODAL_VIEW', payload: 'signup' })} className={`w-1/2 px-4 py-2 rounded-full text-base font-semibold transition-all duration-300 ${state.authModalView === 'signup' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Sign Up</button>
+                            <button onClick={() => dispatch({ type: 'SET_AUTH_MODAL_VIEW', payload: 'login' })} className={`w-1/2 px-4 py-1.5 rounded-full text-base font-semibold transition-all duration-300 ${state.authModalView === 'login' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Login</button>
+                            <button onClick={() => dispatch({ type: 'SET_AUTH_MODAL_VIEW', payload: 'signup' })} className={`w-1/2 px-4 py-1.5 rounded-full text-base font-semibold transition-all duration-300 ${state.authModalView === 'signup' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Sign Up</button>
                         </div>
                         <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm mb-4 sm:mb-6 max-w-xs mx-auto">
-                            <button onClick={() => setMethod('email')} className={`w-1/2 px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${method === 'email' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><EnvelopeIcon className="w-5 h-5"/>Email</button>
-                            <button onClick={() => setMethod('phone')} className={`w-1/2 px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${method === 'phone' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><DevicePhoneMobileIcon className="w-5 h-5"/>Phone</button>
+                            <button onClick={() => setMethod('email')} className={`w-1/2 px-3 py-1 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${method === 'email' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><EnvelopeIcon className="w-5 h-5"/>Email</button>
+                            <button onClick={() => setMethod('phone')} className={`w-1/2 px-3 py-1 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${method === 'phone' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><DevicePhoneMobileIcon className="w-5 h-5"/>Phone</button>
                         </div>
                         {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
                         
@@ -191,12 +191,12 @@ const AuthPage: React.FC = () => {
                                 <div className="relative"><input type="password" id="password" value={password} onChange={e => setPassword(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="password" className={floatingLabelClasses}>Password</label></div>
                                 {state.authModalView === 'login' && <div className="text-right"><button type="button" onClick={() => dispatch({ type: 'SET_AUTH_MODAL_VIEW', payload: 'forgotPassword'})} className="text-sm font-semibold text-primary hover:underline">Forgot Password?</button></div>}
                                 {state.authModalView === 'signup' && <div className="relative"><input type="password" id="confirmPassword" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="confirmPassword" className={floatingLabelClasses}>Confirm Password</label></div>}
-                                <button type="submit" disabled={isLoading} className="w-full mt-2 py-3 px-4 rounded-lg shadow-sm text-base sm:text-lg font-bold text-white bg-primary hover:bg-primary-dark disabled:opacity-50">{isLoading ? 'Processing...' : (state.authModalView === 'login' ? 'Log In' : 'Sign Up')}</button>
+                                <button type="submit" disabled={isLoading} className="w-full mt-2 py-2.5 px-4 rounded-lg shadow-sm text-base font-bold text-white bg-primary hover:bg-primary-dark disabled:opacity-50">{isLoading ? 'Processing...' : (state.authModalView === 'login' ? 'Log In' : 'Sign Up')}</button>
                             </form>
                         ) : (
                              <form onSubmit={handlePhoneSubmit} className="space-y-4">
                                 <div className="relative"><input type="tel" id="phone" value={phone} onChange={e => setPhone(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="phone" className={floatingLabelClasses}>Phone Number</label></div>
-                                <button type="submit" disabled={isLoading} className="w-full mt-2 py-3 px-4 rounded-lg shadow-sm text-base sm:text-lg font-bold text-white bg-primary hover:bg-primary-dark disabled:opacity-50">{isLoading ? 'Sending...' : 'Send Code'}</button>
+                                <button type="submit" disabled={isLoading} className="w-full mt-2 py-2.5 px-4 rounded-lg shadow-sm text-base font-bold text-white bg-primary hover:bg-primary-dark disabled:opacity-50">{isLoading ? 'Sending...' : 'Send Code'}</button>
                             </form>
                         )}
                         
@@ -216,7 +216,7 @@ const AuthPage: React.FC = () => {
                         {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
                         <form onSubmit={handlePasswordResetRequest} className="space-y-4">
                              <div className="relative"><input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="email" className={floatingLabelClasses}>Email Address</label></div>
-                            <button type="submit" disabled={isLoading} className="w-full mt-2 py-3 px-4 rounded-lg shadow-sm font-bold text-white bg-primary hover:bg-primary-dark disabled:opacity-50">{isLoading ? 'Sending...' : 'Send Reset Link'}</button>
+                            <button type="submit" disabled={isLoading} className="w-full mt-2 py-2.5 px-4 rounded-lg shadow-sm font-bold text-white bg-primary hover:bg-primary-dark disabled:opacity-50">{isLoading ? 'Sending...' : 'Send Reset Link'}</button>
                             <button type="button" onClick={() => dispatch({ type: 'SET_AUTH_MODAL_VIEW', payload: 'login' })} className="w-full text-sm font-semibold text-primary hover:underline mt-2">Back to Login</button>
                         </form>
                     </>
@@ -226,7 +226,7 @@ const AuthPage: React.FC = () => {
                     <div className="text-center">
                         <h3 className="text-lg font-bold mb-4">Check Your Email</h3>
                         <p className="text-sm text-neutral-600 mb-6">We've sent a password reset link to <span className="font-semibold">{email}</span>.</p>
-                        <button onClick={() => dispatch({ type: 'SET_AUTH_MODAL_VIEW', payload: 'login' })} className="w-full py-3 px-4 rounded-lg font-bold text-white bg-primary hover:bg-primary-dark">Back to Login</button>
+                        <button onClick={() => dispatch({ type: 'SET_AUTH_MODAL_VIEW', payload: 'login' })} className="w-full py-2.5 px-4 rounded-lg font-bold text-white bg-primary hover:bg-primary-dark">Back to Login</button>
                     </div>
                 );
             case 'phoneCode':
@@ -237,7 +237,7 @@ const AuthPage: React.FC = () => {
                         {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
                         <form onSubmit={handleCodeSubmit} className="space-y-4">
                              <div className="relative"><input type="text" id="code" value={code} onChange={e => setCode(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="code" className={floatingLabelClasses}>6-Digit Code</label></div>
-                            <button type="submit" disabled={isLoading} className="w-full mt-2 py-3 px-4 rounded-lg shadow-sm font-bold text-white bg-primary hover:bg-primary-dark disabled:opacity-50">{isLoading ? 'Verifying...' : 'Verify'}</button>
+                            <button type="submit" disabled={isLoading} className="w-full mt-2 py-2.5 px-4 rounded-lg shadow-sm font-bold text-white bg-primary hover:bg-primary-dark disabled:opacity-50">{isLoading ? 'Verifying...' : 'Verify'}</button>
                             <button type="button" onClick={() => { setMethod('phone'); dispatch({ type: 'SET_AUTH_MODAL_VIEW', payload: 'login' }); }} className="w-full text-sm font-semibold text-primary hover:underline mt-2">Back</button>
                         </form>
                     </>
@@ -251,7 +251,7 @@ const AuthPage: React.FC = () => {
                         <form onSubmit={handlePhoneDetailsSubmit} className="space-y-4">
                             <div className="relative"><input type="text" id="name" value={name} onChange={e => setName(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="name" className={floatingLabelClasses}>Full Name</label></div>
                             <div className="relative"><input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="email" className={floatingLabelClasses}>Email Address</label></div>
-                            <button type="submit" disabled={isLoading} className="w-full mt-2 py-3 px-4 rounded-lg shadow-sm font-bold text-white bg-primary hover:bg-primary-dark disabled:opacity-50">{isLoading ? 'Creating Account...' : 'Complete Sign Up'}</button>
+                            <button type="submit" disabled={isLoading} className="w-full mt-2 py-2.5 px-4 rounded-lg shadow-sm font-bold text-white bg-primary hover:bg-primary-dark disabled:opacity-50">{isLoading ? 'Creating Account...' : 'Complete Sign Up'}</button>
                         </form>
                     </>
                 );
@@ -274,9 +274,9 @@ const AuthPage: React.FC = () => {
                 />
             )}
             <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 p-4" onClick={handleClose}>
-                <div className="bg-white w-full h-full md:h-auto md:max-w-md md:rounded-2xl md:shadow-2xl flex flex-col relative overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="bg-white w-full h-full md:h-auto md:max-w-sm md:rounded-2xl md:shadow-2xl flex flex-col relative overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                     <button onClick={handleClose} className="absolute top-4 right-4 text-neutral-500 hover:text-neutral-800 z-10"><XMarkIcon className="w-6 h-6" /></button>
-                    <div className="p-6 sm:p-8 w-full max-w-md mx-auto mt-8 md:mt-0">
+                    <div className="p-6 sm:p-8 w-full max-w-sm mx-auto mt-8 md:mt-0">
                         <div className="flex justify-center items-center space-x-2 mb-4"><LogoIcon className="w-8 h-8 text-primary" /></div>
                         <h2 className="text-xl sm:text-2xl font-bold text-neutral-800 text-center mb-4 sm:mb-6">
                             {state.authModalView === 'login' ? 'Welcome Back!' : 'Create an Account'}

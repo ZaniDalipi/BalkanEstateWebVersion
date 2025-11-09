@@ -463,17 +463,17 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                     
                     {mobileView === 'list' && (
                         <div className="absolute inset-0 z-20 flex w-full h-full bg-white flex-col">
-                            <div className="h-24 flex-shrink-0"></div>
+                            <div className="h-20 flex-shrink-0"></div>
                             <div className="flex-grow min-h-0"><PropertyList {...propertyListProps} isMobile={true} showFilters={false} showList={true}/></div>
                         </div>
                     )}
 
-                    <div className="absolute inset-0 z-30 pointer-events-none p-4 flex flex-col justify-between">
-                         <div className="pointer-events-auto w-full bg-white/80 backdrop-blur-sm rounded-full shadow-lg p-2 flex items-center gap-2">
-                             <button onClick={onToggleSidebar} className="p-2 flex-shrink-0"><Bars3Icon className="w-6 h-6 text-neutral-800"/></button>
+                    <div className="absolute inset-0 z-30 pointer-events-none p-3 flex flex-col justify-between">
+                         <div className="pointer-events-auto w-full bg-white/80 backdrop-blur-sm rounded-full shadow-lg p-1.5 flex items-center gap-2">
+                             <button onClick={onToggleSidebar} className="p-2 flex-shrink-0"><Bars3Icon className="w-5 h-5 text-neutral-800"/></button>
                              <div className="relative flex-grow">
-                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2"><SearchIcon className="h-5 w-5 text-neutral-500" /></div>
-                                <input type="text" name="query" placeholder="Search city, address..." value={filters.query} onChange={(e) => handleFilterChange('query', e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} onFocus={() => setIsQueryInputFocused(true)} onBlur={() => setIsQueryInputFocused(false)} className="block w-full text-base bg-transparent border-none text-neutral-900 px-9 py-1 focus:outline-none focus:ring-0"/>
+                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2"><SearchIcon className="h-4 w-4 text-neutral-500" /></div>
+                                <input type="text" name="query" placeholder="Search city, address..." value={filters.query} onChange={(e) => handleFilterChange('query', e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} onFocus={() => setIsQueryInputFocused(true)} onBlur={() => setIsQueryInputFocused(false)} className="block w-full text-sm bg-transparent border-none text-neutral-900 px-8 py-1 focus:outline-none focus:ring-0"/>
                                 {(isGeocoding || isReverseGeocoding) && (
                                     <div className="absolute inset-y-0 right-0 flex items-center pr-2">
                                         <SpinnerIcon className="h-5 w-5 text-primary" />
@@ -484,7 +484,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                             
                              <div className="relative" ref={fabRef}>
                                 <button type="button" onClick={() => setIsFabOpen(prev => !prev)} className="p-2 rounded-full flex-shrink-0 hover:bg-neutral-100">
-                                    <PlusIcon className="w-6 h-6 text-neutral-800" />
+                                    <PlusIcon className="w-5 h-5 text-neutral-800" />
                                 </button>
                                 {isFabOpen && mobileView === 'map' && (
                                     <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border z-10 p-2 animate-fade-in">
@@ -507,31 +507,31 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                                 )}
                             </div>
 
-                            <button onClick={() => setFiltersOpen(true)} className="p-2 flex-shrink-0 hover:bg-neutral-100 rounded-full"><AdjustmentsHorizontalIcon className="w-6 h-6 text-neutral-800"/></button>
+                            <button onClick={() => setFiltersOpen(true)} className="p-2 flex-shrink-0 hover:bg-neutral-100 rounded-full"><AdjustmentsHorizontalIcon className="w-5 h-5 text-neutral-800"/></button>
                         </div>
                         
                         <div className="pointer-events-auto">
                             {mobileView === 'map' ? (
                                 <div className="w-full flex justify-between items-center">
-                                    <div className="bg-white/80 text-neutral-800 p-2 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
-                                        <div className="font-bold text-sm px-3 py-1.5 whitespace-nowrap">
+                                    <div className="bg-white/80 text-neutral-800 p-1.5 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
+                                        <div className="font-bold text-xs px-2 py-1 whitespace-nowrap">
                                             <span>{listProperties.length} results</span>
                                         </div>
-                                        <button onClick={() => updateSearchPageState({ mobileView: 'list' })} className="flex items-center gap-2 px-4 py-1.5 bg-white text-neutral-900 font-bold rounded-full shadow hover:bg-neutral-200 transition-colors">
-                                            <Squares2x2Icon className="w-5 h-5" />
-                                            <span>List</span>
+                                        <button onClick={() => updateSearchPageState({ mobileView: 'list' })} className="flex items-center gap-1.5 px-3 py-1 bg-white text-neutral-900 font-bold rounded-full shadow hover:bg-neutral-200 transition-colors">
+                                            <Squares2x2Icon className="w-4 h-4" />
+                                            <span className="text-sm">List</span>
                                         </button>
                                     </div>
 
-                                    <div className="bg-white/80 text-neutral-800 p-2 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
-                                        <div className="bg-neutral-900/10 p-1 rounded-full flex space-x-1">
-                                            <button onClick={() => setTileLayer('street')} className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${tileLayer === 'street' ? 'bg-white text-primary shadow-sm' : 'text-neutral-600'}`}>Street</button>
-                                            <button onClick={() => setTileLayer('satellite')} className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${tileLayer === 'satellite' ? 'bg-white text-primary shadow-sm' : 'text-neutral-600'}`}>Satellite</button>
+                                    <div className="bg-white/80 text-neutral-800 p-1.5 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
+                                        <div className="bg-neutral-900/10 p-0.5 rounded-full flex space-x-1">
+                                            <button onClick={() => setTileLayer('street')} className={`px-2 py-0.5 text-xs font-semibold rounded-full transition-colors ${tileLayer === 'street' ? 'bg-white text-primary shadow-sm' : 'text-neutral-600'}`}>Street</button>
+                                            <button onClick={() => setTileLayer('satellite')} className={`px-2 py-0.5 text-xs font-semibold rounded-full transition-colors ${tileLayer === 'satellite' ? 'bg-white text-primary shadow-sm' : 'text-neutral-600'}`}>Satellite</button>
                                         </div>
-                                        <div className="h-6 w-px bg-neutral-900/20 mx-1"></div>
-                                        <button onClick={handleRecenterOnUser} className="p-2.5 rounded-full hover:bg-black/10 transition-colors" title="My Location"><CrosshairsIcon className="w-5 h-5" /></button>
-                                        {isAuthenticated && (<button onClick={handleSaveSearch} disabled={isSaving || !isFormSearchActive} className="p-2.5 rounded-full hover:bg-black/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="Save Search"><BellIcon className="w-5 h-5" /></button>)}
-                                        <button onClick={() => updateSearchPageState({ isAiChatModalOpen: true })} className="p-2.5 rounded-full hover:bg-black/10 transition-colors" title="AI Search"><SparklesIcon className="w-5 h-5 text-primary" /></button>
+                                        <div className="h-5 w-px bg-neutral-900/20 mx-1"></div>
+                                        <button onClick={handleRecenterOnUser} className="p-2 rounded-full hover:bg-black/10 transition-colors" title="My Location"><CrosshairsIcon className="w-4 h-4" /></button>
+                                        {isAuthenticated && (<button onClick={handleSaveSearch} disabled={isSaving || !isFormSearchActive} className="p-2 rounded-full hover:bg-black/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="Save Search"><BellIcon className="w-4 h-4" /></button>)}
+                                        <button onClick={() => updateSearchPageState({ isAiChatModalOpen: true })} className="p-2 rounded-full hover:bg-black/10 transition-colors" title="AI Search"><SparklesIcon className="w-5 h-5 text-primary" /></button>
                                     </div>
                                 </div>
                             ) : (

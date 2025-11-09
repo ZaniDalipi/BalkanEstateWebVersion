@@ -20,14 +20,21 @@ const RangeSlider: React.FC<RangeSliderProps> = ({ min, max, step, value, onChan
     const trackRef = useRef<HTMLDivElement>(null);
     const [dragging, setDragging] = useState<'min' | 'max' | null>(null);
 
-    const valueToPercent = useCallback((val: number) => {
-        return ((val - min) / (max - min)) * 100;
-    }, [min, max]);
+    const valueToPercent = useCallback((val: number) => ((val - min) / (max - min)) * 100, [min, max]);
 
-    const handleMouseMove = useCallback((e: MouseEvent) => {
+    const handleDragStart = (e: React.MouseEvent | React.TouchEvent, handle: 'min' | 'max') => {
+        if ('touches' in e) {
+            document.body.style.overflow = 'hidden'; // prevent page scroll on touch
+        }
+        setDragging(handle);
+    };
+
+    const handleDragMove = useCallback((e: MouseEvent | TouchEvent) => {
         if (!dragging || !trackRef.current) return;
+        
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
         const rect = trackRef.current.getBoundingClientRect();
-        const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+        const percent = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
         const newValue = Math.round((min + (percent / 100) * (max - min)) / step) * step;
 
         const [currentMin, currentMax] = value;
@@ -38,20 +45,27 @@ const RangeSlider: React.FC<RangeSliderProps> = ({ min, max, step, value, onChan
         }
     }, [dragging, min, max, step, value, onChange]);
 
-    const handleMouseUp = useCallback(() => {
+    const handleDragEnd = useCallback(() => {
+        if (document.body.style.overflow === 'hidden') {
+            document.body.style.overflow = '';
+        }
         setDragging(null);
     }, []);
 
     useEffect(() => {
         if (dragging) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
+            window.addEventListener('mousemove', handleDragMove);
+            window.addEventListener('touchmove', handleDragMove);
+            window.addEventListener('mouseup', handleDragEnd);
+            window.addEventListener('touchend', handleDragEnd);
         }
         return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
+            window.removeEventListener('mousemove', handleDragMove);
+            window.removeEventListener('touchmove', handleDragMove);
+            window.removeEventListener('mouseup', handleDragEnd);
+            window.removeEventListener('touchend', handleDragEnd);
         };
-    }, [dragging, handleMouseMove, handleMouseUp]);
+    }, [dragging, handleDragMove, handleDragEnd]);
 
     const [minVal, maxVal] = value;
     const minPercent = valueToPercent(minVal);
@@ -59,29 +73,29 @@ const RangeSlider: React.FC<RangeSliderProps> = ({ min, max, step, value, onChan
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex justify-between items-center mb-1">
                 <label className="text-xs font-medium text-neutral-700">{label}</label>
-                <div className="text-xs font-bold text-neutral-800 bg-neutral-100 border border-neutral-200 px-2 py-1 rounded-md">
+                <div className="text-xs font-semibold text-neutral-800 bg-neutral-100 border border-neutral-200 px-2 py-0.5 rounded-md">
                     {formatValue(minVal)} - {formatValue(maxVal)}
                 </div>
             </div>
-            <div ref={trackRef} className="relative w-full h-6 flex items-center">
-                <div className="absolute w-full h-1 bg-neutral-200 rounded-full"></div>
+            <div ref={trackRef} className="relative w-full h-5 flex items-center">
+                <div className="absolute w-full h-0.5 bg-neutral-200 rounded-full"></div>
                 <div
-                    className="absolute h-1 bg-primary rounded-full"
+                    className="absolute h-0.5 bg-primary rounded-full"
                     style={{ left: `${minPercent}%`, width: `${maxPercent - minPercent}%` }}
                 ></div>
                 <button
-                    onMouseDown={() => setDragging('min')}
-                    className="absolute w-5 h-5 bg-white border-2 border-primary rounded-full shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    // FIX: Replaced incorrect backtick with a single quote in the style prop.
+                    onMouseDown={(e) => handleDragStart(e, 'min')}
+                    onTouchStart={(e) => handleDragStart(e, 'min')}
+                    className={`absolute w-4 h-4 bg-white border-2 border-primary rounded-full shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 ${dragging === 'min' ? 'z-10' : ''}`}
                     style={{ left: `${minPercent}%`, transform: 'translateX(-50%)' }}
                     aria-label={`Minimum ${label}`}
                 ></button>
                 <button
-                    onMouseDown={() => setDragging('max')}
-                    className="absolute w-5 h-5 bg-white border-2 border-primary rounded-full shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    // FIX: Replaced incorrect backtick with a single quote in the style prop.
+                    onMouseDown={(e) => handleDragStart(e, 'max')}
+                    onTouchStart={(e) => handleDragStart(e, 'max')}
+                    className={`absolute w-4 h-4 bg-white border-2 border-primary rounded-full shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 ${dragging === 'max' ? 'z-10' : ''}`}
                     style={{ left: `${maxPercent}%`, transform: 'translateX(-50%)' }}
                     aria-label={`Maximum ${label}`}
                 ></button>
@@ -122,7 +136,7 @@ const FilterButton: React.FC<{
 }> = ({ onClick, isActive, children }) => (
   <button
     onClick={onClick}
-    className={`px-2 py-1 rounded-full text-xs font-semibold transition-all duration-300 flex-grow text-center ${
+    className={`px-2 py-0.5 rounded-full text-xs font-semibold transition-all duration-300 flex-grow text-center ${
       isActive
         ? 'bg-primary text-white shadow'
         : 'bg-neutral-200/70 text-neutral-700 hover:bg-neutral-300/70'
@@ -140,7 +154,7 @@ const FilterButtonGroup: React.FC<{
 }> = ({ label, options, selectedValue, onChange }) => (
   <div>
     <label className="block text-xs font-medium text-neutral-700 mb-1">{label}</label>
-    <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200">
+    <div className="flex items-center space-x-1 bg-neutral-100 p-0.5 rounded-full border border-neutral-200">
       {options.map(({ value, label: optionLabel }) => (
         <FilterButton
           key={optionLabel}
@@ -175,10 +189,10 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
         onFilterChange('maxSqft', max === 500 ? null : max);
     }, [onFilterChange]);
     
-    const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder:text-neutral-700";
+    const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder:text-neutral-700";
 
     return (
-         <div className="space-y-3">
+         <div className="space-y-2">
             {!isMobile && (
                 <div className="relative">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -217,15 +231,15 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                 formatValue={(val) => `${val} m²`}
             />
             
-            <div className="border-t border-neutral-200 pt-3">
+            <div className="border-t border-neutral-200 pt-2">
                 <button type="button" onClick={() => setIsAdvancedOpen(!isAdvancedOpen)} className="w-full flex justify-between items-center text-left">
                     <h3 className="text-sm font-semibold text-neutral-800">Advanced Filters</h3>
-                    {isAdvancedOpen ? <ChevronUpIcon className="w-5 h-5 text-neutral-500" /> : <ChevronDownIcon className="w-5 h-5 text-neutral-500" />}
+                    {isAdvancedOpen ? <ChevronUpIcon className="w-4 h-4 text-neutral-500" /> : <ChevronDownIcon className="w-4 h-4 text-neutral-500" />}
                 </button>
                 
                 {isAdvancedOpen && (
-                    <div className="pt-4 space-y-4 animate-fade-in">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="pt-3 space-y-3 animate-fade-in">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             <FilterButtonGroup 
                                 label="Bedrooms"
                                 options={[ {value: null, label: 'Any'}, {value: 1, label: '1+'}, {value: 2, label: '2+'}, {value: 3, label: '3+'}, {value: 4, label: '4+'}, ]}
@@ -245,7 +259,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                                 onChange={(value) => onFilterChange('livingRooms', value)}
                             />
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <FilterButtonGroup 
                                 label="Listing Type"
                                 options={[ {value: 'any', label: 'Any'}, {value: 'agent', label: 'Agent'}, {value: 'private', label: 'Private'}, ]}
@@ -269,7 +283,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                     id="search-on-move"
                     checked={searchOnMove}
                     onChange={(e) => onSearchOnMoveChange(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    className="h-3.5 w-3.5 rounded border-gray-300 text-primary focus:ring-primary"
                 />
                 <label htmlFor="search-on-move" className="ml-2 block text-xs text-neutral-600">
                     Search as I move the map
@@ -281,7 +295,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                      <button 
                         onClick={onSearchClick}
                         disabled={isGeocoding}
-                        className="w-full py-2 px-4 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors flex items-center justify-center disabled:bg-primary/70"
+                        className="w-full py-1.5 px-4 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors flex items-center justify-center disabled:bg-primary/70"
                     >
                         {isGeocoding ? (
                             <>
@@ -293,14 +307,14 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                      <div className="flex items-center gap-2">
                         <button 
                             onClick={onResetFilters}
-                            className="flex-grow py-2 px-4 border border-neutral-300 text-neutral-600 rounded-lg text-sm font-bold bg-white hover:bg-neutral-100 transition-colors"
+                            className="flex-grow py-1.5 px-4 border border-neutral-300 text-neutral-600 rounded-lg text-sm font-bold bg-white hover:bg-neutral-100 transition-colors"
                         >
                             Reset
                         </button>
                         <button 
                             onClick={onSaveSearch} 
                             disabled={isSaving}
-                            className="flex-grow py-2 px-4 border border-primary text-primary rounded-lg shadow-sm text-sm font-bold bg-white hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-2"
+                            className="flex-grow py-1.5 px-4 border border-primary text-primary rounded-lg shadow-sm text-sm font-bold bg-white hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-2"
                         >
                             {isSaving ? (
                                 <>
@@ -365,7 +379,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
         };
     }, [visibleCount, properties.length, isLoadingMore]);
     
-    const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors";
+    const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors";
     
     // Desktop layout with fixed filters and scrollable list
     if (!isMobile) {
@@ -379,8 +393,8 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                     
                     <div className="p-4">
                         <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm mx-auto">
-                            <button onClick={() => onSearchModeChange('manual')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Manual Search</button>
-                            <button onClick={() => onSearchModeChange('ai')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><SparklesIcon className="w-4 h-4" /> AI Search</button>
+                            <button onClick={() => onSearchModeChange('manual')} className={`w-1/2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Manual Search</button>
+                            <button onClick={() => onSearchModeChange('ai')} className={`w-1/2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><SparklesIcon className="w-4 h-4" /> AI Search</button>
                         </div>
                     </div>
 
@@ -411,7 +425,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                         name="sortBy"
                                         value={filters.sortBy}
                                         onChange={(e) => onSortChange(e.target.value)}
-                                        className={`${inputBaseClasses} appearance-none pr-8 text-xs !py-1.5`}
+                                        className={`${inputBaseClasses} appearance-none pr-8 text-xs !py-1`}
                                     >
                                         <option value="newest">Newest</option>
                                         <option value="price_asc">Price (low-high)</option>
@@ -460,8 +474,8 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
             {showFilters && (
                  <div className="p-4 flex-shrink-0">
                     <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm mx-auto">
-                        <button onClick={() => onSearchModeChange('manual')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Manual Search</button>
-                        <button onClick={() => onSearchModeChange('ai')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><SparklesIcon className="w-4 h-4" /> AI Search</button>
+                        <button onClick={() => onSearchModeChange('manual')} className={`w-1/2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Manual Search</button>
+                        <button onClick={() => onSearchModeChange('ai')} className={`w-1/2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><SparklesIcon className="w-4 h-4" /> AI Search</button>
                     </div>
                 </div>
             )}
@@ -494,7 +508,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                         name="sortBy"
                                         value={filters.sortBy}
                                         onChange={(e) => onSortChange(e.target.value)}
-                                        className={`${inputBaseClasses} appearance-none pr-8 text-xs !py-1.5`}
+                                        className={`${inputBaseClasses} appearance-none pr-8 text-xs !py-1`}
                                     >
                                         <option value="newest">Newest</option>
                                         <option value="price_asc">Price (low-high)</option>
