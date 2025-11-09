@@ -7,12 +7,26 @@ import { getCurrencySymbol } from '../../utils/currency';
 import { useAppContext } from '../../context/AppContext';
 import WhackAnIconAnimation from './WhackAnIconAnimation';
 import NumberInputWithSteppers from '../shared/NumberInputWithSteppers';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
+
+// Fix for default icon issue with bundlers
+let DefaultIcon = L.icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
 
 type Step = 'init' | 'loading' | 'form' | 'floorplan' | 'success';
 type Mode = 'ai' | 'manual';
 
 interface ListingData {
     streetAddress: string;
+    postalCode: string;
     price: number;
     bedrooms: number;
     bathrooms: number;
@@ -39,6 +53,7 @@ interface ImageData {
 
 const initialListingData: ListingData = {
     streetAddress: '',
+    postalCode: '',
     price: 0,
     bedrooms: 0,
     bathrooms: 0,
@@ -67,6 +82,15 @@ interface LocationSuggestion {
     municipality: MunicipalityData;
 }
 
+// Simple debounce utility
+function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
+    let timeout: number;
+    return (...args: Parameters<F>): void => {
+        clearTimeout(timeout);
+        timeout = window.setTimeout(() => func(...args), waitFor);
+    };
+}
+
 
 // --- Helper Icons ---
 const UploadIcon: React.FC<{className?: string}> = ({className}) => (
@@ -92,6 +116,59 @@ const floatingLabelClasses = "absolute text-sm text-neutral-700 duration-300 tra
 const floatingSelectLabelClasses = "absolute text-sm text-neutral-700 duration-300 transform -translate-y-3 scale-75 top-2 z-10 origin-[0] bg-white px-2 start-1";
 
 // --- Sub-components ---
+const ListingMap: React.FC<{
+    center: [number, number];
+    markerPosition: [number, number] | null;
+    onMarkerMove: (latlng: L.LatLng) => void;
+    zoom: number;
+}> = ({ center, markerPosition, onMarkerMove, zoom }) => {
+    const markerRef = useRef<L.Marker>(null);
+
+    const MapUpdater: React.FC = () => {
+        const map = useMap();
+        useEffect(() => {
+            map.flyTo(center, zoom);
+        }, [center, zoom, map]);
+        
+        useMapEvents({
+            click(e) {
+                onMarkerMove(e.latlng);
+            },
+        });
+        return null;
+    };
+
+    const markerEventHandlers = useMemo(
+        () => ({
+            dragend() {
+                const marker = markerRef.current;
+                if (marker != null) {
+                    onMarkerMove(marker.getLatLng());
+                }
+            },
+        }),
+        [onMarkerMove],
+    );
+
+    return (
+        <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-64 rounded-lg z-0">
+            <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <MapUpdater />
+            {markerPosition && (
+                <Marker
+                    position={markerPosition}
+                    draggable={true}
+                    eventHandlers={markerEventHandlers}
+                    ref={markerRef}
+                />
+            )}
+        </MapContainer>
+    );
+};
+
 const ImageTagSelector: React.FC<{
     value: string;
     options: string[];
@@ -224,6 +301,12 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const [isLocationInputFocused, setIsLocationInputFocused] = useState(false);
     const locationContainerRef = useRef<HTMLDivElement>(null);
     const [isFindingLocation, setIsFindingLocation] = useState(false);
+    const [mapCenter, setMapCenter] = useState<[number, number]>([44.2, 19.9]); // Default Balkan center
+    const [mapZoom, setMapZoom] = useState(6);
+
+    const markerPosition = useMemo(() => {
+        return listingData.lat && listingData.lng ? [listingData.lat, listingData.lng] as [number, number] : null;
+    }, [listingData.lat, listingData.lng]);
     
     // Track modal state to react to it closing
     const wasModalOpen = useRef(isPricingModalOpen);
@@ -245,19 +328,17 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             setMode('manual');
             setStep('form');
             
-            // Reverse the offset to get the pure coordinates for the form state
-            const hashString = `${propertyToEdit.address}`;
-            let hash = 0;
-            for (let i = 0; i < hashString.length; i++) {
-                const char = hashString.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash |= 0;
+            const cityParts = propertyToEdit.city.match(/^(\d+)\s+(.*)$/);
+            let postalCode = '';
+            let cityText = propertyToEdit.city;
+            if (cityParts) {
+                postalCode = cityParts[1];
+                cityText = cityParts[2];
             }
-            const latOffset = Math.sin(hash) * 0.005;
-            const lngOffset = Math.cos(hash) * 0.005;
 
             setListingData({
                 streetAddress: propertyToEdit.address,
+                postalCode: postalCode,
                 price: propertyToEdit.price,
                 bedrooms: propertyToEdit.beds,
                 bathrooms: propertyToEdit.baths,
@@ -277,11 +358,15 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 lng: propertyToEdit.lng,
             });
             setSelectedCountry(propertyToEdit.country);
-            setLocationSearchText(propertyToEdit.city);
+            setLocationSearchText(cityText);
             const existingImages: ImageData[] = (propertyToEdit.images || []).map(img => ({ file: null, previewUrl: img.url }));
             setImages(existingImages);
             if (propertyToEdit.floorplanUrl) {
                 setFloorplanImage({ file: null, previewUrl: propertyToEdit.floorplanUrl });
+            }
+            if (propertyToEdit.lat && propertyToEdit.lng) {
+                setMapCenter([propertyToEdit.lat, propertyToEdit.lng]);
+                setMapZoom(16);
             }
         }
     }, [propertyToEdit]);
@@ -316,21 +401,28 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             setLocationSuggestions([]);
         }
     }, [locationSearchText, selectedCountry, isLocationInputFocused, allMunicipalities]);
-    
+
     const handleLocationSuggestionClick = (suggestion: LocationSuggestion) => {
         setSelectedLocation(suggestion);
-        setLocationSearchText(`${suggestion.settlement.name}, ${suggestion.municipality.name}`);
+        setLocationSearchText(suggestion.settlement.name);
+        
+        const newCoords: [number, number] = [suggestion.settlement.lat, suggestion.settlement.lng];
+        
         setListingData(prev => ({
             ...prev,
-            lat: suggestion.settlement.lat,
-            lng: suggestion.settlement.lng,
+            lat: newCoords[0],
+            lng: newCoords[1],
+            streetAddress: '', // Clear street address when a new city is chosen
         }));
+        
+        setMapCenter(newCoords);
+        setMapZoom(14);
         setIsLocationInputFocused(false);
     };
     
     const handleFindOnMap = async () => {
-        if (!listingData.streetAddress || !locationSearchText || !selectedCountry) {
-            setError("Please fill in Street Address, City, and Country to find the location.");
+        if (!locationSearchText || !selectedCountry) {
+            setError("Please fill in City and Country to find the location.");
             return;
         }
         setError(null);
@@ -340,6 +432,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             const coords = await getCoordinatesForLocation(fullAddress);
             if (coords) {
                 setListingData(prev => ({ ...prev, lat: coords.lat, lng: coords.lng }));
+                setMapCenter([coords.lat, coords.lng]);
+                setMapZoom(16);
             } else {
                 setError(`Could not automatically find coordinates for "${fullAddress}". Please check the address.`);
             }
@@ -349,6 +443,15 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             setIsFindingLocation(false);
         }
     };
+
+    const handleMarkerMove = useCallback((latlng: L.LatLng) => {
+        setListingData(prev => ({
+            ...prev,
+            lat: latlng.lat,
+            lng: latlng.lng,
+        }));
+        setMapCenter([latlng.lat, latlng.lng]);
+    }, []);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -546,12 +649,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             return;
         }
         if (listingData.lat === 0 || listingData.lng === 0) {
-            setError("Please select a valid location from the suggestions or use 'Find on Map'.");
-            setIsSubmitting(false);
-            return;
-        }
-        if (!listingData.streetAddress.trim()) {
-            setError("Street Address field cannot be empty.");
+            setError("Please set the property location on the map.");
             setIsSubmitting(false);
             return;
         }
@@ -566,6 +664,11 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             });
             
             let { lat, lng } = listingData;
+            
+            let cityString = locationSearchText.trim();
+            if (listingData.postalCode.trim()) {
+                cityString = `${listingData.postalCode.trim()} ${cityString}`;
+            }
 
             const newProperty: Property = {
                 id: propertyToEdit ? propertyToEdit.id : `prop-${Date.now()}`,
@@ -573,7 +676,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 status: 'active',
                 price: Number(listingData.price),
                 address: listingData.streetAddress,
-                city: locationSearchText,
+                city: cityString,
                 country: selectedCountry,
                 beds: Number(listingData.bedrooms),
                 baths: Number(listingData.bathrooms),
@@ -631,11 +734,12 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             }, 3000);
 
         } catch (err) {
+            // FIX: The error object 'err' is of type unknown. It was being passed directly to setError which expects a string.
+            // This is now handled by checking if 'err' is an instance of Error and using its message, otherwise a generic error message is shown.
             if (err instanceof Error) {
-                setError(err.message || "Failed to submit listing.");
+                setError(err.message);
             } else {
-                // FIX: The argument 'err' is of type 'unknown'. Convert it to a string before setting the error state.
-                setError(String(err));
+                setError('An unexpected error occurred while saving the listing.');
             }
         } finally {
             setIsSubmitting(false);
@@ -710,34 +814,52 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
 
             {(mode === 'manual' || (mode === 'ai' && step === 'form')) && (
                  <div className="space-y-6 animate-fade-in">
-                    <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('country')?.focus()}><select id="country" name="country" value={selectedCountry} onChange={handleCountryChange} className={`${floatingInputClasses} border-neutral-300`} required><option value="" disabled>Select a country</option>{availableCountries.map(c => <option key={c} value={c}>{c}</option>)}</select><label htmlFor="country" className={floatingSelectLabelClasses}>Country</label></div>
-                        <div className="relative md:col-span-2" ref={locationContainerRef}><div className="relative cursor-text" onClick={() => document.getElementById('location')?.focus()}><input type="text" id="location" value={locationSearchText} onChange={(e) => setLocationSearchText(e.target.value)} onFocus={() => setIsLocationInputFocused(true)} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " required autoComplete="off" disabled={!selectedCountry} /><label htmlFor="location" className={floatingLabelClasses}>City / Town / Village</label></div>{isLocationInputFocused && locationSuggestions.length > 0 && (<ul className="absolute z-20 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">{locationSuggestions.map(suggestion => (<li key={`${suggestion.settlement.name}-${suggestion.municipality.name}`} onMouseDown={() => handleLocationSuggestionClick(suggestion)} className="px-4 py-3 text-sm text-neutral-700 hover:bg-neutral-100 cursor-pointer flex items-center gap-2"><MapPinIcon className="w-4 h-4 text-neutral-400 flex-shrink-0" /><span><strong>{suggestion.settlement.name}</strong>, {suggestion.municipality.name}</span></li>))}</ul>)}</div>
-                        
-                        <div className="relative md:col-span-2">
-                            <div className="flex items-stretch gap-2">
-                                <div className="relative flex-grow cursor-text" onClick={() => document.getElementById('streetAddress')?.focus()}>
-                                    <input type="text" id="streetAddress" name="streetAddress" value={listingData.streetAddress} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300 !rounded-r-none`} placeholder=" " required />
-                                    <label htmlFor="streetAddress" className={floatingLabelClasses}>Street Address (e.g., Main Street 123)</label>
+                    <fieldset className="grid grid-cols-1 gap-4">
+                        <div className="md:col-span-2 grid grid-cols-1 gap-4">
+                            <div className="relative">
+                               <select id="country" name="country" value={selectedCountry} onChange={handleCountryChange} className={`${floatingInputClasses} border-neutral-300`} required><option value="" disabled>Select a country</option>{availableCountries.map(c => <option key={c} value={c}>{c}</option>)}</select>
+                               <label htmlFor="country" className={floatingSelectLabelClasses}>Country</label>
+                            </div>
+                            <div className="md:col-span-2 grid grid-cols-3 gap-4">
+                                <div className="relative col-span-1">
+                                    <input type="text" id="postalCode" name="postalCode" value={listingData.postalCode} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " />
+                                    <label htmlFor="postalCode" className={floatingLabelClasses}>Postal Code</label>
                                 </div>
-                                <button type="button" onClick={handleFindOnMap} disabled={isFindingLocation} className="flex-shrink-0 px-4 py-2 bg-primary text-white font-semibold rounded-r-lg border border-primary hover:bg-primary-dark transition-colors flex items-center gap-2 disabled:bg-primary/70">
-                                    {isFindingLocation ? <SpinnerIcon className="w-5 h-5"/> : <MapPinIcon className="w-5 h-5"/>}
-                                    <span className="hidden sm:inline">{isFindingLocation ? 'Finding...' : 'Find on Map'}</span>
-                                </button>
+                                <div className="relative col-span-2" ref={locationContainerRef}>
+                                    <div className="relative cursor-text" onClick={() => document.getElementById('location')?.focus()}>
+                                        <input type="text" id="location" value={locationSearchText} onChange={(e) => setLocationSearchText(e.target.value)} onFocus={() => setIsLocationInputFocused(true)} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " required autoComplete="off" disabled={!selectedCountry} />
+                                        <label htmlFor="location" className={floatingLabelClasses}>City / Town</label>
+                                    </div>
+                                    {isLocationInputFocused && locationSuggestions.length > 0 && (<ul className="absolute z-20 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">{locationSuggestions.map(suggestion => (<li key={`${suggestion.settlement.name}-${suggestion.municipality.name}`} onMouseDown={() => handleLocationSuggestionClick(suggestion)} className="px-4 py-3 text-sm text-neutral-700 hover:bg-neutral-100 cursor-pointer flex items-center gap-2"><MapPinIcon className="w-4 h-4 text-neutral-400 flex-shrink-0" /><span><strong>{suggestion.settlement.name}</strong>, {suggestion.municipality.name}</span></li>))}</ul>)}
+                                </div>
+                            </div>
+                            <div className="relative md:col-span-2">
+                                <div className="flex items-stretch gap-2">
+                                    <div className="relative flex-grow cursor-text" onClick={() => document.getElementById('streetAddress')?.focus()}>
+                                        <input type="text" id="streetAddress" name="streetAddress" value={listingData.streetAddress} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300 !rounded-r-none`} placeholder=" " />
+                                        <label htmlFor="streetAddress" className={floatingLabelClasses}>Street Address</label>
+                                    </div>
+                                    <button type="button" onClick={handleFindOnMap} disabled={isFindingLocation} className="flex-shrink-0 px-4 py-2 bg-primary text-white font-semibold rounded-r-lg border border-primary hover:bg-primary-dark transition-colors flex items-center gap-2 disabled:bg-primary/70">
+                                        {isFindingLocation ? <SpinnerIcon className="w-5 h-5"/> : <MapPinIcon className="w-5 h-5"/>}
+                                        <span className="hidden sm:inline">{isFindingLocation ? 'Finding...' : 'Find on Map'}</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
-
-                        <div className="relative">
-                            <input type="number" id="lat" value={listingData.lat !== 0 ? listingData.lat.toFixed(6) : ''} className={`${floatingInputClasses} border-neutral-300 bg-neutral-100 cursor-not-allowed`} placeholder=" " readOnly />
-                            <label htmlFor="lat" className={floatingLabelClasses}>Latitude</label>
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-neutral-700 mb-1">Property Location</label>
+                            <p className="text-xs text-neutral-500 mb-2">Click on the map to place a marker or drag an existing marker to refine the location.</p>
+                            <ListingMap
+                                center={mapCenter}
+                                zoom={mapZoom}
+                                markerPosition={markerPosition}
+                                onMarkerMove={handleMarkerMove}
+                            />
                         </div>
-                        <div className="relative">
-                            <input type="number" id="lng" value={listingData.lng !== 0 ? listingData.lng.toFixed(6) : ''} className={`${floatingInputClasses} border-neutral-300 bg-neutral-100 cursor-not-allowed`} placeholder=" " readOnly />
-                            <label htmlFor="lng" className={floatingLabelClasses}>Longitude</label>
-                        </div>
-                        <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('price')?.focus()}><input type="text" id="price" inputMode="numeric" name="price" value={listingData.price > 0 ? new Intl.NumberFormat('de-DE').format(listingData.price) : ''} onChange={handlePriceChange} className={`${floatingInputClasses} border-neutral-300 pl-8`} placeholder=" " required /><label htmlFor="price" className={floatingLabelClasses}>Price</label><span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">{getCurrencySymbol(selectedCountry)}</span></div>
                     </fieldset>
-
+                    <fieldset>
+                         <div className="relative cursor-text" onClick={() => document.getElementById('price')?.focus()}><input type="text" id="price" inputMode="numeric" name="price" value={listingData.price > 0 ? new Intl.NumberFormat('de-DE').format(listingData.price) : ''} onChange={handlePriceChange} className={`${floatingInputClasses} border-neutral-300 pl-8`} placeholder=" " required /><label htmlFor="price" className={floatingLabelClasses}>Price</label><span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">{getCurrencySymbol(selectedCountry)}</span></div>
+                    </fieldset>
                     <fieldset className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"><NumberInputWithSteppers label="Bedrooms" value={listingData.bedrooms} onChange={(val) => setListingData(p => ({ ...p, bedrooms: val }))} /><NumberInputWithSteppers label="Bathrooms" value={listingData.bathrooms} onChange={(val) => setListingData(p => ({ ...p, bathrooms: val }))} /><NumberInputWithSteppers label="Living Rooms" value={listingData.livingRooms} onChange={(val) => setListingData(p => ({ ...p, livingRooms: val }))} /><NumberInputWithSteppers label="Area (m²)" value={listingData.sq_meters} step={5} onChange={(val) => setListingData(p => ({ ...p, sq_meters: val }))} /><NumberInputWithSteppers label="Year Built" value={listingData.year_built} max={new Date().getFullYear()} onChange={(val) => setListingData(p => ({ ...p, year_built: val }))} /><NumberInputWithSteppers label="Parking Spots" value={listingData.parking_spots} onChange={(val) => setListingData(p => ({ ...p, parking_spots: val }))} /></fieldset>
                     <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end"><div className="relative"><select name="propertyType" id="propertyType" value={listingData.propertyType} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`}><option value="house">House</option><option value="apartment">Apartment</option><option value="villa">Villa</option><option value="other">Other</option></select><label htmlFor="propertyType" className={floatingSelectLabelClasses}>Property Type</label></div>{listingData.propertyType === 'apartment' && (<NumberInputWithSteppers label="Floor Number" value={listingData.floorNumber} onChange={(val) => setListingData(p => ({ ...p, floorNumber: val }))} min={1} />)}{(listingData.propertyType === 'house' || listingData.propertyType === 'villa') && (<NumberInputWithSteppers label="Total Floors" value={listingData.totalFloors} min={1} onChange={(val) => setListingData(p => ({ ...p, totalFloors: val }))} />)}</fieldset>
                     <fieldset><TagListInput label="Special Features" tags={listingData.specialFeatures} setTags={(tags) => setListingData(p => ({ ...p, specialFeatures: tags }))} /></fieldset>

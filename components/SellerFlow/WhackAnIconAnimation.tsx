@@ -91,9 +91,8 @@ const WhackAnIconAnimation: React.FC<WhackAnIconAnimationProps> = ({ mode = 'loa
         setTimeout(() => {
             setActiveMole(null);
             setWhackedMole(null);
-        }, 200);
+        }, 300);
 
-        // Score should update in both 'loading' and 'game' modes
         setScore(s => {
             const newScore = s + 1;
             scoreRef.current = newScore;
@@ -127,9 +126,9 @@ const WhackAnIconAnimation: React.FC<WhackAnIconAnimationProps> = ({ mode = 'loa
                             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black/20 rounded-full" />
                             <div
                                 onMouseDown={() => handleWhack(index)}
-                                className={`absolute bottom-0 w-full flex justify-center transition-transform duration-200 ease-out ${
+                                className={`absolute bottom-0 w-full flex justify-center transition-all duration-300 ease-out ${
                                     activeMole === index ? 'translate-y-0' : 'translate-y-full'
-                                } ${whackedMole === index ? 'scale-0 rotate-45' : ''}`}
+                                } ${whackedMole === index ? 'scale-50 opacity-0 -rotate-90' : ''}`}
                             >
                                 <div className="p-2 bg-white rounded-full shadow-lg border-2 border-primary-light cursor-pointer hover:scale-110">
                                     {getRandomIcon(index)}
