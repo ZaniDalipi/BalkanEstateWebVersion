@@ -86,10 +86,10 @@ const InfoIcon: React.FC<{className?: string}> = ({className}) => (
 );
 
 
-const inputBaseClasses = "block w-full text-base bg-neutral-50 border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors focus:bg-white";
-const floatingInputClasses = "block px-2.5 pb-2.5 pt-4 w-full text-base text-neutral-900 bg-white rounded-lg border appearance-none focus:outline-none focus:ring-0 peer";
-const floatingLabelClasses = "absolute text-base text-neutral-700 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1 peer-focus:text-primary";
-const floatingSelectLabelClasses = "absolute text-base text-neutral-700 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 start-1";
+const inputBaseClasses = "block w-full text-sm bg-neutral-50 border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors focus:bg-white";
+const floatingInputClasses = "block px-2.5 pb-2 pt-3.5 w-full text-sm text-neutral-900 bg-white rounded-lg border appearance-none focus:outline-none focus:ring-0 peer";
+const floatingLabelClasses = "absolute text-sm text-neutral-700 duration-300 transform -translate-y-3 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-3 start-1 peer-focus:text-primary";
+const floatingSelectLabelClasses = "absolute text-sm text-neutral-700 duration-300 transform -translate-y-3 scale-75 top-2 z-10 origin-[0] bg-white px-2 start-1";
 
 // --- Sub-components ---
 const ImageTagSelector: React.FC<{
@@ -190,7 +190,7 @@ const TagListInput: React.FC<{
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={tags.length === 0 ? "Add tags..." : ""}
-                    className="flex-grow bg-transparent outline-none text-base h-8 placeholder:text-neutral-700"
+                    className="flex-grow bg-transparent outline-none text-sm h-8 placeholder:text-neutral-700"
                 />
             </div>
         </div>
@@ -273,8 +273,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 floorNumber: propertyToEdit.floorNumber || 0,
                 totalFloors: propertyToEdit.totalFloors || 0,
                 image_tags: (propertyToEdit.images || []).map((img, index) => ({ index, tag: img.tag })),
-                lat: propertyToEdit.lat - latOffset,
-                lng: propertyToEdit.lng - lngOffset,
+                lat: propertyToEdit.lat,
+                lng: propertyToEdit.lng,
             });
             setSelectedCountry(propertyToEdit.country);
             setLocationSearchText(propertyToEdit.city);
@@ -442,8 +442,6 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         try {
             const imageFiles = images.map(img => img.file).filter((f): f is File => f !== null);
             if (imageFiles.length === 0) {
-                // If there are previewUrl images but no files, it means we are editing.
-                // We can't re-analyze existing URLs, so we switch to manual form.
                 if (images.some(img => img.previewUrl)) {
                     setStep('form');
                     return;
@@ -537,7 +535,6 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         setIsSubmitting(true);
         setError(null);
 
-        // Validation
         if (listingData.propertyType === 'apartment' && (!listingData.floorNumber || listingData.floorNumber < 1)) {
             setError("For apartments, please enter a valid floor number (1 or greater).");
             setIsSubmitting(false);
@@ -549,7 +546,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             return;
         }
         if (listingData.lat === 0 || listingData.lng === 0) {
-            setError("Please select a valid location from the suggestions.");
+            setError("Please select a valid location from the suggestions or use 'Find on Map'.");
             setIsSubmitting(false);
             return;
         }
@@ -569,19 +566,6 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             });
             
             let { lat, lng } = listingData;
-            
-            // Apply a consistent, deterministic offset to the coordinates to avoid marker overlap
-            const hashString = `${listingData.streetAddress}`;
-            let hash = 0;
-            for (let i = 0; i < hashString.length; i++) {
-                const char = hashString.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash |= 0;
-            }
-            const latOffset = Math.sin(hash) * 0.005;
-            const lngOffset = Math.cos(hash) * 0.005;
-            const finalLat = lat + latOffset;
-            const finalLng = lng + lngOffset;
 
             const newProperty: Property = {
                 id: propertyToEdit ? propertyToEdit.id : `prop-${Date.now()}`,
@@ -603,8 +587,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 tourUrl: listingData.tourUrl,
                 imageUrl: imageUrls.length > 0 ? imageUrls[0].url : 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=500',
                 images: imageUrls,
-                lat: finalLat,
-                lng: finalLng,
+                lat: lat,
+                lng: lng,
                 seller: {
                     type: currentUser.role === UserRole.AGENT ? 'agent' : 'private',
                     name: currentUser.name,
@@ -647,11 +631,11 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             }, 3000);
 
         } catch (err) {
-            // FIX: The caught error `err` is of type `unknown`. We must check if it's an instance of Error before accessing `err.message` to avoid a type error.
             if (err instanceof Error) {
                 setError(err.message || "Failed to submit listing.");
             } else {
-                setError("An unexpected error occurred while submitting.");
+                // FIX: The argument 'err' is of type 'unknown'. Convert it to a string before setting the error state.
+                setError(String(err));
             }
         } finally {
             setIsSubmitting(false);
@@ -683,8 +667,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             </div>
             <div className="flex justify-center mb-6">
                  <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm">
-                    <button type="button" onClick={() => setMode('ai')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap ${mode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><SparklesIcon className="w-4 h-4" /> AI Creator</button>
-                    <button type="button" onClick={() => setMode('manual')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap ${mode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Manual Entry</button>
+                    <button type="button" onClick={() => setMode('ai')} className={`w-1/2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap ${mode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><SparklesIcon className="w-4 h-4" /> AI Creator</button>
+                    <button type="button" onClick={() => setMode('manual')} className={`w-1/2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap ${mode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Manual Entry</button>
                 </div>
             </div>
 
@@ -725,8 +709,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             )}
 
             {(mode === 'manual' || (mode === 'ai' && step === 'form')) && (
-                 <div className="space-y-8 animate-fade-in">
-                    <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="space-y-6 animate-fade-in">
+                    <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('country')?.focus()}><select id="country" name="country" value={selectedCountry} onChange={handleCountryChange} className={`${floatingInputClasses} border-neutral-300`} required><option value="" disabled>Select a country</option>{availableCountries.map(c => <option key={c} value={c}>{c}</option>)}</select><label htmlFor="country" className={floatingSelectLabelClasses}>Country</label></div>
                         <div className="relative md:col-span-2" ref={locationContainerRef}><div className="relative cursor-text" onClick={() => document.getElementById('location')?.focus()}><input type="text" id="location" value={locationSearchText} onChange={(e) => setLocationSearchText(e.target.value)} onFocus={() => setIsLocationInputFocused(true)} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " required autoComplete="off" disabled={!selectedCountry} /><label htmlFor="location" className={floatingLabelClasses}>City / Town / Village</label></div>{isLocationInputFocused && locationSuggestions.length > 0 && (<ul className="absolute z-20 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">{locationSuggestions.map(suggestion => (<li key={`${suggestion.settlement.name}-${suggestion.municipality.name}`} onMouseDown={() => handleLocationSuggestionClick(suggestion)} className="px-4 py-3 text-sm text-neutral-700 hover:bg-neutral-100 cursor-pointer flex items-center gap-2"><MapPinIcon className="w-4 h-4 text-neutral-400 flex-shrink-0" /><span><strong>{suggestion.settlement.name}</strong>, {suggestion.municipality.name}</span></li>))}</ul>)}</div>
                         
@@ -754,11 +738,11 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('price')?.focus()}><input type="text" id="price" inputMode="numeric" name="price" value={listingData.price > 0 ? new Intl.NumberFormat('de-DE').format(listingData.price) : ''} onChange={handlePriceChange} className={`${floatingInputClasses} border-neutral-300 pl-8`} placeholder=" " required /><label htmlFor="price" className={floatingLabelClasses}>Price</label><span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">{getCurrencySymbol(selectedCountry)}</span></div>
                     </fieldset>
 
-                    <fieldset className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"><NumberInputWithSteppers label="Bedrooms" value={listingData.bedrooms} onChange={(val) => setListingData(p => ({ ...p, bedrooms: val }))} /><NumberInputWithSteppers label="Bathrooms" value={listingData.bathrooms} onChange={(val) => setListingData(p => ({ ...p, bathrooms: val }))} /><NumberInputWithSteppers label="Living Rooms" value={listingData.livingRooms} onChange={(val) => setListingData(p => ({ ...p, livingRooms: val }))} /><NumberInputWithSteppers label="Area (m²)" value={listingData.sq_meters} step={5} onChange={(val) => setListingData(p => ({ ...p, sq_meters: val }))} /><NumberInputWithSteppers label="Year Built" value={listingData.year_built} max={new Date().getFullYear()} onChange={(val) => setListingData(p => ({ ...p, year_built: val }))} /><NumberInputWithSteppers label="Parking Spots" value={listingData.parking_spots} onChange={(val) => setListingData(p => ({ ...p, parking_spots: val }))} /></fieldset>
-                    <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end"><div className="relative"><select name="propertyType" id="propertyType" value={listingData.propertyType} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`}><option value="house">House</option><option value="apartment">Apartment</option><option value="villa">Villa</option><option value="other">Other</option></select><label htmlFor="propertyType" className={floatingSelectLabelClasses}>Property Type</label></div>{listingData.propertyType === 'apartment' && (<NumberInputWithSteppers label="Floor Number" value={listingData.floorNumber} onChange={(val) => setListingData(p => ({ ...p, floorNumber: val }))} min={1} />)}{(listingData.propertyType === 'house' || listingData.propertyType === 'villa') && (<NumberInputWithSteppers label="Total Floors" value={listingData.totalFloors} min={1} onChange={(val) => setListingData(p => ({ ...p, totalFloors: val }))} />)}</fieldset>
+                    <fieldset className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"><NumberInputWithSteppers label="Bedrooms" value={listingData.bedrooms} onChange={(val) => setListingData(p => ({ ...p, bedrooms: val }))} /><NumberInputWithSteppers label="Bathrooms" value={listingData.bathrooms} onChange={(val) => setListingData(p => ({ ...p, bathrooms: val }))} /><NumberInputWithSteppers label="Living Rooms" value={listingData.livingRooms} onChange={(val) => setListingData(p => ({ ...p, livingRooms: val }))} /><NumberInputWithSteppers label="Area (m²)" value={listingData.sq_meters} step={5} onChange={(val) => setListingData(p => ({ ...p, sq_meters: val }))} /><NumberInputWithSteppers label="Year Built" value={listingData.year_built} max={new Date().getFullYear()} onChange={(val) => setListingData(p => ({ ...p, year_built: val }))} /><NumberInputWithSteppers label="Parking Spots" value={listingData.parking_spots} onChange={(val) => setListingData(p => ({ ...p, parking_spots: val }))} /></fieldset>
+                    <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end"><div className="relative"><select name="propertyType" id="propertyType" value={listingData.propertyType} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`}><option value="house">House</option><option value="apartment">Apartment</option><option value="villa">Villa</option><option value="other">Other</option></select><label htmlFor="propertyType" className={floatingSelectLabelClasses}>Property Type</label></div>{listingData.propertyType === 'apartment' && (<NumberInputWithSteppers label="Floor Number" value={listingData.floorNumber} onChange={(val) => setListingData(p => ({ ...p, floorNumber: val }))} min={1} />)}{(listingData.propertyType === 'house' || listingData.propertyType === 'villa') && (<NumberInputWithSteppers label="Total Floors" value={listingData.totalFloors} min={1} onChange={(val) => setListingData(p => ({ ...p, totalFloors: val }))} />)}</fieldset>
                     <fieldset><TagListInput label="Special Features" tags={listingData.specialFeatures} setTags={(tags) => setListingData(p => ({ ...p, specialFeatures: tags }))} /></fieldset>
                     <fieldset><TagListInput label="Materials" tags={listingData.materials} setTags={(tags) => setListingData(p => ({ ...p, materials: tags }))} /></fieldset>
-                    <fieldset><label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-1">Description</label><textarea id="description" name="description" value={listingData.description} onChange={handleInputChange} className={`${inputBaseClasses} h-48`} required /></fieldset>
+                    <fieldset><label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-1">Description</label><textarea id="description" name="description" value={listingData.description} onChange={handleInputChange} className={`${inputBaseClasses} h-40`} required /></fieldset>
                     
                     <fieldset>
                         <label className="block text-sm font-medium text-neutral-700 mb-1">Image Management</label>
