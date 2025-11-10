@@ -5,7 +5,6 @@ import { ChevronUpIcon, ChevronDownIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { filterProperties } from '../../utils/propertyUtils';
 import PropertyCardSkeleton from './PropertyCardSkeleton';
-import L from 'leaflet';
 
 interface SavedSearchAccordionProps {
   search: SavedSearch;
@@ -15,11 +14,11 @@ interface SavedSearchAccordionProps {
 const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onOpen }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { state } = useAppContext();
-  const { isLoadingProperties, allMunicipalities, properties } = state;
+  const { isLoadingProperties, properties } = state;
 
   const matchingProperties = useMemo(() => {
-    return filterProperties(properties, search.filters, allMunicipalities);
-  }, [properties, search, allMunicipalities]);
+    return filterProperties(properties, search.filters);
+  }, [properties, search]);
 
   const propertyCount = matchingProperties.length;
 
