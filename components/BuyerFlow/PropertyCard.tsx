@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Property } from '../../types';
-import { MapPinIcon, BedIcon, BathIcon, SqftIcon, UserCircleIcon, ScaleIcon, LivingRoomIcon, BuildingOfficeIcon } from '../../constants';
+import { MapPinIcon, BedIcon, BathIcon, SqftIcon, UserCircleIcon, ScaleIcon, LivingRoomIcon, BuildingOfficeIcon, EyeIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
 
@@ -92,6 +92,10 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
                 <div className="flex items-center gap-1" title={`${property.sqft} square meters`}>
                     <SqftIcon className="w-3.5 h-3.5 text-neutral-500" />
                     <span className="font-semibold text-xs">{property.sqft} m²</span>
+                </div>
+                <div className="flex items-center gap-1" title={`${property.views || 0} views`}>
+                    <EyeIcon className="w-3.5 h-3.5 text-neutral-500" />
+                    <span className="font-semibold text-xs">{property.views || 0}</span>
                 </div>
             </div>
         </button>

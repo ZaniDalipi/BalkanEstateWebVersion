@@ -318,7 +318,9 @@ export const getCoordinatesForLocation = async (locationQuery: string): Promise<
     const prompt = `
         Based on real-world map data, find the geographic coordinates (latitude and longitude) for the following location: "${locationQuery}".
         The location is likely in the Balkans region of Europe.
-        Return ONLY the coordinates as a JSON object with "lat" and "lng" keys. If the location cannot be found, return the string "null".
+        
+        Return ONLY the coordinates as a comma-separated string. For example: "44.7872, 20.4573".
+        If the location cannot be found, return the word "null".
     `;
 
     try {
@@ -330,17 +332,21 @@ export const getCoordinatesForLocation = async (locationQuery: string): Promise<
             },
         });
 
-        let jsonText = result.text.trim();
-        // Sanitize the response to remove potential markdown fences
-        jsonText = jsonText.replace(/^```json\s*/, '').replace(/```$/, '').trim();
-
-        if (jsonText.toLowerCase() === 'null') {
+        const text = result.text.trim();
+        if (text.toLowerCase() === 'null') {
             return null;
         }
-        const parsedResult = JSON.parse(jsonText);
-        if (parsedResult && typeof parsedResult.lat === 'number' && typeof parsedResult.lng === 'number') {
-            return parsedResult;
+
+        const parts = text.split(',').map(s => s.trim());
+        if (parts.length === 2) {
+            const lat = parseFloat(parts[0]);
+            const lng = parseFloat(parts[1]);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                return { lat, lng };
+            }
         }
+        
+        console.warn("Could not parse coordinates from Gemini response:", text);
         return null;
     } catch (e) {
         console.error("Error fetching coordinates from Gemini:", e);

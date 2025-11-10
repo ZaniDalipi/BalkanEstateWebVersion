@@ -15,8 +15,8 @@ import {
     WhatsappIcon,
     EnvelopeIcon,
     FacebookIcon,
+    EyeIcon,
 } from '../../constants';
-import { getNeighborhoodInsights } from '../../services/geminiService';
 import ImageViewerModal from './ImageViewerModal';
 import FloorPlanViewerModal from './FloorPlanViewerModal';
 import PropertyLocationMap from './PropertyLocationMap';
@@ -223,144 +223,6 @@ const ImageEditorModal: React.FC<{
 };
 
 
-// --- NeighborhoodInsights Component ---
-const parseMarkdown = (text: string) => {
-    const sanitizedText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const lines = sanitizedText.split('\n').filter(line => line.trim() !== '');
-    const elements: React.ReactElement[] = [];
-    let listItems: string[] = [];
-
-    const flushList = () => {
-        if (listItems.length > 0) {
-            elements.push(
-                <ul key={`ul-${elements.length}`} className="space-y-2 pl-1">
-                    {listItems.map((item, i) => (
-                        <li key={i} className="flex items-start">
-                           <span className="mr-3 mt-1 text-primary">&#8226;</span>
-                           <span dangerouslySetInnerHTML={{ __html: item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
-                        </li>
-                    ))}
-                </ul>
-            );
-            listItems = [];
-        }
-    };
-
-    for (const line of lines) {
-        const trimmedLine = line.trim();
-        if (trimmedLine.startsWith('* ')) {
-            listItems.push(trimmedLine.substring(2).trim());
-        } else {
-            flushList();
-            elements.push(<p key={`p-${elements.length}`} dangerouslySetInnerHTML={{ __html: trimmedLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />);
-        }
-    }
-    flushList();
-    return elements;
-};
-
-const NeighborhoodInsights: React.FC<{ lat: number; lng: number; city: string; country: string; }> = ({ lat, lng, city, country }) => {
-    const { state, dispatch } = useAppContext();
-    const { currentUser } = state;
-    const [insights, setInsights] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    const isSubscribed = currentUser?.isSubscribed ?? false;
-
-    useEffect(() => {
-        if (!isSubscribed) {
-            setLoading(false);
-            return;
-        }
-
-        const fetchInsights = async () => {
-            try {
-                setLoading(true); setError(null);
-                const result = await getNeighborhoodInsights(lat, lng, city, country);
-                setInsights(result);
-            } catch (err) {
-                if (err instanceof Error) setError(err.message);
-                else setError('An unknown error occurred.');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchInsights();
-    }, [lat, lng, city, country, isSubscribed]);
-
-    const renderContent = () => {
-        if (loading) {
-            return (
-                <div className="p-6 bg-primary-light/50 rounded-lg animate-pulse">
-                    <div className="h-4 bg-primary/20 rounded w-3/4 mb-4"></div>
-                    <div className="h-3 bg-primary/20 rounded w-full mb-2"></div>
-                    <div className="h-3 bg-primary/20 rounded w-full mb-2"></div>
-                    <div className="h-3 bg-primary/20 rounded w-5/6"></div>
-                </div>
-            );
-        }
-        if (error) {
-            return (
-                <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
-                    <p><strong>Could not load neighborhood insights.</strong> Please try again later.</p>
-                </div>
-            );
-        }
-        if (insights) {
-            return (
-                <div className="prose prose-sm max-w-none text-neutral-700 space-y-3">
-                    {parseMarkdown(insights)}
-                </div>
-            );
-        }
-        return null;
-    }
-
-    if (!isSubscribed) {
-        return (
-            <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
-                <div className="flex items-center mb-4">
-                    <div className="flex-shrink-0 w-8 h-8 mr-3 text-primary bg-primary-light rounded-full flex items-center justify-center">
-                        <SparklesIcon className="w-5 h-5" />
-                    </div>
-                    <h3 className="text-lg sm:text-xl font-bold text-neutral-800">Neighborhood Insights</h3>
-                </div>
-                <div className="relative p-6 bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-lg text-center overflow-hidden">
-                    <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-4">
-                         <h4 className="font-bold text-lg text-primary-dark">Unlock with Buyer Pro</h4>
-                         <p className="text-sm text-neutral-600 mt-1 mb-4">Get detailed local insights, school info, and more.</p>
-                         <button 
-                             onClick={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true })}
-                             className="px-5 py-2 bg-secondary text-white font-bold rounded-lg shadow-md hover:bg-opacity-90 transition-transform hover:scale-105"
-                         >
-                             Subscribe Now
-                         </button>
-                    </div>
-                    {/* Blurred content behind */}
-                    <div className="h-4 bg-neutral-300 rounded w-3/4 mb-4"></div>
-                    <div className="h-3 bg-neutral-300 rounded w-full mb-2"></div>
-                    <div className="h-3 bg-neutral-300 rounded w-full mb-2"></div>
-                    <div className="h-3 bg-neutral-300 rounded w-5/6"></div>
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
-            <div className="flex items-center mb-4">
-                <div className="flex-shrink-0 w-8 h-8 mr-3 text-primary bg-primary-light rounded-full flex items-center justify-center">
-                    <SparklesIcon className="w-5 h-5" />
-                </div>
-                <h3 className="text-lg sm:text-xl font-bold text-neutral-800">Neighborhood Insights</h3>
-            </div>
-            {renderContent()}
-        </div>
-    );
-};
-
-
 // --- Main Page Component ---
 const DetailItem: React.FC<{icon: React.ReactNode, label: string, children: React.ReactNode}> = ({ icon, label, children }) => (
     <div>
@@ -471,7 +333,7 @@ const SharePopover: React.FC<{ property: Property, onClose: () => void }> = ({ p
 };
 
 const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => {
-  const { state, dispatch } = useAppContext();
+  const { state, dispatch, incrementPropertyView } = useAppContext();
   
   const [activeCategory, setActiveCategory] = useState<PropertyImageTag | 'all'>('all');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -481,6 +343,10 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
   const [mainImageError, setMainImageError] = useState(false);
   const [isSharePopoverOpen, setIsSharePopoverOpen] = useState(false);
   const shareContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    incrementPropertyView(property.id);
+  }, [property.id, incrementPropertyView]);
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -605,10 +471,10 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
 
                 {imagesForCurrentCategory.length > 1 && (
                     <>
-                        <button onClick={(e) => { e.stopPropagation(); handlePrevImage(); }} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/70 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors shadow-md">
+                        <button onClick={(e) => { e.stopPropagation(); handlePrevImage(); }} className="absolute left-4 top-1/2 --translate-y-1/2 bg-white/70 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors shadow-md">
                             <ChevronLeftIcon className="w-6 h-6 text-neutral-800"/>
                         </button>
-                        <button onClick={(e) => { e.stopPropagation(); handleNextImage(); }} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/70 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors shadow-md">
+                        <button onClick={(e) => { e.stopPropagation(); handleNextImage(); }} className="absolute right-4 top-1/2 --translate-y-1/2 bg-white/70 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors shadow-md">
                             <ChevronRightIcon className="w-6 h-6 text-neutral-800"/>
                         </button>
                     </>
@@ -673,6 +539,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
              <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
                 <h3 className="text-lg sm:text-xl font-bold text-neutral-800 mb-6">Property Details</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-4">
+                    <DetailItem icon={<EyeIcon />} label="Total Views">{property.views || 0}</DetailItem>
                     <DetailItem icon={<CalendarIcon />} label="Year Built">{property.yearBuilt}</DetailItem>
                     <DetailItem icon={<ParkingIcon />} label="Parking">{property.parking > 0 ? `${property.parking} ${property.parking === 1 ? 'spot' : 'spots'}` : 'None'}</DetailItem>
                     
@@ -719,13 +586,6 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                     <PropertyLocationMap lat={property.lat} lng={property.lng} address={property.address} />
                 </div>
             </div>
-            
-            <NeighborhoodInsights 
-                lat={property.lat} 
-                lng={property.lng} 
-                city={property.city} 
-                country={property.country} 
-            />
           </div>
 
           <div className="lg:col-span-1">

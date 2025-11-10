@@ -1,35 +1,28 @@
-const countryCurrencyMap: { [key: string]: string } = {
-  'Serbia': 'EUR',
-  'Croatia': 'EUR',
-  'Bosnia and Herzegovina': 'EUR',
-  'Slovenia': 'EUR',
-  'North Macedonia': 'EUR',
-  'Montenegro': 'EUR',
-  'Albania': 'EUR',
-  'Bulgaria': 'EUR',
-  'Greece': 'EUR',
-  'Kosovo': 'EUR',
+// This file provides utility functions for currency formatting.
+// Based on the application's usage, all prices are assumed to be in Euros.
+
+/**
+ * Returns the currency symbol. Currently hardcoded to Euro as per app usage.
+ * @param _country - The country context (currently ignored).
+ * @returns The currency symbol string.
+ */
+export const getCurrencySymbol = (_country?: string): string => {
+    return '€';
 };
 
-export const formatPrice = (price: number, country: string): string => {
-  const currency = countryCurrencyMap[country] || 'EUR'; // Default to EUR
-
-  // Use a locale that fits the general Balkan number format (e.g., de-DE uses dots for thousands)
-  return new Intl.NumberFormat('de-DE', { 
-    style: 'currency',
-    currency: currency,
-    maximumFractionDigits: 0, 
-    minimumFractionDigits: 0,
-  }).format(price);
+/**
+ * Formats a number into a currency string with a Euro symbol and German-style number formatting.
+ * e.g., 1000000 becomes "€1.000.000"
+ * @param price - The numerical price to format.
+ * @param _country - The country context (currently ignored).
+ * @returns A formatted currency string.
+ */
+export const formatPrice = (price: number, _country?: string): string => {
+    if (price === null || price === undefined || isNaN(price)) {
+        return 'Price unavailable';
+    }
+    const symbol = getCurrencySymbol(); // country is ignored for now
+    // The 'de-DE' locale uses dots for thousands separators, which matches the app's style.
+    const formattedPrice = new Intl.NumberFormat('de-DE').format(price);
+    return `${symbol}${formattedPrice}`;
 };
-
-export const getCurrencySymbol = (country: string): string => {
-    const currencyCode = countryCurrencyMap[country] || 'EUR';
-    // This is a simplified way to get a symbol; Intl API is more robust.
-    const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode });
-    const parts = formatter.formatToParts(1);
-    const symbol = parts.find(part => part.type === 'currency')?.value || '€';
-    return symbol;
-};
-
-export const COUNTRIES = Object.keys(countryCurrencyMap);

@@ -6,128 +6,6 @@ import AiSearch from './AiSearch';
 import PropertyCardSkeleton from './PropertyCardSkeleton';
 import { useAppContext } from '../../context/AppContext';
 
-interface RangeSliderProps {
-    min: number;
-    max: number;
-    step: number;
-    value: [number, number];
-    onChange: (value: [number, number]) => void;
-    label: string;
-    formatValue: (value: number) => string;
-}
-
-const RangeSlider: React.FC<RangeSliderProps> = ({ min, max, step, value, onChange, label, formatValue }) => {
-    const trackRef = useRef<HTMLDivElement>(null);
-    const minHandleRef = useRef<HTMLButtonElement>(null);
-    const maxHandleRef = useRef<HTMLButtonElement>(null);
-    const activeHandleRef = useRef<'min' | 'max' | null>(null);
-
-    const valueToPercent = useCallback((val: number) => {
-        if (max === min) return 0;
-        return ((val - min) / (max - min)) * 100;
-    }, [min, max]);
-
-    const getNewValueFromClientX = useCallback((clientX: number) => {
-        if (!trackRef.current) return 0;
-        const rect = trackRef.current.getBoundingClientRect();
-        const percent = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
-        return Math.round((min + (percent / 100) * (max - min)) / step) * step;
-    }, [min, max, step]);
-
-    const handleInteractionStart = (e: React.MouseEvent | React.TouchEvent, handle: 'min' | 'max') => {
-        e.preventDefault();
-        activeHandleRef.current = handle;
-
-        if (handle === 'min' && minHandleRef.current && maxHandleRef.current) {
-            minHandleRef.current.style.zIndex = '10';
-            maxHandleRef.current.style.zIndex = '5';
-        } else if (handle === 'max' && minHandleRef.current && maxHandleRef.current) {
-            minHandleRef.current.style.zIndex = '5';
-            maxHandleRef.current.style.zIndex = '10';
-        }
-        
-        document.body.style.cursor = 'grabbing';
-    };
-
-    const handleInteractionMove = useCallback((e: MouseEvent | TouchEvent) => {
-        if (!activeHandleRef.current) return;
-        
-        if (e.cancelable) e.preventDefault();
-        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-        const newValue = getNewValueFromClientX(clientX);
-
-        const [currentMin, currentMax] = value;
-        if (activeHandleRef.current === 'min') {
-            onChange([Math.min(newValue, currentMax), currentMax]);
-        } else {
-            onChange([currentMin, Math.max(newValue, currentMin)]);
-        }
-    }, [getNewValueFromClientX, value, onChange]);
-
-    const handleInteractionEnd = useCallback(() => {
-        activeHandleRef.current = null;
-        document.body.style.cursor = '';
-    }, []);
-
-    useEffect(() => {
-        const moveHandler = (e: MouseEvent | TouchEvent) => handleInteractionMove(e);
-        const endHandler = () => handleInteractionEnd();
-
-        if (activeHandleRef.current) {
-            document.addEventListener('mousemove', moveHandler);
-            document.addEventListener('touchmove', moveHandler, { passive: false });
-            document.addEventListener('mouseup', endHandler);
-            document.addEventListener('touchend', endHandler);
-        }
-
-        return () => {
-            document.removeEventListener('mousemove', moveHandler);
-            document.removeEventListener('touchmove', moveHandler);
-            document.removeEventListener('mouseup', endHandler);
-            document.removeEventListener('touchend', endHandler);
-        };
-    }, [handleInteractionMove, handleInteractionEnd]);
-
-    const [minVal, maxVal] = value;
-    const minPercent = valueToPercent(minVal);
-    const maxPercent = valueToPercent(maxVal);
-
-    return (
-        <div>
-            <div className="flex justify-between items-center mb-1">
-                <label className="text-xs font-medium text-neutral-700">{label}</label>
-                <div className="text-xs font-semibold text-neutral-800 bg-neutral-100 border border-neutral-200 px-2 py-0.5 rounded-md">
-                    {formatValue(minVal)} - {formatValue(maxVal)}
-                </div>
-            </div>
-            <div ref={trackRef} className="relative w-full h-5 flex items-center">
-                <div className="absolute w-full h-0.5 bg-neutral-200 rounded-full"></div>
-                <div
-                    className="absolute h-0.5 bg-primary rounded-full"
-                    style={{ left: `${minPercent}%`, width: `${maxPercent - minPercent}%` }}
-                ></div>
-                <button
-                    ref={minHandleRef}
-                    onMouseDown={(e) => handleInteractionStart(e, 'min')}
-                    onTouchStart={(e) => handleInteractionStart(e, 'min')}
-                    className="absolute w-4 h-4 bg-white border-2 border-primary rounded-full shadow-md cursor-grab active:cursor-grabbing focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    style={{ left: `${minPercent}%`, transform: 'translateX(-50%)' }}
-                    aria-label={`Minimum ${label}`}
-                ></button>
-                <button
-                    ref={maxHandleRef}
-                    onMouseDown={(e) => handleInteractionStart(e, 'max')}
-                    onTouchStart={(e) => handleInteractionStart(e, 'max')}
-                    className="absolute w-4 h-4 bg-white border-2 border-primary rounded-full shadow-md cursor-grab active:cursor-grabbing focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    style={{ left: `${maxPercent}%`, transform: 'translateX(-50%)' }}
-                    aria-label={`Maximum ${label}`}
-                ></button>
-            </div>
-        </div>
-    );
-};
-
-
 interface PropertyListProps {
   properties: Property[];
   filters: Filters;
@@ -191,45 +69,66 @@ const FilterButtonGroup: React.FC<{
   </div>
 );
 
-const formatNumber = (val: number) => val >= 1000000 ? `${(val / 1000000).toFixed(1)}M` : val >= 1000 ? `${Math.round(val / 1000)}k` : `${val}`;
-
 const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList' | 'aiChatHistory' | 'onAiChatHistoryChange'>> = ({
     filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, onQueryFocus, onBlur, isGeocoding
 }) => {
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
-    const { state } = useAppContext();
-    const { properties: allProperties } = state;
-
-    const maxPriceValue = useMemo(() => {
-        if (!allProperties || allProperties.length === 0) return 2000000;
-        const max = Math.max(...allProperties.map(p => p.price));
-        return max > 0 ? max : 2000000;
-    }, [allProperties]);
-
-    const maxSqftValue = useMemo(() => {
-        if (!allProperties || allProperties.length === 0) return 500;
-        const max = Math.max(...allProperties.map(p => p.sqft));
-        return max > 0 ? max : 500;
-    }, [allProperties]);
     
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         onFilterChange(e.target.name as keyof Filters, e.target.value);
     }, [onFilterChange]);
     
-    const handlePriceChange = useCallback(([min, max]: [number, number]) => {
-        onFilterChange('minPrice', min === 0 ? null : min);
-        onFilterChange('maxPrice', max === maxPriceValue ? null : max);
-    }, [onFilterChange, maxPriceValue]);
-
-    const handleSqftChange = useCallback(([min, max]: [number, number]) => {
-        onFilterChange('minSqft', min === 0 ? null : min);
-        onFilterChange('maxSqft', max === maxSqftValue ? null : max);
-    }, [onFilterChange, maxSqftValue]);
-    
     const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder:text-neutral-700";
 
+    const [minPriceInput, setMinPriceInput] = useState(filters.minPrice === null ? '' : String(filters.minPrice));
+    const [maxPriceInput, setMaxPriceInput] = useState(filters.maxPrice === null ? '' : String(filters.maxPrice));
+    const [minSqftInput, setMinSqftInput] = useState(filters.minSqft === null ? '' : String(filters.minSqft));
+    const [maxSqftInput, setMaxSqftInput] = useState(filters.maxSqft === null ? '' : String(filters.maxSqft));
+
+    useEffect(() => {
+        setMinPriceInput(filters.minPrice === null ? '' : String(filters.minPrice));
+        setMaxPriceInput(filters.maxPrice === null ? '' : String(filters.maxPrice));
+    }, [filters.minPrice, filters.maxPrice]);
+
+    useEffect(() => {
+        setMinSqftInput(filters.minSqft === null ? '' : String(filters.minSqft));
+        setMaxSqftInput(filters.maxSqft === null ? '' : String(filters.maxSqft));
+    }, [filters.minSqft, filters.maxSqft]);
+
+    const handlePriceInputBlur = (type: 'min' | 'max') => () => {
+        const [currentMin, currentMax] = [filters.minPrice, filters.maxPrice];
+        
+        if (type === 'min') {
+            let value = minPriceInput.trim() === '' ? null : parseInt(minPriceInput, 10);
+            if (value !== null && isNaN(value)) value = null;
+            if (value !== null && currentMax !== null && value > currentMax) value = currentMax;
+            onFilterChange('minPrice', value);
+        } else {
+            let value = maxPriceInput.trim() === '' ? null : parseInt(maxPriceInput, 10);
+            if (value !== null && isNaN(value)) value = null;
+            if (value !== null && currentMin !== null && value < currentMin) value = currentMin;
+            onFilterChange('maxPrice', value);
+        }
+    };
+    
+    const handleSqftInputBlur = (type: 'min' | 'max') => () => {
+        const [currentMin, currentMax] = [filters.minSqft, filters.maxSqft];
+        
+        if (type === 'min') {
+            let value = minSqftInput.trim() === '' ? null : parseInt(minSqftInput, 10);
+            if (value !== null && isNaN(value)) value = null;
+            if (value !== null && currentMax !== null && value > currentMax) value = currentMax;
+            onFilterChange('minSqft', value);
+        } else {
+            let value = maxSqftInput.trim() === '' ? null : parseInt(maxSqftInput, 10);
+            if (value !== null && isNaN(value)) value = null;
+            if (value !== null && currentMin !== null && value < currentMin) value = currentMin;
+            onFilterChange('maxSqft', value);
+        }
+    };
+    
     return (
-         <div className="space-y-2">
+         <div className="space-y-4">
             {!isMobile && (
                 <div className="relative">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -248,28 +147,72 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                 </div>
             )}
             
-            <RangeSlider
-                min={0}
-                max={maxPriceValue}
-                step={10000}
-                value={[filters.minPrice ?? 0, filters.maxPrice ?? maxPriceValue]}
-                onChange={handlePriceChange}
-                label="Price Range"
-                formatValue={(val) => `€${formatNumber(val)}`}
-            />
+            <div>
+                <label className="block text-xs font-medium text-neutral-700 mb-1">Price Range</label>
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="relative">
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-neutral-500 text-sm">€</span>
+                        <input
+                            type="text"
+                            name="minPrice"
+                            id="minPrice"
+                            value={minPriceInput}
+                            onChange={e => setMinPriceInput(e.target.value.replace(/[^0-9]/g, ''))}
+                            onBlur={handlePriceInputBlur('min')}
+                            className={`${inputBaseClasses} pl-7`}
+                            placeholder="Min"
+                        />
+                    </div>
+                    <div className="relative">
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-neutral-500 text-sm">€</span>
+                        <input
+                            type="text"
+                            name="maxPrice"
+                            id="maxPrice"
+                            value={maxPriceInput}
+                            onChange={e => setMaxPriceInput(e.target.value.replace(/[^0-9]/g, ''))}
+                            onBlur={handlePriceInputBlur('max')}
+                            className={`${inputBaseClasses} pl-7`}
+                            placeholder="Max"
+                        />
+                    </div>
+                </div>
+            </div>
 
-            <RangeSlider
-                min={0}
-                max={maxSqftValue}
-                step={10}
-                value={[filters.minSqft ?? 0, filters.maxSqft ?? maxSqftValue]}
-                onChange={handleSqftChange}
-                label="Area (m²)"
-                formatValue={(val) => `${val} m²`}
-            />
+            <div>
+                <label className="block text-xs font-medium text-neutral-700 mb-1">Area (m²)</label>
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="relative">
+                        <input
+                            type="text"
+                            name="minSqft"
+                            id="minSqft"
+                            value={minSqftInput}
+                            onChange={e => setMinSqftInput(e.target.value.replace(/[^0-9]/g, ''))}
+                            onBlur={handleSqftInputBlur('min')}
+                            className={`${inputBaseClasses} pr-7`}
+                            placeholder="Min"
+                        />
+                         <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-500 text-sm pointer-events-none">m²</span>
+                    </div>
+                    <div className="relative">
+                        <input
+                            type="text"
+                            name="maxSqft"
+                            id="maxSqft"
+                            value={maxSqftInput}
+                            onChange={e => setMaxSqftInput(e.target.value.replace(/[^0-9]/g, ''))}
+                            onBlur={handleSqftInputBlur('max')}
+                            className={`${inputBaseClasses} pr-7`}
+                            placeholder="Max"
+                        />
+                        <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-500 text-sm pointer-events-none">m²</span>
+                    </div>
+                </div>
+            </div>
             
             <div className="border-t border-neutral-200 pt-2">
-                <button type="button" onClick={() => setIsAdvancedOpen(!isAdvancedOpen)} className="w-full flex justify-between items-center text-left">
+                <button type="button" onClick={() => setIsAdvancedOpen(!isAdvancedOpen)} className="w-full flex justify-between items-center text-left py-2">
                     <h3 className="text-sm font-semibold text-neutral-800">Advanced Filters</h3>
                     {isAdvancedOpen ? <ChevronUpIcon className="w-4 h-4 text-neutral-500" /> : <ChevronDownIcon className="w-4 h-4 text-neutral-500" />}
                 </button>
