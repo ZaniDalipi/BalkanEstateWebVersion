@@ -209,6 +209,7 @@ export interface SearchPageState {
     searchMode: 'manual' | 'ai';
     aiChatHistory: ChatMessage[];
     isAiChatModalOpen: boolean;
+    isFiltersOpen: boolean;
 }
 
 export interface AppState {

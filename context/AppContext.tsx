@@ -13,6 +13,7 @@ const initialSearchPageState: SearchPageState = {
     searchMode: 'manual',
     aiChatHistory: [{ sender: 'ai', text: "Hello! Welcome to Balkan Estate. How can I help you find a property today?" }],
     isAiChatModalOpen: false,
+    isFiltersOpen: false,
 };
 
 const initialState: AppState = {

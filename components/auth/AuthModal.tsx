@@ -273,7 +273,7 @@ const AuthPage: React.FC = () => {
                     }}
                 />
             )}
-            <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 p-4" onClick={handleClose}>
+            <div className="fixed inset-0 z-[5000] flex justify-center items-center bg-black/50 p-4" onClick={handleClose}>
                 <div className="bg-white w-full h-full md:h-auto md:max-w-md md:rounded-2xl md:shadow-2xl flex flex-col relative overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                     <button onClick={handleClose} className="absolute top-4 right-4 text-neutral-500 hover:text-neutral-800 z-10"><XMarkIcon className="w-6 h-6" /></button>
                     <div className="p-6 sm:p-8 w-full max-w-md mx-auto mt-8 md:mt-0">

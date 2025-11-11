@@ -56,6 +56,13 @@ export const LogoIcon: React.FC<{ className?: string }> = ({ className }) => (
     )
 );
 
+// FIX: Add missing MapIcon component.
+export const MapIcon: React.FC<{ className?: string }> = ({ className }) => (
+    React.createElement(Icon, { className: className },
+        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.37-1.716-.998l-5.108 2.554a2.25 2.25 0 01-1.422 0l-5.108-2.554c-.836-.418-1.716.162-1.716.998v10.36c0 .426.24.815.622 1.006l4.875 2.437a2.25 2.25 0 001.422 0z" })
+    )
+);
+
 export const MapPinIcon: React.FC<{ className?: string }> = ({ className }) => (
     React.createElement(Icon, { className: className },
         React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" }),
@@ -443,5 +450,13 @@ export const CrosshairsIcon: React.FC<{ className?: string }> = ({ className }) 
     React.createElement(Icon, { className: className },
         React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M19.5 10.5a7.5 7.5 0 11-15 0 7.5 7.5 0 0115 0z" }),
         React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M12 3v2.25m0 13.5V21m-9-9h2.25m13.5 0H21" })
+    )
+);
+
+export const StreetViewIcon: React.FC<{ className?: string }> = ({ className }) => (
+    React.createElement(Icon, { className: className },
+        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M9 21V10.5a3.75 3.75 0 117.5 0V21" }),
+        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M12.75 6a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" }),
+        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M3.75 19.5h16.5" })
     )
 );

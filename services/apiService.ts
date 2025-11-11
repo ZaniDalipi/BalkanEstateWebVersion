@@ -45,34 +45,40 @@ const MUNICIPALITY_DATA: Record<string, MunicipalityData[]> = (
   ]))
 );
 
-const initialProperties: Property[] = [
-  { id: 'prop1', sellerId: 'user_seller_1', status: 'active', price: 350000, address: 'Knez Mihailova 10', city: 'Belgrade, Belgrade', country: 'Serbia', beds: 3, baths: 2, livingRooms: 1, sqft: 120, yearBuilt: 2010, parking: 1, description: 'A beautiful apartment in the heart of Belgrade, offering stunning city views and modern amenities. Perfect for families or professionals seeking a vibrant city life.', specialFeatures: ['City View', 'Modern Kitchen', 'Balcony', 'Elevator'], materials: ['Hardwood Floors', 'Marble Countertops'], tourUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto-format&fit=crop', images: [ { url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto-format&fit=crop', tag: 'exterior' }, { url: 'https://images.unsplash.com/photo-1600607687939-098d3c54e87a?q=80&w=2070&auto-format&fit=crop', tag: 'living_room' }, { url: 'https://images.unsplash.com/photo-1556912173-3e74dd82a485?q=80&w=2070&auto-format&fit=crop', tag: 'kitchen' }, ], lat: 44.7872, lng: 20.4573, seller: sellers.seller1, propertyType: 'apartment', createdAt: Date.now() - 1000 * 60 * 60 * 24 * 2, lastRenewed: Date.now() - 1000 * 60 * 60 * 24 * 1, views: 125, saves: 12, inquiries: 3, floorNumber: 5, },
-  { id: 'prop2', sellerId: 'user_agent_2', status: 'active', price: 650000, address: 'Ilica 55', city: 'Zagreb, Zagreb', country: 'Croatia', beds: 4, baths: 3, livingRooms: 2, sqft: 250, yearBuilt: 1998, parking: 2, description: 'Spacious family house with a beautiful garden, located in a quiet neighborhood of Zagreb. Close to parks and international schools.', specialFeatures: ['Garden', 'Fireplace', 'Garage', 'Quiet Neighborhood'], materials: ['Brick', 'Wood Beams'], imageUrl: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=2070&auto-format&fit=crop', images: [ { url: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=2070&auto-format&fit=crop', tag: 'exterior' }, ], lat: 45.8131, lng: 15.9772, seller: sellers.seller3, propertyType: 'house', createdAt: Date.now() - 1000 * 60 * 60 * 24 * 5, lastRenewed: Date.now() - 1000 * 60 * 60 * 24 * 3, views: 340, saves: 25, inquiries: 8, totalFloors: 2, },
-  { id: 'prop3', sellerId: 'user_seller_1', status: 'pending', price: 280000, address: 'Baščaršija 1', city: 'Sarajevo, Sarajevo', country: 'Bosnia and Herzegovina', beds: 2, baths: 1, livingRooms: 1, sqft: 85, yearBuilt: 2015, parking: 0, description: 'Charming apartment in the old town of Sarajevo, offering a unique blend of history and modern comfort.', specialFeatures: ['Historic Area', 'Rooftop Terrace'], materials: [], imageUrl: 'https://images.unsplash.com/photo-1598228723793-52759bba239c?q=80&w=2070&auto-format&fit=crop', images: [], lat: 43.8596, lng: 18.4312, seller: sellers.seller1, propertyType: 'apartment', createdAt: Date.now() - 1000 * 60 * 60 * 24 * 10, views: 210, saves: 15, inquiries: 5, floorNumber: 3, },
-  { id: 'prop4', sellerId: 'user_agent_2', status: 'sold', price: 950000, address: 'Riva 20', city: 'Split, Split', country: 'Croatia', beds: 5, baths: 4, livingRooms: 2, sqft: 350, yearBuilt: 2018, parking: 3, description: 'Luxurious villa with a private pool and stunning sea views, located just a few steps from the beach in Split.', specialFeatures: ['Sea View', 'Swimming Pool', 'Private Beach Access'], materials: ['Stone', 'Glass'], imageUrl: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?q=80&w=2070&auto-format&fit=crop', images: [], lat: 43.5079, lng: 16.4391, seller: sellers.seller3, propertyType: 'villa', createdAt: Date.now() - 1000 * 60 * 60 * 24 * 30, views: 1500, saves: 120, inquiries: 22, totalFloors: 3, },
-  { id: 'prop5', sellerId: 'user_agent_3', status: 'active', price: 180000, address: 'Partizanska 5', city: 'Bitola, Bitola', country: 'North Macedonia', beds: 2, baths: 1, livingRooms: 1, sqft: 75, yearBuilt: 2005, parking: 1, description: 'Cozy apartment near the city center of Bitola.', specialFeatures: ['Balcony'], materials: [], imageUrl: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=2070&auto-format&fit=crop', images: [], lat: 41.0319, lng: 21.33, seller: sellers.seller4, propertyType: 'apartment', createdAt: Date.now() - 86400000 * 3, lastRenewed: Date.now() - 86400000 * 2, floorNumber: 4 },
-  { id: 'prop11', sellerId: 'user_agent_5', status: 'active', price: 420000, address: 'Plaka District 12', city: 'Athens, Athens', country: 'Greece', beds: 2, baths: 2, livingRooms: 1, sqft: 95, yearBuilt: 2019, parking: 1, description: 'Modern apartment with Acropolis view in the historic Plaka district. Features a large balcony and high-end finishes.', specialFeatures: ['Acropolis View', 'Rooftop Terrace', 'Smart Home'], materials: ['Marble', 'Glass'], imageUrl: 'https://images.unsplash.com/photo-1595910340058-232117565c49?q=80&w=1974&auto-format&fit=crop', images: [], lat: 37.972, lng: 23.73, seller: sellers.seller6, propertyType: 'apartment', createdAt: Date.now() - 86400000 * 4, views: 450, saves: 30, inquiries: 10, floorNumber: 6 },
-  { id: 'prop12', sellerId: 'user_agent_3', status: 'active', price: 580000, address: 'Vitosha Boulevard 88', city: 'Sofia, Sofia', country: 'Bulgaria', beds: 4, baths: 3, livingRooms: 2, sqft: 220, yearBuilt: 2012, parking: 2, description: 'Elegant family house at the foot of Vitosha Mountain. Boasts a spacious garden, modern interior, and quick access to the city center.', specialFeatures: ['Mountain View', 'Garden', 'Sauna'], materials: ['Wood', 'Stone'], imageUrl: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?q=80&w=1974&auto-format&fit=crop', images: [], lat: 42.65, lng: 23.32, seller: sellers.seller4, propertyType: 'house', createdAt: Date.now() - 86400000 * 15, totalFloors: 2 },
-  { id: 'prop13', sellerId: 'user_agent_2', status: 'active', price: 1250000, address: 'Slovenska Obala 33', city: 'Budva, Budva', country: 'Montenegro', beds: 5, baths: 4, livingRooms: 2, sqft: 400, yearBuilt: 2021, parking: 3, description: 'Breathtaking modern villa on the Budva Riviera with an infinity pool and panoramic sea views. Ultimate luxury and privacy.', specialFeatures: ['Sea View', 'Infinity Pool', 'Private Gym', 'Elevator'], materials: ['Glass', 'Concrete', 'Travertine'], imageUrl: 'https://images.unsplash.com/photo-1598228723793-52759bba239c?q=80&w=2070&auto-format&fit=crop', images: [], lat: 42.285, lng: 18.84, seller: sellers.seller3, propertyType: 'villa', createdAt: Date.now() - 86400000 * 8, views: 980, saves: 88, inquiries: 15, totalFloors: 3 },
-  { id: 'prop14', sellerId: 'user_seller_4', status: 'active', price: 95000, address: 'Macedonia Square 7', city: 'Skopje, Skopje', country: 'North Macedonia', beds: 1, baths: 1, livingRooms: 1, sqft: 50, yearBuilt: 2014, parking: 0, description: 'Compact and stylish apartment right on Skopje\'s main square. Ideal for a single person, a couple, or as a rental investment.', specialFeatures: ['City Center', 'Fully Furnished'], materials: [], imageUrl: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1980&auto-format&fit=crop', images: [], lat: 41.996, lng: 21.43, seller: sellers.seller5, propertyType: 'apartment', createdAt: Date.now() - 86400000 * 20, floorNumber: 8 },
-  { id: 'prop15', sellerId: 'user_agent_2', status: 'active', price: 480000, address: 'Korzo 2', city: 'Rijeka, Rijeka', country: 'Croatia', beds: 3, baths: 2, livingRooms: 1, sqft: 180, yearBuilt: 1910, parking: 0, description: 'Magnificent historic apartment on Rijeka\'s main promenade, Korzo. Features high ceilings, original details, and a modern renovation.', specialFeatures: ['Historic Building', 'Sea View'], materials: ['Parquet', 'Stucco'], imageUrl: 'https://images.unsplash.com/photo-1560185007-c5ca91578276?q=80&w=2070&auto-format&fit=crop', images: [], lat: 45.327, lng: 14.442, seller: sellers.seller3, propertyType: 'apartment', createdAt: Date.now() - 86400000 * 12, floorNumber: 3 },
-  { id: 'prop16', sellerId: 'user_seller_1', status: 'active', price: 155000, address: 'Bill Clinton Boulevard 5', city: 'Pristina, Pristina', country: 'Kosovo', beds: 2, baths: 2, livingRooms: 1, sqft: 90, yearBuilt: 2018, parking: 1, description: 'Bright and spacious new apartment in a prime location in Pristina. Close to shops, cafes, and government buildings.', specialFeatures: ['New Construction', 'Balcony'], materials: [], imageUrl: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=2070&auto-format&fit=crop', images: [], lat: 42.648, lng: 21.16, seller: sellers.seller1, propertyType: 'apartment', createdAt: Date.now() - 86400000, floorNumber: 5 },
-  { id: 'prop17', sellerId: 'user_seller_2', status: 'sold', price: 720000, address: 'Rruga Taulantia 1', city: 'Durrës, Durrës', country: 'Albania', beds: 4, baths: 3, livingRooms: 1, sqft: 280, yearBuilt: 2015, parking: 2, description: 'Stunning beachfront villa in Durrës with direct access to the sand. Features a large terrace perfect for watching sunsets over the Adriatic.', specialFeatures: ['Beachfront', 'Sea View', 'Large Terrace'], materials: ['Stone'], imageUrl: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?q=80&w=2070&auto-format&fit=crop', images: [], lat: 41.31, lng: 19.45, seller: sellers.seller2, propertyType: 'villa', createdAt: Date.now() - 86400000 * 40, totalFloors: 2 },
-  { id: 'prop18', sellerId: 'user_seller_1', status: 'active', price: 295000, address: 'Dunavska 15', city: 'Novi Sad, Novi Sad', country: 'Serbia', beds: 3, baths: 2, livingRooms: 2, sqft: 150, yearBuilt: 2008, parking: 1, description: 'Charming family house in a peaceful part of Novi Sad. Close to the Danube park and city center. Includes a small private yard.', specialFeatures: ['Quiet Neighborhood', 'Yard'], materials: ['Brick'], imageUrl: 'https://images.unsplash.com/photo-1605276374104-5de67d60924f?q=80&w=1974&auto-format&fit=crop', images: [], lat: 45.255, lng: 19.85, seller: sellers.seller1, propertyType: 'house', createdAt: Date.now() - 86400000 * 9, totalFloors: 2 },
-  { id: 'prop19', sellerId: 'user_agent_6', status: 'active', price: 110000, address: 'Aleja Svetog Save 22', city: 'Banja Luka, Banja Luka', country: 'Bosnia and Herzegovina', beds: 2, baths: 1, livingRooms: 1, sqft: 65, yearBuilt: 2020, parking: 1, description: 'Modern, fully equipped apartment in a new building in Banja Luka. Excellent location with all city amenities.', specialFeatures: ['New Construction', 'Elevator', 'Security'], materials: [], imageUrl: 'https://images.unsplash.com/photo-1494203484021-3c454daf695d?q=80&w=2070&auto-format&fit=crop', images: [], lat: 44.775, lng: 17.19, seller: sellers.seller7, propertyType: 'apartment', createdAt: Date.now() - 86400000 * 6, floorNumber: 7 },
-  { id: 'prop20', sellerId: 'user_agent_5', status: 'active', price: 85000, address: 'Egnatia 100', city: 'Thessaloniki, Thessaloniki', country: 'Greece', beds: 1, baths: 1, livingRooms: 1, sqft: 45, yearBuilt: 1995, parking: 0, description: 'Renovated studio apartment near Aristotle University, perfect for students or as a short-term rental investment. Comes fully furnished.', specialFeatures: ['Renovated', 'City Center', 'Investment Property'], materials: [], imageUrl: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?q=80&w=2070&auto-format&fit=crop', images: [], lat: 40.63, lng: 22.95, seller: sellers.seller6, propertyType: 'apartment', createdAt: Date.now() - 86400000 * 25, floorNumber: 4 },
-];
-
 // --- Data Generation ---
+
+const basePricePerSqftByCountry: { [key: string]: number } = {
+    'Slovenia': 2800,
+    'Croatia': 2500,
+    'Montenegro': 2200,
+    'Greece': 2000,
+    'Serbia': 1800,
+    'Bosnia and Herzegovina': 1400,
+    'Albania': 1500,
+    'Bulgaria': 1300,
+    'North Macedonia': 1200,
+    'Kosovo': 1100,
+};
+
+const coastalCities = new Set([
+    "split", "rijeka", "zadar", "pula", "šibenik", "dubrovnik", "rovinj", "makarska", "opatija", "poreč", "umag", "novalja", "hvar", "korčula", "bol", "pag", "rab", "krk", "cres", "mali lošinj", "biograd na moru", "primošten", "trogir", "šolta", "brač", "vis",
+    "herceg novi", "budva", "bar", "kotor", "tivat", "ulcinj",
+    "durrës", "vlorë", "sarandë", "shëngjin", "himarë",
+    "athens", "thessaloniki", "patras", "heraklion", "volos", "rhodes", "chania", "kavala", "santorini", "mykonos", "corfu", "kalamata", "alexandroupoli"
+]);
+
 const generateMockProperties = (count: number): Property[] => {
     const newProperties: Property[] = [];
     const sellerIds = Object.keys(mockUsers);
-    const streetNames = ['Main St', 'Oak Ave', 'Pine Ln', 'Maple Dr', 'Elm St', 'Cedar Blvd', 'Partizanska', 'Ilindenska', 'Rruga e Durrësit', 'Vasil Levski Blvd'];
+    const streetNames = ['Main St', 'Oak Ave', 'Pine Ln', 'Maple Dr', 'Elm St', 'Cedar Blvd', 'Partizanska', 'Ilindenska', 'Rruga e Durrësit', 'Vasil Levski Blvd', 'Knez Mihailova', 'Ilica', 'Makedonia', 'Slovenska Obala'];
     const propertyTypes: Property['propertyType'][] = ['house', 'apartment', 'villa'];
-    const features = ['Balcony', 'Garden', 'Garage', 'New Construction', 'Renovated', 'City View', 'Mountain View', 'Sea View', 'Quiet Neighborhood'];
-    const materials = ['Brick', 'Wood', 'Stone', 'Marble', 'Concrete'];
     
-    // Flatten locations for easy random picking
+    const commonFeatures = ['Balcony', 'Garage', 'New Construction', 'Renovated', 'Elevator', 'Air Conditioning', 'Security System', 'Fireplace'];
+    const locationFeatures = ['City View', 'Mountain View', 'Quiet Neighborhood', 'City Center'];
+    const coastalFeatures = ['Sea View', 'Beachfront', 'Near Beach'];
+    
+    const materials = ['Brick', 'Wood', 'Stone', 'Marble', 'Concrete', 'Hardwood Floors', 'Tiles', 'Laminate'];
+
     const locations: { country: string, municipality: string, settlement: string, lat: number, lng: number }[] = [];
     for (const country in MUNICIPALITY_DATA) {
         for (const mun of MUNICIPALITY_DATA[country]) {
@@ -81,24 +87,58 @@ const generateMockProperties = (count: number): Property[] => {
             }
         }
     }
+    
+    if (locations.length === 0) {
+        console.error("No locations found to generate properties.");
+        return [];
+    }
 
     for (let i = 0; i < count; i++) {
         const randomLocation = locations[Math.floor(Math.random() * locations.length)];
         const sellerId = sellerIds[Math.floor(Math.random() * sellerIds.length)];
-        const propertyType = propertyTypes[Math.floor(Math.random() * propertyTypes.length)];
-        const sqft = Math.floor(Math.random() * 250) + 40;
-        const price = Math.round(((Math.random() * 1500 + 800) * sqft) / 1000) * 1000;
-        const beds = Math.floor(sqft / 40) + Math.floor(Math.random() * 2);
-        const baths = Math.max(1, Math.floor(beds / 2));
+        
+        const isCityCenter = randomLocation.settlement === randomLocation.municipality;
+        let propertyType: Property['propertyType'];
+        if (isCityCenter && Math.random() < 0.7) {
+            propertyType = 'apartment';
+        } else {
+            propertyType = propertyTypes[Math.floor(Math.random() * propertyTypes.length)];
+        }
+
+        let sqft;
+        const randSqft = Math.random();
+        if (propertyType === 'apartment') {
+            if (randSqft < 0.6) sqft = Math.floor(Math.random() * 40) + 30;
+            else if (randSqft < 0.9) sqft = Math.floor(Math.random() * 50) + 70;
+            else sqft = Math.floor(Math.random() * 80) + 120;
+        } else {
+            if (randSqft < 0.5) sqft = Math.floor(Math.random() * 100) + 80;
+            else if (randSqft < 0.9) sqft = Math.floor(Math.random() * 120) + 180;
+            else sqft = Math.floor(Math.random() * 400) + 300;
+            if (propertyType === 'villa') sqft += 50;
+        }
+
+        const basePrice = basePricePerSqftByCountry[randomLocation.country] || 1500;
+        const pricePerSqftVariance = (Math.random() - 0.5) * 0.4;
+        const locationPremium = isCityCenter ? 1.2 : 1.0;
+        
+        const pricePerSqft = basePrice * (1 + pricePerSqftVariance) * locationPremium;
+        const price = Math.round((pricePerSqft * sqft) / 1000) * 1000;
+        
+        const beds = Math.max(1, Math.floor(sqft / 35) + (Math.random() < 0.3 ? -1 : (Math.random() < 0.7 ? 0 : 1)));
+        const baths = Math.max(1, Math.floor(beds / 2) + (Math.random() < 0.5 ? 0 : 1));
         const livingRooms = Math.max(1, Math.floor(beds / 3));
-        const yearBuilt = Math.floor(Math.random() * 60) + 1960;
+        const yearBuilt = Math.floor(Math.random() * 70) + 1950;
+        
+        const isCoastal = coastalCities.has(randomLocation.municipality.toLowerCase());
+        const availableFeatures = [...commonFeatures, ...locationFeatures, ...(isCoastal ? coastalFeatures : [])];
         
         const prop: Property = {
-            id: `gen_prop_${i + 1}`,
+            id: `gen_prop_${Date.now()}_${i}`,
             sellerId,
-            status: Math.random() < 0.9 ? 'active' : 'sold',
+            status: Math.random() < 0.92 ? 'active' : (Math.random() < 0.5 ? 'sold' : 'pending'),
             price,
-            address: `${streetNames[Math.floor(Math.random() * streetNames.length)]} ${Math.floor(Math.random() * 100) + 1}`,
+            address: `${streetNames[Math.floor(Math.random() * streetNames.length)]} ${Math.floor(Math.random() * 200) + 1}`,
             city: `${randomLocation.settlement}, ${randomLocation.municipality}`,
             country: randomLocation.country,
             beds,
@@ -108,22 +148,22 @@ const generateMockProperties = (count: number): Property[] => {
             yearBuilt,
             parking: Math.floor(Math.random() * 3),
             description: `A lovely ${propertyType} in ${randomLocation.settlement} with ${beds} bedrooms and beautiful surroundings. Built in ${yearBuilt}, this property is a fantastic opportunity.`,
-            specialFeatures: [...new Set(Array.from({ length: Math.floor(Math.random() * 4) }, () => features[Math.floor(Math.random() * features.length)]))],
-            materials: [...new Set(Array.from({ length: Math.floor(Math.random() * 3) }, () => materials[Math.floor(Math.random() * materials.length)]))],
-            imageUrl: `https://source.unsplash.com/random/800x600/?${propertyType},exterior&sig=${i}`,
-            images: Array.from({ length: Math.floor(Math.random() * 5) + 1 }, (_, j) => ({ url: `https://source.unsplash.com/random/800x600/?${propertyType},interior&sig=${i*10 + j}`, tag: 'other' })),
+            specialFeatures: [...new Set(Array.from({ length: Math.floor(Math.random() * 5) }, () => availableFeatures[Math.floor(Math.random() * availableFeatures.length)]))],
+            materials: [...new Set(Array.from({ length: Math.floor(Math.random() * 4) }, () => materials[Math.floor(Math.random() * materials.length)]))],
+            imageUrl: `https://source.unsplash.com/random/800x600/?${propertyType},exterior,modern&sig=${i}`,
+            images: Array.from({ length: Math.floor(Math.random() * 8) + 3 }, (_, j) => ({ url: `https://source.unsplash.com/random/800x600/?${propertyType},interior&sig=${i*10 + j}`, tag: 'other' })),
             lat: randomLocation.lat + (Math.random() - 0.5) * 0.05,
             lng: randomLocation.lng + (Math.random() - 0.5) * 0.05,
             seller: { type: mockUsers[sellerId].role === UserRole.AGENT ? 'agent' : 'private', name: mockUsers[sellerId].name, phone: mockUsers[sellerId].phone, avatarUrl: mockUsers[sellerId].avatarUrl },
             propertyType,
-            createdAt: Date.now() - Math.floor(Math.random() * 30) * 86400000,
-            lastRenewed: Date.now() - Math.floor(Math.random() * 10) * 86400000,
-            views: Math.floor(Math.random() * 2000),
-            saves: Math.floor(Math.random() * 150),
-            inquiries: Math.floor(Math.random() * 20),
+            createdAt: Date.now() - Math.floor(Math.random() * 365) * 86400000,
+            lastRenewed: Date.now() - Math.floor(Math.random() * 30) * 86400000,
+            views: Math.floor(Math.random() * 3000),
+            saves: Math.floor(Math.random() * 200),
+            inquiries: Math.floor(Math.random() * 30),
         };
         if (propertyType === 'apartment') {
-            prop.floorNumber = Math.floor(Math.random() * 10) + 1;
+            prop.floorNumber = Math.floor(Math.random() * 12) + 1;
         } else {
             prop.totalFloors = Math.floor(Math.random() * 3) + 1;
         }
@@ -132,9 +172,7 @@ const generateMockProperties = (count: number): Property[] => {
     return newProperties;
 };
 
-
-// FIX: Export allProperties to be used in other files.
-export const allProperties: Property[] = [...initialProperties, ...generateMockProperties(980)];
+export const allProperties: Property[] = generateMockProperties(10000);
 
 
 // --- API SIMULATION ---

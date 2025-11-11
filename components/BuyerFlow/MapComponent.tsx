@@ -4,7 +4,7 @@ import { Property } from '../../types';
 import L, { LeafletMouseEvent } from 'leaflet';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
-import { BellIcon, PencilIcon, XCircleIcon } from '../../constants';
+import { BellIcon, PencilIcon, XCircleIcon, Bars3Icon } from '../../constants';
 
 
 // Fix for default icon issue with bundlers
@@ -33,7 +33,6 @@ type TileLayerType = keyof typeof TILE_LAYERS;
 
 interface MapComponentProps {
   properties: Property[];
-  recenter: boolean;
   onMapMove: (bounds: L.LatLngBounds, center: L.LatLng) => void;
   isSearchActive: boolean;
   searchLocation: [number, number] | null;
@@ -46,33 +45,29 @@ interface MapComponentProps {
   onDrawComplete: (bounds: L.LatLngBounds | null) => void;
   isDrawing: boolean;
   onDrawStart: () => void;
-  tileLayer: TileLayerType;
-  recenterTo: [number, number] | null;
-  onRecenterComplete: () => void;
+  flyToTarget: { center: [number, number]; zoom: number } | null;
+  onFlyComplete: () => void;
+  isMobile: boolean;
 }
 
-const ChangeView: React.FC<{center: [number, number], zoom: number, enabled: boolean}> = ({ center, zoom, enabled }) => {
+const FlyToController: React.FC<{
+  target: { center: [number, number], zoom: number } | null,
+  onComplete: () => void
+}> = ({target, onComplete}) => {
     const map = useMap();
     useEffect(() => {
-        if (enabled) {
-           map.setView(center, zoom);
-        }
-    }, [center, zoom, enabled, map]);
-    return null;
-}
-
-const RecenterView: React.FC<{center: [number, number] | null, onComplete: () => void}> = ({center, onComplete}) => {
-    const map = useMap();
-    useEffect(() => {
-        if (center) {
+        if (target) {
             const onMoveEnd = () => {
                 onComplete();
                 map.off('moveend', onMoveEnd);
             };
             map.on('moveend', onMoveEnd);
-            map.flyTo(center, 14, { animate: true, duration: 1.5 });
+            map.flyTo(target.center, target.zoom, {
+                animate: true,
+                duration: 2.5
+            });
         }
-    }, [center, map, onComplete]);
+    }, [target, map, onComplete]);
     return null;
 }
 
@@ -153,7 +148,9 @@ const MapDrawEvents: React.FC<{
             const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
             const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
 
-            const point = map.containerPointToLayerPoint(L.point(clientX, clientY));
+            // FIX: Calculation needs to be relative to the map container, not the viewport
+            const rect = mapContainer.getBoundingClientRect();
+            const point = map.containerPointToLayerPoint(L.point(clientX - rect.left, clientY - rect.top));
             const currentPos = map.layerPointToLatLng(point);
 
             if (!tempRectRef.current) {
@@ -202,8 +199,10 @@ const MapDrawEvents: React.FC<{
             
             const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
             const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-
-            const point = map.containerPointToLayerPoint(L.point(clientX, clientY));
+            
+            // FIX: Calculation needs to be relative to the map container, not the viewport
+            const rect = mapContainer.getBoundingClientRect();
+            const point = map.containerPointToLayerPoint(L.point(clientX - rect.left, clientY - rect.top));
             startPosRef.current = map.layerPointToLatLng(point);
 
             // Attach listeners to window for dragging outside the map
@@ -230,8 +229,6 @@ const MapDrawEvents: React.FC<{
 
     return null;
 };
-
-
 
 const formatMarkerPrice = (price: number): string => {
     if (price >= 1000000) {
@@ -335,8 +332,10 @@ const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) => {
     );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove, isSearchActive, searchLocation, userLocation, onSaveSearch, isSaving, isAuthenticated, mapBounds, drawnBounds, onDrawComplete, isDrawing, onDrawStart, tileLayer, recenterTo, onRecenterComplete }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, isSearchActive, searchLocation, userLocation, onSaveSearch, isSaving, isAuthenticated, mapBounds, drawnBounds, onDrawComplete, isDrawing, onDrawStart, flyToTarget, onFlyComplete, isMobile }) => {
   const { dispatch } = useAppContext();
+  const [mapType, setMapType] = useState<TileLayerType>('street');
+  const [isLegendOpen, setIsLegendOpen] = useState(false);
   
   const validProperties = useMemo(() => {
     return properties.filter(p => 
@@ -368,13 +367,10 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
     dispatch({ type: 'SET_SELECTED_PROPERTY', payload: propertyId });
   };
 
-  const bottomControlsOffset = 112;
-
   return (
     <div className="w-full h-full relative">
       <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full" maxZoom={18} minZoom={9} zoomControl={false}>
-        <ChangeView center={center} zoom={zoom} enabled={recenter} />
-        <RecenterView center={recenterTo} onComplete={onRecenterComplete} />
+        <FlyToController target={flyToTarget} onComplete={onFlyComplete} />
         <MapEvents onMove={onMapMove} />
         <MapDrawEvents isDrawing={isDrawing} onDrawComplete={onDrawComplete} />
         {drawnBounds && !isDrawing && (
@@ -384,72 +380,90 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMap
             />
         )}
         <TileLayer
-          key={tileLayer}
-          attribution={TILE_LAYERS[tileLayer].attribution}
-          url={TILE_LAYERS[tileLayer].url}
+          key={mapType}
+          attribution={TILE_LAYERS[mapType].attribution}
+          url={TILE_LAYERS[mapType].url}
         />
         <Markers properties={propertiesInView} onPopupClick={handlePopupClick} />
       </MapContainer>
       
-      <div className="absolute top-24 right-4 z-[1000] hidden md:flex flex-col items-end gap-4">
-        <button 
-            onClick={onDrawStart}
-            className={`flex items-center gap-2 px-4 py-2 text-white font-bold rounded-full shadow-lg transition-colors ${
-                isDrawing 
-                ? 'bg-red-600 hover:bg-red-700' 
-                : 'bg-neutral-800 hover:bg-neutral-900'
-            }`}
-        >
-            {isDrawing ? (
-                <>
-                    <XCircleIcon className="w-5 h-5" />
-                    <span>Cancel Draw</span>
-                </>
-            ) : (
-                <>
-                    <PencilIcon className="w-5 h-5" />
-                    <span>Draw Area</span>
-                </>
-            )}
-        </button>
-
-        {drawnBounds && !isDrawing && (
-            <>
-                {isAuthenticated && (
-                    <button 
-                        onClick={onSaveSearch} 
-                        disabled={isSaving}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50 animate-fade-in"
-                    >
-                        <BellIcon className="w-5 h-5" />
-                        <span>{isSaving ? 'Saving...' : 'Save Area'}</span>
-                    </button>
-                )}
+      {!isMobile && (
+        <div className="absolute top-4 right-4 z-[1000] flex flex-col items-end gap-3">
+            <div className="bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-lg flex items-center gap-2">
                 <button
-                    onClick={() => onDrawComplete(null)}
-                    className="flex items-center gap-2 px-4 py-2 bg-neutral-800 text-white font-bold rounded-full shadow-lg hover:bg-neutral-900 animate-fade-in"
+                    onClick={() => setIsLegendOpen(prev => !prev)}
+                    className="p-2 rounded-full hover:bg-black/10 transition-colors"
+                    title={isLegendOpen ? "Hide Legend" : "Show Legend"}
                 >
-                    <XCircleIcon className="w-5 h-5" />
-                    <span className="hidden md:inline">Clear Area</span>
+                    <Bars3Icon className="w-6 h-6 text-neutral-700" />
                 </button>
-            </>
-        )}
-      </div>
-
-      <div className="absolute left-4 z-[1000] bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-neutral-200" style={{ bottom: `${bottomControlsOffset}px` }}>
-        <h4 className="font-bold text-sm mb-2 text-neutral-800">Legend</h4>
-        <div className="space-y-1.5">
-            {Object.entries(PROPERTY_TYPE_COLORS).map(([type, color]) => (
-                <div key={type} className="flex items-center gap-2">
-                    <span
-                        className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm"
-                        style={{ backgroundColor: color }}
-                    ></span>
-                    <span className="text-xs font-semibold text-neutral-700 capitalize">{type}</span>
+                <div className="flex items-center gap-1 bg-neutral-200/50 p-1 rounded-full">
+                    <button
+                        onClick={() => setMapType('street')}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${mapType === 'street' ? 'bg-white shadow text-primary' : 'text-neutral-600 hover:bg-white/50'}`}
+                    >
+                        Street
+                    </button>
+                    <button
+                        onClick={() => setMapType('satellite')}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${mapType === 'satellite' ? 'bg-white shadow text-primary' : 'text-neutral-600 hover:bg-white/50'}`}
+                    >
+                        Satellite
+                    </button>
                 </div>
-            ))}
+                <button 
+                    onClick={onDrawStart}
+                    className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-full shadow-md transition-colors ${
+                        isDrawing 
+                        ? 'bg-red-600 text-white hover:bg-red-700' 
+                        : 'bg-neutral-800 text-white hover:bg-neutral-900'
+                    }`}
+                >
+                    {isDrawing ? <XCircleIcon className="w-5 h-5" /> : <PencilIcon className="w-5 h-5" />}
+                    <span>{isDrawing ? 'Cancel' : 'Draw Area'}</span>
+                </button>
+            </div>
+
+            {drawnBounds && !isDrawing && (
+                <div className="flex flex-col items-end gap-2 animate-fade-in">
+                    {isAuthenticated && (
+                        <button 
+                            onClick={onSaveSearch} 
+                            disabled={isSaving}
+                            className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+                        >
+                            <BellIcon className="w-5 h-5" />
+                            <span>{isSaving ? 'Saving...' : 'Save Area'}</span>
+                        </button>
+                    )}
+                    <button
+                        onClick={() => onDrawComplete(null)}
+                        className="flex items-center gap-2 px-4 py-2 bg-neutral-800 text-white font-bold rounded-full shadow-lg hover:bg-neutral-900"
+                    >
+                        <XCircleIcon className="w-5 h-5" />
+                        <span>Clear Area</span>
+                    </button>
+                </div>
+            )}
+
+            {isLegendOpen && (
+                <div className="bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-neutral-200 animate-fade-in">
+                    <h4 className="font-bold text-sm mb-2 text-neutral-800">Legend</h4>
+                    <div className="space-y-1.5">
+                        {Object.entries(PROPERTY_TYPE_COLORS).map(([type, color]) => (
+                            <div key={type} className="flex items-center gap-2">
+                                <span
+                                    className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm"
+                                    style={{ backgroundColor: color }}
+                                ></span>
+                                <span className="text-xs font-semibold text-neutral-700 capitalize">{type}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
-      </div>
+      )}
     </div>
   );
 };

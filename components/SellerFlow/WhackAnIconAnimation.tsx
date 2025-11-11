@@ -26,28 +26,24 @@ const WhackAnIconAnimation: React.FC<WhackAnIconAnimationProps> = ({ mode = 'loa
     const [totalMoles, setTotalMoles] = useState(0);
     const [isGameActive, setIsGameActive] = useState(mode === 'game');
     
-    // Use refs to hold the latest score/total for the timer's end callback
-    // This prevents the timer's useEffect from re-running on every score change
     const scoreRef = useRef(0);
     const totalMolesRef = useRef(0);
 
+    // This function now just sets the next active mole.
     const popUp = useCallback(() => {
         const randomIndex = Math.floor(Math.random() * GRID_SIZE);
         setActiveMole(randomIndex);
+
         if (isGameActive) {
             setTotalMoles(prev => {
                 const newTotal = prev + 1;
-                totalMolesRef.current = newTotal; // Keep ref in sync
+                totalMolesRef.current = newTotal;
                 return newTotal;
             });
         }
-
-        setTimeout(() => {
-            setActiveMole(null);
-        }, Math.random() * 400 + 600); // visible for 0.6s to 1s
     }, [isGameActive]);
 
-    // Timer effect - FIXED to not depend on score/totalMoles
+    // Timer effect
     useEffect(() => {
         if (!isGameActive) return;
 
@@ -56,8 +52,9 @@ const WhackAnIconAnimation: React.FC<WhackAnIconAnimationProps> = ({ mode = 'loa
                 if (prev <= 1) {
                     clearInterval(gameTimer);
                     setIsGameActive(false);
+                    // Ensure active mole is cleared at the end of the game
+                    setActiveMole(null);
                     if (onGameEnd) {
-                        // Use refs to get the final values, avoiding stale closures
                         onGameEnd(scoreRef.current, totalMolesRef.current);
                     }
                     return 0;
@@ -72,7 +69,9 @@ const WhackAnIconAnimation: React.FC<WhackAnIconAnimationProps> = ({ mode = 'loa
     // Mole generation interval
     useEffect(() => {
         if (isGameActive) {
-            const moleInterval = setInterval(popUp, Math.random() * 500 + 800); // new mole every 0.8s to 1.3s
+            // Start the game immediately
+            popUp();
+            const moleInterval = setInterval(popUp, 900); // A bit faster to be more engaging
             return () => clearInterval(moleInterval);
         }
     }, [isGameActive, popUp]);
@@ -80,25 +79,25 @@ const WhackAnIconAnimation: React.FC<WhackAnIconAnimationProps> = ({ mode = 'loa
     // For loading mode
     useEffect(() => {
         if (mode === 'loading') {
-            const loadingInterval = setInterval(popUp, Math.random() * 800 + 1000); // Slower for loading
+            const loadingInterval = setInterval(popUp, 1200); // Slower rhythm for loading animation
             return () => clearInterval(loadingInterval);
         }
     }, [mode, popUp]);
 
 
     const handleWhack = (index: number) => {
-        if (index !== activeMole) return; // Only allow whacking the active mole
+        // If the clicked mole is not the active one, do nothing.
+        if (index !== activeMole) return;
 
-        // Always provide visual feedback
+        // Immediately set activeMole to null to prevent multiple scores on the same mole
         setActiveMole(null);
         setHitIndex(index);
         setTimeout(() => setHitIndex(null), 300);
 
-        // Only update score if it's an active game
         if (isGameActive) {
             setScore(s => {
                 const newScore = s + 1;
-                scoreRef.current = newScore; // Keep ref in sync
+                scoreRef.current = newScore;
                 return newScore;
             });
         }
@@ -128,7 +127,7 @@ const WhackAnIconAnimation: React.FC<WhackAnIconAnimationProps> = ({ mode = 'loa
                             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black/20 rounded-full" />
                             <div
                                 onClick={() => handleWhack(index)}
-                                className={`absolute bottom-0 w-full flex justify-center transition-transform duration-200 ease-out ${
+                                className={`absolute bottom-0 w-full flex justify-center transition-transform duration-150 ease-out ${
                                     activeMole === index ? 'translate-y-0' : 'translate-y-full'
                                 }`}
                             >

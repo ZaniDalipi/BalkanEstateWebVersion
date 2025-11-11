@@ -60,6 +60,14 @@ const MainLayout: React.FC = () => {
   const isSearchPage = state.activeView === 'search';
   const isFullHeightView = isSearchPage || state.activeView === 'inbox' || !!state.selectedProperty;
   const showHeader = !(isMobile && (isSearchPage || !!state.selectedProperty));
+  
+  const anyNonAuthModalOpen = state.isPricingModalOpen || state.isSubscriptionModalOpen || state.isListingLimitWarningOpen || state.isDiscountGameOpen;
+  
+  const isOverlayVisible = 
+    state.isAuthModalOpen || 
+    anyNonAuthModalOpen || 
+    (isMobile && isSidebarOpen);
+
 
   const handleSubscribe = async () => {
     try {
@@ -105,7 +113,7 @@ const MainLayout: React.FC = () => {
     <div className="min-h-screen bg-neutral-50 font-sans">
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         
-        <div className={`transition-all duration-300 ease-in-out h-screen flex flex-col relative ${!isSearchPage && showHeader ? 'md:pl-20' : ''}`}>
+        <div className={`relative transition-all duration-300 ease-in-out h-screen flex flex-col md:pl-20 ${isOverlayVisible ? 'blur-sm pointer-events-none' : ''}`}>
             {showHeader && <Header onToggleSidebar={() => setIsSidebarOpen(true)} isFloating={isSearchPage} />}
             <main className={`flex flex-col flex-grow ${isFullHeightView ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                 <AppContent onToggleSidebar={() => setIsSidebarOpen(true)} />

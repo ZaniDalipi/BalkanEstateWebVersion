@@ -15,11 +15,13 @@ import {
     WhatsappIcon,
     EnvelopeIcon,
     FacebookIcon,
+    StreetViewIcon,
 } from '../../constants';
 import { getNeighborhoodInsights } from '../../services/geminiService';
 import ImageViewerModal from './ImageViewerModal';
 import FloorPlanViewerModal from './FloorPlanViewerModal';
 import PropertyLocationMap from './PropertyLocationMap';
+import MortgageCalculator from './MortgageCalculator';
 
 
 // --- Image Editor Modal ---
@@ -261,26 +263,41 @@ const parseMarkdown = (text: string) => {
 
 const NeighborhoodInsights: React.FC<{ lat: number; lng: number; city: string; country: string; }> = ({ lat, lng, city, country }) => {
     const [insights, setInsights] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isRequested, setIsRequested] = useState(false);
 
-    useEffect(() => {
-        const fetchInsights = async () => {
-            try {
-                setLoading(true); setError(null);
-                const result = await getNeighborhoodInsights(lat, lng, city, country);
-                setInsights(result);
-            } catch (err) {
-                if (err instanceof Error) setError(err.message);
-                else setError('An unknown error occurred.');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchInsights();
-    }, [lat, lng, city, country]);
+    const fetchInsights = async () => {
+        setIsRequested(true);
+        setLoading(true); 
+        setError(null);
+        try {
+            const result = await getNeighborhoodInsights(lat, lng, city, country);
+            setInsights(result);
+        } catch (err) {
+            if (err instanceof Error) setError(err.message);
+            else setError('An unknown error occurred.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const renderContent = () => {
+        if (!isRequested) {
+            return (
+                <div className="text-center">
+                    <p className="text-neutral-600 mb-4">Discover what's around this property. Our AI can provide details on nearby schools, parks, and transport.</p>
+                    <button 
+                        onClick={fetchInsights}
+                        className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
+                    >
+                        <SparklesIcon className="w-5 h-5"/>
+                        Generate Insights
+                    </button>
+                </div>
+            );
+        }
+
         if (loading) {
             return (
                 <div className="p-6 bg-primary-light/50 rounded-lg animate-pulse">
@@ -293,14 +310,15 @@ const NeighborhoodInsights: React.FC<{ lat: number; lng: number; city: string; c
         }
         if (error) {
             return (
-                <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
-                    <p><strong>Could not load neighborhood insights.</strong> Please try again later.</p>
+                <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-200 text-center">
+                    <p><strong>Could not load neighborhood insights.</strong></p>
+                    <button onClick={fetchInsights} className="mt-2 text-sm font-semibold underline">Try again</button>
                 </div>
             );
         }
         if (insights) {
             return (
-                <div className="prose prose-sm max-w-none text-neutral-700 space-y-3">
+                <div className="prose prose-sm max-w-none text-neutral-700 space-y-3 animate-fade-in">
                     {parseMarkdown(insights)}
                 </div>
             );
@@ -441,6 +459,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
   const [isFloorPlanOpen, setIsFloorPlanOpen] = useState(false);
   const [mainImageError, setMainImageError] = useState(false);
   const [isSharePopoverOpen, setIsSharePopoverOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'photos' | 'streetview'>('photos');
   const shareContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -535,70 +554,122 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden">
-              <div className="relative">
-                <button onClick={() => setIsViewerOpen(true)} className="w-full h-[250px] sm:h-[400px] lg:h-[450px] block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-t-xl">
-                    {mainImageError ? (
-                        <div className="w-full h-full bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center">
-                            <BuildingOfficeIcon className="w-24 h-24 text-neutral-400" />
-                        </div>
-                    ) : (
-                        <img 
-                            src={currentImageUrl}
-                            alt={property.address} 
-                            className="w-full h-full object-cover"
-                            onError={() => setMainImageError(true)}
-                        />
-                    )}
-                </button>
-                <div className="absolute top-4 right-4 flex flex-col gap-2">
-                    <button onClick={() => setIsEditorOpen(true)} className="flex items-center gap-2 bg-white/80 backdrop-blur-sm text-neutral-800 font-semibold px-4 py-2 rounded-full hover:scale-105 transition-transform shadow-md">
-                        <PencilIcon className="w-5 h-5" />
-                        <span className="hidden sm:inline">Annotate</span>
-                    </button>
-                    <div className="relative" ref={shareContainerRef}>
-                        <button onClick={() => setIsSharePopoverOpen(prev => !prev)} className="flex items-center gap-2 bg-white/80 backdrop-blur-sm text-neutral-800 font-semibold px-4 py-2 rounded-full hover:scale-105 transition-transform shadow-md">
-                            <ShareIcon className="w-5 h-5" />
-                            <span className="hidden sm:inline">Share</span>
+                <div className="relative w-full h-[250px] sm:h-[400px] lg:h-[450px] bg-neutral-200">
+                    {viewMode === 'photos' ? (
+                        <button onClick={() => setIsViewerOpen(true)} className="relative w-full h-full block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-t-xl">
+                            {mainImageError ? (
+                                <div className="w-full h-full bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center">
+                                    <BuildingOfficeIcon className="w-24 h-24 text-neutral-400" />
+                                </div>
+                            ) : (
+                                <img
+                                    key={currentImageUrl}
+                                    src={currentImageUrl}
+                                    alt={property.address}
+                                    className="w-full h-full object-cover animate-image-fade"
+                                    onError={() => setMainImageError(true)}
+                                />
+                            )}
                         </button>
-                        {isSharePopoverOpen && <SharePopover property={property} onClose={() => setIsSharePopoverOpen(false)} />}
+                    ) : (
+                        <iframe
+                            src={`https://www.google.com/maps?layer=c&cbll=${property.lat},${property.lng}&cbp=12,90,0,0,5&output=svembed`}
+                            className="w-full h-full border-0"
+                            allowFullScreen
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                        ></iframe>
+                    )}
+
+                    {viewMode === 'photos' && (
+                        <>
+                            <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
+                                <button onClick={(e) => { e.stopPropagation(); setIsEditorOpen(true); }} className="flex items-center gap-2 bg-white/80 backdrop-blur-sm text-neutral-800 font-semibold px-4 py-2 rounded-full hover:scale-105 transition-transform shadow-md">
+                                    <PencilIcon className="w-5 h-5" />
+                                    <span className="hidden sm:inline">Annotate</span>
+                                </button>
+                                <div className="relative" ref={shareContainerRef}>
+                                    <button onClick={(e) => { e.stopPropagation(); setIsSharePopoverOpen(prev => !prev); }} className="flex items-center gap-2 bg-white/80 backdrop-blur-sm text-neutral-800 font-semibold px-4 py-2 rounded-full hover:scale-105 transition-transform shadow-md">
+                                        <ShareIcon className="w-5 h-5" />
+                                        <span className="hidden sm:inline">Share</span>
+                                    </button>
+                                    {isSharePopoverOpen && <SharePopover property={property} onClose={() => setIsSharePopoverOpen(false)} />}
+                                </div>
+                                {property.tourUrl && (
+                                    <a href={property.tourUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 bg-white/80 backdrop-blur-sm text-neutral-800 font-semibold px-4 py-2 rounded-full hover:scale-105 transition-transform shadow-md">
+                                        <VideoCameraIcon className="w-5 h-5" />
+                                        <span className="hidden sm:inline">3D Tour</span>
+                                    </a>
+                                )}
+                            </div>
+                            {imagesForCurrentCategory.length > 1 && (
+                                <>
+                                    <button onClick={(e) => { e.stopPropagation(); handlePrevImage(); }} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/70 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors shadow-md z-10">
+                                        <ChevronLeftIcon className="w-6 h-6 text-neutral-800"/>
+                                    </button>
+                                    <button onClick={(e) => { e.stopPropagation(); handleNextImage(); }} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/70 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors shadow-md z-10">
+                                        <ChevronRightIcon className="w-6 h-6 text-neutral-800"/>
+                                    </button>
+                                    <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-full px-4 z-10">
+                                      <div className="flex items-center justify-center h-10">
+                                        <div className="flex items-center gap-2 bg-black/40 backdrop-blur-sm p-1.5 rounded-full">
+                                            {imagesForCurrentCategory.map((img, index) => (
+                                                <button
+                                                    key={index}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setCurrentImageIndex(index);
+                                                    }}
+                                                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                                        index === currentImageIndex ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/75'
+                                                    }`}
+                                                    aria-label={`Go to image ${index + 1}`}
+                                                />
+                                            ))}
+                                        </div>
+                                      </div>
+                                    </div>
+                                </>
+                            )}
+                        </>
+                    )}
+
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+                        <div className="flex items-center gap-1 bg-black/50 backdrop-blur-sm p-1 rounded-full shadow-lg">
+                            <button
+                                onClick={() => setViewMode('photos')}
+                                className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 ${viewMode === 'photos' ? 'bg-white text-black' : 'text-white'}`}
+                            >
+                                Photos
+                            </button>
+                            <button
+                                onClick={() => setViewMode('streetview')}
+                                className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 ${viewMode === 'streetview' ? 'bg-white text-black' : 'text-white'}`}
+                            >
+                                <StreetViewIcon className="w-5 h-5" />
+                                Street View
+                            </button>
+                        </div>
                     </div>
                 </div>
-
-                {imagesForCurrentCategory.length > 1 && (
-                    <>
-                        <button onClick={(e) => { e.stopPropagation(); handlePrevImage(); }} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/70 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors shadow-md">
-                            <ChevronLeftIcon className="w-6 h-6 text-neutral-800"/>
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); handleNextImage(); }} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/70 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors shadow-md">
-                            <ChevronRightIcon className="w-6 h-6 text-neutral-800"/>
-                        </button>
-                    </>
-                )}
-                {property.tourUrl && (
-                  <a href={property.tourUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="absolute bottom-4 left-4 bg-primary text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 hover:bg-primary-dark transition-colors shadow-lg">
-                      <VideoCameraIcon className="w-5 h-5" />
-                      <span>3D Tour</span>
-                  </a>
-                )}
-              </div>
-              <div className="p-6">
-                <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900">{formatPrice(property.price, property.country)}</p>
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${property.lat},${property.lng}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center text-neutral-600 mt-2 group"
-                >
-                    <MapPinIcon className="w-5 h-5 mr-2 text-neutral-400 group-hover:text-primary transition-colors" />
-                    <span className="text-sm sm:text-base lg:text-lg group-hover:underline group-hover:text-primary transition-colors">{property.address}, {property.city}, {property.country}</span>
-                </a>
-                <div className="mt-6 flex flex-wrap justify-around text-base sm:text-lg text-neutral-800 border-t border-neutral-200 pt-4 gap-4">
-                  <div className="flex items-center gap-3"><BedIcon className="w-6 h-6 text-primary" /><span><span className="font-bold">{property.beds}</span> beds</span></div>
-                  <div className="flex items-center gap-3"><BathIcon className="w-6 h-6 text-primary" /><span><span className="font-bold">{property.baths}</span> baths</span></div>
-                  <div className="flex items-center gap-3"><LivingRoomIcon className="w-6 h-6 text-primary" /><span><span className="font-bold">{property.livingRooms}</span> {property.livingRooms === 1 ? 'living room' : 'living rooms'}</span></div>
-                  <div className="flex items-center gap-3"><SqftIcon className="w-6 h-6 text-primary" /><span><span className="font-bold">{property.sqft}</span> m²</span></div>
+                <div className="p-6">
+                    <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900">{formatPrice(property.price, property.country)}</p>
+                    <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${property.lat},${property.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-neutral-600 mt-2 group"
+                    >
+                        <MapPinIcon className="w-5 h-5 mr-2 text-neutral-400 group-hover:text-primary transition-colors" />
+                        <span className="text-sm sm:text-base lg:text-lg group-hover:underline group-hover:text-primary transition-colors">{property.address}, {property.city}, {property.country}</span>
+                    </a>
+                    <div className="mt-6 flex flex-wrap justify-around text-base sm:text-lg text-neutral-800 border-t border-neutral-200 pt-4 gap-4">
+                    <div className="flex items-center gap-3"><BedIcon className="w-6 h-6 text-primary" /><span><span className="font-bold">{property.beds}</span> beds</span></div>
+                    <div className="flex items-center gap-3"><BathIcon className="w-6 h-6 text-primary" /><span><span className="font-bold">{property.baths}</span> baths</span></div>
+                    <div className="flex items-center gap-3"><LivingRoomIcon className="w-6 h-6 text-primary" /><span><span className="font-bold">{property.livingRooms}</span> {property.livingRooms === 1 ? 'living room' : 'living rooms'}</span></div>
+                    <div className="flex items-center gap-3"><SqftIcon className="w-6 h-6 text-primary" /><span><span className="font-bold">{property.sqft}</span> m²</span></div>
+                    </div>
                 </div>
-              </div>
             </div>
             
              <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
@@ -690,7 +761,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
           </div>
 
           <div className="lg:col-span-1">
-            <div className="sticky top-24">
+            <div className="sticky top-24 space-y-8">
               <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
                   <h3 className="text-lg sm:text-xl font-bold text-neutral-800 mb-4">Contact Seller</h3>
                   <div className="flex items-center gap-4 mb-6">
@@ -714,6 +785,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                       </button>
                   </div>
               </div>
+              <MortgageCalculator propertyPrice={property.price} country={property.country} />
             </div>
           </div>
         </div>

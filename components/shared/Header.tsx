@@ -57,7 +57,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isFloating }) => {
   
   if (isFloating) {
     return (
-      <header className="absolute top-0 right-0 z-20 p-4">
+      <header className="absolute top-0 right-0 z-[1001] p-4">
         <nav className="flex items-center space-x-2 sm:space-x-4 bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md">
           <button
             onClick={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true })}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { AppView, UserRole } from '../../types';
-import { LogoIcon, SearchIcon, MagnifyingGlassPlusIcon, HeartIcon, EnvelopeIcon, UserCircleIcon, UsersIcon, ArrowLeftOnRectangleIcon, XMarkIcon, PencilIcon } from '../../constants';
+import { LogoIcon, SearchIcon, MagnifyingGlassPlusIcon, HeartIcon, EnvelopeIcon, UserCircleIcon, UsersIcon, ArrowLeftOnRectangleIcon, XMarkIcon, PencilIcon, StarIconSolid } from '../../constants';
 
 const NavItem: React.FC<{
   view: AppView;
@@ -54,6 +54,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         onClose();
     };
 
+    const handleSubscriptionClick = () => {
+        dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true });
+        onClose();
+    };
+
     const handleLogout = () => {
         logout();
         // After logout, reset to a default public view
@@ -73,7 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <>
             {/* Overlay for mobile */}
             <div 
-                className={`fixed inset-0 bg-black/60 z-30 md:hidden ${isOpen ? 'block' : 'hidden'}`}
+                className={`fixed inset-0 bg-black/20 backdrop-blur-sm z-30 md:hidden transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                 onClick={onClose}
             ></div>
 
@@ -105,13 +110,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                             onClick={handleNavClick}
                         />
                     ))}
-                     <div className="px-2 pt-2 mt-2 border-t border-neutral-100">
+                     <div className="px-2 pt-2 mt-2 border-t border-neutral-100 space-y-1">
                         <button
                             onClick={handleNewListingClick}
                             className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-white bg-secondary hover:bg-opacity-90 md:justify-center group-hover:md:justify-start"
                         >
                             <PencilIcon className="w-6 h-6 flex-shrink-0" />
                             <span className="md:hidden group-hover:md:inline whitespace-nowrap">+ New Listing</span>
+                        </button>
+                        <button
+                            onClick={handleSubscriptionClick}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-left md:justify-center group-hover:md:justify-start text-neutral-700 hover:bg-neutral-100`}
+                        >
+                            <div className={`w-6 h-6 flex-shrink-0 text-neutral-700`}><StarIconSolid /></div>
+                            <span className="md:hidden group-hover:md:inline whitespace-nowrap">Subscription</span>
                         </button>
                     </div>
                 </nav>

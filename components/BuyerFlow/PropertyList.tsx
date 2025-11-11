@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { Property, ChatMessage, AiSearchQuery, Filters, SellerType } from '../../types';
 import PropertyCard from './PropertyCard';
-import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon, ChevronUpIcon, ChevronDownIcon, PencilIcon, XCircleIcon } from '../../constants';
+import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon, ChevronUpIcon, ChevronDownIcon, PencilIcon, XCircleIcon, MapPinIcon } from '../../constants';
 import AiSearch from './AiSearch';
 import PropertyCardSkeleton from './PropertyCardSkeleton';
 import { useAppContext } from '../../context/AppContext';
@@ -21,6 +21,7 @@ const RangeSlider: React.FC<RangeSliderProps> = ({ min, max, step, value, onChan
     const [dragging, setDragging] = useState<'min' | 'max' | null>(null);
 
     const valueToPercent = useCallback((val: number) => {
+        if (max === min) return 0;
         return ((val - min) / (max - min)) * 100;
     }, [min, max]);
 
@@ -113,6 +114,8 @@ interface PropertyListProps {
   onAiChatHistoryChange: (history: ChatMessage[]) => void;
   onDrawStart: () => void;
   isDrawing: boolean;
+  maxPriceValue: number;
+  maxSqftValue: number;
 }
 
 const FilterButton: React.FC<{
@@ -154,10 +157,10 @@ const FilterButtonGroup: React.FC<{
   </div>
 );
 
-const formatNumber = (val: number) => val >= 1000000 ? `${(val / 1000000).toFixed(1)}M` : val >= 1000 ? `${Math.round(val / 1000)}k` : `${val}`;
+const formatNumber = (val: number) => val >= 1000000 ? `${(val / 1000000).toFixed(1).replace('.0', '')}M` : val >= 1000 ? `${Math.round(val / 1000)}k` : `${val}`;
 
 const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList' | 'aiChatHistory' | 'onAiChatHistoryChange'>> = ({
-    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, onQueryFocus, onBlur, isAreaDrawn, onDrawStart, isDrawing
+    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, onQueryFocus, onBlur, isAreaDrawn, onDrawStart, isDrawing, maxPriceValue, maxSqftValue
 }) => {
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(true);
     
@@ -167,13 +170,13 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
     
     const handlePriceChange = useCallback(([min, max]: [number, number]) => {
         onFilterChange('minPrice', min === 0 ? null : min);
-        onFilterChange('maxPrice', max === 2000000 ? null : max);
-    }, [onFilterChange]);
+        onFilterChange('maxPrice', max === maxPriceValue ? null : max);
+    }, [onFilterChange, maxPriceValue]);
 
     const handleSqftChange = useCallback(([min, max]: [number, number]) => {
         onFilterChange('minSqft', min === 0 ? null : min);
-        onFilterChange('maxSqft', max === 500 ? null : max);
-    }, [onFilterChange]);
+        onFilterChange('maxSqft', max === maxSqftValue ? null : max);
+    }, [onFilterChange, maxSqftValue]);
     
     const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder:text-neutral-700";
 
@@ -223,9 +226,9 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
 
             <RangeSlider
                 min={0}
-                max={2000000}
+                max={maxPriceValue}
                 step={10000}
-                value={[filters.minPrice ?? 0, filters.maxPrice ?? 2000000]}
+                value={[filters.minPrice ?? 0, filters.maxPrice ?? maxPriceValue]}
                 onChange={handlePriceChange}
                 label="Price Range"
                 formatValue={(val) => `€${formatNumber(val)}`}
@@ -233,9 +236,9 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
 
             <RangeSlider
                 min={0}
-                max={500}
+                max={maxSqftValue}
                 step={10}
-                value={[filters.minSqft ?? 0, filters.maxSqft ?? 500]}
+                value={[filters.minSqft ?? 0, filters.maxSqft ?? maxSqftValue]}
                 onChange={handleSqftChange}
                 label="Area (m²)"
                 formatValue={(val) => `${val} m²`}
@@ -473,9 +476,9 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
         );
     }
     
-    // Original Mobile Layout
+    // Mobile Layout
     return (
-        <div className="flex flex-col bg-white h-full">
+        <div className="flex flex-col bg-white h-full pt-16 pb-20">
             {showFilters && (
                  <div className="p-4 flex-shrink-0">
                     <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm mx-auto">
@@ -528,14 +531,14 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
 
                             <div className="p-4">
                                 {isLoadingProperties ? (
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-4">
                                         {Array.from({ length: 4 }).map((_, index) => (
                                             <PropertyCardSkeleton key={index} />
                                         ))}
                                     </div>
                                 ) : properties.length > 0 ? (
                                     <>
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 gap-4">
                                             {properties.slice(0, visibleCount).map(prop => (
                                                 <PropertyCard key={prop.id} property={prop} />
                                             ))}
