@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useAppContext } from '../../context/AppContext';
 import MapComponent from './MapComponent';
 import PropertyList from './PropertyList';
-import { SavedSearch, ChatMessage, AiSearchQuery, Filters, initialFilters, SearchPageState, Property } from '../../types';
+import { SavedSearch, ChatMessage, AiSearchQuery, Filters, initialFilters, SearchPageState, Property, MunicipalityData, SettlementData } from '../../types';
 import { getAiChatResponse, generateSearchName, generateSearchNameFromCoords } from '../../services/geminiService';
 import Toast from '../shared/Toast';
 import L from 'leaflet';
@@ -15,6 +15,12 @@ import Modal from '../shared/Modal';
 
 interface SearchPageProps {
     onToggleSidebar: () => void;
+}
+
+interface LocationSuggestion {
+    name: string;
+    lat: number;
+    lng: number;
 }
 
 const AiChatModal: React.FC<{
@@ -88,6 +94,9 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const [flyToTarget, setFlyToTarget] = useState<{ center: [number, number], zoom: number } | null>(null);
     const [isLegendOpen, setIsLegendOpen] = useState(false);
     const [localFilters, setLocalFilters] = useState<Filters>(filters);
+    const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
+    const searchWrapperRef = useRef<HTMLDivElement>(null);
+
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -101,6 +110,50 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             setLocalFilters(filters);
         }
     }, [isFiltersOpen, filters]);
+    
+    // Autocomplete suggestions
+    useEffect(() => {
+        if (isQueryInputFocused && filters.query.trim().length > 2) {
+            const searchLower = filters.query.toLowerCase();
+            const newSuggestions: LocationSuggestion[] = [];
+            
+            for (const country in allMunicipalities) {
+                for (const mun of allMunicipalities[country]) {
+                    for (const set of mun.settlements) {
+                        const suggestionName = `${set.name}, ${mun.name}, ${country}`;
+                        if (suggestionName.toLowerCase().includes(searchLower)) {
+                            newSuggestions.push({ name: suggestionName, lat: set.lat, lng: set.lng });
+                        }
+                    }
+                }
+            }
+            setSuggestions(newSuggestions.slice(0, 7)); // Limit to 7 suggestions
+        } else {
+            setSuggestions([]);
+        }
+    }, [filters.query, allMunicipalities, isQueryInputFocused]);
+
+    const handleSuggestionClick = (suggestion: LocationSuggestion) => {
+        setSuggestions([]);
+        const newFilters = { ...filters, query: suggestion.name };
+        updateSearchPageState({ 
+            filters: newFilters,
+            activeFilters: newFilters,
+            searchOnMove: false
+        });
+        setFlyToTarget({ center: [suggestion.lat, suggestion.lng], zoom: 14 });
+    };
+
+    // Close suggestions when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (searchWrapperRef.current && !searchWrapperRef.current.contains(event.target as Node)) {
+                setIsQueryInputFocused(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const toggleDrawing = () => {
         setIsDrawing(prev => !prev);
@@ -215,7 +268,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             for (const mun of allMunicipalities[country]) {
                 for (const set of mun.settlements) {
                     const settlementName = set.name.toLowerCase();
-                    const fullName = `${set.name}, ${mun.name}`;
+                    const fullName = `${set.name}, ${mun.name}, ${country}`;
                     const fullNameLower = fullName.toLowerCase();
                     let score = 0;
     
@@ -278,19 +331,12 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
 
     const handleFilterChange = useCallback((name: keyof Filters, value: string | number | null) => {
         const newFilters = { ...filters, [name]: value };
-        
-        if (name === 'query' && (value === '' || value === null)) {
-            updateSearchPageState({ 
-                filters: newFilters, 
-                activeFilters: { ...activeFilters, query: '' } 
-            });
-        } else {
-            updateSearchPageState({ filters: newFilters });
-        }
-    }, [filters, activeFilters, updateSearchPageState]);
+        updateSearchPageState({ filters: newFilters });
+    }, [filters, updateSearchPageState]);
     
     const handleSearch = useCallback(() => {
         updateSearchPageState({ activeFilters: filters, drawnBoundsJSON: null, searchOnMove: false });
+        setSuggestions([]);
     }, [filters, updateSearchPageState]);
     
     const handleLocalFilterChange = (name: keyof Filters, value: string | number | null) => {
@@ -391,23 +437,24 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     
     const handleMapMove = useCallback((newBounds: L.LatLngBounds, newCenter: L.LatLng) => {
         if (isMobile && isFiltersOpen) return;
-
-        const newState: Partial<SearchPageState> = { mapBoundsJSON: JSON.stringify(newBounds) };
         
-        if (isQueryInputFocused || !isMapSyncActive) {
+        const newState: Partial<SearchPageState> = { mapBoundsJSON: JSON.stringify(newBounds) };
+
+        if (!searchOnMove || isQueryInputFocused || !isMapSyncActive) {
             updateSearchPageState(newState);
             return;
         };
 
         const closest = findClosestSettlement(newCenter.lat, newCenter.lng, allMunicipalities);
         if (closest) {
-            const locationName = `${closest.settlement.name}, ${closest.municipality.name}`;
+            // FIX: Correctly access the 'country' from the `closest` object returned by `findClosestSettlement`.
+            const locationName = `${closest.settlement.name}, ${closest.municipality.name}, ${closest.country}`;
              if (locationName.toLowerCase() !== filters.query.toLowerCase()) {
                 newState.filters = { ...filters, query: locationName };
             }
         }
         updateSearchPageState(newState);
-    }, [isMobile, isFiltersOpen, allMunicipalities, filters, isQueryInputFocused, isMapSyncActive, updateSearchPageState]);
+    }, [isMobile, isFiltersOpen, searchOnMove, allMunicipalities, filters, isQueryInputFocused, isMapSyncActive, updateSearchPageState]);
 
 
     const handleRecenterOnUser = () => {
@@ -479,8 +526,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         onSearchOnMoveChange: handleSearchOnMoveChange,
         searchMode,
         onSearchModeChange: (mode: 'manual' | 'ai') => updateSearchPageState({ searchMode: mode }),
-        onQueryFocus: () => setIsQueryInputFocused(true),
-        onBlur: () => setIsQueryInputFocused(false),
         onApplyAiFilters: handleApplyAiFilters,
         isAreaDrawn: !!drawnBounds,
         aiChatHistory: aiChatHistory,
@@ -489,8 +534,39 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         isDrawing,
     };
     
+    const renderSearchInput = (isMobileInput: boolean) => (
+         <div className="relative flex-grow" ref={isMobileInput ? null : searchWrapperRef}>
+            {!isMobileInput && <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><SearchIcon className="h-4 w-4 text-neutral-400" /></div>}
+            {isMobileInput && <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2"><SearchIcon className="h-5 w-5 text-neutral-500" /></div>}
+            <input
+                type="text"
+                name="query"
+                placeholder="Search city, address..."
+                value={filters.query}
+                onChange={(e) => handleFilterChange('query', e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                onFocus={() => setIsQueryInputFocused(true)}
+                className={isMobileInput
+                    ? "block w-full text-base bg-transparent border-none text-neutral-900 px-9 py-1 focus:outline-none focus:ring-0"
+                    : "block w-full bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 pl-9 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder:text-neutral-700"
+                }
+            />
+            {filters.query && (<div className="absolute inset-y-0 right-0 flex items-center pr-2"><button onClick={() => handleFilterChange('query', '')} className="text-neutral-400 hover:text-neutral-800"><XMarkIcon className="h-5 w-5" /></button></div>)}
+            {suggestions.length > 0 && isQueryInputFocused && (
+                <ul className="absolute z-20 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {suggestions.map((suggestion) => (
+                        <li key={suggestion.name} onMouseDown={() => handleSuggestionClick(suggestion)} className="px-4 py-3 text-sm text-neutral-700 hover:bg-neutral-100 cursor-pointer flex items-center gap-2">
+                             <MapPinIcon className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+                            <span>{suggestion.name}</span>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
+    );
+    
     return (
-        <div className="flex h-full w-full flex-col md:flex-row">
+        <div className={`flex h-full w-full flex-col md:flex-row relative ${isMobile && isFiltersOpen ? 'overflow-hidden' : ''}`}>
             <Toast show={toast.show} message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, show: false })} />
             <AiChatModal
                 isOpen={isAiChatModalOpen}
@@ -502,10 +578,14 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             />
             
             {/* Main Content */}
-            <div className="flex h-full w-full flex-col md:flex-row">
+            <div className={`flex h-full w-full flex-col md:flex-row transition-all duration-300 ${isMobile && isFiltersOpen ? 'blur-sm pointer-events-none' : ''}`}>
                 {/* --- Left Panel: List & Filters (Desktop) --- */}
                 {!isMobile && (
                     <div className="md:w-3/5 md:flex-shrink-0 bg-white border-r border-neutral-200 flex flex-col">
+                        <div className="p-4 border-b border-neutral-200 flex-shrink-0">
+                            <h2 className="text-lg font-bold text-neutral-800 mb-4">Properties for Sale</h2>
+                            {renderSearchInput(false)}
+                        </div>
                         <PropertyList {...propertyListProps} isMobile={false} showList={true} showFilters={true} />
                     </div>
                 )}
@@ -520,91 +600,88 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                 {/* --- Mobile View --- */}
                 {isMobile && (
                     <div className="relative h-full w-full overflow-hidden">
-                        {/* Map view is now the base layer, always rendered */}
-                        <div className="h-full w-full">
-                            <div className="h-full w-full pt-16 pb-20 relative z-0">
+                        {/* Map or List view */}
+                         <div className={`h-full w-full transition-opacity duration-300 ${mobileView === 'map' ? 'opacity-100' : 'opacity-0'}`}>
+                            <div className="h-full w-full pt-20 pb-20 relative z-0">
                                 <MapComponent {...mapProps} />
                             </div>
                         </div>
-
-                        {/* List view slides over the map */}
                         <div className={`absolute inset-0 z-10 h-full w-full transition-transform duration-300 ${mobileView === 'list' ? 'translate-x-0' : 'translate-x-full'}`}>
                             <PropertyList {...propertyListProps} isMobile={true} showList={true} showFilters={false} />
                         </div>
                         
-                        {/* Static Overlays: Top and Bottom bars */}
-                        <div className="absolute top-0 left-0 right-0 z-20 p-2 pointer-events-none">
-                            <div className="pointer-events-auto w-full bg-white/80 backdrop-blur-sm rounded-full shadow-lg p-1 flex items-center gap-1">
-                                <button onClick={onToggleSidebar} className="p-2 flex-shrink-0"><Bars3Icon className="w-6 h-6 text-neutral-800"/></button>
-                                <div className="relative flex-grow">
-                                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2"><SearchIcon className="h-5 w-5 text-neutral-500" /></div>
-                                    <input type="text" name="query" placeholder="Search..." value={filters.query} onChange={(e) => handleFilterChange('query', e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} onFocus={() => setIsQueryInputFocused(true)} onBlur={() => setIsQueryInputFocused(false)} className="block w-full text-base bg-transparent border-none text-neutral-900 px-9 py-1 focus:outline-none focus:ring-0"/>
-                                    {filters.query && (<div className="absolute inset-y-0 right-0 flex items-center pr-2"><button onClick={() => handleFilterChange('query', '')} className="text-neutral-400 hover:text-neutral-800"><XMarkIcon className="h-5 w-5" /></button></div>)}
-                                </div>
-                                <button onClick={() => updateSearchPageState({ isFiltersOpen: true })} className="p-2 flex-shrink-0 hover:bg-neutral-100 rounded-full"><AdjustmentsHorizontalIcon className="w-6 h-6 text-neutral-800"/></button>
-                                {isAuthenticated && currentUser && (
-                                    <button onClick={() => dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' })} className="flex-shrink-0 mr-1">
-                                        {currentUser.avatarUrl ? (
-                                            <img src={currentUser.avatarUrl} alt="My Account" className="w-8 h-8 rounded-full object-cover"/>
-                                        ) : (
-                                            <UserCircleIcon className="w-8 h-8 text-neutral-400"/>
+                        {/* Static Overlays: Top and Bottom bars - only show when filters are NOT open */}
+                        {!isFiltersOpen && (
+                            <>
+                                <div className="absolute top-0 left-0 right-0 z-20 p-2 pointer-events-none">
+                                    <div ref={searchWrapperRef} className="pointer-events-auto w-full bg-white/80 backdrop-blur-sm rounded-full shadow-lg p-1 flex items-center gap-1">
+                                        <button onClick={onToggleSidebar} className="p-2 flex-shrink-0"><Bars3Icon className="w-6 h-6 text-neutral-800"/></button>
+                                        {renderSearchInput(true)}
+                                        <button onClick={() => updateSearchPageState({ isFiltersOpen: true })} className="p-2 flex-shrink-0 hover:bg-neutral-100 rounded-full"><AdjustmentsHorizontalIcon className="w-6 h-6 text-neutral-800"/></button>
+                                        {isAuthenticated && currentUser && (
+                                            <button onClick={() => dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' })} className="flex-shrink-0 mr-1">
+                                                {currentUser.avatarUrl ? (
+                                                    <img src={currentUser.avatarUrl} alt="My Account" className="w-8 h-8 rounded-full object-cover"/>
+                                                ) : (
+                                                    <UserCircleIcon className="w-8 h-8 text-neutral-400"/>
+                                                )}
+                                            </button>
                                         )}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                        
-                        <div className="absolute bottom-0 left-0 right-0 z-20 p-4 pointer-events-none">
-                            <div className="pointer-events-auto mx-auto w-fit bg-white/80 text-neutral-800 p-2 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
-                                <button onClick={() => updateSearchPageState({ mobileView: 'list' })} className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition-colors ${mobileView === 'list' ? 'bg-primary text-white shadow' : 'hover:bg-neutral-200'}`}>
-                                    <Squares2x2Icon className="w-5 h-5" />
-                                    <span>List</span>
-                                </button>
-                                <button onClick={() => updateSearchPageState({ mobileView: 'map' })} className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition-colors ${mobileView === 'map' ? 'bg-primary text-white shadow' : 'hover:bg-neutral-200'}`}>
-                                    <MapIcon className="w-5 h-5" />
-                                    <span>Map</span>
-                                </button>
-                            </div>
-                        </div>
-
-                         {/* Map-specific controls, only visible in map view */}
-                        {mobileView === 'map' && (
-                            <div className="absolute inset-0 z-10 pointer-events-none p-2 flex flex-col justify-between pt-20 pb-20">
-                                <div className="pointer-events-auto self-end">
-                                    <button onClick={toggleDrawing} className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-full shadow-lg transition-colors ${ isDrawing ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-neutral-800 text-white hover:bg-neutral-900' }`}>
-                                        {isDrawing ? <XCircleIcon className="w-5 h-5" /> : <PencilIcon className="w-5 h-5" />}
-                                        <span>{isDrawing ? 'Cancel' : 'Draw'}</span>
-                                    </button>
-                                </div>
-                                {drawnBoundsJSON && !isDrawing && (
-                                    <div className="absolute top-1/2 right-2 -translate-y-1/2 pointer-events-auto flex flex-col gap-2">
-                                        {isAuthenticated && (<button onClick={() => handleSaveSearch(true)} disabled={isSaving} className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50"><BellIcon className="w-5 h-5" /><span>{isSaving ? 'Saving...' : 'Save Area'}</span></button>)}
-                                        <button onClick={handleClearDrawnArea} className="flex items-center gap-2 px-4 py-2 bg-neutral-800 text-white font-bold rounded-full shadow-lg hover:bg-neutral-900"><XCircleIcon className="w-5 h-5" /><span>Clear</span></button>
                                     </div>
-                                )}
-                                <div className="pointer-events-auto flex justify-between items-end">
-                                    <div>
-                                        <button onClick={() => setIsLegendOpen(p => !p)} className="bg-white/80 backdrop-blur-sm p-2.5 rounded-full shadow-lg"><Bars3Icon className="w-6 h-6 text-neutral-800" /></button>
-                                        {isLegendOpen && (
-                                            <div className="absolute bottom-14 left-2 bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-neutral-200 animate-fade-in w-36">
-                                                <h4 className="font-bold text-sm mb-2 text-neutral-800">Legend</h4>
-                                                <div className="space-y-1.5">{Object.entries({ house: '#0252CD', apartment: '#28a745', villa: '#6f42c1', other: '#6c757d' }).map(([type, color]) => (<div key={type} className="flex items-center gap-2"><span className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: color }}></span><span className="text-xs font-semibold text-neutral-700 capitalize">{type}</span></div>))}</div>
+                                </div>
+                                
+                                <div className="absolute bottom-0 left-0 right-0 z-20 p-4 pointer-events-none">
+                                    <div className="pointer-events-auto mx-auto w-fit bg-white/80 text-neutral-800 p-2 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
+                                        <button onClick={() => updateSearchPageState({ mobileView: 'list' })} className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition-colors ${mobileView === 'list' ? 'bg-primary text-white shadow' : 'hover:bg-neutral-200'}`}>
+                                            <Squares2x2Icon className="w-5 h-5" />
+                                            <span>List</span>
+                                        </button>
+                                        <button onClick={() => updateSearchPageState({ mobileView: 'map' })} className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition-colors ${mobileView === 'map' ? 'bg-primary text-white shadow' : 'hover:bg-neutral-200'}`}>
+                                            <MapIcon className="w-5 h-5" />
+                                            <span>Map</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {mobileView === 'map' && (
+                                    <div className="absolute inset-0 z-10 pointer-events-none p-2 flex flex-col justify-between pt-24 pb-24">
+                                        <div className="pointer-events-auto self-end">
+                                            <button onClick={toggleDrawing} className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-full shadow-lg transition-colors ${ isDrawing ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-neutral-800 text-white hover:bg-neutral-900' }`}>
+                                                {isDrawing ? <XCircleIcon className="w-5 h-5" /> : <PencilIcon className="w-5 h-5" />}
+                                                <span>{isDrawing ? 'Cancel' : 'Draw'}</span>
+                                            </button>
+                                        </div>
+                                        {drawnBoundsJSON && !isDrawing && (
+                                            <div className="absolute top-1/2 right-2 -translate-y-1/2 pointer-events-auto flex flex-col gap-2">
+                                                {isAuthenticated && (<button onClick={() => handleSaveSearch(true)} disabled={isSaving} className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50"><BellIcon className="w-5 h-5" /><span>{isSaving ? 'Saving...' : 'Save Area'}</span></button>)}
+                                                <button onClick={handleClearDrawnArea} className="flex items-center gap-2 px-4 py-2 bg-neutral-800 text-white font-bold rounded-full shadow-lg hover:bg-neutral-900"><XCircleIcon className="w-5 h-5" /><span>Clear</span></button>
                                             </div>
                                         )}
+                                        <div className="pointer-events-auto flex justify-between items-end">
+                                            <div>
+                                                <button onClick={() => setIsLegendOpen(p => !p)} className="bg-white/80 backdrop-blur-sm p-2.5 rounded-full shadow-lg"><Bars3Icon className="w-6 h-6 text-neutral-800" /></button>
+                                                {isLegendOpen && (
+                                                    <div className="absolute bottom-14 left-2 bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-neutral-200 animate-fade-in w-36">
+                                                        <h4 className="font-bold text-sm mb-2 text-neutral-800">Legend</h4>
+                                                        <div className="space-y-1.5">{Object.entries({ house: '#0252CD', apartment: '#28a745', villa: '#6f42c1', other: '#6c757d' }).map(([type, color]) => (<div key={type} className="flex items-center gap-2"><span className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: color }}></span><span className="text-xs font-semibold text-neutral-700 capitalize">{type}</span></div>))}</div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="bg-white/80 text-neutral-800 p-2 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
+                                                <button onClick={handleRecenterOnUser} className="p-2.5 rounded-full hover:bg-black/10 transition-colors" title="My Location"><CrosshairsIcon className="w-5 h-5" /></button>
+                                                {isAuthenticated && !drawnBoundsJSON && (<button onClick={() => handleSaveSearch(false)} disabled={isSaving} className="p-2.5 rounded-full hover:bg-black/10 transition-colors disabled:opacity-50" title="Save Search"><BellIcon className="w-5 h-5" /></button>)}
+                                                <button onClick={() => updateSearchPageState({ isAiChatModalOpen: true })} className="p-2.5 rounded-full hover:bg-black/10 transition-colors" title="AI Search"><SparklesIcon className="w-5 h-5 text-primary" /></button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="bg-white/80 text-neutral-800 p-2 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
-                                        <button onClick={handleRecenterOnUser} className="p-2.5 rounded-full hover:bg-black/10 transition-colors" title="My Location"><CrosshairsIcon className="w-5 h-5" /></button>
-                                        {isAuthenticated && !drawnBoundsJSON && (<button onClick={() => handleSaveSearch(false)} disabled={isSaving} className="p-2.5 rounded-full hover:bg-black/10 transition-colors disabled:opacity-50" title="Save Search"><BellIcon className="w-5 h-5" /></button>)}
-                                        <button onClick={() => updateSearchPageState({ isAiChatModalOpen: true })} className="p-2.5 rounded-full hover:bg-black/10 transition-colors" title="AI Search"><SparklesIcon className="w-5 h-5 text-primary" /></button>
-                                    </div>
-                                </div>
-                            </div>
+                                )}
+                            </>
                         )}
                     </div>
                 )}
             </div>
             
-            {/* Filter overlay and modal - rendered at the top level to overlay everything */}
+            {/* Filter overlay - rendered outside the main content div to overlay everything */}
             {isMobile && isFiltersOpen && (
                 <>
                     <div className="fixed inset-0 bg-black/50 z-30 animate-fade-in" onClick={() => updateSearchPageState({ isFiltersOpen: false })}></div>

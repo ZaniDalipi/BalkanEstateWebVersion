@@ -1,162 +1,253 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { formatPrice } from '../../utils/currency';
-import { ScaleIcon, ChevronDownIcon, ChevronUpIcon } from '../../constants';
+import { formatPrice, getCurrencySymbol } from '../../utils/currency';
+import { ScaleIcon, ChevronDownIcon, ChevronUpIcon, KeyIcon, BuildingOfficeIcon } from '../../constants';
 
 interface RentVsBuyCalculatorProps {
   propertyPrice: number;
   country: string;
 }
 
+const AdvancedInput: React.FC<{
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    placeholder: string;
+    unit: string;
+}> = ({ label, value, onChange, placeholder, unit }) => {
+    const id = `rvb-${label.toLowerCase().replace(/\s/g, '-')}`;
+    return (
+        <div className="flex justify-between items-center text-sm">
+            <label htmlFor={id} className="text-neutral-600 font-medium">{label}</label>
+            <div className="relative w-32">
+                <input 
+                    type="number"
+                    id={id}
+                    step="0.1"
+                    placeholder={placeholder}
+                    value={value}
+                    onChange={e => onChange(e.target.value)} 
+                    className="w-full text-sm font-semibold bg-neutral-100 border-neutral-200 border rounded-md p-2 text-right pr-8 focus:ring-1 focus:ring-primary focus:border-primary text-neutral-900"
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-500 font-medium pointer-events-none">{unit}</span>
+            </div>
+        </div>
+    );
+};
+
+
 const RentVsBuyCalculator: React.FC<RentVsBuyCalculatorProps> = ({ propertyPrice, country }) => {
     // --- Basic Inputs ---
-    const [estimatedRent, setEstimatedRent] = useState(Math.round(propertyPrice / 300));
-    const [planningToStay, setPlanningToStay] = useState(7);
-    const [downPaymentPercent, setDownPaymentPercent] = useState(20);
-    const [interestRate, setInterestRate] = useState(4.5);
-    const [loanTerm, setLoanTerm] = useState(30);
-
-    // --- Advanced Inputs ---
-    const [propertyTaxes, setPropertyTaxes] = useState(0.8);
-    const [homeInsurance, setHomeInsurance] = useState(0.4);
-    const [maintenance, setMaintenance] = useState(1);
-    const [homeAppreciation, setHomeAppreciation] = useState(3);
-    const [rentIncrease, setRentIncrease] = useState(2);
+    const suggestedRent = useMemo(() => Math.round(propertyPrice / 300), [propertyPrice]);
+    const [estimatedRent, setEstimatedRent] = useState('');
+    const [planningToStay, setPlanningToStay] = useState(8);
+    
+    // --- Advanced Inputs (as strings to allow empty placeholders) ---
+    const [downPaymentPercent, setDownPaymentPercent] = useState('');
+    const [interestRate, setInterestRate] = useState('');
+    const [loanTerm, setLoanTerm] = useState('30');
+    const [propertyTaxes, setPropertyTaxes] = useState('');
+    const [homeInsurance, setHomeInsurance] = useState('');
+    const [maintenance, setMaintenance] = useState('');
+    const [homeAppreciation, setHomeAppreciation] = useState('');
+    const [rentIncrease, setRentIncrease] = useState('');
     const [showAdvanced, setShowAdvanced] = useState(false);
 
     // --- Results ---
     const [results, setResults] = useState<{ totalRentCost: number; netBuyCost: number } | null>(null);
     
-    useEffect(() => {
+     useEffect(() => {
         const calculateCosts = () => {
-            // --- RENTING CALCULATION ---
-            let cumulativeRentCost = 0;
-            let currentAnnualRent = estimatedRent * 12;
-            for (let year = 0; year < planningToStay; year++) {
-                cumulativeRentCost += currentAnnualRent;
-                currentAnnualRent *= (1 + rentIncrease / 100);
+            // Parse all string inputs into numbers, providing defaults
+            const rentValue = Number(estimatedRent) || suggestedRent;
+            const years = planningToStay;
+            const termYears = Number(loanTerm) || 30;
+
+            const dpPercent = Number(downPaymentPercent) || 20;
+            const ratePercent = Number(interestRate) || 3.5;
+            const taxPercent = Number(propertyTaxes) || 1.2;
+            const insurancePercent = Number(homeInsurance) || 0.4;
+            const maintenancePercent = Number(maintenance) || 1.0;
+            const appreciationPercent = Number(homeAppreciation) || 3.0;
+            const rentIncreasePercent = Number(rentIncrease) || 2.5;
+
+            // --- RENT CALCULATION ---
+            let totalRentCost = 0;
+            let currentAnnualRent = rentValue * 12;
+            for (let i = 0; i < years; i++) {
+                totalRentCost += currentAnnualRent;
+                currentAnnualRent *= (1 + rentIncreasePercent / 100);
             }
 
-            // --- BUYING CALCULATION ---
-            const downPaymentAmount = propertyPrice * (downPaymentPercent / 100);
-            const loanAmount = propertyPrice - downPaymentAmount;
+            // --- BUY CALCULATION ---
+            const downPaymentAmount = propertyPrice * (dpPercent / 100);
+            const loanPrincipal = propertyPrice - downPaymentAmount;
 
-            if (loanAmount <= 0) { // Bought in cash
-                const totalBuyOutlay = propertyPrice + ((propertyPrice * (propertyTaxes + homeInsurance + maintenance) / 100) * planningToStay);
-                const finalHomeValue = propertyPrice * Math.pow(1 + homeAppreciation / 100, planningToStay);
-                const netBuyCost = totalBuyOutlay - finalHomeValue;
-                setResults({ totalRentCost: cumulativeRentCost, netBuyCost });
-                return;
+            if (loanPrincipal <= 0) {
+                 setResults({ totalRentCost, netBuyCost: 0 });
+                 return;
             }
 
-            const monthlyInterestRate = (interestRate / 100) / 12;
-            const numberOfPayments = loanTerm * 12;
-            const monthlyPayment = loanAmount * (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, numberOfPayments)) / (Math.pow(1 + monthlyInterestRate, numberOfPayments) - 1);
+            const monthlyRate = (ratePercent / 100) / 12;
+            const numberOfPayments = termYears * 12;
+            const paymentsMade = Math.min(years * 12, numberOfPayments);
+
+            const monthlyPayment = monthlyRate > 0 ?
+                loanPrincipal * (monthlyRate * Math.pow(1 + monthlyRate, numberOfPayments)) / (Math.pow(1 + monthlyRate, numberOfPayments) - 1)
+                : loanPrincipal / numberOfPayments;
             
-            const totalMortgagePayments = monthlyPayment * 12 * planningToStay;
-            
-            // Calculate remaining loan balance after X years
-            let remainingBalance = loanAmount;
-            if (interestRate > 0) {
-              for (let i = 0; i < planningToStay * 12; i++) {
-                  const interestForMonth = remainingBalance * monthlyInterestRate;
-                  const principalForMonth = monthlyPayment - interestForMonth;
-                  remainingBalance -= principalForMonth;
-              }
-            } else {
-              remainingBalance -= monthlyPayment * 12 * planningToStay;
+            const totalMortgagePaid = monthlyPayment * paymentsMade;
+
+            const remainingPrincipal = monthlyRate > 0 ? (
+                paymentsMade >= numberOfPayments ? 0 :
+                loanPrincipal * (Math.pow(1 + monthlyRate, numberOfPayments) - Math.pow(1 + monthlyRate, paymentsMade)) / (Math.pow(1 + monthlyRate, numberOfPayments) - 1)
+            ) : Math.max(0, loanPrincipal - (monthlyPayment * paymentsMade));
+
+            const principalPaid = loanPrincipal - remainingPrincipal;
+            const interestPaid = totalMortgagePaid - principalPaid;
+
+            let totalTaxesPaid = 0;
+            let totalInsurancePaid = 0;
+            let totalMaintenancePaid = 0;
+            let currentPropertyValue = propertyPrice;
+
+            for (let i = 0; i < years; i++) {
+                totalTaxesPaid += currentPropertyValue * (taxPercent / 100);
+                totalInsurancePaid += propertyPrice * (insurancePercent / 100); // Usually based on original price
+                totalMaintenancePaid += propertyPrice * (maintenancePercent / 100); // Usually based on original price
+                currentPropertyValue *= (1 + appreciationPercent / 100);
             }
 
-            const finalHomeValue = propertyPrice * Math.pow(1 + homeAppreciation / 100, planningToStay);
-            const totalOtherCosts = (propertyPrice * (propertyTaxes + homeInsurance + maintenance) / 100) * planningToStay;
+            const appreciatedValue = currentPropertyValue;
             
-            const totalOutlay = downPaymentAmount + totalMortgagePayments + totalOtherCosts;
-            const equity = finalHomeValue - remainingBalance;
+            const totalNonRecoverable = interestPaid + totalTaxesPaid + totalInsurancePaid + totalMaintenancePaid;
+            const appreciationGain = appreciatedValue - propertyPrice;
+            
+            const netBuyCost = totalNonRecoverable - appreciationGain;
 
-            // Net cost is your total cash outlay minus the asset (equity) you've built
-            const netBuyCost = totalOutlay - equity;
-            
-            setResults({ totalRentCost: cumulativeRentCost, netBuyCost });
+            setResults({
+                totalRentCost: isNaN(totalRentCost) ? 0 : totalRentCost,
+                netBuyCost: isNaN(netBuyCost) ? 0 : netBuyCost,
+            });
         };
-        
-        calculateCosts();
 
-    }, [propertyPrice, estimatedRent, planningToStay, downPaymentPercent, interestRate, loanTerm, propertyTaxes, homeInsurance, maintenance, homeAppreciation, rentIncrease]);
+        calculateCosts();
+    }, [
+        propertyPrice, estimatedRent, planningToStay, loanTerm, downPaymentPercent, 
+        interestRate, propertyTaxes, homeInsurance, maintenance, homeAppreciation, 
+        rentIncrease, suggestedRent
+    ]);
 
     const verdict = useMemo(() => {
         if (!results) return null;
         const { totalRentCost, netBuyCost } = results;
-        const difference = Math.abs(totalRentCost - netBuyCost);
-        const isBuyBetter = netBuyCost < totalRentCost;
-        
-        return {
-            isBuyBetter,
-            message: `After ${planningToStay} years, it's cheaper to`,
-            choice: isBuyBetter ? 'Buy' : 'Rent',
-            savings: `Your estimated savings by ${isBuyBetter ? 'buying' : 'renting'} would be ${formatPrice(difference, country)}.`,
-        };
-    }, [results, planningToStay, country]);
+
+        if (netBuyCost < totalRentCost) {
+            return {
+                decision: 'Buy',
+                savings: totalRentCost - netBuyCost,
+                color: 'text-green-600',
+            };
+        } else {
+            return {
+                decision: 'Rent',
+                savings: netBuyCost - totalRentCost,
+                color: 'text-red-600',
+            };
+        }
+    }, [results]);
+
+    const currencySymbol = getCurrencySymbol(country);
+    const isBuyCheaper = verdict?.decision === 'Buy';
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
+        <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200 animate-fade-in">
             <div className="flex items-center gap-3 mb-4">
                 <ScaleIcon className="w-6 h-6 text-primary" />
                 <h3 className="text-lg font-bold text-neutral-800">Rent vs. Buy Calculator</h3>
             </div>
-
-            <div className="space-y-4">
-                <div>
-                    <label htmlFor="planningToStay" className="flex justify-between items-center text-sm font-semibold text-neutral-700 mb-1">
-                        <span>Planning to stay for</span>
-                        <span className="font-bold text-primary">{planningToStay} years</span>
-                    </label>
-                    <input type="range" id="planningToStay" min="1" max="30" value={planningToStay} onChange={e => setPlanningToStay(e.target.valueAsNumber)} className="w-full h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer"/>
-                </div>
+            
+            <div className="space-y-6">
                  <div>
-                    <label htmlFor="estimatedRent" className="block text-sm font-semibold text-neutral-700 mb-1">Estimated Monthly Rent</label>
-                    <input type="number" id="estimatedRent" value={estimatedRent} onChange={e => setEstimatedRent(e.target.valueAsNumber || 0)} className="w-full text-base font-semibold bg-neutral-50 border border-neutral-200 rounded-md p-2" />
+                    <div className="flex justify-between items-baseline mb-1">
+                        <label htmlFor="planning-to-stay" className="text-sm font-semibold text-neutral-700">Planning to stay</label>
+                        <span className="text-lg font-bold text-neutral-900">{planningToStay} years</span>
+                    </div>
+                    <input 
+                        id="planning-to-stay"
+                        type="range" 
+                        min={1} 
+                        max={30}
+                        value={planningToStay} 
+                        onChange={e => setPlanningToStay(e.target.valueAsNumber)}
+                        className="w-full h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                    />
+                </div>
+                
+                 <div className="relative">
+                    <input 
+                        type="number" 
+                        id="estimated-rent"
+                        value={estimatedRent}
+                        onChange={e => setEstimatedRent(e.target.value)}
+                        placeholder={`${currencySymbol} ${suggestedRent.toLocaleString('de-DE')}`}
+                        className="w-full text-base font-semibold bg-neutral-100 border-neutral-200 border rounded-md p-2.5 text-neutral-900"
+                    />
+                    <label htmlFor="estimated-rent" className="block text-sm font-semibold text-neutral-700 mb-1 absolute -top-2.5 left-3 bg-white px-1 text-xs">Estimated monthly rent</label>
                 </div>
 
-                <div className="border-t border-neutral-200 pt-4">
-                    <button onClick={() => setShowAdvanced(!showAdvanced)} className="w-full flex justify-between items-center text-sm font-semibold text-neutral-700">
+                <div>
+                    <button onClick={() => setShowAdvanced(!showAdvanced)} className="flex justify-between items-center w-full text-sm font-semibold text-neutral-700">
                         <span>Advanced Settings</span>
-                        {showAdvanced ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
+                        {showAdvanced ? <ChevronUpIcon className="w-5 h-5"/> : <ChevronDownIcon className="w-5 h-5"/>}
                     </button>
                     {showAdvanced && (
-                        <div className="mt-4 space-y-3 animate-fade-in">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div><label className="text-xs text-neutral-500">Down Payment (%)</label><input type="number" step="1" value={downPaymentPercent} onChange={e => setDownPaymentPercent(e.target.valueAsNumber || 0)} className="w-full text-sm bg-neutral-50 border border-neutral-200 rounded p-1" /></div>
-                                <div><label className="text-xs text-neutral-500">Interest Rate (%)</label><input type="number" step="0.1" value={interestRate} onChange={e => setInterestRate(e.target.valueAsNumber || 0)} className="w-full text-sm bg-neutral-50 border border-neutral-200 rounded p-1" /></div>
-                                <div><label className="text-xs text-neutral-500">Property Taxes (%/yr)</label><input type="number" step="0.1" value={propertyTaxes} onChange={e => setPropertyTaxes(e.target.valueAsNumber || 0)} className="w-full text-sm bg-neutral-50 border border-neutral-200 rounded p-1" /></div>
-                                <div><label className="text-xs text-neutral-500">Home Insurance (%/yr)</label><input type="number" step="0.1" value={homeInsurance} onChange={e => setHomeInsurance(e.target.valueAsNumber || 0)} className="w-full text-sm bg-neutral-50 border border-neutral-200 rounded p-1" /></div>
-                                <div><label className="text-xs text-neutral-500">Maintenance (%/yr)</label><input type="number" step="0.1" value={maintenance} onChange={e => setMaintenance(e.target.valueAsNumber || 0)} className="w-full text-sm bg-neutral-50 border border-neutral-200 rounded p-1" /></div>
-                                <div><label className="text-xs text-neutral-500">Appreciation (%/yr)</label><input type="number" step="0.1" value={homeAppreciation} onChange={e => setHomeAppreciation(e.target.valueAsNumber || 0)} className="w-full text-sm bg-neutral-50 border border-neutral-200 rounded p-1" /></div>
-                                <div><label className="text-xs text-neutral-500">Rent Increase (%/yr)</label><input type="number" step="0.1" value={rentIncrease} onChange={e => setRentIncrease(e.target.valueAsNumber || 0)} className="w-full text-sm bg-neutral-50 border border-neutral-200 rounded p-1" /></div>
-                            </div>
+                        <div className="mt-4 space-y-4 pt-4 border-t animate-fade-in">
+                            <AdvancedInput label="Down Payment" value={downPaymentPercent} onChange={setDownPaymentPercent} placeholder="e.g., 20" unit="%" />
+                            <AdvancedInput label="Interest Rate" value={interestRate} onChange={setInterestRate} placeholder="e.g., 3.5" unit="%" />
+                            <AdvancedInput label="Loan Term" value={loanTerm} onChange={setLoanTerm} placeholder="e.g., 30" unit="yrs" />
+                            <AdvancedInput label="Property Taxes" value={propertyTaxes} onChange={setPropertyTaxes} placeholder="e.g., 1.2" unit="%/yr" />
+                            <AdvancedInput label="Home Insurance" value={homeInsurance} onChange={setHomeInsurance} placeholder="e.g., 0.4" unit="%/yr" />
+                            <AdvancedInput label="Maintenance" value={maintenance} onChange={setMaintenance} placeholder="e.g., 1.0" unit="%/yr" />
+                            <AdvancedInput label="Home Appreciation" value={homeAppreciation} onChange={setHomeAppreciation} placeholder="e.g., 3.0" unit="%/yr" />
+                            <AdvancedInput label="Rent Increase" value={rentIncrease} onChange={setRentIncrease} placeholder="e.g., 2.5" unit="%/yr" />
                         </div>
                     )}
                 </div>
 
-                {results && verdict && (
+                {verdict && results && (
                     <div className="border-t border-neutral-200 pt-4 text-center">
-                        <p className="text-sm font-semibold text-neutral-600">{verdict.message}</p>
-                        <p className={`text-3xl font-extrabold mt-1 ${verdict.isBuyBetter ? 'text-green-600' : 'text-orange-600'}`}>{verdict.choice}</p>
-                        <p className="text-xs text-neutral-500 mt-2">{verdict.savings}</p>
+                        <p className="text-sm font-semibold text-neutral-600">After {planningToStay} years, it's cheaper to</p>
+                        <p className={`text-4xl font-extrabold my-1 ${verdict.color}`}>
+                            {verdict.decision}
+                        </p>
+                        <p className="text-base font-semibold text-neutral-700">
+                            Estimated savings: {formatPrice(verdict.savings, country)}
+                        </p>
 
-                         <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-                            <div className="bg-orange-50 p-2 rounded">
-                                <p className="font-bold text-orange-700">Total Rent Cost</p>
-                                <p className="font-semibold text-orange-600">{formatPrice(results.totalRentCost, country)}</p>
+                        <div className="mt-4 grid grid-cols-2 gap-4">
+                            <div className={`p-3 rounded-lg border ${!isBuyCheaper ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                <div className={`flex items-center gap-2 font-bold ${!isBuyCheaper ? 'text-green-700' : 'text-red-700'}`}>
+                                    <BuildingOfficeIcon className="w-5 h-5"/>
+                                    <p>Rent</p>
+                                </div>
+                                <p className="text-xs text-neutral-500 mt-1">Total Cost to Rent</p>
+                                <p className={`text-lg font-bold mt-0.5 ${!isBuyCheaper ? 'text-green-700' : 'text-red-700'}`}>{formatPrice(results.totalRentCost, country)}</p>
                             </div>
-                            <div className="bg-green-50 p-2 rounded">
-                                <p className="font-bold text-green-700">Net Cost to Own</p>
-                                <p className="font-semibold text-green-600">{formatPrice(results.netBuyCost, country)}</p>
+                             <div className={`p-3 rounded-lg border ${isBuyCheaper ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                <div className={`flex items-center gap-2 font-bold ${isBuyCheaper ? 'text-green-700' : 'text-red-700'}`}>
+                                    <KeyIcon className="w-5 h-5"/>
+                                    <p>Own</p>
+                                </div>
+                                <p className="text-xs text-neutral-500 mt-1">Net Cost to Own</p>
+                                <p className={`text-lg font-bold mt-0.5 ${isBuyCheaper ? 'text-green-700' : 'text-red-700'}`}>{formatPrice(results.netBuyCost, country)}</p>
                             </div>
                         </div>
                     </div>
                 )}
             </div>
-             <p className="text-center text-xs text-neutral-400 mt-6">
-                This is an estimate for informational purposes. Many factors can influence the costs of buying vs. renting.
+
+            <p className="text-center text-xs text-neutral-400 mt-6">
+                This is an estimate for informational purposes. Many factors can influence the costs of buying and renting.
             </p>
         </div>
     );

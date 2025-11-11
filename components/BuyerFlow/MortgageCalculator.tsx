@@ -13,7 +13,7 @@ const TermButton: React.FC<{ term: number, selectedTerm: number, onClick: (term:
         onClick={() => onClick(term)}
         className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 flex-grow text-center ${
             selectedTerm === term
-            ? 'bg-white text-primary shadow'
+            ? 'bg-primary text-white shadow'
             : 'text-neutral-600 hover:bg-neutral-200'
         }`}
     >
@@ -105,13 +105,13 @@ const MortgageCalculator: React.FC<MortgageCalculatorProps> = ({ propertyPrice, 
                             step={downPaymentType === 'percent' ? 1 : 1000}
                             value={downPayment} 
                             onChange={handleDownPaymentChange}
-                            className="w-full h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer"
+                            className="w-full h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-primary"
                         />
                          <input 
                             type="number" 
                             value={downPayment}
                             onChange={handleDownPaymentChange}
-                            className="w-24 text-sm font-semibold bg-neutral-50 border border-neutral-200 rounded-md p-1.5 text-center"
+                            className="w-24 text-sm font-semibold bg-neutral-50 border border-neutral-200 rounded-md p-1.5 text-center text-neutral-900"
                         />
                     </div>
                     <p className="text-xs text-right text-neutral-500 mt-1">({formatPrice(downPaymentAmount, country)})</p>
@@ -134,7 +134,7 @@ const MortgageCalculator: React.FC<MortgageCalculatorProps> = ({ propertyPrice, 
                         step="0.01" 
                         value={interestRate} 
                         onChange={e => setInterestRate(e.target.valueAsNumber || 0)}
-                        className="w-full text-base font-semibold bg-neutral-50 border border-neutral-200 rounded-md p-2"
+                        className="w-full text-base font-semibold bg-neutral-50 border border-neutral-200 rounded-md p-2 text-neutral-900"
                     />
                 </div>
 

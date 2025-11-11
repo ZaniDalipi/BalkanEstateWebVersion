@@ -23,8 +23,6 @@ interface PropertyListProps {
   searchMode: 'manual' | 'ai';
   onSearchModeChange: (mode: 'manual' | 'ai') => void;
   onApplyAiFilters: (query: AiSearchQuery) => void;
-  onQueryFocus: () => void;
-  onBlur: () => void;
   isAreaDrawn: boolean;
   aiChatHistory: ChatMessage[];
   onAiChatHistoryChange: (history: ChatMessage[]) => void;
@@ -72,13 +70,9 @@ const FilterButtonGroup: React.FC<{
 );
 
 const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList' | 'aiChatHistory' | 'onAiChatHistoryChange'>> = ({
-    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, onQueryFocus, onBlur, isAreaDrawn, onDrawStart, isDrawing
+    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, isAreaDrawn, onDrawStart, isDrawing
 }) => {
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(true);
-    
-    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        onFilterChange(e.target.name as keyof Filters, e.target.value);
-    }, [onFilterChange]);
     
     const handleNumericInputChange = (field: keyof Filters, value: string) => {
         const num = parseInt(value.replace(/\D/g, ''), 10);
@@ -89,24 +83,6 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
 
     return (
          <div className="space-y-4">
-            {!isMobile && (
-                <div className="relative">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                        <SearchIcon className="h-4 w-4 text-neutral-400" />
-                    </div>
-                    <input
-                        type="text"
-                        name="query"
-                        placeholder="Search city, address..."
-                        value={filters.query}
-                        onChange={handleInputChange}
-                        onFocus={onQueryFocus}
-                        onBlur={onBlur}
-                        className={`${inputBaseClasses} pl-9`}
-                    />
-                </div>
-            )}
-            
             {!isMobile && (
                 <button
                     type="button"
@@ -336,10 +312,6 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
             <div className="flex flex-col h-full bg-transparent">
                  {/* Fixed Top Section (Filters) */}
                 <div className="flex-shrink-0 border-b border-neutral-200">
-                     <div className="p-4 border-b border-neutral-200">
-                        <h2 className="text-lg font-bold text-neutral-800">Properties for Sale</h2>
-                    </div>
-                    
                     <div className="p-4">
                         <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm mx-auto">
                             <button onClick={() => onSearchModeChange('manual')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Manual Search</button>
@@ -419,7 +391,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
     
     // Mobile Layout
     return (
-        <div className="flex flex-col bg-white h-full pt-16 pb-20">
+        <div className="flex flex-col bg-white h-full pt-20 pb-20">
             {showFilters && (
                  <div className="p-4 flex-shrink-0">
                     <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm mx-auto">

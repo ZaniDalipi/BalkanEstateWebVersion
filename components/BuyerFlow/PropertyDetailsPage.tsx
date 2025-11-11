@@ -636,16 +636,16 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                     )}
 
                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
-                        <div className="flex items-center gap-1 bg-black/50 backdrop-blur-sm p-1 rounded-full shadow-lg">
+                        <div className="flex items-center gap-1 bg-white/80 backdrop-blur-sm p-1 rounded-full shadow-lg">
                             <button
                                 onClick={() => setViewMode('photos')}
-                                className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 ${viewMode === 'photos' ? 'bg-white text-black' : 'text-white'}`}
+                                className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 ${viewMode === 'photos' ? 'bg-primary text-white shadow' : 'text-neutral-700 hover:bg-neutral-200'}`}
                             >
                                 Photos
                             </button>
                             <button
                                 onClick={() => setViewMode('streetview')}
-                                className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 ${viewMode === 'streetview' ? 'bg-white text-black' : 'text-white'}`}
+                                className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 ${viewMode === 'streetview' ? 'bg-primary text-white shadow' : 'text-neutral-700 hover:bg-neutral-200'}`}
                             >
                                 <StreetViewIcon className="w-5 h-5" />
                                 Street View

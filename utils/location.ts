@@ -8,9 +8,11 @@ const squaredDistance = (lat1: number, lon1: number, lat2: number, lon2: number)
   return dx * dx + dy * dy;
 };
 
+// FIX: Added 'country' to the result interface to provide full location context.
 interface ClosestSettlementResult {
     settlement: SettlementData;
     municipality: MunicipalityData;
+    country: string;
 }
 
 export const findClosestSettlement = (lat: number, lng: number, municipalities: Record<string, MunicipalityData[]>): ClosestSettlementResult | null => {
@@ -23,7 +25,8 @@ export const findClosestSettlement = (lat: number, lng: number, municipalities: 
         const distance = squaredDistance(lat, lng, settlement.lat, settlement.lng);
         if (distance < minDistance) {
           minDistance = distance;
-          closest = { settlement, municipality };
+          // FIX: Include the country in the result object.
+          closest = { settlement, municipality, country };
         }
       }
     }
