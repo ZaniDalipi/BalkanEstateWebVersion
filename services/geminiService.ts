@@ -278,6 +278,86 @@ export const getAiChatResponse = async (history: ChatMessage[], properties: Prop
     }
 };
 
+export const generateSearchName = async (filters: Filters): Promise<string> => {
+    const relevantFilters: Partial<Filters> = {};
+    if (filters.query) relevantFilters.query = filters.query;
+    if (filters.minPrice) relevantFilters.minPrice = filters.minPrice;
+    if (filters.maxPrice) relevantFilters.maxPrice = filters.maxPrice;
+    if (filters.beds) relevantFilters.beds = filters.beds;
+    if (filters.baths) relevantFilters.baths = filters.baths;
+    if (filters.livingRooms) relevantFilters.livingRooms = filters.livingRooms;
+    if (filters.minSqft) relevantFilters.minSqft = filters.minSqft;
+    if (filters.maxSqft) relevantFilters.maxSqft = filters.maxSqft;
+    if (filters.sellerType !== 'any') relevantFilters.sellerType = filters.sellerType;
+
+    const prompt = `
+        You are a helpful real estate assistant. Given the following JSON object of search filters, generate a concise, human-readable name for a saved search. The name should be a single, descriptive phrase.
+
+        - If there's a query (location), start with that.
+        - Describe price ranges like "€50k - €100k" or "over €200k" or "under €150k".
+        - Describe beds/baths/living rooms like "3+ beds", "2+ baths", "1+ living rooms".
+        - Describe size like "over 100m²" or "50-100m²".
+        - Mention the seller type if it's not 'any'.
+        - Combine these elements with commas.
+        - Be concise.
+
+        Example 1 Input:
+        { "query": "Bitola", "maxPrice": 100000, "sellerType": "agent", "beds": 3, "baths": 2 }
+        Example 1 Output:
+        Bitola, under €100k, by agent, 3+ beds, 2+ baths
+
+        Example 2 Input:
+        { "minPrice": 250000, "beds": 4, "livingRooms": 2 }
+        Example 2 Output:
+        Over €250k, 4+ beds, 2+ living rooms
+
+        Example 3 Input:
+        { "query": "Belgrade", "sellerType": "private" }
+        Example 3 Output:
+        Belgrade, private listings
+
+        Example 4 Input:
+        { "query": "Zagreb", "minSqft": 100 }
+        Example 4 Output:
+        Zagreb, over 100m²
+
+        Now, generate a name for this filter object:
+        ${JSON.stringify(relevantFilters)}
+
+        Return only the generated name string, without any markdown or extra text.
+    `;
+
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+    });
+
+    return result.text.trim();
+};
+
+export const generateSearchNameFromCoords = async (lat: number, lng: number): Promise<string> => {
+    const prompt = `
+        You are a helpful real estate assistant. Given the following latitude and longitude coordinates, generate a concise, human-readable name for the geographic area they represent. The name should be suitable for a saved search.
+
+        - Identify the most prominent feature at or very near these coordinates. This could be a village, a specific neighborhood, a mountain, a well-known park, or a coastal area.
+        - The name should be short and descriptive, under 5 words.
+        - For example: "Sirogojno Village Area", "Zlatibor Mountain Center", "Near Partizanska Street, Zlatibor", "Krani lakeside".
+
+        Coordinates:
+        Latitude: ${lat}
+        Longitude: ${lng}
+
+        Return only the generated name string, without any markdown or extra text.
+    `;
+
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+    });
+
+    return result.text.trim();
+};
+
 export const getNeighborhoodInsights = async (lat: number, lng: number, city: string, country: string): Promise<string> => {
     const prompt = `
         You are a helpful local guide for the "Balkan Estate" real estate agency.
@@ -311,45 +391,5 @@ export const getNeighborhoodInsights = async (lat: number, lng: number, city: st
     } catch (e) {
         console.error("Error fetching neighborhood insights:", e instanceof Error ? e.message : String(e));
         throw new Error("Could not retrieve neighborhood insights at this time.");
-    }
-};
-
-export const getCoordinatesForLocation = async (locationQuery: string): Promise<{ lat: number; lng: number } | null> => {
-    const prompt = `
-        Based on real-world map data, find the geographic coordinates (latitude and longitude) for the following location: "${locationQuery}".
-        The location is likely in the Balkans region of Europe.
-        
-        Return ONLY the coordinates as a comma-separated string. For example: "44.7872, 20.4573".
-        If the location cannot be found, return the word "null".
-    `;
-
-    try {
-        const result = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                tools: [{ googleMaps: {} }],
-            },
-        });
-
-        const text = result.text.trim();
-        if (text.toLowerCase() === 'null') {
-            return null;
-        }
-
-        const parts = text.split(',').map(s => s.trim());
-        if (parts.length === 2) {
-            const lat = parseFloat(parts[0]);
-            const lng = parseFloat(parts[1]);
-            if (!isNaN(lat) && !isNaN(lng)) {
-                return { lat, lng };
-            }
-        }
-        
-        console.warn("Could not parse coordinates from Gemini response:", text);
-        return null;
-    } catch (e) {
-        console.error("Error fetching coordinates from Gemini:", e);
-        return null; // Return null on error
     }
 };

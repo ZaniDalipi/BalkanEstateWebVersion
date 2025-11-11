@@ -140,6 +140,7 @@ export interface SavedSearch {
     id: string;
     name: string;
     filters: Filters;
+    drawnBoundsJSON: string | null;
     createdAt: number;
     lastAccessed: number;
 }
@@ -168,6 +169,7 @@ export interface Settlement {
     localNames?: string[];
     latitude: number;
     longitude: number;
+
 }
 
 export interface Municipality {
@@ -202,6 +204,7 @@ export interface SearchPageState {
     activeFilters: Filters;
     searchOnMove: boolean;
     mapBoundsJSON: string | null;
+    drawnBoundsJSON: string | null;
     mobileView: 'map' | 'list';
     searchMode: 'manual' | 'ai';
     aiChatHistory: ChatMessage[];
@@ -274,5 +277,4 @@ export type AppAction =
     | { type: 'SET_ACTIVE_DISCOUNT', payload: { proYearly: number; proMonthly: number; enterprise: number; } | null }
     | { type: 'TOGGLE_LISTING_LIMIT_WARNING', payload: boolean }
     | { type: 'TOGGLE_DISCOUNT_GAME', payload: boolean }
-    | { type: 'INCREMENT_PROPERTY_VIEW', payload: string }
     | { type: 'UPDATE_SAVED_SEARCH_ACCESS_TIME', payload: string };

@@ -57,8 +57,9 @@ const MainLayout: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   
-  const isFullHeightView = state.activeView === 'search' || state.activeView === 'inbox' || !!state.selectedProperty;
-  const showHeader = !(isMobile && (state.activeView === 'search' || !!state.selectedProperty));
+  const isSearchPage = state.activeView === 'search';
+  const isFullHeightView = isSearchPage || state.activeView === 'inbox' || !!state.selectedProperty;
+  const showHeader = !(isMobile && (isSearchPage || !!state.selectedProperty));
 
   const handleSubscribe = async () => {
     try {
@@ -104,8 +105,8 @@ const MainLayout: React.FC = () => {
     <div className="min-h-screen bg-neutral-50 font-sans">
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         
-        <div className={`transition-all duration-300 ease-in-out h-screen flex flex-col ${showHeader ? 'md:pl-20' : ''}`}>
-            {showHeader && <Header onToggleSidebar={() => setIsSidebarOpen(true)} />}
+        <div className={`transition-all duration-300 ease-in-out h-screen flex flex-col relative ${!isSearchPage && showHeader ? 'md:pl-20' : ''}`}>
+            {showHeader && <Header onToggleSidebar={() => setIsSidebarOpen(true)} isFloating={isSearchPage} />}
             <main className={`flex flex-col flex-grow ${isFullHeightView ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                 <AppContent onToggleSidebar={() => setIsSidebarOpen(true)} />
             </main>

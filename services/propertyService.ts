@@ -6,26 +6,16 @@ const transformMunicipalityData = (): Record<string, MunicipalityData[]> => {
   const transformedData: Record<string, MunicipalityData[]> = {};
   for (const country in MUNICIPALITY_RAW_DATA) {
       if (Object.prototype.hasOwnProperty.call(MUNICIPALITY_RAW_DATA, country)) {
-          transformedData[country] = MUNICIPALITY_RAW_DATA[country]
-            .filter(municipality => 
-                typeof municipality.latitude === 'number' && !isNaN(municipality.latitude) &&
-                typeof municipality.longitude === 'number' && !isNaN(municipality.longitude)
-            )
-            .map(municipality => ({
+          transformedData[country] = MUNICIPALITY_RAW_DATA[country].map(municipality => ({
               name: municipality.name,
               localNames: municipality.localNames || [],
               lat: municipality.latitude,
               lng: municipality.longitude,
-              settlements: (municipality.settlements || []) // Safeguard added here
-                .filter(settlement => 
-                    typeof settlement.latitude === 'number' && !isNaN(settlement.latitude) &&
-                    typeof settlement.longitude === 'number' && !isNaN(settlement.longitude)
-                )
-                .map(settlement => ({
-                  name: settlement.name,
-                  localNames: settlement.localNames || [],
-                  lat: settlement.latitude,
-                  lng: settlement.longitude
+              settlements: municipality.settlements.map(settlement => ({
+                name: settlement.name,
+                localNames: settlement.localNames || [],
+                lat: settlement.latitude,
+                lng: settlement.longitude
               }))
           }));
       }

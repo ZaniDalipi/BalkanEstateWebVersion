@@ -36,7 +36,6 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose }
                 <li className="flex items-center gap-3"><CheckCircleIcon className="w-6 h-6 text-green-500" /> Save unlimited searches</li>
                 <li className="flex items-center gap-3"><CheckCircleIcon className="w-6 h-6 text-green-500" /> Early access to new listings</li>
                 <li className="flex items-center gap-3"><CheckCircleIcon className="w-6 h-6 text-green-500" /> Advanced market insights</li>
-                <li className="flex items-center gap-3"><CheckCircleIcon className="w-6 h-6 text-green-500" /> Advanced neighborhood insights</li>
             </ul>
         </div>
         <div className="bg-neutral-50 p-6 rounded-lg border">

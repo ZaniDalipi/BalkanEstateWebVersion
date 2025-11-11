@@ -1,69 +1,10 @@
-// FIX: Add minimal google.maps type declarations to fix build errors
-declare namespace google.maps {
-  export interface LatLngLiteral {
-    lat: number;
-    lng: number;
-  }
-
-  export class LatLng {
-    constructor(lat: number, lng: number);
-    lat(): number;
-    lng(): number;
-  }
-  
-  export class Point {
-    constructor(x: number, y: number);
-    x: number;
-    y: number;
-  }
-
-  export class Size {
-    constructor(width: number, height: number, widthUnit?: string, heightUnit?: string);
-    width: number;
-    height: number;
-  }
-
-  export interface Icon {
-    url: string;
-    scaledSize?: google.maps.Size;
-    anchor?: google.maps.Point;
-  }
-
-  export class Map {
-    getBounds(): google.maps.LatLngBounds | null | undefined;
-    panTo(latLng: google.maps.LatLng | google.maps.LatLngLiteral): void;
-    setZoom(zoom: number): void;
-  }
-  
-  export interface LatLngBoundsLiteral {
-    north: number;
-    south: number;
-    east: number;
-    west: number;
-  }
-
-  export class LatLngBounds {
-    constructor(sw?: google.maps.LatLng | google.maps.LatLngLiteral, ne?: google.maps.LatLng | google.maps.LatLngLiteral);
-    toJSON(): google.maps.LatLngBoundsLiteral;
-  }
-  
-  export interface MapOptions {
-    mapId?: string;
-    disableDefaultUI?: boolean;
-    zoomControl?: boolean;
-    minZoom?: number;
-    maxZoom?: number;
-    mapTypeId?: string;
-    gestureHandling?: string;
-  }
-}
-
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { GoogleMap, useJsApiLoader, MarkerF, InfoWindowF } from '@react-google-maps/api';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Rectangle } from 'react-leaflet';
 import { Property } from '../../types';
+import L, { LeafletMouseEvent } from 'leaflet';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
-import { SpinnerIcon } from '../../constants';
+import { BellIcon, PencilIcon, XCircleIcon } from '../../constants';
 
 
 // Fix for default icon issue with bundlers
@@ -78,21 +19,219 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 const TILE_LAYERS = {
-  street: 'roadmap',
-  satellite: 'satellite',
+  street: {
+    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  },
+  satellite: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+  },
 };
 
 type TileLayerType = keyof typeof TILE_LAYERS;
 
 interface MapComponentProps {
   properties: Property[];
-  onMapMove: (bounds: google.maps.LatLngBoundsLiteral) => void;
+  recenter: boolean;
+  onMapMove: (bounds: L.LatLngBounds, center: L.LatLng) => void;
+  isSearchActive: boolean;
+  searchLocation: [number, number] | null;
   userLocation: [number, number] | null;
-  mapBoundsJSON: string | null;
+  onSaveSearch: () => void;
+  isSaving: boolean;
+  isAuthenticated: boolean;
+  mapBounds: L.LatLngBounds | null;
+  drawnBounds: L.LatLngBounds | null;
+  onDrawComplete: (bounds: L.LatLngBounds | null) => void;
+  isDrawing: boolean;
+  onDrawStart: () => void;
   tileLayer: TileLayerType;
   recenterTo: [number, number] | null;
   onRecenterComplete: () => void;
 }
+
+const ChangeView: React.FC<{center: [number, number], zoom: number, enabled: boolean}> = ({ center, zoom, enabled }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (enabled) {
+           map.setView(center, zoom);
+        }
+    }, [center, zoom, enabled, map]);
+    return null;
+}
+
+const RecenterView: React.FC<{center: [number, number] | null, onComplete: () => void}> = ({center, onComplete}) => {
+    const map = useMap();
+    useEffect(() => {
+        if (center) {
+            const onMoveEnd = () => {
+                onComplete();
+                map.off('moveend', onMoveEnd);
+            };
+            map.on('moveend', onMoveEnd);
+            map.flyTo(center, 14, { animate: true, duration: 1.5 });
+        }
+    }, [center, map, onComplete]);
+    return null;
+}
+
+const MapEvents: React.FC<{ onMove: (bounds: L.LatLngBounds, center: L.LatLng) => void }> = ({ onMove }) => {
+    const map = useMap();
+
+    useEffect(() => {
+        const resizeObserver = new ResizeObserver(() => {
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 0);
+        });
+
+        const mapContainer = map.getContainer();
+        resizeObserver.observe(mapContainer);
+        
+        return () => {
+            resizeObserver.unobserve(mapContainer);
+        };
+    }, [map]);
+
+
+    useMapEvents({
+        load: () => {
+            onMove(map.getBounds(), map.getCenter());
+        },
+        moveend: () => {
+            onMove(map.getBounds(), map.getCenter());
+        },
+    });
+    return null;
+};
+
+const MapDrawEvents: React.FC<{
+    isDrawing: boolean;
+    onDrawComplete: (bounds: L.LatLngBounds | null) => void;
+}> = ({ isDrawing, onDrawComplete }) => {
+    const map = useMap();
+
+    // Use refs for everything that changes or is part of the drag state
+    const tempRectRef = useRef<L.Rectangle | null>(null);
+    const startPosRef = useRef<L.LatLng | null>(null);
+    const isDraggingRef = useRef(false);
+    
+    // Keep a ref to the latest props to avoid stale closures in event handlers
+    const propsRef = useRef({ isDrawing, onDrawComplete });
+    useEffect(() => {
+        propsRef.current.isDrawing = isDrawing;
+        propsRef.current.onDrawComplete = onDrawComplete;
+    }, [isDrawing, onDrawComplete]);
+    
+    // Effect to manage map state (dragging, cursor) based on the isDrawing prop.
+    useEffect(() => {
+        const container = map.getContainer();
+        if (propsRef.current.isDrawing) {
+            map.dragging.disable();
+            map.scrollWheelZoom.disable();
+            container.style.cursor = 'crosshair';
+        } else {
+            map.dragging.enable();
+            map.scrollWheelZoom.enable();
+            container.style.cursor = '';
+            // If drawing is cancelled from outside while dragging, abort the drag.
+            if (isDraggingRef.current) {
+                // This triggers the 'up' logic to clean up listeners and state
+                window.dispatchEvent(new Event('mouseup')); 
+            }
+        }
+    }, [isDrawing, map]);
+
+    // This main effect runs only ONCE to attach the listeners.
+    useEffect(() => {
+        const mapContainer = map.getContainer();
+
+        const handleMove = (e: MouseEvent | TouchEvent) => {
+            if (!isDraggingRef.current || !startPosRef.current) return;
+            
+            const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+            const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+
+            const point = map.containerPointToLayerPoint(L.point(clientX, clientY));
+            const currentPos = map.layerPointToLatLng(point);
+
+            if (!tempRectRef.current) {
+                tempRectRef.current = L.rectangle(L.latLngBounds(startPosRef.current, currentPos), {
+                    color: '#0252CD', weight: 2, dashArray: '5, 5', fillOpacity: 0.1
+                }).addTo(map);
+            } else {
+                tempRectRef.current.setBounds(L.latLngBounds(startPosRef.current, currentPos));
+            }
+        };
+
+        const handleUp = () => {
+            if (!isDraggingRef.current) return;
+            isDraggingRef.current = false;
+            
+            // Cleanup window listeners immediately
+            window.removeEventListener('mousemove', handleMove);
+            window.removeEventListener('mouseup', handleUp);
+            window.removeEventListener('touchmove', handleMove);
+            window.removeEventListener('touchend', handleUp);
+
+            if (tempRectRef.current) {
+                const bounds = tempRectRef.current.getBounds();
+                map.removeLayer(tempRectRef.current); // Cleanup temp rectangle
+                tempRectRef.current = null;
+                
+                // Use the ref'd prop to call the latest callback
+                if (!bounds.getSouthWest().equals(bounds.getNorthEast())) {
+                    propsRef.current.onDrawComplete(bounds);
+                } else {
+                    propsRef.current.onDrawComplete(null);
+                }
+            } else {
+                propsRef.current.onDrawComplete(null);
+            }
+        };
+
+        const handleStart = (e: MouseEvent | TouchEvent) => {
+            // Check the ref'd prop to see if we should start drawing
+            if (!propsRef.current.isDrawing || isDraggingRef.current || ('button' in e && e.button !== 0)) {
+                return;
+            }
+            e.preventDefault();
+
+            isDraggingRef.current = true;
+            
+            const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+            const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+
+            const point = map.containerPointToLayerPoint(L.point(clientX, clientY));
+            startPosRef.current = map.layerPointToLatLng(point);
+
+            // Attach listeners to window for dragging outside the map
+            window.addEventListener('mousemove', handleMove);
+            window.addEventListener('mouseup', handleUp);
+            window.addEventListener('touchmove', handleMove, { passive: false });
+            window.addEventListener('touchend', handleUp);
+        };
+
+        // Attach the start listeners to the map container
+        mapContainer.addEventListener('mousedown', handleStart);
+        mapContainer.addEventListener('touchstart', handleStart, { passive: false });
+        
+        return () => {
+            // Cleanup listeners when component unmounts
+            mapContainer.removeEventListener('mousedown', handleStart);
+            mapContainer.removeEventListener('touchstart', handleStart);
+            window.removeEventListener('mousemove', handleMove);
+            window.removeEventListener('mouseup', handleUp);
+            window.removeEventListener('touchmove', handleMove);
+            window.removeEventListener('touchend', handleUp);
+        };
+    }, [map]); // This effect depends only on `map`, so it runs once.
+
+    return null;
+};
+
+
 
 const formatMarkerPrice = (price: number): string => {
     if (price >= 1000000) {
@@ -111,141 +250,208 @@ const PROPERTY_TYPE_COLORS: Record<NonNullable<Property['propertyType']> | 'othe
     other: '#6c757d',
 };
 
-const createPriceTagIcon = (property: Property): google.maps.Icon => {
+const ZOOM_THRESHOLD = 12;
+
+const createSimpleMarkerIcon = (property: Property) => {
     const price = formatMarkerPrice(property.price);
     const color = PROPERTY_TYPE_COLORS[property.propertyType] || PROPERTY_TYPE_COLORS.other;
 
-    const svg = `
-      <svg width="70" height="30" viewBox="0 0 70 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M10 0 H60 C65.5228 0 70 4.47715 70 10 V20 C70 25.5228 65.5228 30 60 30 H10 L0 15 L10 0 Z" fill="${color}"/>
-        <text x="38" y="16" font-family="Inter, sans-serif" font-size="12" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">${price}</text>
-      </svg>
+    const svgHtml = `
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));">
+            <circle cx="20" cy="20" r="18" fill="${color}" stroke="#FFFFFF" stroke-width="2"/>
+            <text x="20" y="21" font-family="Inter, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">${price}</text>
+        </svg>
     `;
     
-    return {
-        url: `data:image/svg+xml;base64,${btoa(svg)}`,
-        scaledSize: new google.maps.Size(70, 30),
-        anchor: new google.maps.Point(0, 15),
-    };
+    return L.divIcon({
+        html: svgHtml,
+        className: '',
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+        popupAnchor: [0, -20]
+    });
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, userLocation, mapBoundsJSON, tileLayer, recenterTo, onRecenterComplete }) => {
-    const { state, dispatch } = useAppContext();
-    const { isLoaded } = useJsApiLoader({
-        id: 'google-map-script',
-        googleMapsApiKey: process.env.API_KEY,
+const createDetailedMarkerIcon = (property: Property) => {
+    const price = formatMarkerPrice(property.price);
+    const color = PROPERTY_TYPE_COLORS[property.propertyType] || PROPERTY_TYPE_COLORS.other;
+
+    const svgHtml = `
+        <svg width="60" height="48" viewBox="0 0 70 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3)); transform-origin: bottom center;">
+            <path d="M35 56L25 44H45L35 56Z" fill="#003A96" />
+            <path d="M65 24.5V44H5V24.5L35 5L65 24.5Z" fill="${color}" stroke="#FFFFFF" stroke-width="2" />
+            <text x="35" y="30" font-family="Inter, sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">${price}</text>
+        </svg>
+    `;
+    
+    return L.divIcon({
+        html: svgHtml,
+        className: '',
+        iconSize: [60, 48],
+        iconAnchor: [30, 48],
+        popupAnchor: [0, -48]
+    });
+};
+
+const createCustomMarkerIcon = (property: Property, zoom: number): L.DivIcon => {
+    if (zoom < ZOOM_THRESHOLD) {
+        return createSimpleMarkerIcon(property);
+    }
+    return createDetailedMarkerIcon(property);
+};
+
+interface MarkersProps {
+    properties: Property[];
+    onPopupClick: (id: string) => void;
+}
+
+const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) => {
+    const map = useMap();
+    const [zoom, setZoom] = useState(map.getZoom());
+
+    useMapEvents({
+        zoomend: () => {
+            setZoom(map.getZoom());
+        },
     });
 
-    const [map, setMap] = useState<google.maps.Map | null>(null);
-    const [activeMarker, setActiveMarker] = useState<string | null>(null);
-
-    const validProperties = useMemo(() => {
-        return properties.filter(p => p.lat != null && !isNaN(p.lat) && p.lng != null && !isNaN(p.lng));
-    }, [properties]);
-    
-    const initialCenter = useMemo(() => {
-        if (userLocation) return { lat: userLocation[0], lng: userLocation[1] };
-        return { lat: 44.2, lng: 19.9 }; // Default Balkan center
-    }, [userLocation]);
-
-    const onLoad = useCallback((mapInstance: google.maps.Map) => {
-        setMap(mapInstance);
-    }, []);
-
-    const onUnmount = useCallback(() => {
-        setMap(null);
-    }, []);
-
-    const onIdle = useCallback(() => {
-        if (map) {
-            const bounds = map.getBounds();
-            if (bounds) {
-                const boundsLiteral = bounds.toJSON();
-                if (boundsLiteral) {
-                    onMapMove(boundsLiteral);
-                }
-            }
-        }
-    }, [map, onMapMove]);
-
-    useEffect(() => {
-        if (map && recenterTo) {
-            map.panTo({ lat: recenterTo[0], lng: recenterTo[1] });
-            map.setZoom(14);
-            onRecenterComplete();
-        }
-    }, [map, recenterTo, onRecenterComplete]);
-    
-    const handlePopupClick = (propertyId: string) => {
-        dispatch({ type: 'SET_SELECTED_PROPERTY', payload: propertyId });
-    };
-    
-    if (!isLoaded) return <div className="w-full h-full flex items-center justify-center bg-neutral-200"><SpinnerIcon className="w-12 h-12 text-primary" /></div>;
-
-    const mapOptions: google.maps.MapOptions = {
-        mapId: 'balkan_estate_map',
-        disableDefaultUI: true,
-        zoomControl: true,
-        minZoom: 7,
-        maxZoom: 18,
-        mapTypeId: TILE_LAYERS[tileLayer],
-    };
-
     return (
-        <div className="w-full h-full relative">
-            <GoogleMap
-                mapContainerClassName="w-full h-full"
-                center={initialCenter}
-                zoom={7}
-                onLoad={onLoad}
-                onUnmount={onUnmount}
-                onIdle={onIdle}
-                options={mapOptions}
-            >
-                {validProperties.map(prop => (
-                    <MarkerF
-                        key={prop.id}
-                        position={{ lat: prop.lat, lng: prop.lng }}
-                        icon={createPriceTagIcon(prop)}
-                        onClick={() => setActiveMarker(prop.id)}
-                    />
-                ))}
-                
-                {activeMarker && (() => {
-                    const prop = validProperties.find(p => p.id === activeMarker);
-                    if (!prop) return null;
-                    return (
-                         <InfoWindowF
-                            position={{ lat: prop.lat, lng: prop.lng }}
-                            onCloseClick={() => setActiveMarker(null)}
-                            options={{ pixelOffset: new google.maps.Size(35, 0) }}
+        <>
+            {properties.map(prop => (
+                <Marker key={prop.id} position={[prop.lat, prop.lng]} icon={createCustomMarkerIcon(prop, zoom)}>
+                    <Popup>
+                        <div 
+                            className="w-48 cursor-pointer"
+                            onClick={() => onPopupClick(prop.id)}
                         >
-                            <div className="w-48 cursor-pointer" onClick={() => handlePopupClick(prop.id)}>
-                                <img src={prop.imageUrl} alt={prop.address} className="w-full h-24 object-cover rounded-md mb-2" />
-                                <p className="font-bold text-md leading-tight">{formatPrice(prop.price, prop.country)}</p>
-                                <p className="text-sm text-neutral-600 truncate">{prop.address}, {prop.city}</p>
-                            </div>
-                        </InfoWindowF>
-                    )
-                })()}
-
-            </GoogleMap>
-            <div className="absolute left-[620px] lg:left-[720px] xl:left-[820px] bottom-4 z-10 bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-neutral-200">
-                <h4 className="font-bold text-sm mb-2 text-neutral-800">Legend</h4>
-                <div className="space-y-1.5">
-                    {Object.entries(PROPERTY_TYPE_COLORS).map(([type, color]) => (
-                        <div key={type} className="flex items-center gap-2">
-                            <span
-                                className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm"
-                                style={{ backgroundColor: color }}
-                            ></span>
-                            <span className="text-xs font-semibold text-neutral-700 capitalize">{type}</span>
+                            <img src={prop.imageUrl} alt={prop.address} className="w-full h-24 object-cover rounded-md mb-2" />
+                            <p className="font-bold text-md leading-tight">{formatPrice(prop.price, prop.country)}</p>
+                            <p className="text-sm text-neutral-600 truncate">{prop.address}, {prop.city}</p>
                         </div>
-                    ))}
-                </div>
-            </div>
-        </div>
+                    </Popup>
+                </Marker>
+            ))}
+        </>
     );
+};
+
+const MapComponent: React.FC<MapComponentProps> = ({ properties, recenter, onMapMove, isSearchActive, searchLocation, userLocation, onSaveSearch, isSaving, isAuthenticated, mapBounds, drawnBounds, onDrawComplete, isDrawing, onDrawStart, tileLayer, recenterTo, onRecenterComplete }) => {
+  const { dispatch } = useAppContext();
+  
+  const validProperties = useMemo(() => {
+    return properties.filter(p => 
+      p.lat != null && !isNaN(p.lat) && p.lng != null && !isNaN(p.lng)
+    );
+  }, [properties]);
+
+  const propertiesInView = useMemo(() => {
+    if (drawnBounds) {
+        return validProperties.filter(p => drawnBounds.contains([p.lat, p.lng])).slice(0, 500);
+    }
+    if (!mapBounds) {
+      return [];
+    }
+    return validProperties
+      .filter(p => mapBounds.contains([p.lat, p.lng]))
+      .slice(0, 500);
+  }, [validProperties, mapBounds, drawnBounds]);
+  
+    const { center, zoom } = useMemo(() => {
+        if (searchLocation) return { center: searchLocation, zoom: 12 };
+        if (userLocation) return { center: userLocation, zoom: 13 };
+        if (isSearchActive && validProperties.length > 0) return { center: [validProperties[0].lat, validProperties[0].lng] as [number, number], zoom: validProperties.length === 1 ? 14 : 12 };
+        if (validProperties.length > 0) return { center: [validProperties[0].lat, validProperties[0].lng] as [number, number], zoom: 10 };
+        return { center: [44.2, 19.9] as [number, number], zoom: 10 };
+      }, [validProperties, isSearchActive, searchLocation, userLocation]);
+    
+  const handlePopupClick = (propertyId: string) => {
+    dispatch({ type: 'SET_SELECTED_PROPERTY', payload: propertyId });
+  };
+
+  const bottomControlsOffset = 112;
+
+  return (
+    <div className="w-full h-full relative">
+      <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full" maxZoom={18} minZoom={9} zoomControl={false}>
+        <ChangeView center={center} zoom={zoom} enabled={recenter} />
+        <RecenterView center={recenterTo} onComplete={onRecenterComplete} />
+        <MapEvents onMove={onMapMove} />
+        <MapDrawEvents isDrawing={isDrawing} onDrawComplete={onDrawComplete} />
+        {drawnBounds && !isDrawing && (
+            <Rectangle
+                bounds={drawnBounds}
+                pathOptions={{ color: '#0252CD', weight: 3, fillOpacity: 0.2 }}
+            />
+        )}
+        <TileLayer
+          key={tileLayer}
+          attribution={TILE_LAYERS[tileLayer].attribution}
+          url={TILE_LAYERS[tileLayer].url}
+        />
+        <Markers properties={propertiesInView} onPopupClick={handlePopupClick} />
+      </MapContainer>
+      
+      <div className="absolute top-24 right-4 z-[1000] hidden md:flex flex-col items-end gap-4">
+        <button 
+            onClick={onDrawStart}
+            className={`flex items-center gap-2 px-4 py-2 text-white font-bold rounded-full shadow-lg transition-colors ${
+                isDrawing 
+                ? 'bg-red-600 hover:bg-red-700' 
+                : 'bg-neutral-800 hover:bg-neutral-900'
+            }`}
+        >
+            {isDrawing ? (
+                <>
+                    <XCircleIcon className="w-5 h-5" />
+                    <span>Cancel Draw</span>
+                </>
+            ) : (
+                <>
+                    <PencilIcon className="w-5 h-5" />
+                    <span>Draw Area</span>
+                </>
+            )}
+        </button>
+
+        {drawnBounds && !isDrawing && (
+            <>
+                {isAuthenticated && (
+                    <button 
+                        onClick={onSaveSearch} 
+                        disabled={isSaving}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50 animate-fade-in"
+                    >
+                        <BellIcon className="w-5 h-5" />
+                        <span>{isSaving ? 'Saving...' : 'Save Area'}</span>
+                    </button>
+                )}
+                <button
+                    onClick={() => onDrawComplete(null)}
+                    className="flex items-center gap-2 px-4 py-2 bg-neutral-800 text-white font-bold rounded-full shadow-lg hover:bg-neutral-900 animate-fade-in"
+                >
+                    <XCircleIcon className="w-5 h-5" />
+                    <span className="hidden md:inline">Clear Area</span>
+                </button>
+            </>
+        )}
+      </div>
+
+      <div className="absolute left-4 z-[1000] bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-neutral-200" style={{ bottom: `${bottomControlsOffset}px` }}>
+        <h4 className="font-bold text-sm mb-2 text-neutral-800">Legend</h4>
+        <div className="space-y-1.5">
+            {Object.entries(PROPERTY_TYPE_COLORS).map(([type, color]) => (
+                <div key={type} className="flex items-center gap-2">
+                    <span
+                        className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm"
+                        style={{ backgroundColor: color }}
+                    ></span>
+                    <span className="text-xs font-semibold text-neutral-700 capitalize">{type}</span>
+                </div>
+            ))}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default MapComponent;

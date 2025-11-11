@@ -1,5 +1,5 @@
 import { Property, Seller, User, UserRole, AppState, SavedSearch, Message, Conversation, Filters, MunicipalityData } from '../types';
-import { MUNICIPALITY_DATA } from './propertyService';
+import { MUNICIPALITY_RAW_DATA } from '../utils/cityData';
 import { filterProperties } from '../utils/propertyUtils';
 
 // --- MOCK DATABASE ---
@@ -26,6 +26,24 @@ export const mockUsers: { [key: string]: User } = {
     'user_agent_5': { id: 'user_agent_5', name: 'Nikos Papadopoulos', email: 'nikos.p@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=nikos', phone: '+306971234567', role: UserRole.AGENT, city: 'Thessaloniki', country: 'Greece', agencyName: 'Hellas Real Estate', agentId: 'AGENT-GR-007', testimonials: [{ quote: "Fantastic service, found a great apartment in Athens.", clientName: "Maria S." }], isSubscribed: false },
     'user_agent_6': { id: 'user_agent_6', name: 'Alen Isić', email: 'alen.i@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=alen', phone: '+387621112222', role: UserRole.AGENT, city: 'Sarajevo', country: 'Bosnia and Herzegovina', agencyName: 'Sarajevo Realty', agentId: 'AGENT-BA-002', licenseNumber: 'BA-LIC-3344', testimonials: [{ quote: "Alen helped us sell our flat in record time.", clientName: "Jasmina & Emir" }], isSubscribed: false }
 };
+
+const MUNICIPALITY_DATA: Record<string, MunicipalityData[]> = (
+  Object.fromEntries(Object.entries(MUNICIPALITY_RAW_DATA).map(([country, municipalities]) => [
+    country,
+    municipalities.map(mun => ({
+        name: mun.name,
+        localNames: mun.localNames || [],
+        lat: mun.latitude,
+        lng: mun.longitude,
+        settlements: mun.settlements.map(s => ({
+            name: s.name,
+            localNames: s.localNames || [],
+            lat: s.latitude,
+            lng: s.longitude,
+        }))
+    }))
+  ]))
+);
 
 const initialProperties: Property[] = [
   { id: 'prop1', sellerId: 'user_seller_1', status: 'active', price: 350000, address: 'Knez Mihailova 10', city: 'Belgrade, Belgrade', country: 'Serbia', beds: 3, baths: 2, livingRooms: 1, sqft: 120, yearBuilt: 2010, parking: 1, description: 'A beautiful apartment in the heart of Belgrade, offering stunning city views and modern amenities. Perfect for families or professionals seeking a vibrant city life.', specialFeatures: ['City View', 'Modern Kitchen', 'Balcony', 'Elevator'], materials: ['Hardwood Floors', 'Marble Countertops'], tourUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto-format&fit=crop', images: [ { url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto-format&fit=crop', tag: 'exterior' }, { url: 'https://images.unsplash.com/photo-1600607687939-098d3c54e87a?q=80&w=2070&auto-format&fit=crop', tag: 'living_room' }, { url: 'https://images.unsplash.com/photo-1556912173-3e74dd82a485?q=80&w=2070&auto-format&fit=crop', tag: 'kitchen' }, ], lat: 44.7872, lng: 20.4573, seller: sellers.seller1, propertyType: 'apartment', createdAt: Date.now() - 1000 * 60 * 60 * 24 * 2, lastRenewed: Date.now() - 1000 * 60 * 60 * 24 * 1, views: 125, saves: 12, inquiries: 3, floorNumber: 5, },
@@ -62,11 +80,6 @@ const generateMockProperties = (count: number): Property[] => {
                 locations.push({ country, municipality: mun.name, settlement: set.name, lat: set.lat, lng: set.lng });
             }
         }
-    }
-
-    if (locations.length === 0) {
-        console.error("MUNICIPALITY_DATA is empty or not loaded. Cannot generate mock properties.");
-        return [];
     }
 
     for (let i = 0; i < count; i++) {
@@ -126,7 +139,7 @@ export const allProperties: Property[] = [...initialProperties, ...generateMockP
 
 // --- API SIMULATION ---
 
-const LATENCY = 100; // ms
+const LATENCY = 500; // ms
 
 // Helper to simulate network delay
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -246,10 +259,10 @@ export const completePhoneSignup = async (phone: string, name: string, email: st
     return newUser;
 };
 
-export const getProperties = async (filters?: Filters): Promise<Property[]> => {
+export const getProperties = async (filters?: Filters, allMunicipalities?: Record<string, MunicipalityData[]>): Promise<Property[]> => {
     await sleep(LATENCY);
-    if (filters) {
-        return filterProperties(allProperties, filters);
+    if (filters && allMunicipalities) {
+        return filterProperties(allProperties, filters, allMunicipalities);
     }
     return [...allProperties]; // Return a copy to prevent mutation issues
 };
@@ -322,15 +335,6 @@ export const updateUser = async(userData: Partial<User>): Promise<User> => {
         mockUsers[updatedUser.id] = updatedUser;
     }
     return updatedUser;
-};
-
-export const incrementPropertyView = async (propertyId: string): Promise<{ success: true }> => {
-    await sleep(LATENCY / 5);
-    const property = allProperties.find(p => p.id === propertyId);
-    if (property) {
-        property.views = (property.views || 0) + 1;
-    }
-    return { success: true };
 };
 
 export const updateSavedSearchAccessTime = async (searchId: string): Promise<{ success: true }> => {

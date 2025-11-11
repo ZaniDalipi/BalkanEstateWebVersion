@@ -1,10 +1,93 @@
-import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { Property, ChatMessage, AiSearchQuery, Filters, SellerType } from '../../types';
 import PropertyCard from './PropertyCard';
-import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon, ChevronUpIcon, ChevronDownIcon, SpinnerIcon } from '../../constants';
+import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon, ChevronUpIcon, ChevronDownIcon, PencilIcon, XCircleIcon } from '../../constants';
 import AiSearch from './AiSearch';
 import PropertyCardSkeleton from './PropertyCardSkeleton';
 import { useAppContext } from '../../context/AppContext';
+
+interface RangeSliderProps {
+    min: number;
+    max: number;
+    step: number;
+    value: [number, number];
+    onChange: (value: [number, number]) => void;
+    label: string;
+    formatValue: (value: number) => string;
+}
+
+const RangeSlider: React.FC<RangeSliderProps> = ({ min, max, step, value, onChange, label, formatValue }) => {
+    const trackRef = useRef<HTMLDivElement>(null);
+    const [dragging, setDragging] = useState<'min' | 'max' | null>(null);
+
+    const valueToPercent = useCallback((val: number) => {
+        return ((val - min) / (max - min)) * 100;
+    }, [min, max]);
+
+    const handleMouseMove = useCallback((e: MouseEvent) => {
+        if (!dragging || !trackRef.current) return;
+        const rect = trackRef.current.getBoundingClientRect();
+        const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+        const newValue = Math.round((min + (percent / 100) * (max - min)) / step) * step;
+
+        const [currentMin, currentMax] = value;
+        if (dragging === 'min') {
+            onChange([Math.min(newValue, currentMax), currentMax]);
+        } else {
+            onChange([currentMin, Math.max(newValue, currentMin)]);
+        }
+    }, [dragging, min, max, step, value, onChange]);
+
+    const handleMouseUp = useCallback(() => {
+        setDragging(null);
+    }, []);
+
+    useEffect(() => {
+        if (dragging) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        }
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [dragging, handleMouseMove, handleMouseUp]);
+
+    const [minVal, maxVal] = value;
+    const minPercent = valueToPercent(minVal);
+    const maxPercent = valueToPercent(maxVal);
+
+    return (
+        <div>
+            <div className="flex justify-between items-center mb-2">
+                <label className="text-xs font-medium text-neutral-700">{label}</label>
+                <div className="text-xs font-bold text-neutral-800 bg-neutral-100 border border-neutral-200 px-2 py-1 rounded-md">
+                    {formatValue(minVal)} - {formatValue(maxVal)}
+                </div>
+            </div>
+            <div ref={trackRef} className="relative w-full h-8 flex items-center">
+                <div className="absolute w-full h-1 bg-neutral-200 rounded-full"></div>
+                <div
+                    className="absolute h-1 bg-primary rounded-full"
+                    style={{ left: `${minPercent}%`, width: `${maxPercent - minPercent}%` }}
+                ></div>
+                <button
+                    onMouseDown={() => setDragging('min')}
+                    className="absolute w-5 h-5 bg-white border-2 border-primary rounded-full shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    style={{ left: `${minPercent}%`, transform: 'translateX(-50%)' }}
+                    aria-label={`Minimum ${label}`}
+                ></button>
+                <button
+                    onMouseDown={() => setDragging('max')}
+                    className="absolute w-5 h-5 bg-white border-2 border-primary rounded-full shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    style={{ left: `${maxPercent}%`, transform: 'translateX(-50%)' }}
+                    aria-label={`Maximum ${label}`}
+                ></button>
+            </div>
+        </div>
+    );
+};
+
 
 interface PropertyListProps {
   properties: Property[];
@@ -25,9 +108,11 @@ interface PropertyListProps {
   onApplyAiFilters: (query: AiSearchQuery) => void;
   onQueryFocus: () => void;
   onBlur: () => void;
+  isAreaDrawn: boolean;
   aiChatHistory: ChatMessage[];
   onAiChatHistoryChange: (history: ChatMessage[]) => void;
-  isGeocoding: boolean;
+  onDrawStart: () => void;
+  isDrawing: boolean;
 }
 
 const FilterButton: React.FC<{
@@ -37,7 +122,7 @@ const FilterButton: React.FC<{
 }> = ({ onClick, isActive, children }) => (
   <button
     onClick={onClick}
-    className={`px-2 py-0.5 rounded-full text-xs font-semibold transition-all duration-300 flex-grow text-center ${
+    className={`px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 flex-grow text-center ${
       isActive
         ? 'bg-primary text-white shadow'
         : 'bg-neutral-200/70 text-neutral-700 hover:bg-neutral-300/70'
@@ -55,7 +140,7 @@ const FilterButtonGroup: React.FC<{
 }> = ({ label, options, selectedValue, onChange }) => (
   <div>
     <label className="block text-xs font-medium text-neutral-700 mb-1">{label}</label>
-    <div className="flex items-center space-x-1 bg-neutral-100 p-0.5 rounded-full border border-neutral-200">
+    <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200">
       {options.map(({ value, label: optionLabel }) => (
         <FilterButton
           key={optionLabel}
@@ -69,64 +154,29 @@ const FilterButtonGroup: React.FC<{
   </div>
 );
 
+const formatNumber = (val: number) => val >= 1000000 ? `${(val / 1000000).toFixed(1)}M` : val >= 1000 ? `${Math.round(val / 1000)}k` : `${val}`;
+
 const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList' | 'aiChatHistory' | 'onAiChatHistoryChange'>> = ({
-    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, onQueryFocus, onBlur, isGeocoding
+    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, onQueryFocus, onBlur, isAreaDrawn, onDrawStart, isDrawing
 }) => {
-    const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+    const [isAdvancedOpen, setIsAdvancedOpen] = useState(true);
     
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         onFilterChange(e.target.name as keyof Filters, e.target.value);
     }, [onFilterChange]);
     
-    const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder:text-neutral-700";
+    const handlePriceChange = useCallback(([min, max]: [number, number]) => {
+        onFilterChange('minPrice', min === 0 ? null : min);
+        onFilterChange('maxPrice', max === 2000000 ? null : max);
+    }, [onFilterChange]);
 
-    const [minPriceInput, setMinPriceInput] = useState(filters.minPrice === null ? '' : String(filters.minPrice));
-    const [maxPriceInput, setMaxPriceInput] = useState(filters.maxPrice === null ? '' : String(filters.maxPrice));
-    const [minSqftInput, setMinSqftInput] = useState(filters.minSqft === null ? '' : String(filters.minSqft));
-    const [maxSqftInput, setMaxSqftInput] = useState(filters.maxSqft === null ? '' : String(filters.maxSqft));
-
-    useEffect(() => {
-        setMinPriceInput(filters.minPrice === null ? '' : String(filters.minPrice));
-        setMaxPriceInput(filters.maxPrice === null ? '' : String(filters.maxPrice));
-    }, [filters.minPrice, filters.maxPrice]);
-
-    useEffect(() => {
-        setMinSqftInput(filters.minSqft === null ? '' : String(filters.minSqft));
-        setMaxSqftInput(filters.maxSqft === null ? '' : String(filters.maxSqft));
-    }, [filters.minSqft, filters.maxSqft]);
-
-    const handlePriceInputBlur = (type: 'min' | 'max') => () => {
-        const [currentMin, currentMax] = [filters.minPrice, filters.maxPrice];
-        
-        if (type === 'min') {
-            let value = minPriceInput.trim() === '' ? null : parseInt(minPriceInput, 10);
-            if (value !== null && isNaN(value)) value = null;
-            if (value !== null && currentMax !== null && value > currentMax) value = currentMax;
-            onFilterChange('minPrice', value);
-        } else {
-            let value = maxPriceInput.trim() === '' ? null : parseInt(maxPriceInput, 10);
-            if (value !== null && isNaN(value)) value = null;
-            if (value !== null && currentMin !== null && value < currentMin) value = currentMin;
-            onFilterChange('maxPrice', value);
-        }
-    };
+    const handleSqftChange = useCallback(([min, max]: [number, number]) => {
+        onFilterChange('minSqft', min === 0 ? null : min);
+        onFilterChange('maxSqft', max === 500 ? null : max);
+    }, [onFilterChange]);
     
-    const handleSqftInputBlur = (type: 'min' | 'max') => () => {
-        const [currentMin, currentMax] = [filters.minSqft, filters.maxSqft];
-        
-        if (type === 'min') {
-            let value = minSqftInput.trim() === '' ? null : parseInt(minSqftInput, 10);
-            if (value !== null && isNaN(value)) value = null;
-            if (value !== null && currentMax !== null && value > currentMax) value = currentMax;
-            onFilterChange('minSqft', value);
-        } else {
-            let value = maxSqftInput.trim() === '' ? null : parseInt(maxSqftInput, 10);
-            if (value !== null && isNaN(value)) value = null;
-            if (value !== null && currentMin !== null && value < currentMin) value = currentMin;
-            onFilterChange('maxSqft', value);
-        }
-    };
-    
+    const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder:text-neutral-700";
+
     return (
          <div className="space-y-4">
             {!isMobile && (
@@ -147,79 +197,59 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                 </div>
             )}
             
-            <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Price Range</label>
-                <div className="grid grid-cols-2 gap-2">
-                    <div className="relative">
-                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-neutral-500 text-sm">€</span>
-                        <input
-                            type="text"
-                            name="minPrice"
-                            id="minPrice"
-                            value={minPriceInput}
-                            onChange={e => setMinPriceInput(e.target.value.replace(/[^0-9]/g, ''))}
-                            onBlur={handlePriceInputBlur('min')}
-                            className={`${inputBaseClasses} pl-7`}
-                            placeholder="Min"
-                        />
-                    </div>
-                    <div className="relative">
-                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-neutral-500 text-sm">€</span>
-                        <input
-                            type="text"
-                            name="maxPrice"
-                            id="maxPrice"
-                            value={maxPriceInput}
-                            onChange={e => setMaxPriceInput(e.target.value.replace(/[^0-9]/g, ''))}
-                            onBlur={handlePriceInputBlur('max')}
-                            className={`${inputBaseClasses} pl-7`}
-                            placeholder="Max"
-                        />
-                    </div>
-                </div>
-            </div>
+            {!isMobile && (
+                <button
+                    type="button"
+                    onClick={onDrawStart}
+                    className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold rounded-lg shadow-sm border transition-colors ${
+                        isDrawing 
+                        ? 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100' 
+                        : 'bg-white border-primary text-primary hover:bg-primary-light'
+                    }`}
+                >
+                    {isDrawing ? (
+                        <>
+                            <XCircleIcon className="w-5 h-5" />
+                            <span>Cancel Drawing</span>
+                        </>
+                    ) : (
+                        <>
+                            <PencilIcon className="w-5 h-5" />
+                            <span>Draw on Map</span>
+                        </>
+                    )}
+                </button>
+            )}
 
-            <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Area (m²)</label>
-                <div className="grid grid-cols-2 gap-2">
-                    <div className="relative">
-                        <input
-                            type="text"
-                            name="minSqft"
-                            id="minSqft"
-                            value={minSqftInput}
-                            onChange={e => setMinSqftInput(e.target.value.replace(/[^0-9]/g, ''))}
-                            onBlur={handleSqftInputBlur('min')}
-                            className={`${inputBaseClasses} pr-7`}
-                            placeholder="Min"
-                        />
-                         <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-500 text-sm pointer-events-none">m²</span>
-                    </div>
-                    <div className="relative">
-                        <input
-                            type="text"
-                            name="maxSqft"
-                            id="maxSqft"
-                            value={maxSqftInput}
-                            onChange={e => setMaxSqftInput(e.target.value.replace(/[^0-9]/g, ''))}
-                            onBlur={handleSqftInputBlur('max')}
-                            className={`${inputBaseClasses} pr-7`}
-                            placeholder="Max"
-                        />
-                        <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-500 text-sm pointer-events-none">m²</span>
-                    </div>
-                </div>
-            </div>
+            <RangeSlider
+                min={0}
+                max={2000000}
+                step={10000}
+                value={[filters.minPrice ?? 0, filters.maxPrice ?? 2000000]}
+                onChange={handlePriceChange}
+                label="Price Range"
+                formatValue={(val) => `€${formatNumber(val)}`}
+            />
+
+            <RangeSlider
+                min={0}
+                max={500}
+                step={10}
+                value={[filters.minSqft ?? 0, filters.maxSqft ?? 500]}
+                onChange={handleSqftChange}
+                label="Area (m²)"
+                formatValue={(val) => `${val} m²`}
+            />
             
-            <div className="border-t border-neutral-200 pt-2">
-                <button type="button" onClick={() => setIsAdvancedOpen(!isAdvancedOpen)} className="w-full flex justify-between items-center text-left py-2">
+            <div className="border-t border-neutral-200 pt-4">
+                <button type="button" onClick={() => setIsAdvancedOpen(!isAdvancedOpen)} className="w-full flex justify-between items-center text-left">
                     <h3 className="text-sm font-semibold text-neutral-800">Advanced Filters</h3>
-                    {isAdvancedOpen ? <ChevronUpIcon className="w-4 h-4 text-neutral-500" /> : <ChevronDownIcon className="w-4 h-4 text-neutral-500" />}
+                    {isAdvancedOpen ? <ChevronUpIcon className="w-5 h-5 text-neutral-500" /> : <ChevronDownIcon className="w-5 h-5 text-neutral-500" />}
                 </button>
                 
                 {isAdvancedOpen && (
-                    <div className="pt-3 space-y-3 animate-fade-in">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="pt-4 space-y-4 animate-fade-in">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <FilterButtonGroup 
                                 label="Bedrooms"
                                 options={[ {value: null, label: 'Any'}, {value: 1, label: '1+'}, {value: 2, label: '2+'}, {value: 3, label: '3+'}, {value: 4, label: '4+'}, ]}
@@ -239,7 +269,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                                 onChange={(value) => onFilterChange('livingRooms', value)}
                             />
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <FilterButtonGroup 
                                 label="Listing Type"
                                 options={[ {value: 'any', label: 'Any'}, {value: 'agent', label: 'Agent'}, {value: 'private', label: 'Private'}, ]}
@@ -261,12 +291,13 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                  <input
                     type="checkbox"
                     id="search-on-move"
-                    checked={searchOnMove}
+                    checked={!isAreaDrawn && searchOnMove}
+                    disabled={isAreaDrawn}
                     onChange={(e) => onSearchOnMoveChange(e.target.checked)}
-                    className="h-3.5 w-3.5 rounded border-gray-300 text-primary focus:ring-primary"
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
                 />
-                <label htmlFor="search-on-move" className="ml-2 block text-xs text-neutral-600">
-                    Search as I move the map
+                <label htmlFor="search-on-move" className={`ml-2 block text-xs ${isAreaDrawn ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                    Search as I move the map {isAreaDrawn && '(area drawn)'}
                 </label>
             </div>
 
@@ -274,27 +305,21 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                  <div className="pt-2 space-y-2">
                      <button 
                         onClick={onSearchClick}
-                        disabled={isGeocoding}
-                        className="w-full py-1.5 px-4 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors flex items-center justify-center disabled:bg-primary/70"
+                        className="w-full py-2.5 px-4 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
                     >
-                        {isGeocoding ? (
-                            <>
-                                <SpinnerIcon className="w-5 h-5 mr-2" />
-                                Finding...
-                            </>
-                        ) : 'Search'}
+                        Search
                     </button>
                      <div className="flex items-center gap-2">
                         <button 
                             onClick={onResetFilters}
-                            className="flex-grow py-1.5 px-4 border border-neutral-300 text-neutral-600 rounded-lg text-sm font-bold bg-white hover:bg-neutral-100 transition-colors"
+                            className="flex-grow py-2.5 px-4 border border-neutral-300 text-neutral-600 rounded-lg text-sm font-bold bg-white hover:bg-neutral-100 transition-colors"
                         >
                             Reset
                         </button>
                         <button 
                             onClick={onSaveSearch} 
                             disabled={isSaving}
-                            className="flex-grow py-1.5 px-4 border border-primary text-primary rounded-lg shadow-sm text-sm font-bold bg-white hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-2"
+                            className="flex-grow py-2.5 px-4 border border-primary text-primary rounded-lg shadow-sm text-sm font-bold bg-white hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-2"
                         >
                             {isSaving ? (
                                 <>
@@ -359,12 +384,12 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
         };
     }, [visibleCount, properties.length, isLoadingMore]);
     
-    const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors";
+    const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors";
     
     // Desktop layout with fixed filters and scrollable list
     if (!isMobile) {
         return (
-            <div className="flex flex-col h-full bg-white">
+            <div className="flex flex-col h-full bg-transparent">
                  {/* Fixed Top Section (Filters) */}
                 <div className="flex-shrink-0 border-b border-neutral-200">
                      <div className="p-4 border-b border-neutral-200">
@@ -373,8 +398,8 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                     
                     <div className="p-4">
                         <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm mx-auto">
-                            <button onClick={() => onSearchModeChange('manual')} className={`w-1/2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Manual Search</button>
-                            <button onClick={() => onSearchModeChange('ai')} className={`w-1/2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><SparklesIcon className="w-4 h-4" /> AI Search</button>
+                            <button onClick={() => onSearchModeChange('manual')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Manual Search</button>
+                            <button onClick={() => onSearchModeChange('ai')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><SparklesIcon className="w-4 h-4" /> AI Search</button>
                         </div>
                     </div>
 
@@ -405,7 +430,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                         name="sortBy"
                                         value={filters.sortBy}
                                         onChange={(e) => onSortChange(e.target.value)}
-                                        className={`${inputBaseClasses} appearance-none pr-8 text-xs !py-1`}
+                                        className={`${inputBaseClasses} appearance-none pr-8 text-xs !py-1.5`}
                                     >
                                         <option value="newest">Newest</option>
                                         <option value="price_asc">Price (low-high)</option>
@@ -419,14 +444,14 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                             </div>
                             <div className="p-4">
                                 {isLoadingProperties ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                         {Array.from({ length: 6 }).map((_, index) => (
                                             <PropertyCardSkeleton key={index} />
                                         ))}
                                     </div>
                                 ) : properties.length > 0 ? (
                                      <>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                             {properties.slice(0, visibleCount).map(prop => (
                                                 <PropertyCard key={prop.id} property={prop} />
                                             ))}
@@ -454,8 +479,8 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
             {showFilters && (
                  <div className="p-4 flex-shrink-0">
                     <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm mx-auto">
-                        <button onClick={() => onSearchModeChange('manual')} className={`w-1/2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Manual Search</button>
-                        <button onClick={() => onSearchModeChange('ai')} className={`w-1/2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><SparklesIcon className="w-4 h-4" /> AI Search</button>
+                        <button onClick={() => onSearchModeChange('manual')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Manual Search</button>
+                        <button onClick={() => onSearchModeChange('ai')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><SparklesIcon className="w-4 h-4" /> AI Search</button>
                     </div>
                 </div>
             )}
@@ -488,7 +513,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                         name="sortBy"
                                         value={filters.sortBy}
                                         onChange={(e) => onSortChange(e.target.value)}
-                                        className={`${inputBaseClasses} appearance-none pr-8 text-xs !py-1`}
+                                        className={`${inputBaseClasses} appearance-none pr-8 text-xs !py-1.5`}
                                     >
                                         <option value="newest">Newest</option>
                                         <option value="price_asc">Price (low-high)</option>

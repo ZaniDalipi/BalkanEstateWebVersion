@@ -39,12 +39,12 @@ const NumberInputWithSteppers: React.FC<NumberInputWithSteppersProps> = ({ label
     return (
         <div className="relative">
             <label htmlFor={id} className="block text-sm font-medium text-neutral-700 mb-1">{label}</label>
-            <div className="flex items-center justify-between w-full h-[48px] bg-white rounded-lg border border-neutral-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+            <div className="flex items-center justify-between w-full h-[58px] bg-white rounded-lg border border-neutral-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
                 <button 
                     type="button" 
                     onClick={handleDecrement} 
                     disabled={value <= min}
-                    className="px-4 sm:px-5 py-2 text-xl sm:text-2xl font-light text-neutral-600 hover:bg-neutral-100 disabled:text-neutral-300 disabled:cursor-not-allowed h-full rounded-l-lg focus:outline-none transition-colors"
+                    className="px-4 sm:px-6 py-2 text-2xl sm:text-3xl font-light text-neutral-600 hover:bg-neutral-100 disabled:text-neutral-300 disabled:cursor-not-allowed h-full rounded-l-lg focus:outline-none transition-colors"
                     aria-label={`Decrease ${label}`}
                 >
                     -
@@ -54,7 +54,7 @@ const NumberInputWithSteppers: React.FC<NumberInputWithSteppersProps> = ({ label
                     id={id}
                     value={value || ''} 
                     onChange={handleChange}
-                    className="w-full text-center text-base font-semibold text-neutral-900 border-none focus:ring-0 bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full text-center text-lg font-semibold text-neutral-900 border-none focus:ring-0 bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     min={min}
                     max={max}
                     aria-label={label}
@@ -63,7 +63,7 @@ const NumberInputWithSteppers: React.FC<NumberInputWithSteppersProps> = ({ label
                     type="button" 
                     onClick={handleIncrement}
                     disabled={max !== undefined && value >= max}
-                    className="px-4 sm:px-5 py-2 text-xl sm:text-2xl font-light text-neutral-600 hover:bg-neutral-100 disabled:text-neutral-300 disabled:cursor-not-allowed h-full rounded-r-lg focus:outline-none transition-colors"
+                    className="px-4 sm:px-6 py-2 text-2xl sm:text-3xl font-light text-neutral-600 hover:bg-neutral-100 disabled:text-neutral-300 disabled:cursor-not-allowed h-full rounded-r-lg focus:outline-none transition-colors"
                     aria-label={`Increase ${label}`}
                 >
                     +

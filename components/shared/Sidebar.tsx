@@ -14,7 +14,7 @@ const NavItem: React.FC<{
   return (
     <button
       onClick={() => onClick(view)}
-      className={`flex items-center gap-3 px-4 py-2 rounded-lg font-semibold transition-colors w-full text-left md:justify-center group-hover:md:justify-start ${
+      className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-left md:justify-center group-hover:md:justify-start ${
         isActive
           ? 'bg-primary-light text-primary-dark'
           : 'text-neutral-700 hover:bg-neutral-100'
@@ -79,7 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
             {/* Sidebar */}
             <aside className={`fixed top-0 left-0 h-full bg-white border-r border-neutral-200 z-40 flex flex-col transition-all duration-300 ease-in-out group overflow-hidden ${isOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64'} md:w-20 md:translate-x-0 hover:md:w-64`}>
-                <div className="flex items-center p-4 h-[61px] border-b border-neutral-200 flex-shrink-0 md:justify-center group-hover:md:justify-start">
+                <div className="flex items-center p-4 h-[69px] border-b border-neutral-200 flex-shrink-0 md:justify-center group-hover:md:justify-start">
                     <button
                         onClick={() => handleNavClick('search')}
                         className="flex items-center space-x-2"
@@ -108,7 +108,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                      <div className="px-2 pt-2 mt-2 border-t border-neutral-100">
                         <button
                             onClick={handleNewListingClick}
-                            className="flex items-center gap-3 px-4 py-2 rounded-lg font-semibold transition-colors w-full text-white bg-secondary hover:bg-opacity-90 md:justify-center group-hover:md:justify-start"
+                            className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-white bg-secondary hover:bg-opacity-90 md:justify-center group-hover:md:justify-start"
                         >
                             <PencilIcon className="w-6 h-6 flex-shrink-0" />
                             <span className="md:hidden group-hover:md:inline whitespace-nowrap">+ New Listing</span>
@@ -121,7 +121,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                         <div className="space-y-1">
                              <button
                                 onClick={() => handleNavClick('account')}
-                                className={`flex items-center gap-3 px-4 py-2 rounded-lg font-semibold transition-colors w-full text-left md:justify-center group-hover:md:justify-start ${
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-left md:justify-center group-hover:md:justify-start ${
                                     activeView === 'account'
                                     ? 'bg-primary-light text-primary-dark'
                                     : 'text-neutral-700 hover:bg-neutral-100'
@@ -132,13 +132,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                                 </div>
                                 <span className="md:hidden group-hover:md:inline whitespace-nowrap">My Account</span>
                             </button>
-                            <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-2 rounded-lg font-semibold transition-colors w-full text-left text-red-600 hover:bg-red-50 md:justify-center group-hover:md:justify-start">
+                            <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-left text-red-600 hover:bg-red-50 md:justify-center group-hover:md:justify-start">
                                 <ArrowLeftOnRectangleIcon className="w-6 h-6 flex-shrink-0" />
                                 <span className="md:hidden group-hover:md:inline whitespace-nowrap">Logout</span>
                             </button>
                         </div>
                     ) : (
-                         <button onClick={() => { dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'login' } }); onClose(); }} className="flex items-center gap-3 px-4 py-2 rounded-lg font-semibold transition-colors w-full text-left text-neutral-700 hover:bg-neutral-100 md:justify-center group-hover:md:justify-start">
+                         <button onClick={() => { dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'login' } }); onClose(); }} className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-left text-neutral-700 hover:bg-neutral-100 md:justify-center group-hover:md:justify-start">
                             <UserCircleIcon className="w-6 h-6 text-neutral-700 flex-shrink-0" />
                             <span className="md:hidden group-hover:md:inline whitespace-nowrap">Login / Register</span>
                         </button>

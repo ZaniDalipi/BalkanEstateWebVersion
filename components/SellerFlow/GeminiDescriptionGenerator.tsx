@@ -1,49 +1,18 @@
-// FIX: Add minimal google.maps type declarations to fix build errors
-declare namespace google.maps {
-  export interface LatLngLiteral {
-    lat: number;
-    lng: number;
-  }
-
-  export class LatLng {
-    constructor(lat: number, lng: number);
-    lat(): number;
-    lng(): number;
-    toJSON(): LatLngLiteral;
-  }
-
-  export class Map {
-    panTo(latLng: google.maps.LatLng | google.maps.LatLngLiteral): void;
-    setZoom(zoom: number): void;
-  }
-
-  export interface MapMouseEvent {
-      latLng: google.maps.LatLng | null;
-  }
-  
-  export interface MapOptions {
-      disableDefaultUI?: boolean;
-      zoomControl?: boolean;
-  }
-}
-
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Property, PropertyImage, PropertyImageTag, Seller, UserRole, MunicipalityData, SettlementData } from '../../types';
-import { generateDescriptionFromImages, PropertyAnalysisResult, getCoordinatesForLocation } from '../../services/geminiService';
+import { generateDescriptionFromImages, PropertyAnalysisResult } from '../../services/geminiService';
 import { MUNICIPALITY_DATA } from '../../services/propertyService';
-import { SparklesIcon, MapPinIcon, SpinnerIcon } from '../../constants';
+import { SparklesIcon, MapPinIcon } from '../../constants';
 import { getCurrencySymbol } from '../../utils/currency';
 import { useAppContext } from '../../context/AppContext';
 import WhackAnIconAnimation from './WhackAnIconAnimation';
 import NumberInputWithSteppers from '../shared/NumberInputWithSteppers';
-import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api';
 
 type Step = 'init' | 'loading' | 'form' | 'floorplan' | 'success';
 type Mode = 'ai' | 'manual';
 
 interface ListingData {
     streetAddress: string;
-    postalCode: string;
     price: number;
     bedrooms: number;
     bathrooms: number;
@@ -70,7 +39,6 @@ interface ImageData {
 
 const initialListingData: ListingData = {
     streetAddress: '',
-    postalCode: '',
     price: 0,
     bedrooms: 0,
     bathrooms: 0,
@@ -99,6 +67,7 @@ interface LocationSuggestion {
     municipality: MunicipalityData;
 }
 
+
 // --- Helper Icons ---
 const UploadIcon: React.FC<{className?: string}> = ({className}) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -117,67 +86,12 @@ const InfoIcon: React.FC<{className?: string}> = ({className}) => (
 );
 
 
-const inputBaseClasses = "block w-full text-sm bg-neutral-50 border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors focus:bg-white";
-const floatingInputClasses = "block px-2.5 pb-2 pt-3.5 w-full text-sm text-neutral-900 bg-white rounded-lg border appearance-none focus:outline-none focus:ring-0 peer";
-const floatingLabelClasses = "absolute text-sm text-neutral-700 duration-300 transform -translate-y-3 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-3 start-1 peer-focus:text-primary";
-const floatingSelectLabelClasses = "absolute text-sm text-neutral-700 duration-300 transform -translate-y-3 scale-75 top-2 z-10 origin-[0] bg-white px-2 start-1";
+const inputBaseClasses = "block w-full text-base bg-neutral-50 border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors focus:bg-white";
+const floatingInputClasses = "block px-2.5 pb-2.5 pt-4 w-full text-base text-neutral-900 bg-white rounded-lg border appearance-none focus:outline-none focus:ring-0 peer";
+const floatingLabelClasses = "absolute text-base text-neutral-700 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1 peer-focus:text-primary";
+const floatingSelectLabelClasses = "absolute text-base text-neutral-700 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 start-1";
 
 // --- Sub-components ---
-const ListingMap: React.FC<{
-    center: { lat: number, lng: number };
-    markerPosition: { lat: number, lng: number } | null;
-    onMarkerMove: (latLng: google.maps.LatLngLiteral) => void;
-    zoom: number;
-}> = ({ center, markerPosition, onMarkerMove, zoom }) => {
-    const { isLoaded } = useJsApiLoader({
-        id: 'listing-google-map-script',
-        googleMapsApiKey: process.env.API_KEY,
-    });
-    const [map, setMap] = useState<google.maps.Map | null>(null);
-
-    const onLoad = useCallback((mapInstance: google.maps.Map) => setMap(mapInstance), []);
-    
-    useEffect(() => {
-        if (map) {
-            map.panTo(center);
-            map.setZoom(zoom);
-        }
-    }, [center, zoom, map]);
-
-    const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
-        if (e.latLng) {
-            onMarkerMove(e.latLng.toJSON());
-        }
-    }, [onMarkerMove]);
-
-    const handleMarkerDragEnd = useCallback((e: google.maps.MapMouseEvent) => {
-        if (e.latLng) {
-            onMarkerMove(e.latLng.toJSON());
-        }
-    }, [onMarkerMove]);
-
-    if (!isLoaded) return <div className="h-64 w-full bg-neutral-200 flex items-center justify-center">Loading Map...</div>;
-
-    return (
-        <GoogleMap
-            mapContainerClassName="w-full h-64 rounded-lg z-0"
-            center={center}
-            zoom={zoom}
-            onLoad={onLoad}
-            onClick={handleMapClick}
-            options={{ disableDefaultUI: true, zoomControl: true }}
-        >
-            {markerPosition && (
-                <MarkerF
-                    position={markerPosition}
-                    draggable={true}
-                    onDragEnd={handleMarkerDragEnd}
-                />
-            )}
-        </GoogleMap>
-    );
-};
-
 const ImageTagSelector: React.FC<{
     value: string;
     options: string[];
@@ -276,7 +190,7 @@ const TagListInput: React.FC<{
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={tags.length === 0 ? "Add tags..." : ""}
-                    className="flex-grow bg-transparent outline-none text-sm h-8 placeholder:text-neutral-700"
+                    className="flex-grow bg-transparent outline-none text-base h-8 placeholder:text-neutral-700"
                 />
             </div>
         </div>
@@ -298,23 +212,19 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const [aiPropertyType, setAiPropertyType] = useState<'house' | 'apartment' | 'villa' | 'other'>('house');
     const [isSubmitting, setIsSubmitting] = useState(false);
     
+    // Drag & Drop State
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
     
+    // Location State
     const [selectedCountry, setSelectedCountry] = useState(propertyToEdit?.country || '');
     const [locationSearchText, setLocationSearchText] = useState(propertyToEdit?.city || '');
     const [selectedLocation, setSelectedLocation] = useState<LocationSuggestion | null>(null);
     const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
     const [isLocationInputFocused, setIsLocationInputFocused] = useState(false);
     const locationContainerRef = useRef<HTMLDivElement>(null);
-    const [isFindingLocation, setIsFindingLocation] = useState(false);
-    const [mapCenter, setMapCenter] = useState<{ lat: number, lng: number }>({ lat: 44.2, lng: 19.9 }); // Default Balkan center
-    const [mapZoom, setMapZoom] = useState(6);
-
-    const markerPosition = useMemo(() => {
-        return listingData.lat && listingData.lng ? { lat: listingData.lat, lng: listingData.lng } : null;
-    }, [listingData.lat, listingData.lng]);
     
+    // Track modal state to react to it closing
     const wasModalOpen = useRef(isPricingModalOpen);
     useEffect(() => {
         if (wasModalOpen.current && !isPricingModalOpen && pendingProperty) {
@@ -328,25 +238,25 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
 
     const availableCountries = useMemo(() => Object.keys(MUNICIPALITY_DATA).sort(), []);
 
+    // Populate form if editing
     useEffect(() => {
         if (propertyToEdit) {
             setMode('manual');
             setStep('form');
             
-            const cityParts = propertyToEdit.city.match(/^(\d+)\s+(.*)$/);
-            let postalCode = '';
-            let cityText = propertyToEdit.city;
-            if (cityParts) {
-                postalCode = cityParts[1];
-                cityText = cityParts[2];
+            // Reverse the offset to get the pure coordinates for the form state
+            const hashString = `${propertyToEdit.address}`;
+            let hash = 0;
+            for (let i = 0; i < hashString.length; i++) {
+                const char = hashString.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash |= 0;
             }
-
-            const lat = (typeof propertyToEdit.lat === 'number' && !isNaN(propertyToEdit.lat)) ? propertyToEdit.lat : 0;
-            const lng = (typeof propertyToEdit.lng === 'number' && !isNaN(propertyToEdit.lng)) ? propertyToEdit.lng : 0;
+            const latOffset = Math.sin(hash) * 0.005;
+            const lngOffset = Math.cos(hash) * 0.005;
 
             setListingData({
                 streetAddress: propertyToEdit.address,
-                postalCode: postalCode,
                 price: propertyToEdit.price,
                 bedrooms: propertyToEdit.beds,
                 bathrooms: propertyToEdit.baths,
@@ -362,23 +272,20 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 floorNumber: propertyToEdit.floorNumber || 0,
                 totalFloors: propertyToEdit.totalFloors || 0,
                 image_tags: (propertyToEdit.images || []).map((img, index) => ({ index, tag: img.tag })),
-                lat: lat,
-                lng: lng,
+                lat: propertyToEdit.lat - latOffset,
+                lng: propertyToEdit.lng - lngOffset,
             });
             setSelectedCountry(propertyToEdit.country);
-            setLocationSearchText(cityText);
+            setLocationSearchText(propertyToEdit.city);
             const existingImages: ImageData[] = (propertyToEdit.images || []).map(img => ({ file: null, previewUrl: img.url }));
             setImages(existingImages);
             if (propertyToEdit.floorplanUrl) {
                 setFloorplanImage({ file: null, previewUrl: propertyToEdit.floorplanUrl });
             }
-            if (lat && lng) {
-                setMapCenter({ lat, lng });
-                setMapZoom(16);
-            }
         }
     }, [propertyToEdit]);
     
+    // --- Location Suggestions Logic ---
     useEffect(() => {
         const handleOutsideClick = (event: MouseEvent) => {
             if (locationContainerRef.current && !locationContainerRef.current.contains(event.target as Node)) {
@@ -408,55 +315,29 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             setLocationSuggestions([]);
         }
     }, [locationSearchText, selectedCountry, isLocationInputFocused, allMunicipalities]);
-
+    
     const handleLocationSuggestionClick = (suggestion: LocationSuggestion) => {
         setSelectedLocation(suggestion);
-        setLocationSearchText(suggestion.settlement.name);
-        
-        const newCoords = { lat: suggestion.settlement.lat, lng: suggestion.settlement.lng };
-        
-        setListingData(prev => ({ ...prev, ...newCoords, streetAddress: '' }));
-        
-        setMapCenter(newCoords);
-        setMapZoom(14);
+        setLocationSearchText(`${suggestion.settlement.name}, ${suggestion.municipality.name}`);
+        setListingData(prev => ({
+            ...prev,
+            lat: suggestion.settlement.lat,
+            lng: suggestion.settlement.lng,
+        }));
         setIsLocationInputFocused(false);
     };
-    
-    const handleFindOnMap = async () => {
-        if (!locationSearchText || !selectedCountry) {
-            setError("Please fill in City and Country to find the location.");
-            return;
-        }
-        setError(null);
-        setIsFindingLocation(true);
-        try {
-            const fullAddress = `${listingData.streetAddress}, ${locationSearchText}, ${selectedCountry}`;
-            const coords = await getCoordinatesForLocation(fullAddress);
-            if (coords) {
-                setListingData(prev => ({ ...prev, lat: coords.lat, lng: coords.lng }));
-                setMapCenter(coords);
-                setMapZoom(16);
-            } else {
-                setError(`Could not automatically find coordinates for "${fullAddress}". Please check the address.`);
-            }
-        } catch (e) {
-            setError("An error occurred while finding the location.");
-        } finally {
-            setIsFindingLocation(false);
-        }
-    };
-
-    const handleMarkerMove = useCallback((latlng: google.maps.LatLngLiteral) => {
-        setListingData(prev => ({ ...prev, ...latlng }));
-        setMapCenter(latlng);
-    }, []);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const files = Array.from(e.target.files);
-            const newImages: ImageData[] = files.map((file: File) => ({ file, previewUrl: URL.createObjectURL(file) }));
+            const newImages: ImageData[] = files.map((file: File) => ({
+                file,
+                previewUrl: URL.createObjectURL(file)
+            }));
+            // If editing, replace images, otherwise add them
             if(propertyToEdit || mode === 'manual') {
                 setImages(newImages);
+                // Reset tags for new images
                 setListingData(prev => ({...prev, image_tags: newImages.map((_, i) => ({index: i, tag: 'other'}))}));
             } else {
                 setImages(prev => [...prev, ...newImages]);
@@ -481,6 +362,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         });
     };
     
+    // --- Drag & Drop Handlers ---
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
         dragItem.current = index;
         e.currentTarget.style.opacity = '0.5';
@@ -491,13 +373,18 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     };
 
     const handleDrop = useCallback(() => {
-        if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) return;
+        if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) {
+            return;
+        }
 
         const currentTagsMap = new Map(listingData.image_tags.map(t => [t.index, t.tag]));
+
         const urlToTagMap = new Map<string, string>();
         images.forEach((img, index) => {
             const tag = currentTagsMap.get(index);
-            if (tag) urlToTagMap.set(img.previewUrl, tag);
+            if (tag) {
+                urlToTagMap.set(img.previewUrl, tag);
+            }
         });
         
         const reorderedImages = [...images];
@@ -511,13 +398,16 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
 
         setImages(reorderedImages);
         setListingData(prev => ({ ...prev, image_tags: newImageTags }));
+
     }, [images, listingData.image_tags]);
+
 
     const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
         e.currentTarget.style.opacity = '1';
         dragItem.current = null;
         dragOverItem.current = null;
     };
+
 
     const handleGenerate = async () => {
         if (images.length === 0) {
@@ -529,6 +419,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         try {
             const imageFiles = images.map(img => img.file).filter((f): f is File => f !== null);
             if (imageFiles.length === 0) {
+                // If there are previewUrl images but no files, it means we are editing.
+                // We can't re-analyze existing URLs, so we switch to manual form.
                 if (images.some(img => img.previewUrl)) {
                     setStep('form');
                     return;
@@ -539,15 +431,37 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             }
 
             const result = await generateDescriptionFromImages(imageFiles, language, aiPropertyType);
+            
             const validTags = result.image_tags
-                .filter(tagInfo => typeof tagInfo.tag === 'string' && (ALL_VALID_TAGS as readonly string[]).includes(tagInfo.tag))
-                .map(tagInfo => ({ ...tagInfo, tag: tagInfo.tag as PropertyImageTag }));
+                .filter(tagInfo => ALL_VALID_TAGS.includes(tagInfo.tag as PropertyImageTag))
+                .map(tagInfo => ({
+                    ...tagInfo,
+                    tag: tagInfo.tag as PropertyImageTag,
+                }));
 
-            setListingData(prev => ({ ...prev, bedrooms: result.bedrooms, bathrooms: result.bathrooms, livingRooms: result.living_rooms, sq_meters: result.sq_meters, year_built: result.year_built, parking_spots: result.parking_spots, specialFeatures: [...new Set([...result.amenities, ...result.key_features])], materials: result.materials, description: result.description, image_tags: validTags, propertyType: result.property_type, floorNumber: result.floor_number || 0, totalFloors: result.total_floors || 0 }));
+            setListingData(prev => ({
+                ...prev,
+                bedrooms: result.bedrooms,
+                bathrooms: result.bathrooms,
+                livingRooms: result.living_rooms,
+                sq_meters: result.sq_meters,
+                year_built: result.year_built,
+                parking_spots: result.parking_spots,
+                specialFeatures: [...new Set([...result.amenities, ...result.key_features])],
+                materials: result.materials,
+                description: result.description,
+                image_tags: validTags,
+                propertyType: result.property_type,
+                floorNumber: result.floor_number || 0,
+                totalFloors: result.total_floors || 0,
+            }));
             setStep('form');
         } catch (e) {
-            if (e instanceof Error) setError(e.message);
-            else setError('An unexpected error occurred during AI generation.');
+            if (e instanceof Error) {
+                setError(e.message);
+            } else {
+                setError('An unexpected error occurred during AI generation.');
+            }
             setStep('init');
         }
     };
@@ -555,14 +469,21 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
         const isNumeric = type === 'number';
-        setListingData(prev => ({ ...prev, [name]: isNumeric ? (value === '' ? '' : Number(value)) : value }));
+        setListingData(prev => ({
+            ...prev,
+            [name]: isNumeric ? (value === '' ? '' : Number(value)) : value
+        }));
     };
 
     const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const rawValue = e.target.value;
         const numericString = rawValue.replace(/[^0-9]/g, '');
         const numberValue = numericString === '' ? 0 : Number(numericString);
-        setListingData(prev => ({ ...prev, price: numberValue }));
+        
+        setListingData(prev => ({
+            ...prev,
+            price: numberValue
+        }));
     };
 
     const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -575,8 +496,11 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const handleImageTagChange = (index: number, tag: string) => {
         const newImageTags = [...listingData.image_tags];
         const existingTagIndex = newImageTags.findIndex(t => t.index === index);
-        if (existingTagIndex > -1) newImageTags[existingTagIndex].tag = tag;
-        else newImageTags.push({ index, tag });
+        if (existingTagIndex > -1) {
+            newImageTags[existingTagIndex].tag = tag;
+        } else {
+            newImageTags.push({ index, tag });
+        }
         setListingData(prev => ({ ...prev, image_tags: newImageTags }));
     };
 
@@ -590,8 +514,24 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         setIsSubmitting(true);
         setError(null);
 
-        if (!listingData.lat || !listingData.lng) {
-            setError("Please set the property's location on the map.");
+        // Validation
+        if (listingData.propertyType === 'apartment' && (!listingData.floorNumber || listingData.floorNumber < 1)) {
+            setError("For apartments, please enter a valid floor number (1 or greater).");
+            setIsSubmitting(false);
+            return;
+        }
+        if ((listingData.propertyType === 'house' || listingData.propertyType === 'villa') && (!listingData.totalFloors || listingData.totalFloors < 1)) {
+            setError("For houses and villas, please enter the total number of floors (1 or greater).");
+            setIsSubmitting(false);
+            return;
+        }
+        if (listingData.lat === 0 || listingData.lng === 0) {
+            setError("Please select a valid location from the suggestions.");
+            setIsSubmitting(false);
+            return;
+        }
+        if (!listingData.streetAddress.trim()) {
+            setError("Street Address field cannot be empty.");
             setIsSubmitting(false);
             return;
         }
@@ -599,11 +539,26 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         try {
             const imageUrls: PropertyImage[] = images.map((img, index) => {
                 const tagInfo = listingData.image_tags.find(t => t.index === index);
-                return { url: img.previewUrl, tag: (tagInfo?.tag as PropertyImageTag) || 'other' };
+                return {
+                    url: img.previewUrl,
+                    tag: (tagInfo?.tag as PropertyImageTag) || 'other',
+                };
             });
             
-            let cityString = locationSearchText.trim();
-            if (listingData.postalCode.trim()) cityString = `${listingData.postalCode.trim()} ${cityString}`;
+            let { lat, lng } = listingData;
+            
+            // Apply a consistent, deterministic offset to the coordinates to avoid marker overlap
+            const hashString = `${listingData.streetAddress}`;
+            let hash = 0;
+            for (let i = 0; i < hashString.length; i++) {
+                const char = hashString.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash |= 0;
+            }
+            const latOffset = Math.sin(hash) * 0.005;
+            const lngOffset = Math.cos(hash) * 0.005;
+            const finalLat = lat + latOffset;
+            const finalLng = lng + lngOffset;
 
             const newProperty: Property = {
                 id: propertyToEdit ? propertyToEdit.id : `prop-${Date.now()}`,
@@ -611,7 +566,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 status: 'active',
                 price: Number(listingData.price),
                 address: listingData.streetAddress,
-                city: cityString,
+                city: locationSearchText,
                 country: selectedCountry,
                 beds: Number(listingData.bedrooms),
                 baths: Number(listingData.bathrooms),
@@ -625,9 +580,14 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 tourUrl: listingData.tourUrl,
                 imageUrl: imageUrls.length > 0 ? imageUrls[0].url : 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=500',
                 images: imageUrls,
-                lat: listingData.lat,
-                lng: listingData.lng,
-                seller: { type: currentUser.role === UserRole.AGENT ? 'agent' : 'private', name: currentUser.name, phone: currentUser.phone, avatarUrl: currentUser.avatarUrl },
+                lat: finalLat,
+                lng: finalLng,
+                seller: {
+                    type: currentUser.role === UserRole.AGENT ? 'agent' : 'private',
+                    name: currentUser.name,
+                    phone: currentUser.phone,
+                    avatarUrl: currentUser.avatarUrl,
+                },
                 propertyType: listingData.propertyType,
                 floorNumber: Number(listingData.floorNumber) || undefined,
                 totalFloors: Number(listingData.totalFloors) || undefined,
@@ -649,10 +609,13 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 }
             }
 
-            if (propertyToEdit) await updateListing(newProperty);
-            else {
+            if (propertyToEdit) {
+                await updateListing(newProperty);
+            } else {
                 await createListing(newProperty);
-                 if (currentUser.role === UserRole.BUYER) await updateUser({ role: UserRole.PRIVATE_SELLER });
+                 if (currentUser.role === UserRole.BUYER) {
+                    await updateUser({ role: UserRole.PRIVATE_SELLER });
+                }
             }
 
             setStep('success');
@@ -661,8 +624,12 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             }, 3000);
 
         } catch (err) {
-            if (err instanceof Error) setError(err.message);
-            else setError('An unexpected error occurred while saving the listing.');
+            // FIX: Explicitly handle the 'unknown' type of the caught error.
+            if (err instanceof Error) {
+                setError(err.message || "Failed to submit listing.");
+            } else {
+                setError("An unexpected error occurred while submitting.");
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -693,8 +660,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             </div>
             <div className="flex justify-center mb-6">
                  <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm">
-                    <button type="button" onClick={() => setMode('ai')} className={`w-1/2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap ${mode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><SparklesIcon className="w-4 h-4" /> AI Creator</button>
-                    <button type="button" onClick={() => setMode('manual')} className={`w-1/2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap ${mode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Manual Entry</button>
+                    <button type="button" onClick={() => setMode('ai')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap ${mode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><SparklesIcon className="w-4 h-4" /> AI Creator</button>
+                    <button type="button" onClick={() => setMode('manual')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap ${mode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Manual Entry</button>
                 </div>
             </div>
 
@@ -735,25 +702,85 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             )}
 
             {(mode === 'manual' || (mode === 'ai' && step === 'form')) && (
-                 <div className="space-y-6 animate-fade-in">
-                    <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                         <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="relative"><select id="country" name="country" value={selectedCountry} onChange={handleCountryChange} className={`${floatingInputClasses} border-neutral-300`} required><option value="" disabled>Select a country</option>{availableCountries.map(c => <option key={c} value={c}>{c}</option>)}</select><label htmlFor="country" className={floatingSelectLabelClasses}>Country</label></div>
-                             <div className="relative" ref={locationContainerRef}><input type="text" id="location" value={locationSearchText} onChange={(e) => setLocationSearchText(e.target.value)} onFocus={() => setIsLocationInputFocused(true)} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " required autoComplete="off" disabled={!selectedCountry} /><label htmlFor="location" className={floatingLabelClasses}>City / Town</label>{isLocationInputFocused && locationSuggestions.length > 0 && (<ul className="absolute z-20 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">{locationSuggestions.map(suggestion => (<li key={`${suggestion.settlement.name}-${suggestion.municipality.name}`} onMouseDown={() => handleLocationSuggestionClick(suggestion)} className="px-4 py-3 text-sm text-neutral-700 hover:bg-neutral-100 cursor-pointer flex items-center gap-2"><MapPinIcon className="w-4 h-4 text-neutral-400 flex-shrink-0" /><span><strong>{suggestion.settlement.name}</strong>, {suggestion.municipality.name}</span></li>))}</ul>)}</div>
-                            <div className="relative"><input type="text" id="postalCode" name="postalCode" value={listingData.postalCode} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " /><label htmlFor="postalCode" className={floatingLabelClasses}>Postal Code</label></div>
-                            <div className="relative"><input type="text" id="streetAddress" name="streetAddress" value={listingData.streetAddress} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " /><label htmlFor="streetAddress" className={floatingLabelClasses}>Street Address</label></div>
-                            <div className="relative md:col-span-2"><button type="button" onClick={handleFindOnMap} disabled={isFindingLocation} className="w-full px-4 py-2 bg-primary text-white font-semibold rounded-lg border border-primary hover:bg-primary-dark transition-colors flex items-center justify-center gap-2 disabled:bg-primary/70">{isFindingLocation ? <SpinnerIcon className="w-5 h-5"/> : <MapPinIcon className="w-5 h-5"/>}<span>{isFindingLocation ? 'Finding...' : 'Auto-find on map'}</span></button></div>
+                 <div className="space-y-8 animate-fade-in">
+                    <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('country')?.focus()}><select id="country" name="country" value={selectedCountry} onChange={handleCountryChange} className={`${floatingInputClasses} border-neutral-300`} required><option value="" disabled>Select a country</option>{availableCountries.map(c => <option key={c} value={c}>{c}</option>)}</select><label htmlFor="country" className={floatingSelectLabelClasses}>Country</label></div>
+                        <div className="relative md:col-span-2" ref={locationContainerRef}><div className="relative cursor-text" onClick={() => document.getElementById('location')?.focus()}><input type="text" id="location" value={locationSearchText} onChange={(e) => setLocationSearchText(e.target.value)} onFocus={() => setIsLocationInputFocused(true)} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " required autoComplete="off" disabled={!selectedCountry} /><label htmlFor="location" className={floatingLabelClasses}>City / Town / Village</label></div>{isLocationInputFocused && locationSuggestions.length > 0 && (<ul className="absolute z-20 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">{locationSuggestions.map(suggestion => (<li key={`${suggestion.settlement.name}-${suggestion.municipality.name}`} onMouseDown={() => handleLocationSuggestionClick(suggestion)} className="px-4 py-3 text-sm text-neutral-700 hover:bg-neutral-100 cursor-pointer flex items-center gap-2"><MapPinIcon className="w-4 h-4 text-neutral-400 flex-shrink-0" /><span><strong>{suggestion.settlement.name}</strong>, {suggestion.municipality.name}</span></li>))}</ul>)}</div>
+                        
+                        <div className="relative">
+                            <input type="number" id="lat" value={listingData.lat !== 0 ? listingData.lat.toFixed(6) : ''} className={`${floatingInputClasses} border-neutral-300 bg-neutral-100 cursor-not-allowed`} placeholder=" " readOnly />
+                            <label htmlFor="lat" className={floatingLabelClasses}>Latitude</label>
                         </div>
-                        <div className="md:col-span-2"><label className="block text-sm font-medium text-neutral-700 mb-1">Drag the pin to the exact location of your property.</label><ListingMap center={mapCenter} zoom={mapZoom} markerPosition={markerPosition} onMarkerMove={handleMarkerMove} /></div>
+                        <div className="relative">
+                            <input type="number" id="lng" value={listingData.lng !== 0 ? listingData.lng.toFixed(6) : ''} className={`${floatingInputClasses} border-neutral-300 bg-neutral-100 cursor-not-allowed`} placeholder=" " readOnly />
+                            <label htmlFor="lng" className={floatingLabelClasses}>Longitude</label>
+                        </div>
+
+                        <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('streetAddress')?.focus()}><input type="text" id="streetAddress" name="streetAddress" value={listingData.streetAddress} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " required /><label htmlFor="streetAddress" className={floatingLabelClasses}>Street Address (e.g., Main Street 123)</label></div>
+                        <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('price')?.focus()}><input type="text" id="price" inputMode="numeric" name="price" value={listingData.price > 0 ? new Intl.NumberFormat('de-DE').format(listingData.price) : ''} onChange={handlePriceChange} className={`${floatingInputClasses} border-neutral-300 pl-8`} placeholder=" " required /><label htmlFor="price" className={floatingLabelClasses}>Price</label><span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">{getCurrencySymbol(selectedCountry)}</span></div>
                     </fieldset>
-                    <fieldset><div className="relative cursor-text" onClick={() => document.getElementById('price')?.focus()}><input type="text" id="price" inputMode="numeric" name="price" value={listingData.price > 0 ? new Intl.NumberFormat('de-DE').format(listingData.price) : ''} onChange={handlePriceChange} className={`${floatingInputClasses} border-neutral-300 pl-8`} placeholder=" " required /><label htmlFor="price" className={floatingLabelClasses}>Price</label><span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">{getCurrencySymbol(selectedCountry)}</span></div></fieldset>
-                    <fieldset className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"><NumberInputWithSteppers label="Bedrooms" value={listingData.bedrooms} onChange={(val) => setListingData(p => ({ ...p, bedrooms: val }))} /><NumberInputWithSteppers label="Bathrooms" value={listingData.bathrooms} onChange={(val) => setListingData(p => ({ ...p, bathrooms: val }))} /><NumberInputWithSteppers label="Living Rooms" value={listingData.livingRooms} onChange={(val) => setListingData(p => ({ ...p, livingRooms: val }))} /><NumberInputWithSteppers label="Area (m²)" value={listingData.sq_meters} step={5} onChange={(val) => setListingData(p => ({ ...p, sq_meters: val }))} /><NumberInputWithSteppers label="Year Built" value={listingData.year_built} max={new Date().getFullYear()} onChange={(val) => setListingData(p => ({ ...p, year_built: val }))} /><NumberInputWithSteppers label="Parking Spots" value={listingData.parking_spots} onChange={(val) => setListingData(p => ({ ...p, parking_spots: val }))} /></fieldset>
-                    <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end"><div className="relative"><select name="propertyType" id="propertyType" value={listingData.propertyType} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`}><option value="house">House</option><option value="apartment">Apartment</option><option value="villa">Villa</option><option value="other">Other</option></select><label htmlFor="propertyType" className={floatingSelectLabelClasses}>Property Type</label></div>{listingData.propertyType === 'apartment' && (<NumberInputWithSteppers label="Floor Number" value={listingData.floorNumber} onChange={(val) => setListingData(p => ({ ...p, floorNumber: val }))} />)}{(listingData.propertyType === 'house' || listingData.propertyType === 'villa') && (<NumberInputWithSteppers label="Total Floors" value={listingData.totalFloors} onChange={(val) => setListingData(p => ({ ...p, totalFloors: val }))} />)}</fieldset>
+
+                    <fieldset className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"><NumberInputWithSteppers label="Bedrooms" value={listingData.bedrooms} onChange={(val) => setListingData(p => ({ ...p, bedrooms: val }))} /><NumberInputWithSteppers label="Bathrooms" value={listingData.bathrooms} onChange={(val) => setListingData(p => ({ ...p, bathrooms: val }))} /><NumberInputWithSteppers label="Living Rooms" value={listingData.livingRooms} onChange={(val) => setListingData(p => ({ ...p, livingRooms: val }))} /><NumberInputWithSteppers label="Area (m²)" value={listingData.sq_meters} step={5} onChange={(val) => setListingData(p => ({ ...p, sq_meters: val }))} /><NumberInputWithSteppers label="Year Built" value={listingData.year_built} max={new Date().getFullYear()} onChange={(val) => setListingData(p => ({ ...p, year_built: val }))} /><NumberInputWithSteppers label="Parking Spots" value={listingData.parking_spots} onChange={(val) => setListingData(p => ({ ...p, parking_spots: val }))} /></fieldset>
+                    <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end"><div className="relative"><select name="propertyType" id="propertyType" value={listingData.propertyType} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`}><option value="house">House</option><option value="apartment">Apartment</option><option value="villa">Villa</option><option value="other">Other</option></select><label htmlFor="propertyType" className={floatingSelectLabelClasses}>Property Type</label></div>{listingData.propertyType === 'apartment' && (<NumberInputWithSteppers label="Floor Number" value={listingData.floorNumber} onChange={(val) => setListingData(p => ({ ...p, floorNumber: val }))} min={1} />)}{(listingData.propertyType === 'house' || listingData.propertyType === 'villa') && (<NumberInputWithSteppers label="Total Floors" value={listingData.totalFloors} min={1} onChange={(val) => setListingData(p => ({ ...p, totalFloors: val }))} />)}</fieldset>
                     <fieldset><TagListInput label="Special Features" tags={listingData.specialFeatures} setTags={(tags) => setListingData(p => ({ ...p, specialFeatures: tags }))} /></fieldset>
                     <fieldset><TagListInput label="Materials" tags={listingData.materials} setTags={(tags) => setListingData(p => ({ ...p, materials: tags }))} /></fieldset>
-                    <fieldset><label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-1">Description</label><textarea id="description" name="description" value={listingData.description} onChange={handleInputChange} className={`${inputBaseClasses} h-40`} required /></fieldset>
-                    <fieldset><label className="block text-sm font-medium text-neutral-700 mb-1">Image Management</label><div className="p-4 border rounded-lg bg-neutral-50/70"><label htmlFor="image-upload-manual" className="flex flex-col items-center justify-center w-full h-32 border-2 border-neutral-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-neutral-50 mb-4"><div className="flex flex-col items-center justify-center"><UploadIcon className="w-8 h-8 mb-2 text-neutral-400" /><p className="text-sm text-neutral-500">{images.length > 0 ? 'Upload more or replace images' : 'Upload property images'}</p></div><input id="image-upload-manual" type="file" multiple accept="image/*" className="hidden" onChange={handleImageChange} /></label>{images.length > 0 && (<div><div className="flex items-center gap-2 bg-blue-100 text-blue-800 text-sm p-3 rounded-lg mb-4"><InfoIcon className="w-8 h-8 flex-shrink-0"/><p>Drag and drop images to reorder them. The first image will be the main cover photo for your listing.</p></div><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">{images.map((img, index) => (<div key={img.previewUrl} className="relative group cursor-grab" draggable onDragStart={(e) => handleDragStart(e, index)} onDragEnter={(e) => handleDragEnter(e, index)} onDragEnd={handleDragEnd} onDrop={handleDrop} onDragOver={(e) => e.preventDefault()}><img src={img.previewUrl} alt={`preview ${index}`} className="w-full h-24 object-cover rounded-md mb-2 border" /><button type="button" onClick={() => removeImage(index)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity z-10">&times;</button><ImageTagSelector value={listingData.image_tags.find(t => t.index === index)?.tag || 'other'} options={ALL_VALID_TAGS} onChange={(tag) => handleImageTagChange(index, tag)} /></div>))}</div></div>)}</div></fieldset>
-                    <div><h4 className="font-semibold text-neutral-800 mb-2 mt-4">Floor Plan (Optional)</h4><label htmlFor="floorplan-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-neutral-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-neutral-50"><div className="flex flex-col items-center justify-center"><UploadIcon className="w-8 h-8 mb-2 text-neutral-400" /><p className="text-sm text-neutral-500">Upload floor plan image</p></div><input id="floorplan-upload" type="file" accept="image/*" className="hidden" onChange={handleFloorplanImageChange} /></label>{floorplanImage.previewUrl && (<div className="mt-2 relative inline-block"><img src={floorplanImage.previewUrl} alt="floorplan" className="w-32 h-32 object-cover rounded-md" /><button type="button" onClick={() => setFloorplanImage({file: null, previewUrl: ''})} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">&times;</button></div>)}</div>
+                    <fieldset><label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-1">Description</label><textarea id="description" name="description" value={listingData.description} onChange={handleInputChange} className={`${inputBaseClasses} h-48`} required /></fieldset>
+                    
+                    <fieldset>
+                        <label className="block text-sm font-medium text-neutral-700 mb-1">Image Management</label>
+                        <div className="p-4 border rounded-lg bg-neutral-50/70">
+                             <label htmlFor="image-upload-manual" className="flex flex-col items-center justify-center w-full h-32 border-2 border-neutral-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-neutral-50 mb-4">
+                                <div className="flex flex-col items-center justify-center">
+                                    <UploadIcon className="w-8 h-8 mb-2 text-neutral-400" />
+                                    <p className="text-sm text-neutral-500">{images.length > 0 ? 'Upload more or replace images' : 'Upload property images'}</p>
+                                </div>
+                                <input id="image-upload-manual" type="file" multiple accept="image/*" className="hidden" onChange={handleImageChange} />
+                            </label>
+
+                            {images.length > 0 && (
+                                <div>
+                                    <div className="flex items-center gap-2 bg-blue-100 text-blue-800 text-sm p-3 rounded-lg mb-4">
+                                        <InfoIcon className="w-8 h-8 flex-shrink-0"/>
+                                        <p>Drag and drop images to reorder them. The first image will be the main cover photo for your listing.</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
+                                        {images.map((img, index) => (
+                                            <div 
+                                                key={img.previewUrl}
+                                                className="relative group cursor-grab"
+                                                draggable
+                                                onDragStart={(e) => handleDragStart(e, index)}
+                                                onDragEnter={(e) => handleDragEnter(e, index)}
+                                                onDragEnd={handleDragEnd}
+                                                onDrop={handleDrop}
+                                                onDragOver={(e) => e.preventDefault()}
+                                            >
+                                                <img src={img.previewUrl} alt={`preview ${index}`} className="w-full h-24 object-cover rounded-md mb-2 border" />
+                                                <button type="button" onClick={() => removeImage(index)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity z-10">&times;</button>
+                                                <ImageTagSelector
+                                                    value={listingData.image_tags.find(t => t.index === index)?.tag || 'other'}
+                                                    options={ALL_VALID_TAGS}
+                                                    onChange={(tag) => handleImageTagChange(index, tag)}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </fieldset>
+                    
+                    <div>
+                        <h4 className="font-semibold text-neutral-800 mb-2 mt-4">Floor Plan (Optional)</h4>
+                        <label htmlFor="floorplan-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-neutral-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-neutral-50">
+                            <div className="flex flex-col items-center justify-center"><UploadIcon className="w-8 h-8 mb-2 text-neutral-400" /><p className="text-sm text-neutral-500">Upload floor plan image</p></div>
+                            <input id="floorplan-upload" type="file" accept="image/*" className="hidden" onChange={handleFloorplanImageChange} />
+                        </label>
+                        {floorplanImage.previewUrl && (
+                            <div className="mt-2 relative inline-block"><img src={floorplanImage.previewUrl} alt="floorplan" className="w-32 h-32 object-cover rounded-md" /><button type="button" onClick={() => setFloorplanImage({file: null, previewUrl: ''})} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">&times;</button></div>
+                        )}
+                    </div>
+                    
                     <div className="flex justify-end pt-4"><button type="submit" disabled={isSubmitting} className="px-8 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors w-full sm:w-auto">{isSubmitting ? 'Saving...' : (propertyToEdit ? 'Update Listing' : 'Publish Listing')}</button></div>
                  </div>
             )}

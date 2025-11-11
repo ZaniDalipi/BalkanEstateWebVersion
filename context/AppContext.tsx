@@ -8,6 +8,7 @@ const initialSearchPageState: SearchPageState = {
     activeFilters: initialFilters,
     searchOnMove: true,
     mapBoundsJSON: null,
+    drawnBoundsJSON: null,
     mobileView: 'map',
     searchMode: 'manual',
     aiChatHistory: [{ sender: 'ai', text: "Hello! Welcome to Balkan Estate. How can I help you find a property today?" }],
@@ -185,16 +186,6 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         return { ...state, isListingLimitWarningOpen: action.payload };
     case 'TOGGLE_DISCOUNT_GAME':
         return { ...state, isDiscountGameOpen: action.payload };
-    case 'INCREMENT_PROPERTY_VIEW':
-        return {
-            ...state,
-            properties: state.properties.map(p =>
-                p.id === action.payload ? { ...p, views: (p.views || 0) + 1 } : p
-            ),
-            selectedProperty: state.selectedProperty?.id === action.payload
-                ? { ...state.selectedProperty, views: (state.selectedProperty.views || 0) + 1 }
-                : state.selectedProperty,
-        };
     case 'UPDATE_SAVED_SEARCH_ACCESS_TIME':
         return {
             ...state,
@@ -227,7 +218,6 @@ interface AppContextType {
     updateListing: (property: Property) => Promise<Property>;
     updateUser: (userData: Partial<User>) => Promise<User>;
     updateSearchPageState: (newState: Partial<SearchPageState>) => void;
-    incrementPropertyView: (propertyId: string) => Promise<void>;
     updateSavedSearchAccessTime: (searchId: string) => Promise<void>;
 }
 
@@ -307,12 +297,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const fetchProperties = useCallback(async (filters?: Filters) => {
       dispatch({ type: 'PROPERTIES_LOADING' });
       try {
-          const properties = await api.getProperties(filters);
+          const properties = await api.getProperties(filters, state.allMunicipalities);
           dispatch({ type: 'PROPERTIES_SUCCESS', payload: properties });
       } catch (e: any) {
           dispatch({ type: 'PROPERTIES_ERROR', payload: e.message || 'Failed to fetch properties.'});
       }
-  }, []);
+  }, [state.allMunicipalities]);
 
   const toggleSavedHome = useCallback(async (property: Property) => {
     const isSaved = state.savedHomes.some(p => p.id === property.id);
@@ -353,21 +343,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'UPDATE_SEARCH_PAGE_STATE', payload: newState });
   }, []);
 
-  const incrementPropertyView = useCallback(async (propertyId: string) => {
-    try {
-        await api.incrementPropertyView(propertyId);
-        dispatch({ type: 'INCREMENT_PROPERTY_VIEW', payload: propertyId });
-    } catch (error) {
-        console.error("Failed to increment property view count:", error);
-    }
-  }, []);
-
   const updateSavedSearchAccessTime = useCallback(async (searchId: string) => {
     await api.updateSavedSearchAccessTime(searchId);
     dispatch({ type: 'UPDATE_SAVED_SEARCH_ACCESS_TIME', payload: searchId });
   }, []);
 
-  const value = { state, dispatch, checkAuthStatus, login, signup, logout, requestPasswordReset, loginWithSocial, sendPhoneCode, verifyPhoneCode, completePhoneSignup, fetchProperties, toggleSavedHome, addSavedSearch, sendMessage, createListing, updateListing, updateUser, updateSearchPageState, incrementPropertyView, updateSavedSearchAccessTime };
+  const value = { state, dispatch, checkAuthStatus, login, signup, logout, requestPasswordReset, loginWithSocial, sendPhoneCode, verifyPhoneCode, completePhoneSignup, fetchProperties, toggleSavedHome, addSavedSearch, sendMessage, createListing, updateListing, updateUser, updateSearchPageState, updateSavedSearchAccessTime };
 
   return (
     <AppContext.Provider value={value}>
