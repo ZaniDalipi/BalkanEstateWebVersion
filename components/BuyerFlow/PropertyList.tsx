@@ -6,90 +6,6 @@ import AiSearch from './AiSearch';
 import PropertyCardSkeleton from './PropertyCardSkeleton';
 import { useAppContext } from '../../context/AppContext';
 
-interface RangeSliderProps {
-    min: number;
-    max: number;
-    step: number;
-    value: [number, number];
-    onChange: (value: [number, number]) => void;
-    label: string;
-    formatValue: (value: number) => string;
-}
-
-const RangeSlider: React.FC<RangeSliderProps> = ({ min, max, step, value, onChange, label, formatValue }) => {
-    const trackRef = useRef<HTMLDivElement>(null);
-    const [dragging, setDragging] = useState<'min' | 'max' | null>(null);
-
-    const valueToPercent = useCallback((val: number) => {
-        if (max === min) return 0;
-        return ((val - min) / (max - min)) * 100;
-    }, [min, max]);
-
-    const handleMouseMove = useCallback((e: MouseEvent) => {
-        if (!dragging || !trackRef.current) return;
-        const rect = trackRef.current.getBoundingClientRect();
-        const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-        const newValue = Math.round((min + (percent / 100) * (max - min)) / step) * step;
-
-        const [currentMin, currentMax] = value;
-        if (dragging === 'min') {
-            onChange([Math.min(newValue, currentMax), currentMax]);
-        } else {
-            onChange([currentMin, Math.max(newValue, currentMin)]);
-        }
-    }, [dragging, min, max, step, value, onChange]);
-
-    const handleMouseUp = useCallback(() => {
-        setDragging(null);
-    }, []);
-
-    useEffect(() => {
-        if (dragging) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
-        }
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [dragging, handleMouseMove, handleMouseUp]);
-
-    const [minVal, maxVal] = value;
-    const minPercent = valueToPercent(minVal);
-    const maxPercent = valueToPercent(maxVal);
-
-    return (
-        <div>
-            <div className="flex justify-between items-center mb-2">
-                <label className="text-xs font-medium text-neutral-700">{label}</label>
-                <div className="text-xs font-bold text-neutral-800 bg-neutral-100 border border-neutral-200 px-2 py-1 rounded-md">
-                    {formatValue(minVal)} - {formatValue(maxVal)}
-                </div>
-            </div>
-            <div ref={trackRef} className="relative w-full h-8 flex items-center">
-                <div className="absolute w-full h-1 bg-neutral-200 rounded-full"></div>
-                <div
-                    className="absolute h-1 bg-primary rounded-full"
-                    style={{ left: `${minPercent}%`, width: `${maxPercent - minPercent}%` }}
-                ></div>
-                <button
-                    onMouseDown={() => setDragging('min')}
-                    className="absolute w-5 h-5 bg-white border-2 border-primary rounded-full shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    style={{ left: `${minPercent}%`, transform: 'translateX(-50%)' }}
-                    aria-label={`Minimum ${label}`}
-                ></button>
-                <button
-                    onMouseDown={() => setDragging('max')}
-                    className="absolute w-5 h-5 bg-white border-2 border-primary rounded-full shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    style={{ left: `${maxPercent}%`, transform: 'translateX(-50%)' }}
-                    aria-label={`Maximum ${label}`}
-                ></button>
-            </div>
-        </div>
-    );
-};
-
-
 interface PropertyListProps {
   properties: Property[];
   filters: Filters;
@@ -114,8 +30,6 @@ interface PropertyListProps {
   onAiChatHistoryChange: (history: ChatMessage[]) => void;
   onDrawStart: () => void;
   isDrawing: boolean;
-  maxPriceValue: number;
-  maxSqftValue: number;
 }
 
 const FilterButton: React.FC<{
@@ -157,10 +71,8 @@ const FilterButtonGroup: React.FC<{
   </div>
 );
 
-const formatNumber = (val: number) => val >= 1000000 ? `${(val / 1000000).toFixed(1).replace('.0', '')}M` : val >= 1000 ? `${Math.round(val / 1000)}k` : `${val}`;
-
 const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList' | 'aiChatHistory' | 'onAiChatHistoryChange'>> = ({
-    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, onQueryFocus, onBlur, isAreaDrawn, onDrawStart, isDrawing, maxPriceValue, maxSqftValue
+    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, onQueryFocus, onBlur, isAreaDrawn, onDrawStart, isDrawing
 }) => {
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(true);
     
@@ -168,15 +80,10 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
         onFilterChange(e.target.name as keyof Filters, e.target.value);
     }, [onFilterChange]);
     
-    const handlePriceChange = useCallback(([min, max]: [number, number]) => {
-        onFilterChange('minPrice', min === 0 ? null : min);
-        onFilterChange('maxPrice', max === maxPriceValue ? null : max);
-    }, [onFilterChange, maxPriceValue]);
-
-    const handleSqftChange = useCallback(([min, max]: [number, number]) => {
-        onFilterChange('minSqft', min === 0 ? null : min);
-        onFilterChange('maxSqft', max === maxSqftValue ? null : max);
-    }, [onFilterChange, maxSqftValue]);
+    const handleNumericInputChange = (field: keyof Filters, value: string) => {
+        const num = parseInt(value.replace(/\D/g, ''), 10);
+        onFilterChange(field, isNaN(num) ? null : num);
+    };
     
     const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder:text-neutral-700";
 
@@ -224,25 +131,59 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                 </button>
             )}
 
-            <RangeSlider
-                min={0}
-                max={maxPriceValue}
-                step={10000}
-                value={[filters.minPrice ?? 0, filters.maxPrice ?? maxPriceValue]}
-                onChange={handlePriceChange}
-                label="Price Range"
-                formatValue={(val) => `€${formatNumber(val)}`}
-            />
+            <div>
+                <label className="block text-xs font-medium text-neutral-700 mb-1">Price Range</label>
+                <div className="flex items-center gap-2">
+                    <div className="relative w-1/2">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">€</span>
+                        <input 
+                            type="text" 
+                            placeholder="Min"
+                            value={filters.minPrice ? filters.minPrice.toLocaleString('de-DE') : ''}
+                            onChange={(e) => handleNumericInputChange('minPrice', e.target.value)}
+                            className={`${inputBaseClasses} pl-7`}
+                        />
+                    </div>
+                    <span className="text-neutral-400">-</span>
+                    <div className="relative w-1/2">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">€</span>
+                        <input 
+                            type="text" 
+                            placeholder="Max"
+                            value={filters.maxPrice ? filters.maxPrice.toLocaleString('de-DE') : ''}
+                             onChange={(e) => handleNumericInputChange('maxPrice', e.target.value)}
+                            className={`${inputBaseClasses} pl-7`}
+                        />
+                    </div>
+                </div>
+            </div>
 
-            <RangeSlider
-                min={0}
-                max={maxSqftValue}
-                step={10}
-                value={[filters.minSqft ?? 0, filters.maxSqft ?? maxSqftValue]}
-                onChange={handleSqftChange}
-                label="Area (m²)"
-                formatValue={(val) => `${val} m²`}
-            />
+            <div>
+                <label className="block text-xs font-medium text-neutral-700 mb-1">Area (m²)</label>
+                <div className="flex items-center gap-2">
+                    <div className="relative w-1/2">
+                        <input 
+                            type="text" 
+                            placeholder="Min"
+                             value={filters.minSqft ? filters.minSqft.toLocaleString('de-DE') : ''}
+                             onChange={(e) => handleNumericInputChange('minSqft', e.target.value)}
+                             className={`${inputBaseClasses} pr-8`}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">m²</span>
+                    </div>
+                    <span className="text-neutral-400">-</span>
+                    <div className="relative w-1/2">
+                        <input 
+                            type="text" 
+                            placeholder="Max"
+                            value={filters.maxSqft ? filters.maxSqft.toLocaleString('de-DE') : ''}
+                            onChange={(e) => handleNumericInputChange('maxSqft', e.target.value)}
+                            className={`${inputBaseClasses} pr-8`}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">m²</span>
+                    </div>
+                </div>
+            </div>
             
             <div className="border-t border-neutral-200 pt-4">
                 <button type="button" onClick={() => setIsAdvancedOpen(!isAdvancedOpen)} className="w-full flex justify-between items-center text-left">

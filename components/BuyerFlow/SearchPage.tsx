@@ -89,23 +89,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const [isLegendOpen, setIsLegendOpen] = useState(false);
     const [localFilters, setLocalFilters] = useState<Filters>(filters);
 
-    const { maxPriceValue, maxSqftValue } = useMemo(() => {
-        if (properties.length === 0) {
-            return { maxPriceValue: 2000000, maxSqftValue: 500 };
-        }
-        const maxPrice = Math.max(...properties.map(p => p.price));
-        const maxSqft = Math.max(...properties.map(p => p.sqft));
-
-        // Round up to a nice, even number for the slider's top end.
-        const dynamicMaxPrice = Math.ceil(maxPrice / 100000) * 100000;
-        const dynamicMaxSqft = Math.ceil(maxSqft / 50) * 50;
-
-        return {
-            maxPriceValue: Math.max(2000000, dynamicMaxPrice),
-            maxSqftValue: Math.max(500, dynamicMaxSqft),
-        };
-    }, [properties]);
-
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
         window.addEventListener('resize', handleResize);
@@ -504,8 +487,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         onAiChatHistoryChange: (newHistory: ChatMessage[]) => updateSearchPageState({ aiChatHistory: newHistory }),
         onDrawStart: toggleDrawing,
         isDrawing,
-        maxPriceValue,
-        maxSqftValue,
     };
     
     return (

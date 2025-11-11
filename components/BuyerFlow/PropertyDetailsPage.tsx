@@ -22,6 +22,7 @@ import ImageViewerModal from './ImageViewerModal';
 import FloorPlanViewerModal from './FloorPlanViewerModal';
 import PropertyLocationMap from './PropertyLocationMap';
 import MortgageCalculator from './MortgageCalculator';
+import RentVsBuyCalculator from './RentVsBuyCalculator';
 
 
 // --- Image Editor Modal ---
@@ -786,6 +787,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                   </div>
               </div>
               <MortgageCalculator propertyPrice={property.price} country={property.country} />
+              <RentVsBuyCalculator propertyPrice={property.price} country={property.country} />
             </div>
           </div>
         </div>
