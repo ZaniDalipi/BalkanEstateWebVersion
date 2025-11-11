@@ -72,7 +72,7 @@ const FilterButtonGroup: React.FC<{
 const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList' | 'aiChatHistory' | 'onAiChatHistoryChange'>> = ({
     filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, isAreaDrawn, onDrawStart, isDrawing
 }) => {
-    const [isAdvancedOpen, setIsAdvancedOpen] = useState(true);
+    const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     
     const handleNumericInputChange = (field: keyof Filters, value: string) => {
         const num = parseInt(value.replace(/\D/g, ''), 10);
