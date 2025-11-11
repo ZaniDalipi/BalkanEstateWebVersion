@@ -16,9 +16,9 @@ const AdvancedInput: React.FC<{
 }> = ({ label, value, onChange, placeholder, unit }) => {
     const id = `rvb-${label.toLowerCase().replace(/\s/g, '-')}`;
     return (
-        <div className="flex justify-between items-center text-sm">
+        <div className="flex justify-between items-center text-xs">
             <label htmlFor={id} className="text-neutral-600 font-medium">{label}</label>
-            <div className="relative w-32">
+            <div className="relative w-28">
                 <input 
                     type="number"
                     id={id}
@@ -26,9 +26,9 @@ const AdvancedInput: React.FC<{
                     placeholder={placeholder}
                     value={value}
                     onChange={e => onChange(e.target.value)} 
-                    className="w-full text-sm font-semibold bg-neutral-100 border-neutral-200 border rounded-md p-2 text-right pr-8 focus:ring-1 focus:ring-primary focus:border-primary text-neutral-900"
+                    className="w-full text-xs font-semibold bg-neutral-100 border-neutral-200 border rounded-md p-1.5 text-right pr-7 focus:ring-1 focus:ring-primary focus:border-primary text-neutral-900"
                 />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-500 font-medium pointer-events-none">{unit}</span>
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 font-medium pointer-events-none">{unit}</span>
             </div>
         </div>
     );
@@ -160,17 +160,17 @@ const RentVsBuyCalculator: React.FC<RentVsBuyCalculatorProps> = ({ propertyPrice
     const isBuyCheaper = verdict?.decision === 'Buy';
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200 animate-fade-in">
-            <div className="flex items-center gap-3 mb-4">
-                <ScaleIcon className="w-6 h-6 text-primary" />
-                <h3 className="text-lg font-bold text-neutral-800">Rent vs. Buy Calculator</h3>
+        <div className="bg-white p-4 rounded-xl shadow-lg border border-neutral-200 animate-fade-in">
+            <div className="flex items-center gap-2 mb-3">
+                <ScaleIcon className="w-5 h-5 text-primary" />
+                <h3 className="text-base font-bold text-neutral-800">Rent vs. Buy Calculator</h3>
             </div>
             
-            <div className="space-y-6">
+            <div className="space-y-4">
                  <div>
                     <div className="flex justify-between items-baseline mb-1">
-                        <label htmlFor="planning-to-stay" className="text-sm font-semibold text-neutral-700">Planning to stay</label>
-                        <span className="text-lg font-bold text-neutral-900">{planningToStay} years</span>
+                        <label htmlFor="planning-to-stay" className="text-xs font-semibold text-neutral-700">Planning to stay</label>
+                        <span className="text-base font-bold text-neutral-900">{planningToStay} years</span>
                     </div>
                     <input 
                         id="planning-to-stay"
@@ -190,18 +190,18 @@ const RentVsBuyCalculator: React.FC<RentVsBuyCalculatorProps> = ({ propertyPrice
                         value={estimatedRent}
                         onChange={e => setEstimatedRent(e.target.value)}
                         placeholder={`${currencySymbol} ${suggestedRent.toLocaleString('de-DE')}`}
-                        className="w-full text-base font-semibold bg-neutral-100 border-neutral-200 border rounded-md p-2.5 text-neutral-900"
+                        className="w-full text-sm font-semibold bg-neutral-100 border-neutral-200 border rounded-md p-2 text-neutral-900"
                     />
-                    <label htmlFor="estimated-rent" className="block text-sm font-semibold text-neutral-700 mb-1 absolute -top-2.5 left-3 bg-white px-1 text-xs">Estimated monthly rent</label>
+                    <label htmlFor="estimated-rent" className="block text-xs font-semibold text-neutral-700 mb-1 absolute -top-2.5 left-3 bg-white px-1 text-[11px]">Estimated monthly rent</label>
                 </div>
 
                 <div>
-                    <button onClick={() => setShowAdvanced(!showAdvanced)} className="flex justify-between items-center w-full text-sm font-semibold text-neutral-700">
+                    <button onClick={() => setShowAdvanced(!showAdvanced)} className="flex justify-between items-center w-full text-xs font-semibold text-neutral-700">
                         <span>Advanced Settings</span>
-                        {showAdvanced ? <ChevronUpIcon className="w-5 h-5"/> : <ChevronDownIcon className="w-5 h-5"/>}
+                        {showAdvanced ? <ChevronUpIcon className="w-4 h-4"/> : <ChevronDownIcon className="w-4 h-4"/>}
                     </button>
                     {showAdvanced && (
-                        <div className="mt-4 space-y-4 pt-4 border-t animate-fade-in">
+                        <div className="mt-3 space-y-3 pt-3 border-t animate-fade-in">
                             <AdvancedInput label="Down Payment" value={downPaymentPercent} onChange={setDownPaymentPercent} placeholder="e.g., 20" unit="%" />
                             <AdvancedInput label="Interest Rate" value={interestRate} onChange={setInterestRate} placeholder="e.g., 3.5" unit="%" />
                             <AdvancedInput label="Loan Term" value={loanTerm} onChange={setLoanTerm} placeholder="e.g., 30" unit="yrs" />
@@ -215,38 +215,38 @@ const RentVsBuyCalculator: React.FC<RentVsBuyCalculatorProps> = ({ propertyPrice
                 </div>
 
                 {verdict && results && (
-                    <div className="border-t border-neutral-200 pt-4 text-center">
-                        <p className="text-sm font-semibold text-neutral-600">After {planningToStay} years, it's cheaper to</p>
-                        <p className={`text-4xl font-extrabold my-1 ${verdict.color}`}>
+                    <div className="border-t border-neutral-200 pt-3 text-center">
+                        <p className="text-xs font-semibold text-neutral-600">After {planningToStay} years, it's cheaper to</p>
+                        <p className={`text-3xl font-extrabold my-0.5 ${verdict.color}`}>
                             {verdict.decision}
                         </p>
-                        <p className="text-base font-semibold text-neutral-700">
+                        <p className="text-sm font-semibold text-neutral-700">
                             Estimated savings: {formatPrice(verdict.savings, country)}
                         </p>
 
-                        <div className="mt-4 grid grid-cols-2 gap-4">
-                            <div className={`p-3 rounded-lg border ${!isBuyCheaper ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                                <div className={`flex items-center gap-2 font-bold ${!isBuyCheaper ? 'text-green-700' : 'text-red-700'}`}>
-                                    <BuildingOfficeIcon className="w-5 h-5"/>
-                                    <p>Rent</p>
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                            <div className={`p-2 rounded-lg border ${!isBuyCheaper ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                <div className={`flex items-center gap-1.5 font-bold ${!isBuyCheaper ? 'text-green-700' : 'text-red-700'}`}>
+                                    <BuildingOfficeIcon className="w-4 h-4"/>
+                                    <p className="text-sm">Rent</p>
                                 </div>
-                                <p className="text-xs text-neutral-500 mt-1">Total Cost to Rent</p>
-                                <p className={`text-lg font-bold mt-0.5 ${!isBuyCheaper ? 'text-green-700' : 'text-red-700'}`}>{formatPrice(results.totalRentCost, country)}</p>
+                                <p className="text-[11px] text-neutral-500 mt-0.5">Total Cost to Rent</p>
+                                <p className={`text-base font-bold ${!isBuyCheaper ? 'text-green-700' : 'text-red-700'}`}>{formatPrice(results.totalRentCost, country)}</p>
                             </div>
-                             <div className={`p-3 rounded-lg border ${isBuyCheaper ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                                <div className={`flex items-center gap-2 font-bold ${isBuyCheaper ? 'text-green-700' : 'text-red-700'}`}>
-                                    <KeyIcon className="w-5 h-5"/>
-                                    <p>Own</p>
+                             <div className={`p-2 rounded-lg border ${isBuyCheaper ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                <div className={`flex items-center gap-1.5 font-bold ${isBuyCheaper ? 'text-green-700' : 'text-red-700'}`}>
+                                    <KeyIcon className="w-4 h-4"/>
+                                    <p className="text-sm">Own</p>
                                 </div>
-                                <p className="text-xs text-neutral-500 mt-1">Net Cost to Own</p>
-                                <p className={`text-lg font-bold mt-0.5 ${isBuyCheaper ? 'text-green-700' : 'text-red-700'}`}>{formatPrice(results.netBuyCost, country)}</p>
+                                <p className="text-[11px] text-neutral-500 mt-0.5">Net Cost to Own</p>
+                                <p className={`text-base font-bold ${isBuyCheaper ? 'text-green-700' : 'text-red-700'}`}>{formatPrice(results.netBuyCost, country)}</p>
                             </div>
                         </div>
                     </div>
                 )}
             </div>
 
-            <p className="text-center text-xs text-neutral-400 mt-6">
+            <p className="text-center text-[10px] text-neutral-400 mt-4">
                 This is an estimate for informational purposes. Many factors can influence the costs of buying and renting.
             </p>
         </div>

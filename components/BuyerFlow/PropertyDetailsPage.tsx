@@ -762,26 +762,26 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
           </div>
 
           <div className="lg:col-span-1">
-            <div className="sticky top-24 space-y-8">
-              <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
-                  <h3 className="text-lg sm:text-xl font-bold text-neutral-800 mb-4">Contact Seller</h3>
-                  <div className="flex items-center gap-4 mb-6">
+            <div className="sticky top-24 space-y-6">
+              <div className="bg-white p-4 rounded-xl shadow-lg border border-neutral-200">
+                  <h3 className="text-base sm:text-lg font-bold text-neutral-800 mb-4">Contact Seller</h3>
+                  <div className="flex items-center gap-4 mb-4">
                       {property.seller?.avatarUrl ? (
-                          <img src={property.seller.avatarUrl} alt={property.seller.name} className="w-16 h-16 rounded-full object-cover" />
+                          <img src={property.seller.avatarUrl} alt={property.seller.name} className="w-12 h-12 rounded-full object-cover" />
                       ) : (
-                          <UserCircleIcon className="w-16 h-16 text-neutral-300" />
+                          <UserCircleIcon className="w-12 h-12 text-neutral-300" />
                       )}
                       <div>
-                          <p className="font-bold text-lg text-neutral-900">{property.seller?.name}</p>
-                          <p className="text-sm text-neutral-600 capitalize">{property.seller?.type}</p>
+                          <p className="font-bold text-base text-neutral-900">{property.seller?.name}</p>
+                          <p className="text-xs text-neutral-600 capitalize">{property.seller?.type}</p>
                       </div>
                   </div>
-                  <div className="space-y-3">
-                      <a href={`tel:${property.seller?.phone}`} className="w-full flex justify-center items-center gap-3 py-3 px-4 border border-transparent rounded-lg shadow-sm text-md font-medium text-white bg-primary hover:bg-primary-dark">
-                          <PhoneIcon className="w-5 h-5" />
+                  <div className="space-y-2">
+                      <a href={`tel:${property.seller?.phone}`} className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark">
+                          <PhoneIcon className="w-4 h-4" />
                           Call Seller
                       </a>
-                       <button className="w-full flex justify-center items-center gap-3 py-3 px-4 border border-primary text-primary rounded-lg shadow-sm text-md font-medium bg-white hover:bg-primary-light">
+                       <button className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-primary text-primary rounded-lg shadow-sm text-sm font-medium bg-white hover:bg-primary-light">
                           Request Info
                       </button>
                   </div>

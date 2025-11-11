@@ -11,7 +11,7 @@ const TermButton: React.FC<{ term: number, selectedTerm: number, onClick: (term:
     <button
         type="button"
         onClick={() => onClick(term)}
-        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 flex-grow text-center ${
+        className={`px-2 py-1 rounded-full text-xs font-semibold transition-all duration-300 flex-grow text-center ${
             selectedTerm === term
             ? 'bg-primary text-white shadow'
             : 'text-neutral-600 hover:bg-neutral-200'
@@ -77,27 +77,27 @@ const MortgageCalculator: React.FC<MortgageCalculatorProps> = ({ propertyPrice, 
     };
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200 animate-fade-in">
-            <div className="flex items-center gap-3 mb-4">
-                <CurrencyDollarIcon className="w-6 h-6 text-primary" />
-                <h3 className="text-lg font-bold text-neutral-800">Mortgage Calculator</h3>
+        <div className="bg-white p-4 rounded-xl shadow-lg border border-neutral-200 animate-fade-in">
+            <div className="flex items-center gap-2 mb-3">
+                <CurrencyDollarIcon className="w-5 h-5 text-primary" />
+                <h3 className="text-base font-bold text-neutral-800">Mortgage Calculator</h3>
             </div>
             
-            <div className="space-y-5">
+            <div className="space-y-4">
                 <div>
                     <label className="text-xs font-medium text-neutral-500">Property Price</label>
-                    <p className="text-xl font-bold text-neutral-800">{formatPrice(propertyPrice, country)}</p>
+                    <p className="text-lg font-bold text-neutral-800">{formatPrice(propertyPrice, country)}</p>
                 </div>
 
                 <div>
                     <div className="flex justify-between items-center mb-1">
-                        <label className="text-sm font-semibold text-neutral-700">Down Payment</label>
-                        <div className="bg-neutral-100 p-1 rounded-full flex items-center text-xs font-semibold">
+                        <label className="text-xs font-semibold text-neutral-700">Down Payment</label>
+                        <div className="bg-neutral-100 p-0.5 rounded-full flex items-center text-xs font-semibold">
                             <button onClick={() => handleDownPaymentTypeChange('percent')} className={`px-2 py-0.5 rounded-full ${downPaymentType === 'percent' ? 'bg-white shadow-sm text-primary' : 'text-neutral-500'}`}>%</button>
                             <button onClick={() => handleDownPaymentTypeChange('amount')} className={`px-2 py-0.5 rounded-full ${downPaymentType === 'amount' ? 'bg-white shadow-sm text-primary' : 'text-neutral-500'}`}>{currencySymbol}</button>
                         </div>
                     </div>
-                     <div className="flex items-center gap-3">
+                     <div className="flex items-center gap-2">
                         <input 
                             type="range" 
                             min={0} 
@@ -111,14 +111,14 @@ const MortgageCalculator: React.FC<MortgageCalculatorProps> = ({ propertyPrice, 
                             type="number" 
                             value={downPayment}
                             onChange={handleDownPaymentChange}
-                            className="w-24 text-sm font-semibold bg-neutral-50 border border-neutral-200 rounded-md p-1.5 text-center text-neutral-900"
+                            className="w-20 text-xs font-semibold bg-neutral-50 border border-neutral-200 rounded-md p-1 text-center text-neutral-900"
                         />
                     </div>
-                    <p className="text-xs text-right text-neutral-500 mt-1">({formatPrice(downPaymentAmount, country)})</p>
+                    <p className="text-[11px] text-right text-neutral-500 mt-1">({formatPrice(downPaymentAmount, country)})</p>
                 </div>
                 
                  <div>
-                    <label className="block text-sm font-semibold text-neutral-700 mb-2">Loan Term</label>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Loan Term</label>
                     <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200">
                         {[15, 20, 25, 30].map(term => (
                             <TermButton key={term} term={term} selectedTerm={loanTerm} onClick={setLoanTerm} />
@@ -127,26 +127,26 @@ const MortgageCalculator: React.FC<MortgageCalculatorProps> = ({ propertyPrice, 
                 </div>
 
                 <div>
-                    <label htmlFor="interest-rate" className="block text-sm font-semibold text-neutral-700 mb-1">Interest Rate (%)</label>
+                    <label htmlFor="interest-rate" className="block text-xs font-semibold text-neutral-700 mb-1">Interest Rate (%)</label>
                     <input 
                         id="interest-rate"
                         type="number" 
                         step="0.01" 
                         value={interestRate} 
                         onChange={e => setInterestRate(e.target.valueAsNumber || 0)}
-                        className="w-full text-base font-semibold bg-neutral-50 border border-neutral-200 rounded-md p-2 text-neutral-900"
+                        className="w-full text-sm font-semibold bg-neutral-50 border border-neutral-200 rounded-md p-1.5 text-neutral-900"
                     />
                 </div>
 
-                <div className="border-t border-neutral-200 pt-4 text-center">
-                    <p className="text-sm font-semibold text-neutral-600">Estimated Monthly Payment</p>
-                    <p className="text-3xl font-extrabold text-primary mt-1">
+                <div className="border-t border-neutral-200 pt-3 text-center">
+                    <p className="text-xs font-semibold text-neutral-600">Estimated Monthly Payment</p>
+                    <p className="text-2xl font-extrabold text-primary mt-0.5">
                         {formatPrice(monthlyPayment, country)}
                     </p>
                 </div>
             </div>
             
-            <p className="text-center text-xs text-neutral-400 mt-6">
+            <p className="text-center text-[10px] text-neutral-400 mt-4">
                 This is an estimate for informational purposes only. Consult with a financial professional for actual rates and payments.
             </p>
         </div>
