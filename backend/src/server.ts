@@ -25,30 +25,22 @@ connectDB();
 // CORS configuration - MUST be FIRST before any other middleware
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl)
-      if (!origin) return callback(null, true);
-
-      const allowedOrigins = [
-        'http://localhost:3000',
-        'http://localhost:5173',
-        process.env.FRONTEND_URL
-      ].filter(Boolean);
-
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Allow all in development
-      }
-    },
+    origin: true, // Allow all origins in development
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
     exposedHeaders: ['Content-Range', 'X-Content-Range'],
     preflightContinue: false,
-    optionsSuccessStatus: 204
+    optionsSuccessStatus: 204,
+    maxAge: 86400 // Cache preflight requests for 24 hours
   })
 );
+
+// Debug middleware to log all requests
+app.use((_req: Request, _res: Response, next: NextFunction) => {
+  console.log(`${_req.method} ${_req.url} - Origin: ${_req.headers.origin || 'no origin'}`);
+  next();
+});
 
 // Body parser
 app.use(express.json({ limit: '10mb' }));
