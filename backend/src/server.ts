@@ -22,22 +22,29 @@ const app: Application = express();
 // Connect to database
 connectDB();
 
-// Middleware
-app.use(helmet()); // Security headers
-app.use(compression()); // Compress responses
-app.use(morgan('dev')); // Logging
+// Body parser - MUST come before routes
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// CORS configuration
+// CORS configuration - MUST come before routes
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
-// Body parser
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Security middleware - Configure helmet to be less strict
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+    contentSecurityPolicy: false,
+  })
+);
+app.use(compression()); // Compress responses
+app.use(morgan('dev')); // Logging
 
 // Health check route
 app.get('/health', (_req: Request, res: Response) => {
