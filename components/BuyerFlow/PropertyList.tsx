@@ -299,10 +299,11 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
     
     const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors";
     
-    // Desktop layout with fixed filters and scrollable list
+    // Desktop layout
     if (!isMobile) {
         return (
             <div className="flex flex-col h-full bg-transparent">
+                {/* TOP CONTROLS SECTION */}
                 <div className="flex-shrink-0 border-b border-neutral-200">
                     <div className="p-4">
                         <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm mx-auto">
@@ -310,71 +311,72 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                             <button onClick={() => onSearchModeChange('ai')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><SparklesIcon className="w-4 h-4" /> AI Search</button>
                         </div>
                     </div>
-
-                    {searchMode === 'manual' && (
-                        <div className="p-4 pt-0">
-                            <FilterControls {...props} />
-                        </div>
-                    )}
+                    
+                    <div className="p-4 pt-0" style={{ height: '280px' }}>
+                        {searchMode === 'manual' ? (
+                            <div className="h-full overflow-y-auto pr-2">
+                                <FilterControls {...props} />
+                            </div>
+                        ) : (
+                            <AiSearch 
+                                properties={properties} 
+                                onApplyFilters={onApplyAiFilters} 
+                                isMobile={isMobile}
+                                history={aiChatHistory}
+                                onHistoryChange={onAiChatHistoryChange}
+                            />
+                        )}
+                    </div>
                 </div>
 
+                {/* PROPERTY LIST SECTION */}
                 <div className="flex-grow min-h-0">
-                    {searchMode === 'ai' ? (
-                        <AiSearch 
-                            properties={properties} 
-                            onApplyFilters={onApplyAiFilters} 
-                            isMobile={isMobile}
-                            history={aiChatHistory}
-                            onHistoryChange={onAiChatHistoryChange}
-                        />
-                    ) : (
-                        <div className="h-full overflow-y-auto">
-                            <div className="p-4 border-b border-neutral-200 flex items-center justify-between sticky top-0 bg-white/90 backdrop-blur-sm z-10">
-                                <p className="text-xs text-neutral-500 font-semibold">{properties.length} results found</p>
-                                <div className="relative">
-                                    <select
-                                        id="sortBy"
-                                        name="sortBy"
-                                        value={filters.sortBy}
-                                        onChange={(e) => onSortChange(e.target.value)}
-                                        className={`${inputBaseClasses} appearance-none pr-8 text-xs !py-1.5`}
-                                    >
-                                        <option value="newest">Newest</option>
-                                        <option value="price_asc">Price (low-high)</option>
-                                        <option value="price_desc">Price (high-low)</option>
-                                        <option value="beds_desc">Beds (most)</option>
-                                    </select>
-                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-neutral-500">
-                                        <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                                    </div>
+                    <div className="h-full overflow-y-auto">
+                        <div className="p-4 border-b border-neutral-200 flex items-center justify-between sticky top-0 bg-white/90 backdrop-blur-sm z-10">
+                            <p className="text-xs text-neutral-500 font-semibold">{properties.length} results found</p>
+                            <div className="relative">
+                                <select
+                                    id="sortBy"
+                                    name="sortBy"
+                                    value={filters.sortBy}
+                                    onChange={(e) => onSortChange(e.target.value)}
+                                    className={`${inputBaseClasses} appearance-none pr-8 text-xs !py-1.5`}
+                                >
+                                    <option value="newest">Newest</option>
+                                    <option value="price_asc">Price (low-high)</option>
+                                    <option value="price_desc">Price (high-low)</option>
+                                    <option value="beds_desc">Beds (most)</option>
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-neutral-500">
+                                    <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                                 </div>
                             </div>
-                            <div className="p-4">
-                                {isLoadingProperties ? (
+                        </div>
+                        <div className="p-4">
+                            {isLoadingProperties ? (
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    {Array.from({ length: 6 }).map((_, index) => (
+                                        <PropertyCardSkeleton key={index} />
+                                    ))}
+                                </div>
+                            ) : properties.length > 0 ? (
+                                <>
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                        {Array.from({ length: 6 }).map((_, index) => (
-                                            <PropertyCardSkeleton key={index} />
+                                        {properties.slice(0, visibleCount).map(prop => (
+                                            <PropertyCard key={prop.id} property={prop} />
                                         ))}
                                     </div>
-                                ) : properties.length > 0 ? (
-                                     <>
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                            {properties.slice(0, visibleCount).map(prop => (
-                                                <PropertyCard key={prop.id} property={prop} />
-                                            ))}
+                                    {visibleCount < properties.length && (
+                                        <div ref={loadMoreRef} className="text-center p-8">
+                                            {isLoadingMore && <span>Loading more...</span>}
                                         </div>
-                                        {visibleCount < properties.length && (
-                                            <div ref={loadMoreRef} className="text-center p-8">
-                                                {isLoadingMore && <span>Loading more...</span>}
-                                            </div>
-                                        )}
-                                    </>
-                                ) : (
-                                    <div className="text-center py-16 px-4"><h3 className="text-xl font-semibold text-neutral-800">No Properties Found</h3></div>
-                                )}
-                            </div>
+                                    )}
+                                </>
+                            ) : (
+                                <div className="text-center py-16 px-4"><h3 className="text-xl font-semibold text-neutral-800">No Properties Found</h3></div>
+                            )}
                         </div>
-                    )}
+                    </div>
                 </div>
             </div>
         );

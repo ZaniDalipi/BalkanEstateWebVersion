@@ -54,6 +54,7 @@ interface MapComponentProps {
   onFlyComplete: () => void;
   onRecenter: () => void;
   isMobile: boolean;
+  searchMode: 'manual' | 'ai';
 }
 
 const FlyToController: React.FC<{
@@ -77,7 +78,7 @@ const FlyToController: React.FC<{
     return null;
 }
 
-const MapEvents: React.FC<{ onMove: (bounds: L.LatLngBounds, center: L.LatLng) => void }> = ({ onMove }) => {
+const MapEvents: React.FC<{ onMove: (bounds: L.LatLngBounds, center: L.LatLng) => void; mapBounds: L.LatLngBounds | null; searchMode: 'manual' | 'ai'; }> = ({ onMove, mapBounds, searchMode }) => {
     const map = useMap();
 
     useEffect(() => {
@@ -90,10 +91,37 @@ const MapEvents: React.FC<{ onMove: (bounds: L.LatLngBounds, center: L.LatLng) =
         const mapContainer = map.getContainer();
         resizeObserver.observe(mapContainer);
         
+        // Force a resize check shortly after the component mounts.
+        // This helps fix layout issues where the map container size isn't computed correctly on initial render.
+        const timer = setTimeout(() => {
+            map.invalidateSize();
+        }, 100);
+        
         return () => {
             resizeObserver.unobserve(mapContainer);
+            clearTimeout(timer);
         };
     }, [map]);
+
+    useEffect(() => {
+        if (mapBounds) {
+            // This effect runs when the mapBounds prop changes. This happens after the parent
+            // SearchPage component updates its state from the map's 'moveend' event.
+            // By calling invalidateSize() in a timeout, we ensure the map re-checks its
+            // container size *after* the React render cycle completes, fixing any
+            // layout shifts that might occur from other components updating (like the property count).
+            const timer = setTimeout(() => map.invalidateSize(), 0);
+            return () => clearTimeout(timer);
+        }
+    }, [map, mapBounds]);
+
+    useEffect(() => {
+        // When the search mode changes (e.g., from manual to AI), the left panel's content
+        // might change, causing a layout shift. We need to tell the map to re-check
+        // its container size to fill the space correctly.
+        const timer = setTimeout(() => map.invalidateSize(), 50); // A small delay to let layout settle
+        return () => clearTimeout(timer);
+    }, [map, searchMode]);
 
 
     useMapEvents({
@@ -338,7 +366,7 @@ const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) => {
     );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, userLocation, onSaveSearch, isSaving, isAuthenticated, mapBounds, drawnBounds, onDrawComplete, isDrawing, onDrawStart, flyToTarget, onFlyComplete, onRecenter, isMobile }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, userLocation, onSaveSearch, isSaving, isAuthenticated, mapBounds, drawnBounds, onDrawComplete, isDrawing, onDrawStart, flyToTarget, onFlyComplete, onRecenter, isMobile, searchMode }) => {
   const { dispatch } = useAppContext();
   const [mapType, setMapType] = useState<TileLayerType>('street');
   const [isLegendOpen, setIsLegendOpen] = useState(false);
@@ -384,7 +412,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, user
         maxBoundsViscosity={1.0}
       >
         <FlyToController target={flyToTarget} onComplete={onFlyComplete} />
-        <MapEvents onMove={onMapMove} />
+        <MapEvents onMove={onMapMove} mapBounds={mapBounds} searchMode={searchMode} />
         <MapDrawEvents isDrawing={isDrawing} onDrawComplete={onDrawComplete} />
         {drawnBounds && !isDrawing && (
             <Rectangle

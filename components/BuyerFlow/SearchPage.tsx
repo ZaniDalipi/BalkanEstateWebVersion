@@ -540,7 +540,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
 
                 {/* --- Right Panel: Map --- */}
                 <div className="h-full w-full md:w-2/5 relative z-0">
-                    <MapComponent {...mapProps} />
+                    <MapComponent {...mapProps} searchMode={searchMode} />
                 </div>
                 
                 {/* --- Mobile View Overlays --- */}

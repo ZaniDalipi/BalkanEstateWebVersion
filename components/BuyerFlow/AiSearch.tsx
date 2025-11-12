@@ -86,8 +86,8 @@ const AiSearch: React.FC<AiSearchProps> = ({ properties, onApplyFilters, isMobil
     };
 
     return (
-        <div className={`flex flex-col h-full bg-white`}>
-            <div className="flex-grow p-4 space-y-4 overflow-y-auto">
+        <div className={`flex flex-col h-full bg-white border border-neutral-200 rounded-lg`}>
+            <div className="flex-grow min-h-0 p-4 space-y-4 overflow-y-auto">
                 {history.map((msg, index) => (
                     <div key={index} className={`flex items-end gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                          {msg.sender === 'ai' && (
