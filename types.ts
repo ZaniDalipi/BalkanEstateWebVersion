@@ -164,38 +164,39 @@ export interface AiSearchQuery {
 
 // --- Location/Map Data ---
 
-export interface Settlement {
-    name: string;
-    localNames?: string[];
-    latitude: number;
-    longitude: number;
-
-}
-
-export interface Municipality {
-    name: string;
-    // FIX: Add optional `localNames` property to match usage in transformation logic.
-    localNames?: string[];
-    latitude: number;
-    longitude: number;
-    settlements: Settlement[];
-}
-
 export interface SettlementData {
-    name: string;
-    localNames: string[];
-    lat: number;
-    lng: number;
+  name: string;
+  lat: number;
+  lng: number;
 }
-
 export interface MunicipalityData {
     name: string;
-    localNames: string[];
-    lat: number;
-    lng: number;
     settlements: SettlementData[];
 }
 
+export interface NominatimResult {
+  place_id: number;
+  licence: string;
+  osm_type: string;
+  osm_id: number;
+  boundingbox: [string, string, string, string]; // [south, north, west, east]
+  lat: string;
+  lon: string;
+  display_name: string;
+  class: string;
+  type: string;
+  importance: number;
+  icon?: string;
+  address?: {
+    city?: string;
+    town?: string;
+    village?: string;
+    county?: string;
+    state?: string;
+    country: string;
+    country_code: string;
+  };
+}
 
 // --- App State Management ---
 
@@ -234,12 +235,12 @@ export interface AppState {
     comparisonList: string[]; // array of property IDs
     conversations: Conversation[];
     selectedAgentId: string | null;
-    allMunicipalities: Record<string, MunicipalityData[]>;
     pendingProperty: Property | null;
     searchPageState: SearchPageState;
     activeDiscount: { proYearly: number; proMonthly: number; enterprise: number; } | null;
     isListingLimitWarningOpen: boolean;
     isDiscountGameOpen: boolean;
+    allMunicipalities: Record<string, MunicipalityData[]>;
 }
 
 export type AppAction =

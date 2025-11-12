@@ -19,7 +19,8 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onO
 
   const matchingProperties = useMemo(() => {
       // Start with base filters
-      let filtered = filterProperties(properties, search.filters, allMunicipalities);
+      // FIX: The filterProperties function expects 2 arguments, not 3.
+      let filtered = filterProperties(properties, search.filters);
 
       // If there's a drawn area, filter by it
       if (search.drawnBoundsJSON) {

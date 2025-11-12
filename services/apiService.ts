@@ -1,5 +1,4 @@
-import { Property, Seller, User, UserRole, AppState, SavedSearch, Message, Conversation, Filters, MunicipalityData } from '../types';
-import { MUNICIPALITY_RAW_DATA } from '../utils/cityData';
+import { Property, Seller, User, UserRole, AppState, SavedSearch, Message, Conversation, Filters } from '../types';
 import { filterProperties } from '../utils/propertyUtils';
 
 // --- MOCK DATABASE ---
@@ -27,24 +26,6 @@ export const mockUsers: { [key: string]: User } = {
     'user_agent_6': { id: 'user_agent_6', name: 'Alen Isić', email: 'alen.i@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=alen', phone: '+387621112222', role: UserRole.AGENT, city: 'Sarajevo', country: 'Bosnia and Herzegovina', agencyName: 'Sarajevo Realty', agentId: 'AGENT-BA-002', licenseNumber: 'BA-LIC-3344', testimonials: [{ quote: "Alen helped us sell our flat in record time.", clientName: "Jasmina & Emir" }], isSubscribed: false }
 };
 
-const MUNICIPALITY_DATA: Record<string, MunicipalityData[]> = (
-  Object.fromEntries(Object.entries(MUNICIPALITY_RAW_DATA).map(([country, municipalities]) => [
-    country,
-    municipalities.map(mun => ({
-        name: mun.name,
-        localNames: mun.localNames || [],
-        lat: mun.latitude,
-        lng: mun.longitude,
-        settlements: mun.settlements.map(s => ({
-            name: s.name,
-            localNames: s.localNames || [],
-            lat: s.latitude,
-            lng: s.longitude,
-        }))
-    }))
-  ]))
-);
-
 // --- Data Generation ---
 
 const basePricePerSqftByCountry: { [key: string]: number } = {
@@ -67,6 +48,22 @@ const coastalCities = new Set([
     "athens", "thessaloniki", "patras", "heraklion", "volos", "rhodes", "chania", "kavala", "santorini", "mykonos", "corfu", "kalamata", "alexandroupoli"
 ]);
 
+const simpleLocations = [
+    { country: 'Serbia', city: 'Belgrade', lat: 44.78, lng: 20.44 },
+    { country: 'Croatia', city: 'Zagreb', lat: 45.81, lng: 15.98 },
+    { country: 'Bosnia and Herzegovina', city: 'Sarajevo', lat: 43.85, lng: 18.41 },
+    { country: 'Slovenia', city: 'Ljubljana', lat: 46.05, lng: 14.50 },
+    { country: 'North Macedonia', city: 'Skopje', lat: 41.99, lng: 21.42 },
+    { country: 'Montenegro', city: 'Podgorica', lat: 42.43, lng: 19.25 },
+    { country: 'Albania', city: 'Tirana', lat: 41.32, lng: 19.81 },
+    { country: 'Bulgaria', city: 'Sofia', lat: 42.69, lng: 23.32 },
+    { country: 'Greece', city: 'Athens', lat: 37.98, lng: 23.72 },
+    { country: 'Kosovo', city: 'Pristina', lat: 42.66, lng: 21.16 },
+    { country: 'Croatia', city: 'Split', lat: 43.50, lng: 16.44 },
+    { country: 'Montenegro', city: 'Budva', lat: 42.28, lng: 18.84 },
+    { country: 'Serbia', city: 'Zlatibor', lat: 43.72, lng: 19.70 },
+];
+
 const generateMockProperties = (count: number): Property[] => {
     const newProperties: Property[] = [];
     const sellerIds = Object.keys(mockUsers);
@@ -78,28 +75,18 @@ const generateMockProperties = (count: number): Property[] => {
     const coastalFeatures = ['Sea View', 'Beachfront', 'Near Beach'];
     
     const materials = ['Brick', 'Wood', 'Stone', 'Marble', 'Concrete', 'Hardwood Floors', 'Tiles', 'Laminate'];
-
-    const locations: { country: string, municipality: string, settlement: string, lat: number, lng: number }[] = [];
-    for (const country in MUNICIPALITY_DATA) {
-        for (const mun of MUNICIPALITY_DATA[country]) {
-            for (const set of mun.settlements) {
-                locations.push({ country, municipality: mun.name, settlement: set.name, lat: set.lat, lng: set.lng });
-            }
-        }
-    }
     
-    if (locations.length === 0) {
+    if (simpleLocations.length === 0) {
         console.error("No locations found to generate properties.");
         return [];
     }
 
     for (let i = 0; i < count; i++) {
-        const randomLocation = locations[Math.floor(Math.random() * locations.length)];
+        const randomLocation = simpleLocations[Math.floor(Math.random() * simpleLocations.length)];
         const sellerId = sellerIds[Math.floor(Math.random() * sellerIds.length)];
         
-        const isCityCenter = randomLocation.settlement === randomLocation.municipality;
         let propertyType: Property['propertyType'];
-        if (isCityCenter && Math.random() < 0.7) {
+        if (Math.random() < 0.7) {
             propertyType = 'apartment';
         } else {
             propertyType = propertyTypes[Math.floor(Math.random() * propertyTypes.length)];
@@ -120,9 +107,8 @@ const generateMockProperties = (count: number): Property[] => {
 
         const basePrice = basePricePerSqftByCountry[randomLocation.country] || 1500;
         const pricePerSqftVariance = (Math.random() - 0.5) * 0.4;
-        const locationPremium = isCityCenter ? 1.2 : 1.0;
         
-        const pricePerSqft = basePrice * (1 + pricePerSqftVariance) * locationPremium;
+        const pricePerSqft = basePrice * (1 + pricePerSqftVariance);
         const price = Math.round((pricePerSqft * sqft) / 1000) * 1000;
         
         const beds = Math.max(1, Math.floor(sqft / 35) + (Math.random() < 0.3 ? -1 : (Math.random() < 0.7 ? 0 : 1)));
@@ -130,7 +116,7 @@ const generateMockProperties = (count: number): Property[] => {
         const livingRooms = Math.max(1, Math.floor(beds / 3));
         const yearBuilt = Math.floor(Math.random() * 70) + 1950;
         
-        const isCoastal = coastalCities.has(randomLocation.municipality.toLowerCase());
+        const isCoastal = coastalCities.has(randomLocation.city.toLowerCase());
         const availableFeatures = [...commonFeatures, ...locationFeatures, ...(isCoastal ? coastalFeatures : [])];
         
         const prop: Property = {
@@ -139,7 +125,7 @@ const generateMockProperties = (count: number): Property[] => {
             status: Math.random() < 0.92 ? 'active' : (Math.random() < 0.5 ? 'sold' : 'pending'),
             price,
             address: `${streetNames[Math.floor(Math.random() * streetNames.length)]} ${Math.floor(Math.random() * 200) + 1}`,
-            city: `${randomLocation.settlement}, ${randomLocation.municipality}`,
+            city: randomLocation.city,
             country: randomLocation.country,
             beds,
             baths,
@@ -147,7 +133,7 @@ const generateMockProperties = (count: number): Property[] => {
             sqft,
             yearBuilt,
             parking: Math.floor(Math.random() * 3),
-            description: `A lovely ${propertyType} in ${randomLocation.settlement} with ${beds} bedrooms and beautiful surroundings. Built in ${yearBuilt}, this property is a fantastic opportunity.`,
+            description: `A lovely ${propertyType} in ${randomLocation.city} with ${beds} bedrooms and beautiful surroundings. Built in ${yearBuilt}, this property is a fantastic opportunity.`,
             specialFeatures: [...new Set(Array.from({ length: Math.floor(Math.random() * 5) }, () => availableFeatures[Math.floor(Math.random() * availableFeatures.length)]))],
             materials: [...new Set(Array.from({ length: Math.floor(Math.random() * 4) }, () => materials[Math.floor(Math.random() * materials.length)]))],
             imageUrl: `https://source.unsplash.com/random/800x600/?${propertyType},exterior,modern&sig=${i}`,
@@ -297,10 +283,10 @@ export const completePhoneSignup = async (phone: string, name: string, email: st
     return newUser;
 };
 
-export const getProperties = async (filters?: Filters, allMunicipalities?: Record<string, MunicipalityData[]>): Promise<Property[]> => {
+export const getProperties = async (filters?: Filters): Promise<Property[]> => {
     await sleep(LATENCY);
-    if (filters && allMunicipalities) {
-        return filterProperties(allProperties, filters, allMunicipalities);
+    if (filters) {
+        return filterProperties(allProperties, filters);
     }
     return [...allProperties]; // Return a copy to prevent mutation issues
 };

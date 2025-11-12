@@ -4,7 +4,7 @@ import { Property } from '../../types';
 import L, { LeafletMouseEvent } from 'leaflet';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
-import { BellIcon, PencilIcon, XCircleIcon, Bars3Icon } from '../../constants';
+import { BellIcon, PencilIcon, XCircleIcon, Bars3Icon, CrosshairsIcon } from '../../constants';
 
 
 // Fix for default icon issue with bundlers
@@ -34,8 +34,6 @@ type TileLayerType = keyof typeof TILE_LAYERS;
 interface MapComponentProps {
   properties: Property[];
   onMapMove: (bounds: L.LatLngBounds, center: L.LatLng) => void;
-  isSearchActive: boolean;
-  searchLocation: [number, number] | null;
   userLocation: [number, number] | null;
   onSaveSearch: () => void;
   isSaving: boolean;
@@ -47,6 +45,7 @@ interface MapComponentProps {
   onDrawStart: () => void;
   flyToTarget: { center: [number, number]; zoom: number } | null;
   onFlyComplete: () => void;
+  onRecenter: () => void;
   isMobile: boolean;
 }
 
@@ -332,7 +331,7 @@ const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) => {
     );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, isSearchActive, searchLocation, userLocation, onSaveSearch, isSaving, isAuthenticated, mapBounds, drawnBounds, onDrawComplete, isDrawing, onDrawStart, flyToTarget, onFlyComplete, isMobile }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, userLocation, onSaveSearch, isSaving, isAuthenticated, mapBounds, drawnBounds, onDrawComplete, isDrawing, onDrawStart, flyToTarget, onFlyComplete, onRecenter, isMobile }) => {
   const { dispatch } = useAppContext();
   const [mapType, setMapType] = useState<TileLayerType>('street');
   const [isLegendOpen, setIsLegendOpen] = useState(false);
@@ -356,12 +355,10 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, isSe
   }, [validProperties, mapBounds, drawnBounds]);
   
     const { center, zoom } = useMemo(() => {
-        if (searchLocation) return { center: searchLocation, zoom: 12 };
         if (userLocation) return { center: userLocation, zoom: 13 };
-        if (isSearchActive && validProperties.length > 0) return { center: [validProperties[0].lat, validProperties[0].lng] as [number, number], zoom: validProperties.length === 1 ? 14 : 12 };
         if (validProperties.length > 0) return { center: [validProperties[0].lat, validProperties[0].lng] as [number, number], zoom: 10 };
-        return { center: [44.2, 19.9] as [number, number], zoom: 10 };
-      }, [validProperties, isSearchActive, searchLocation, userLocation]);
+        return { center: [44.2, 19.9] as [number, number], zoom: 7 };
+      }, [validProperties, userLocation]);
     
   const handlePopupClick = (propertyId: string) => {
     dispatch({ type: 'SET_SELECTED_PROPERTY', payload: propertyId });
@@ -369,7 +366,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, isSe
 
   return (
     <div className="w-full h-full relative">
-      <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full" maxZoom={18} minZoom={9} zoomControl={false}>
+      <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full" maxZoom={18} minZoom={7} zoomControl={false}>
         <FlyToController target={flyToTarget} onComplete={onFlyComplete} />
         <MapEvents onMove={onMapMove} />
         <MapDrawEvents isDrawing={isDrawing} onDrawComplete={onDrawComplete} />
@@ -396,6 +393,13 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, isSe
                     title={isLegendOpen ? "Hide Legend" : "Show Legend"}
                 >
                     <Bars3Icon className="w-6 h-6 text-neutral-700" />
+                </button>
+                 <button
+                    onClick={onRecenter}
+                    className="p-2 rounded-full hover:bg-black/10 transition-colors"
+                    title="Center on my location"
+                >
+                    <CrosshairsIcon className="w-6 h-6 text-neutral-700" />
                 </button>
                 <div className="flex items-center gap-1 bg-neutral-200/50 p-1 rounded-full">
                     <button

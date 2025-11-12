@@ -1,5 +1,5 @@
 import React, { createContext, useReducer, useContext, Dispatch, useCallback } from 'react';
-import { User, Property, SavedSearch, Conversation, AppState, AppAction, Filters, Message, AuthModalView, MunicipalityData, initialFilters, SearchPageState } from '../types';
+import { User, Property, SavedSearch, Conversation, AppState, AppAction, Filters, Message, AuthModalView, initialFilters, SearchPageState } from '../types';
 import * as api from '../services/apiService';
 import { MUNICIPALITY_DATA } from '../services/propertyService';
 
@@ -38,12 +38,13 @@ const initialState: AppState = {
   comparisonList: [],
   conversations: [],
   selectedAgentId: null,
-  allMunicipalities: MUNICIPALITY_DATA,
   pendingProperty: null,
   searchPageState: initialSearchPageState,
   activeDiscount: null,
   isListingLimitWarningOpen: false,
   isDiscountGameOpen: false,
+  // FIX: Initialize allMunicipalities in the initial state.
+  allMunicipalities: MUNICIPALITY_DATA,
 };
 
 
@@ -298,12 +299,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const fetchProperties = useCallback(async (filters?: Filters) => {
       dispatch({ type: 'PROPERTIES_LOADING' });
       try {
-          const properties = await api.getProperties(filters, state.allMunicipalities);
+          const properties = await api.getProperties(filters);
           dispatch({ type: 'PROPERTIES_SUCCESS', payload: properties });
       } catch (e: any) {
           dispatch({ type: 'PROPERTIES_ERROR', payload: e.message || 'Failed to fetch properties.'});
       }
-  }, [state.allMunicipalities]);
+  }, []);
 
   const toggleSavedHome = useCallback(async (property: Property) => {
     const isSaved = state.savedHomes.some(p => p.id === property.id);

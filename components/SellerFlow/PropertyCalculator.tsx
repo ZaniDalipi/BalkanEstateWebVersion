@@ -1,22 +1,59 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { formatPrice } from '../../utils/currency';
 import { allProperties as dummyProperties } from '../../services/apiService';
-// FIX: Imported MUNICIPALITY_DATA instead of the non-existent CITY_DATA.
-import { MUNICIPALITY_DATA } from '../../services/propertyService';
+import { NominatimResult } from '../../types';
+import { searchLocation } from '../../services/osmService';
+import { MapPinIcon, SpinnerIcon } from '../../constants';
 
 const PropertyCalculator: React.FC = () => {
   const [result, setResult] = useState<{value: number, country: string} | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  
+  // Location Search State
+  const [locationSearch, setLocationSearch] = useState('');
+  const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<NominatimResult | null>(null);
+  const debounceTimer = useRef<number | null>(null);
+  const locationContainerRef = useRef<HTMLDivElement>(null);
 
-  const availableCountries = useMemo(() => Object.keys(MUNICIPALITY_DATA).sort(), []);
-  const [selectedCountry, setSelectedCountry] = useState('');
 
-  const availableCities = useMemo(() => {
-    if (!selectedCountry || !MUNICIPALITY_DATA[selectedCountry]) return [];
-    return MUNICIPALITY_DATA[selectedCountry].map(city => city.name).sort();
-  }, [selectedCountry]);
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
 
+    if (locationSearch.trim().length > 2) {
+      setIsSearching(true);
+      debounceTimer.current = window.setTimeout(async () => {
+        const results = await searchLocation(locationSearch);
+        setSuggestions(results);
+        setIsSearching(false);
+      }, 500);
+    } else {
+      setSuggestions([]);
+    }
+  }, [locationSearch]);
+  
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+        if (locationContainerRef.current && !locationContainerRef.current.contains(event.target as Node)) {
+            setSuggestions([]);
+        }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocationSearch(e.target.value);
+    setSelectedLocation(null);
+  };
+  
+  const handleSuggestionClick = (suggestion: NominatimResult) => {
+    setSelectedLocation(suggestion);
+    setLocationSearch(suggestion.display_name);
+    setSuggestions([]);
+  };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -24,32 +61,28 @@ const PropertyCalculator: React.FC = () => {
     setResult(null);
     setError(null);
     
-    const form = e.currentTarget; // Capture the form element immediately
+    if (!selectedLocation) {
+        setError('Please select a valid location from the suggestions.');
+        setLoading(false);
+        return;
+    }
 
-    // Simulate API call and calculation
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const sqft = Math.max(0, Number(formData.get('sqft')));
+    const city = selectedLocation.address?.city || selectedLocation.address?.town || selectedLocation.address?.village || '';
+    const country = selectedLocation.address?.country || '';
+
+    if (!city || !country) {
+        setError('Could not determine city and country from selected location.');
+        setLoading(false);
+        return;
+    }
+    
     setTimeout(() => {
-        const formData = new FormData(form); // Use the captured variable
-        const address = formData.get('address') as string;
-        const country = formData.get('country') as string;
-        const city = formData.get('city') as string;
-        const sqft = Math.max(0, Number(formData.get('sqft')));
-
-        // Validation
-        if (!address || address.trim().length < 3) {
-            setError('Please enter a valid address or suburb.');
-            setLoading(false);
-            return;
-        }
-
-        if (!city || !country) {
-            setError('Please select a country and city.');
-            setLoading(false);
-            return;
-        }
-
         const propertiesInCity = dummyProperties.filter(p => p.city.toLowerCase() === city.toLowerCase());
 
-        if (propertiesInCity.length < 3) { // Require a minimum number of properties for a reliable estimate
+        if (propertiesInCity.length < 3) {
             setError(`Sorry, we don't have enough data for ${city} to provide a reliable estimate.`);
             setLoading(false);
             return;
@@ -59,11 +92,10 @@ const PropertyCalculator: React.FC = () => {
         const totalPrice = propertiesInCity.reduce((sum, p) => sum + p.price, 0);
         const avgPricePerSqft = totalPrice / totalSqft;
 
-        // Add some variance to make it an "estimate"
         const estimatedValue = avgPricePerSqft * sqft * (Math.random() * 0.2 + 0.9);
 
         setResult({
-            value: Math.round(estimatedValue / 100) * 100, // Round to nearest 100
+            value: Math.round(estimatedValue / 100) * 100,
             country: country
         });
         setLoading(false);
@@ -72,54 +104,25 @@ const PropertyCalculator: React.FC = () => {
   
   const floatingInputClasses = "block px-2.5 pb-2.5 pt-4 w-full text-base text-neutral-900 bg-white rounded-lg border border-neutral-300 appearance-none focus:outline-none focus:ring-0 focus:border-primary peer";
   const floatingLabelClasses = "absolute text-base text-neutral-700 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1";
-  const floatingSelectLabelClasses = "absolute text-base text-neutral-700 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 start-1";
 
   return (
     <div>
       <form onSubmit={handleSubmit}>
         <div className="space-y-8">
-           <div className="relative">
-             <input type="text" name="address" id="address" className={floatingInputClasses} placeholder=" " required />
-             <label htmlFor="address" className={floatingLabelClasses}>Address / Suburb</label>
-          </div>
-           <div className="relative">
-            <select 
-              id="country" 
-              name="country" 
-              value={selectedCountry} 
-              onChange={(e) => setSelectedCountry(e.target.value)} 
-              className={floatingInputClasses}
-              required
-            >
-              <option value="" disabled>Select a country</option>
-              {availableCountries.map(country => (
-                  <option key={country} value={country}>{country}</option>
-              ))}
-            </select>
-             <label htmlFor="country" className={floatingSelectLabelClasses}>Country</label>
-             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-            </div>
-          </div>
-          <div className="relative">
-            <select 
-              id="city" 
-              name="city" 
-              key={selectedCountry} // Force re-render on country change
-              defaultValue=""
-              className={floatingInputClasses} 
-              disabled={!selectedCountry}
-              required
-            >
-              <option value="" disabled>Select a city</option>
-              {availableCities.map(city => (
-                  <option key={city} value={city}>{city}</option>
-              ))}
-            </select>
-             <label htmlFor="city" className={floatingSelectLabelClasses}>City</label>
-             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-            </div>
+           <div className="relative" ref={locationContainerRef}>
+                <input type="text" name="location" id="location" className={floatingInputClasses} placeholder=" " required value={locationSearch} onChange={handleLocationChange} autoComplete="off" />
+                <label htmlFor="location" className={floatingLabelClasses}>Location</label>
+                {isSearching && <div className="absolute inset-y-0 right-0 flex items-center pr-3"><SpinnerIcon className="h-5 w-5 text-primary" /></div>}
+                {suggestions.length > 0 && (
+                     <ul className="absolute z-20 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {suggestions.map((suggestion) => (
+                            <li key={suggestion.place_id} onMouseDown={() => handleSuggestionClick(suggestion)} className="px-4 py-3 text-sm text-neutral-700 hover:bg-neutral-100 cursor-pointer flex items-center gap-2">
+                                <MapPinIcon className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+                                <span>{suggestion.display_name}</span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
           </div>
           <div className="relative">
              <input type="number" name="sqft" id="sqft" min="0" defaultValue="100" className={floatingInputClasses} placeholder=" " required />

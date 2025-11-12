@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { Property, ChatMessage, AiSearchQuery, Filters, SellerType } from '../../types';
 import PropertyCard from './PropertyCard';
-import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon, ChevronUpIcon, ChevronDownIcon, PencilIcon, XCircleIcon, MapPinIcon } from '../../constants';
+import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon, ChevronUpIcon, ChevronDownIcon, PencilIcon, XCircleIcon, MapPinIcon, SpinnerIcon } from '../../constants';
 import AiSearch from './AiSearch';
 import PropertyCardSkeleton from './PropertyCardSkeleton';
 import { useAppContext } from '../../context/AppContext';
@@ -28,6 +28,7 @@ interface PropertyListProps {
   onAiChatHistoryChange: (history: ChatMessage[]) => void;
   onDrawStart: () => void;
   isDrawing: boolean;
+  isSearchingLocation: boolean;
 }
 
 const FilterButton: React.FC<{
@@ -70,7 +71,7 @@ const FilterButtonGroup: React.FC<{
 );
 
 const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList' | 'aiChatHistory' | 'onAiChatHistoryChange'>> = ({
-    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, isAreaDrawn, onDrawStart, isDrawing
+    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, isAreaDrawn, onDrawStart, isDrawing, isSearchingLocation
 }) => {
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     
@@ -225,9 +226,17 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                  <div className="pt-2 space-y-2">
                      <button 
                         onClick={onSearchClick}
-                        className="w-full py-2.5 px-4 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
+                        disabled={isSearchingLocation}
+                        className="w-full py-2.5 px-4 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-2"
                     >
-                        Search
+                        {isSearchingLocation ? (
+                            <>
+                                <SpinnerIcon className="w-5 h-5" />
+                                <span>Finding...</span>
+                            </>
+                        ) : (
+                            'Search'
+                        )}
                     </button>
                      <div className="flex items-center gap-2">
                         <button 
@@ -310,7 +319,6 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
     if (!isMobile) {
         return (
             <div className="flex flex-col h-full bg-transparent">
-                 {/* Fixed Top Section (Filters) */}
                 <div className="flex-shrink-0 border-b border-neutral-200">
                     <div className="p-4">
                         <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm mx-auto">
@@ -326,8 +334,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                     )}
                 </div>
 
-                {/* Scrollable Bottom Section (List or AI Chat) */}
-                <div className="flex-grow min-h-0 overflow-y-auto">
+                <div className="flex-grow min-h-0">
                     {searchMode === 'ai' ? (
                         <AiSearch 
                             properties={properties} 
@@ -337,7 +344,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                             onHistoryChange={onAiChatHistoryChange}
                         />
                     ) : (
-                        <>
+                        <div className="h-full overflow-y-auto">
                             <div className="p-4 border-b border-neutral-200 flex items-center justify-between sticky top-0 bg-white/90 backdrop-blur-sm z-10">
                                 <p className="text-xs text-neutral-500 font-semibold">{properties.length} results found</p>
                                 <div className="relative">
@@ -382,7 +389,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                     <div className="text-center py-16 px-4"><h3 className="text-xl font-semibold text-neutral-800">No Properties Found</h3></div>
                                 )}
                             </div>
-                        </>
+                        </div>
                     )}
                 </div>
             </div>
