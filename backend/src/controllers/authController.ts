@@ -28,12 +28,12 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
     });
 
     // Generate token
-    const token = generateToken(user._id.toString());
+    const token = generateToken(String(user._id));
 
     res.status(201).json({
       token,
       user: {
-        id: user._id,
+        id: String(user._id),
         email: user.email,
         name: user.name,
         phone: user.phone,
@@ -77,12 +77,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Generate token
-    const token = generateToken(user._id.toString());
+    const token = generateToken(String(user._id));
 
     res.json({
       token,
       user: {
-        id: user._id,
+        id: String(user._id),
         email: user.email,
         name: user.name,
         phone: user.phone,
@@ -114,7 +114,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
 
     res.json({
       user: {
-        id: req.user._id,
+        id: String(req.user!._id),
         email: req.user.email,
         name: req.user.name,
         phone: req.user.phone,
@@ -150,7 +150,7 @@ export const updateProfile = async (
     const { name, phone, city, country, agencyName, licenseNumber, avatarUrl } =
       req.body;
 
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(String(req.user!._id));
 
     if (!user) {
       res.status(404).json({ message: 'User not found' });

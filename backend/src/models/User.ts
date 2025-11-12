@@ -92,7 +92,8 @@ UserSchema.pre('save', async function (next) {
 
   try {
     const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    const password = this.get('password') as string;
+    this.set('password', await bcrypt.hash(password, salt));
     next();
   } catch (error: any) {
     next(error);
@@ -103,7 +104,8 @@ UserSchema.pre('save', async function (next) {
 UserSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
-  return bcrypt.compare(candidatePassword, this.password);
+  const password = this.get('password') as string;
+  return bcrypt.compare(candidatePassword, password);
 };
 
 export default mongoose.model<IUser>('User', UserSchema);
