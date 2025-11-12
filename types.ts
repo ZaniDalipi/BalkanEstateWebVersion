@@ -203,7 +203,6 @@ export interface NominatimResult {
 export interface SearchPageState {
     filters: Filters;
     activeFilters: Filters;
-    searchOnMove: boolean;
     mapBoundsJSON: string | null;
     drawnBoundsJSON: string | null;
     mobileView: 'map' | 'list';

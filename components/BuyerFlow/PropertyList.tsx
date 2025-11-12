@@ -15,8 +15,6 @@ interface PropertyListProps {
   onSortChange: (value: string) => void;
   onSaveSearch: () => void;
   isSaving: boolean;
-  searchOnMove: boolean;
-  onSearchOnMoveChange: (enabled: boolean) => void;
   isMobile: boolean;
   showFilters: boolean;
   showList: boolean;
@@ -71,7 +69,7 @@ const FilterButtonGroup: React.FC<{
 );
 
 const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList' | 'aiChatHistory' | 'onAiChatHistoryChange'>> = ({
-    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, searchOnMove, onSearchOnMoveChange, isMobile, isAreaDrawn, onDrawStart, isDrawing, isSearchingLocation
+    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, isMobile, isAreaDrawn, onDrawStart, isDrawing, isSearchingLocation
 }) => {
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     
@@ -208,20 +206,6 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                 )}
             </div>
             
-            <div className="flex items-center pt-1">
-                 <input
-                    type="checkbox"
-                    id="search-on-move"
-                    checked={!isAreaDrawn && searchOnMove}
-                    disabled={isAreaDrawn}
-                    onChange={(e) => onSearchOnMoveChange(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
-                />
-                <label htmlFor="search-on-move" className={`ml-2 block text-xs ${isAreaDrawn ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                    Search as I move the map {isAreaDrawn && '(area drawn)'}
-                </label>
-            </div>
-
             {!isMobile && (
                  <div className="pt-2 space-y-2">
                      <button 

@@ -6,7 +6,6 @@ import { MUNICIPALITY_DATA } from '../services/propertyService';
 const initialSearchPageState: SearchPageState = {
     filters: initialFilters,
     activeFilters: initialFilters,
-    searchOnMove: true,
     mapBoundsJSON: null,
     drawnBoundsJSON: null,
     mobileView: 'map',

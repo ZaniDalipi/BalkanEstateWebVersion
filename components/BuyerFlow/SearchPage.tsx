@@ -73,7 +73,7 @@ const MobileFilters: React.FC<{
 const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const { state, dispatch, fetchProperties, updateSearchPageState, addSavedSearch } = useAppContext();
     const { properties, isAuthenticated, currentUser, searchPageState } = state;
-    const { filters, activeFilters, searchOnMove, mapBoundsJSON, drawnBoundsJSON, mobileView, searchMode, aiChatHistory, isAiChatModalOpen, isFiltersOpen } = searchPageState;
+    const { filters, activeFilters, mapBoundsJSON, drawnBoundsJSON, mobileView, searchMode, aiChatHistory, isAiChatModalOpen, isFiltersOpen } = searchPageState;
     
     // Local, non-persistent state
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -142,7 +142,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         updateSearchPageState({
             filters: newFilters,
             activeFilters: { ...initialFilters, query: '' }, // Clear text filter, use spatial only
-            searchOnMove: false,
             drawnBoundsJSON: JSON.stringify(searchBounds),
         });
         
@@ -273,11 +272,17 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     }, [properties, activeFilters]);
 
     const listProperties = useMemo(() => {
-        if (drawnBounds) return baseFilteredProperties.filter(p => drawnBounds.contains([p.lat, p.lng]));
-        if (!searchOnMove) return baseFilteredProperties;
-        if (!mapBounds) return baseFilteredProperties;
-        return baseFilteredProperties.filter(p => mapBounds.contains([p.lat, p.lng]));
-    }, [baseFilteredProperties, searchOnMove, mapBounds, drawnBounds]);
+        // If a specific area is drawn or resulted from a search, use it exclusively.
+        if (drawnBounds) {
+            return baseFilteredProperties.filter(p => drawnBounds.contains([p.lat, p.lng]));
+        }
+        // Otherwise, always filter by the current map view if available.
+        if (mapBounds) {
+            return baseFilteredProperties.filter(p => mapBounds.contains([p.lat, p.lng]));
+        }
+        // As a fallback (e.g., on initial load before map bounds are set), show all properties matching text filters.
+        return baseFilteredProperties;
+    }, [baseFilteredProperties, mapBounds, drawnBounds]);
 
 
     const handleFilterChange = useCallback((name: keyof Filters, value: string | number | null) => {
@@ -290,7 +295,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         const query = (searchQuery || filters.query).trim();
     
         if (!query) {
-            updateSearchPageState({ activeFilters: filters, searchOnMove: true, drawnBoundsJSON: null });
+            updateSearchPageState({ activeFilters: filters, drawnBoundsJSON: null });
             return;
         }
     
@@ -302,7 +307,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             handleSuggestionClick(results[0]);
         } else {
             showToast("Location not found. Showing text-based results.", 'error');
-            updateSearchPageState({ activeFilters: filters, searchOnMove: false, drawnBoundsJSON: null });
+            updateSearchPageState({ activeFilters: filters, drawnBoundsJSON: null });
         }
     }, [filters, updateSearchPageState, showToast]);
     
@@ -331,14 +336,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         });
     }, [filters, activeFilters, updateSearchPageState]);
     
-    const handleSearchOnMoveChange = (enabled: boolean) => {
-        if (enabled) {
-            updateSearchPageState({ searchOnMove: enabled, drawnBoundsJSON: null, activeFilters: initialFilters });
-        } else {
-            updateSearchPageState({ searchOnMove: enabled });
-        }
-    };
-
     const isFormSearchActive = useMemo(() => {
         return filters.query.trim() !== '' || filters.minPrice !== null || filters.maxPrice !== null || filters.beds !== null || filters.baths !== null || filters.livingRooms !== null || filters.minSqft !== null || filters.maxSqft !== null || filters.sellerType !== 'any' || filters.propertyType !== 'any';
     }, [filters]);
@@ -441,7 +438,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             activeFilters: localFilters,
             isFiltersOpen: false,
             drawnBoundsJSON: null,
-            searchOnMove: false
         });
     };
     
@@ -474,8 +470,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         onSortChange: handleSortChange,
         onSaveSearch: () => handleSaveSearch(false),
         isSaving,
-        searchOnMove,
-        onSearchOnMoveChange: handleSearchOnMoveChange,
         searchMode,
         onSearchModeChange: (mode: 'manual' | 'ai') => updateSearchPageState({ searchMode: mode }),
         onApplyAiFilters: handleApplyAiFilters,
