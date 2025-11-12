@@ -170,7 +170,7 @@ const ImageEditorModal: React.FC<{
             id: `msg-${Date.now()}`,
             senderId: 'user',
             imageUrl: imageDataUrl,
-            timestamp: new Date().toISOString(),
+            timestamp: Date.now(),
             isRead: true,
         };
         dispatch({ type: 'CREATE_OR_ADD_MESSAGE', payload: { propertyId: property.id, message: newMessage }});

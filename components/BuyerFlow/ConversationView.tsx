@@ -46,8 +46,8 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
             id: `msg-${Date.now()}`,
             senderId: 'user',
             text,
-            timestamp: new Date().toISOString(),
-            isRead: true, 
+            timestamp: Date.now(),
+            isRead: true,
         };
         dispatch({ type: 'ADD_MESSAGE', payload: { conversationId: conversation.id, message: newMessage }});
     };

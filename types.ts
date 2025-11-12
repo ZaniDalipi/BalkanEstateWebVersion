@@ -97,15 +97,33 @@ export interface Message {
     senderId: string; // 'user' or seller's user ID
     text?: string;
     imageUrl?: string;
-    timestamp: string;
+    timestamp: number;
     isRead: boolean;
 }
 
 export interface Conversation {
     id: string;
     propertyId: string;
-    participants: string[]; // user ID and seller ID
+    property?: Property;
+    buyerId: string;
+    sellerId: string;
+    buyer?: {
+        id: string;
+        name: string;
+        avatarUrl?: string;
+    };
+    seller?: {
+        id: string;
+        name: string;
+        avatarUrl?: string;
+        role?: string;
+        agencyName?: string;
+    };
+    participants?: string[]; // user ID and seller ID (for backwards compatibility)
     messages: Message[];
+    lastMessage?: Message;
+    createdAt: number;
+    isRead: boolean;
 }
 
 export interface Filters {
