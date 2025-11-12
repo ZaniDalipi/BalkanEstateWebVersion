@@ -1,10 +1,79 @@
-import { Property, Seller, User, UserRole, AppState, SavedSearch, Message, Conversation, Filters } from '../types';
-import { filterProperties } from '../utils/propertyUtils';
+import { Property, Seller, User, UserRole, SavedSearch, Message, Conversation, Filters } from '../types';
 
-// --- MOCK DATABASE ---
-// This section simulates a server-side database.
+// Get API URL from environment variables
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// FIX: Export sellers to be used in other files.
+// --- TOKEN MANAGEMENT ---
+
+const getToken = (): string | null => {
+  return localStorage.getItem('balkan_estate_token');
+};
+
+const setToken = (token: string) => {
+  localStorage.setItem('balkan_estate_token', token);
+};
+
+const removeToken = () => {
+  localStorage.removeItem('balkan_estate_token');
+};
+
+// --- HTTP CLIENT ---
+
+interface RequestOptions {
+  method?: string;
+  body?: any;
+  headers?: Record<string, string>;
+  requiresAuth?: boolean;
+}
+
+const apiRequest = async <T>(endpoint: string, options: RequestOptions = {}): Promise<T> => {
+  const { method = 'GET', body, headers = {}, requiresAuth = false } = options;
+
+  const config: RequestInit = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...headers,
+    },
+  };
+
+  // Add authorization header if required
+  if (requiresAuth) {
+    const token = getToken();
+    if (token) {
+      config.headers = {
+        ...config.headers,
+        Authorization: `Bearer ${token}`,
+      };
+    }
+  }
+
+  // Add body if present
+  if (body) {
+    config.body = JSON.stringify(body);
+  }
+
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, config);
+
+    // Handle non-JSON responses
+    const contentType = response.headers.get('content-type');
+    const isJson = contentType && contentType.includes('application/json');
+
+    if (!response.ok) {
+      const error = isJson ? await response.json() : { message: response.statusText };
+      throw new Error(error.message || 'An error occurred');
+    }
+
+    return isJson ? await response.json() : ({} as T);
+  } catch (error: any) {
+    console.error('API request error:', error);
+    throw error;
+  }
+};
+
+// --- MOCK DATA (for backward compatibility) ---
+
 export const sellers: { [key: string]: Seller } = {
   seller1: { type: 'agent', name: 'Ana Kovačević', avatarUrl: 'https://i.pravatar.cc/150?u=ana', phone: '+381 64 123 4567' },
   seller2: { type: 'private', name: 'Marko Petrović', avatarUrl: 'https://i.pravatar.cc/150?u=marko', phone: '+385 91 987 6543' },
@@ -15,356 +84,438 @@ export const sellers: { [key: string]: Seller } = {
   seller7: { type: 'agent', name: 'Alen Isić', avatarUrl: 'https://i.pravatar.cc/150?u=alen', phone: '+387 62 111 2222', agencyName: 'Sarajevo Realty' },
 };
 
-// FIX: Export mockUsers to be used in other files.
 export const mockUsers: { [key: string]: User } = {
-    'user_seller_1': { id: 'user_seller_1', name: 'Ana Kovačević', email: 'ana.k@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=ana', phone: '+381641234567', role: UserRole.AGENT, city: 'Belgrade', country: 'Serbia', agencyName: 'Balkan Premier Estates', agentId: 'AGENT-12345', licenseNumber: 'RS-LIC-9876', testimonials: [ { quote: "Ana was incredibly professional and helped us find our dream home in Belgrade. Highly recommended!", clientName: "Miloš & Jelena Popović" }, { quote: "The selling process was smooth and faster than we expected. Thanks, Ana!", clientName: "Ivana Stanković" }, ], isSubscribed: true },
-    'user_seller_2': { id: 'user_seller_2', name: 'Marko Petrović', email: 'marko.p@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=marko', phone: '+385919876543', role: UserRole.PRIVATE_SELLER, city: 'Zagreb', country: 'Croatia', testimonials: [ { quote: "Marko's knowledge of the Zagreb market is second to none. He made the entire process feel effortless.", clientName: "Luka and Ema Horvat" }, ], isSubscribed: false },
-    'user_agent_2': { id: 'user_agent_2', name: 'Ivan Horvat', email: 'ivan.h@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=ivan', phone: '+385911234567', role: UserRole.AGENT, city: 'Zagreb', country: 'Croatia', agencyName: 'Adriatic Properties', agentId: 'AGENT-54321', testimonials: [ { quote: "Ivan found us the perfect seaside villa in Split. A true professional.", clientName: "Petar and Marija Kovač" }, ], isSubscribed: false },
-    'user_agent_3': { id: 'user_agent_3', name: 'Elena Georgieva', email: 'elena.g@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=elena', phone: '+359881234567', role: UserRole.AGENT, city: 'Sofia', country: 'Bulgaria', agencyName: 'Sofia Homes', agentId: 'AGENT-BG-001', licenseNumber: 'BG-LIC-1122', testimonials: [{ quote: "Elena is the best in Sofia!", clientName: "Dimitar Berbatov" }], isSubscribed: true },
-    'user_seller_4': { id: 'user_seller_4', name: 'Adnan Hodžić', email: 'adnan.h@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=adnan', phone: '+387619876543', role: UserRole.PRIVATE_SELLER, city: 'Sarajevo', country: 'Bosnia and Herzegovina', testimonials: [], isSubscribed: false },
-    'user_agent_5': { id: 'user_agent_5', name: 'Nikos Papadopoulos', email: 'nikos.p@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=nikos', phone: '+306971234567', role: UserRole.AGENT, city: 'Thessaloniki', country: 'Greece', agencyName: 'Hellas Real Estate', agentId: 'AGENT-GR-007', testimonials: [{ quote: "Fantastic service, found a great apartment in Athens.", clientName: "Maria S." }], isSubscribed: false },
-    'user_agent_6': { id: 'user_agent_6', name: 'Alen Isić', email: 'alen.i@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=alen', phone: '+387621112222', role: UserRole.AGENT, city: 'Sarajevo', country: 'Bosnia and Herzegovina', agencyName: 'Sarajevo Realty', agentId: 'AGENT-BA-002', licenseNumber: 'BA-LIC-3344', testimonials: [{ quote: "Alen helped us sell our flat in record time.", clientName: "Jasmina & Emir" }], isSubscribed: false }
+  'user_seller_1': { id: 'user_seller_1', name: 'Ana Kovačević', email: 'ana.k@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=ana', phone: '+381641234567', role: UserRole.AGENT, city: 'Belgrade', country: 'Serbia', agencyName: 'Balkan Premier Estates', agentId: 'AGENT-12345', licenseNumber: 'RS-LIC-9876', testimonials: [], isSubscribed: true },
+  'user_seller_2': { id: 'user_seller_2', name: 'Marko Petrović', email: 'marko.p@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=marko', phone: '+385919876543', role: UserRole.PRIVATE_SELLER, city: 'Zagreb', country: 'Croatia', testimonials: [], isSubscribed: false },
 };
 
-// --- Data Generation ---
+// For backward compatibility
+export const allProperties: Property[] = [];
 
-const basePricePerSqftByCountry: { [key: string]: number } = {
-    'Slovenia': 2800,
-    'Croatia': 2500,
-    'Montenegro': 2200,
-    'Greece': 2000,
-    'Serbia': 1800,
-    'Bosnia and Herzegovina': 1400,
-    'Albania': 1500,
-    'Bulgaria': 1300,
-    'North Macedonia': 1200,
-    'Kosovo': 1100,
-    'Romania': 1400,
-};
-
-const coastalCities = new Set([
-    "split", "rijeka", "zadar", "pula", "šibenik", "dubrovnik", "rovinj", "makarska", "opatija", "poreč", "umag", "novalja", "hvar", "korčula", "bol", "pag", "rab", "krk", "cres", "mali lošinj", "biograd na moru", "primošten", "trogir", "šolta", "brač", "vis",
-    "herceg novi", "budva", "bar", "kotor", "tivat", "ulcinj",
-    "durrës", "vlorë", "sarandë", "shëngjin", "himarë",
-    "athens", "thessaloniki", "patras", "heraklion", "volos", "rhodes", "chania", "kavala", "santorini", "mykonos", "corfu", "kalamata", "alexandroupoli"
-]);
-
-const simpleLocations = [
-    { country: 'Serbia', city: 'Belgrade', lat: 44.78, lng: 20.44 },
-    { country: 'Croatia', city: 'Zagreb', lat: 45.81, lng: 15.98 },
-    { country: 'Bosnia and Herzegovina', city: 'Sarajevo', lat: 43.85, lng: 18.41 },
-    { country: 'Slovenia', city: 'Ljubljana', lat: 46.05, lng: 14.50 },
-    { country: 'North Macedonia', city: 'Skopje', lat: 41.99, lng: 21.42 },
-    { country: 'Montenegro', city: 'Podgorica', lat: 42.43, lng: 19.25 },
-    { country: 'Albania', city: 'Tirana', lat: 41.32, lng: 19.81 },
-    { country: 'Bulgaria', city: 'Sofia', lat: 42.69, lng: 23.32 },
-    { country: 'Greece', city: 'Athens', lat: 37.98, lng: 23.72 },
-    { country: 'Kosovo', city: 'Pristina', lat: 42.66, lng: 21.16 },
-    { country: 'Croatia', city: 'Split', lat: 43.50, lng: 16.44 },
-    { country: 'Montenegro', city: 'Budva', lat: 42.28, lng: 18.84 },
-    { country: 'Serbia', city: 'Zlatibor', lat: 43.72, lng: 19.70 },
-    { country: 'Romania', city: 'Bucharest', lat: 44.42, lng: 26.10 },
-];
-
-const generateMockProperties = (count: number): Property[] => {
-    const newProperties: Property[] = [];
-    const sellerIds = Object.keys(mockUsers);
-    const streetNames = ['Main St', 'Oak Ave', 'Pine Ln', 'Maple Dr', 'Elm St', 'Cedar Blvd', 'Partizanska', 'Ilindenska', 'Rruga e Durrësit', 'Vasil Levski Blvd', 'Knez Mihailova', 'Ilica', 'Makedonia', 'Slovenska Obala'];
-    const propertyTypes: Property['propertyType'][] = ['house', 'apartment', 'villa'];
-    
-    const commonFeatures = ['Balcony', 'Garage', 'New Construction', 'Renovated', 'Elevator', 'Air Conditioning', 'Security System', 'Fireplace'];
-    const locationFeatures = ['City View', 'Mountain View', 'Quiet Neighborhood', 'City Center'];
-    const coastalFeatures = ['Sea View', 'Beachfront', 'Near Beach'];
-    
-    const materials = ['Brick', 'Wood', 'Stone', 'Marble', 'Concrete', 'Hardwood Floors', 'Tiles', 'Laminate'];
-    
-    if (simpleLocations.length === 0) {
-        console.error("No locations found to generate properties.");
-        return [];
-    }
-
-    for (let i = 0; i < count; i++) {
-        const randomLocation = simpleLocations[Math.floor(Math.random() * simpleLocations.length)];
-        const sellerId = sellerIds[Math.floor(Math.random() * sellerIds.length)];
-        
-        let propertyType: Property['propertyType'];
-        if (Math.random() < 0.7) {
-            propertyType = 'apartment';
-        } else {
-            propertyType = propertyTypes[Math.floor(Math.random() * propertyTypes.length)];
-        }
-
-        let sqft;
-        const randSqft = Math.random();
-        if (propertyType === 'apartment') {
-            if (randSqft < 0.6) sqft = Math.floor(Math.random() * 40) + 30;
-            else if (randSqft < 0.9) sqft = Math.floor(Math.random() * 50) + 70;
-            else sqft = Math.floor(Math.random() * 80) + 120;
-        } else {
-            if (randSqft < 0.5) sqft = Math.floor(Math.random() * 100) + 80;
-            else if (randSqft < 0.9) sqft = Math.floor(Math.random() * 120) + 180;
-            else sqft = Math.floor(Math.random() * 400) + 300;
-            if (propertyType === 'villa') sqft += 50;
-        }
-
-        const basePrice = basePricePerSqftByCountry[randomLocation.country] || 1500;
-        const pricePerSqftVariance = (Math.random() - 0.5) * 0.4;
-        
-        const pricePerSqft = basePrice * (1 + pricePerSqftVariance);
-        const price = Math.round((pricePerSqft * sqft) / 1000) * 1000;
-        
-        const beds = Math.max(1, Math.floor(sqft / 35) + (Math.random() < 0.3 ? -1 : (Math.random() < 0.7 ? 0 : 1)));
-        const baths = Math.max(1, Math.floor(beds / 2) + (Math.random() < 0.5 ? 0 : 1));
-        const livingRooms = Math.max(1, Math.floor(beds / 3));
-        const yearBuilt = Math.floor(Math.random() * 70) + 1950;
-        
-        const isCoastal = coastalCities.has(randomLocation.city.toLowerCase());
-        const availableFeatures = [...commonFeatures, ...locationFeatures, ...(isCoastal ? coastalFeatures : [])];
-        
-        const prop: Property = {
-            id: `gen_prop_${Date.now()}_${i}`,
-            sellerId,
-            status: Math.random() < 0.92 ? 'active' : (Math.random() < 0.5 ? 'sold' : 'pending'),
-            price,
-            address: `${streetNames[Math.floor(Math.random() * streetNames.length)]} ${Math.floor(Math.random() * 200) + 1}`,
-            city: randomLocation.city,
-            country: randomLocation.country,
-            beds,
-            baths,
-            livingRooms,
-            sqft,
-            yearBuilt,
-            parking: Math.floor(Math.random() * 3),
-            description: `A lovely ${propertyType} in ${randomLocation.city} with ${beds} bedrooms and beautiful surroundings. Built in ${yearBuilt}, this property is a fantastic opportunity.`,
-            specialFeatures: [...new Set(Array.from({ length: Math.floor(Math.random() * 5) }, () => availableFeatures[Math.floor(Math.random() * availableFeatures.length)]))],
-            materials: [...new Set(Array.from({ length: Math.floor(Math.random() * 4) }, () => materials[Math.floor(Math.random() * materials.length)]))],
-            imageUrl: `https://source.unsplash.com/random/800x600/?${propertyType},exterior,modern&sig=${i}`,
-            images: Array.from({ length: Math.floor(Math.random() * 8) + 3 }, (_, j) => ({ url: `https://source.unsplash.com/random/800x600/?${propertyType},interior&sig=${i*10 + j}`, tag: 'other' })),
-            lat: randomLocation.lat + (Math.random() - 0.5) * 0.05,
-            lng: randomLocation.lng + (Math.random() - 0.5) * 0.05,
-            seller: { type: mockUsers[sellerId].role === UserRole.AGENT ? 'agent' : 'private', name: mockUsers[sellerId].name, phone: mockUsers[sellerId].phone, avatarUrl: mockUsers[sellerId].avatarUrl },
-            propertyType,
-            createdAt: Date.now() - Math.floor(Math.random() * 365) * 86400000,
-            lastRenewed: Date.now() - Math.floor(Math.random() * 30) * 86400000,
-            views: Math.floor(Math.random() * 3000),
-            saves: Math.floor(Math.random() * 200),
-            inquiries: Math.floor(Math.random() * 30),
-        };
-        if (propertyType === 'apartment') {
-            prop.floorNumber = Math.floor(Math.random() * 12) + 1;
-        } else {
-            prop.totalFloors = Math.floor(Math.random() * 3) + 1;
-        }
-        newProperties.push(prop);
-    }
-    return newProperties;
-};
-
-export const allProperties: Property[] = generateMockProperties(10000);
-
-
-// --- API SIMULATION ---
-
-const LATENCY = 500; // ms
-
-// Helper to simulate network delay
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Store session data in localStorage to persist login
-const getSession = (): { user: User | null } => {
-    try {
-        const session = localStorage.getItem('balkan_estate_session');
-        if (session) {
-            return JSON.parse(session);
-        }
-    } catch (e) {
-        console.error("Could not parse session", e);
-    }
-    return { user: null };
-};
-
-const setSession = (user: User | null) => {
-    localStorage.setItem('balkan_estate_session', JSON.stringify({ user }));
-};
-
-// --- EXPORTED API FUNCTIONS ---
+// --- AUTHENTICATION API ---
 
 export const checkAuth = async (): Promise<User | null> => {
-    await sleep(LATENCY / 2);
-    const session = getSession();
-    return session.user;
+  try {
+    const token = getToken();
+    if (!token) return null;
+
+    const response = await apiRequest<{ user: User }>('/auth/me', { requiresAuth: true });
+    return response.user;
+  } catch (error) {
+    // If token is invalid, remove it
+    removeToken();
+    return null;
+  }
 };
 
-export const login = async (email: string, _pass: string): Promise<User> => {
-    await sleep(LATENCY);
-    const existingUser = Object.values(mockUsers).find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (existingUser) {
-        setSession(existingUser);
-        return existingUser;
-    }
-    throw new Error("Invalid credentials. Please try again or sign up.");
+export const login = async (email: string, password: string): Promise<User> => {
+  const response = await apiRequest<{ user: User; token: string }>('/auth/login', {
+    method: 'POST',
+    body: { email, password },
+  });
+
+  setToken(response.token);
+  return response.user;
 };
 
-export const signup = async (email: string, _pass: string): Promise<User> => {
-    await sleep(LATENCY);
-    const existingUser = Object.values(mockUsers).find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (existingUser) {
-        throw new Error("An account with this email already exists.");
-    }
-    const name = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    const newUser: User = { id: `user_${Date.now()}`, name, email, phone: '', role: UserRole.PRIVATE_SELLER, isSubscribed: false };
-    mockUsers[newUser.id] = newUser; // Add to our runtime mock DB
-    setSession(newUser);
-    return newUser;
+export const signup = async (email: string, password: string): Promise<User> => {
+  const response = await apiRequest<{ user: User; token: string }>('/auth/signup', {
+    method: 'POST',
+    body: { email, password, name: email.split('@')[0], phone: '' },
+  });
+
+  setToken(response.token);
+  return response.user;
 };
 
 export const logout = async (): Promise<void> => {
-    await sleep(LATENCY / 2);
-    setSession(null);
+  await apiRequest('/auth/logout', { method: 'POST', requiresAuth: true });
+  removeToken();
 };
 
 export const requestPasswordReset = async (email: string): Promise<void> => {
-    await sleep(LATENCY);
-    console.log(`Password reset link sent to ${email} (simulation).`);
-    const userExists = Object.values(mockUsers).some(u => u.email.toLowerCase() === email.toLowerCase());
-    if (!userExists) {
-        // Silently succeed to prevent user enumeration
-        return;
-    }
+  // TODO: Implement password reset endpoint on backend
+  console.log(`Password reset request for ${email}`);
 };
 
 export const loginWithSocial = async (provider: 'google' | 'facebook' | 'apple'): Promise<User> => {
-    await sleep(LATENCY * 1.5);
-    const email = `${provider}.user@example.com`;
-    let user = Object.values(mockUsers).find(u => u.email === email);
-    if (!user) {
-        user = {
-            id: `user_social_${provider}`,
-            name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
-            email: email,
-            avatarUrl: `https://i.pravatar.cc/150?u=${provider}`,
-            phone: '',
-            role: UserRole.BUYER,
-            isSubscribed: false
-        };
-        mockUsers[user.id] = user;
-    }
-    setSession(user);
-    return user;
+  // TODO: Implement social login on backend
+  throw new Error('Social login not yet implemented');
 };
 
 export const sendPhoneCode = async (phone: string): Promise<void> => {
-    await sleep(LATENCY);
-    console.log(`Sending verification code to ${phone} (simulation). The code is 123456.`);
-    return;
+  // TODO: Implement phone verification on backend
+  console.log(`Sending code to ${phone}`);
 };
 
-export const verifyPhoneCode = async (phone: string, code: string): Promise<{ user: User | null, isNew: boolean }> => {
-    await sleep(LATENCY);
-    if (code !== '123456') {
-        throw new Error("Invalid verification code.");
-    }
-    const normalizedPhone = phone.replace(/\D/g, '');
-    const existingUser = Object.values(mockUsers).find(u => u.phone.replace(/\D/g, '') === normalizedPhone);
-    if (existingUser) {
-        setSession(existingUser);
-        return { user: existingUser, isNew: false };
-    }
-    return { user: null, isNew: true };
+export const verifyPhoneCode = async (phone: string, code: string): Promise<{ user: User | null; isNew: boolean }> => {
+  // TODO: Implement phone verification on backend
+  throw new Error('Phone verification not yet implemented');
 };
 
 export const completePhoneSignup = async (phone: string, name: string, email: string): Promise<User> => {
-    await sleep(LATENCY);
-    const existingUser = Object.values(mockUsers).find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (existingUser) {
-        throw new Error("An account with this email already exists.");
-    }
-    const newUser: User = { id: `user_${Date.now()}`, name, email, phone, role: UserRole.BUYER, isSubscribed: false };
-    mockUsers[newUser.id] = newUser;
-    setSession(newUser);
-    return newUser;
+  // TODO: Implement phone signup on backend
+  throw new Error('Phone signup not yet implemented');
 };
+
+export const updateUser = async (userData: Partial<User>): Promise<User> => {
+  const response = await apiRequest<{ user: User }>('/auth/profile', {
+    method: 'PUT',
+    body: userData,
+    requiresAuth: true,
+  });
+
+  return response.user;
+};
+
+// --- PROPERTIES API ---
 
 export const getProperties = async (filters?: Filters): Promise<Property[]> => {
-    await sleep(LATENCY);
-    if (filters) {
-        return filterProperties(allProperties, filters);
-    }
-    return [...allProperties]; // Return a copy to prevent mutation issues
+  const params = new URLSearchParams();
+
+  if (filters) {
+    if (filters.query) params.append('query', filters.query);
+    if (filters.minPrice !== null) params.append('minPrice', filters.minPrice.toString());
+    if (filters.maxPrice !== null) params.append('maxPrice', filters.maxPrice.toString());
+    if (filters.beds !== null) params.append('beds', filters.beds.toString());
+    if (filters.baths !== null) params.append('baths', filters.baths.toString());
+    if (filters.livingRooms !== null) params.append('livingRooms', filters.livingRooms.toString());
+    if (filters.minSqft !== null) params.append('minSqft', filters.minSqft.toString());
+    if (filters.maxSqft !== null) params.append('maxSqft', filters.maxSqft.toString());
+    if (filters.sortBy) params.append('sortBy', filters.sortBy);
+    if (filters.sellerType && filters.sellerType !== 'any') params.append('sellerType', filters.sellerType);
+    if (filters.propertyType && filters.propertyType !== 'any') params.append('propertyType', filters.propertyType);
+  }
+
+  const queryString = params.toString();
+  const endpoint = `/properties${queryString ? `?${queryString}` : ''}`;
+
+  const response = await apiRequest<{ properties: any[]; pagination: any }>(endpoint);
+
+  // Transform backend properties to match frontend Property type
+  return response.properties.map(transformBackendProperty);
 };
 
-export const getMyData = async (): Promise<{ savedHomes: Property[], savedSearches: SavedSearch[], conversations: Conversation[] }> => {
-    await sleep(LATENCY);
-    // In a real app, this would fetch data for the logged-in user.
-    // Here we just return empty arrays as we don't persist this data.
-    return {
-        savedHomes: [],
-        savedSearches: [],
-        conversations: []
-    };
+export const getProperty = async (id: string): Promise<Property> => {
+  const response = await apiRequest<{ property: any }>(`/properties/${id}`);
+  return transformBackendProperty(response.property);
 };
 
 export const createListing = async (propertyData: Property): Promise<Property> => {
-    await sleep(LATENCY * 2);
-    allProperties.unshift(propertyData); // Add to the start of the list
-    return propertyData;
+  const backendPropertyData = transformToBackendProperty(propertyData);
+
+  const response = await apiRequest<{ property: any }>('/properties', {
+    method: 'POST',
+    body: backendPropertyData,
+    requiresAuth: true,
+  });
+
+  return transformBackendProperty(response.property);
 };
 
 export const updateListing = async (propertyData: Property): Promise<Property> => {
-    await sleep(LATENCY * 2);
-    const index = allProperties.findIndex(p => p.id === propertyData.id);
-    if (index > -1) {
-        allProperties[index] = propertyData;
-    } else {
-        // If for some reason it's not found, add it.
-        allProperties.unshift(propertyData);
-    }
-    return propertyData;
+  const backendPropertyData = transformToBackendProperty(propertyData);
+
+  const response = await apiRequest<{ property: any }>(`/properties/${propertyData.id}`, {
+    method: 'PUT',
+    body: backendPropertyData,
+    requiresAuth: true,
+  });
+
+  return transformBackendProperty(response.property);
 };
 
-// Other functions like saving homes, searches, messaging would be added here.
-// For now, they will just return successful promises.
+export const getMyListings = async (): Promise<Property[]> => {
+  const response = await apiRequest<{ properties: any[] }>('/properties/my/listings', {
+    requiresAuth: true,
+  });
+
+  return response.properties.map(transformBackendProperty);
+};
+
+export const uploadPropertyImages = async (images: File[]): Promise<{ url: string; tag: string }[]> => {
+  const formData = new FormData();
+  images.forEach((image) => {
+    formData.append('images', image);
+  });
+
+  const token = getToken();
+  const response = await fetch(`${API_URL}/properties/upload-images`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to upload images');
+  }
+
+  const data = await response.json();
+  return data.images;
+};
+
+// --- FAVORITES API ---
 
 export const toggleSavedHome = async (propertyId: string, isSaved: boolean): Promise<{ success: true }> => {
-    await sleep(LATENCY / 2);
-    console.log(`Simulating ${isSaved ? 'unsaving' : 'saving'} home: ${propertyId}`);
-    return { success: true };
+  await apiRequest('/favorites/toggle', {
+    method: 'POST',
+    body: { propertyId },
+    requiresAuth: true,
+  });
+
+  return { success: true };
 };
+
+export const getFavorites = async (): Promise<Property[]> => {
+  const response = await apiRequest<{ favorites: any[] }>('/favorites', {
+    requiresAuth: true,
+  });
+
+  return response.favorites
+    .filter((fav) => fav.propertyId)
+    .map((fav) => transformBackendProperty(fav.propertyId));
+};
+
+// --- SAVED SEARCHES API ---
 
 export const addSavedSearch = async (search: SavedSearch): Promise<SavedSearch> => {
-    await sleep(LATENCY / 2);
-    console.log(`Simulating saving search: ${search.name}`);
-    return search;
+  const response = await apiRequest<{ savedSearch: any }>('/saved-searches', {
+    method: 'POST',
+    body: {
+      name: search.name,
+      filters: search.filters,
+      drawnBoundsJSON: search.drawnBoundsJSON,
+    },
+    requiresAuth: true,
+  });
+
+  return transformBackendSavedSearch(response.savedSearch);
 };
 
-export const sendMessage = async (conversationId: string, message: Message): Promise<Message> => {
-    await sleep(LATENCY / 2);
-    console.log(`Simulating sending message to ${conversationId}`);
-    // Simulate an echo from the seller
-    return message;
-};
+export const getSavedSearches = async (): Promise<SavedSearch[]> => {
+  const response = await apiRequest<{ savedSearches: any[] }>('/saved-searches', {
+    requiresAuth: true,
+  });
 
-export const subscribe = async (plan: string): Promise<{ success: true }> => {
-    await sleep(LATENCY);
-    console.log(`Simulating subscription to ${plan} plan`);
-    return { success: true };
-};
-
-export const updateUser = async(userData: Partial<User>): Promise<User> => {
-    await sleep(LATENCY);
-    const session = getSession();
-    if (!session.user) throw new Error("Not authenticated");
-    const updatedUser = { ...session.user, ...userData };
-    setSession(updatedUser);
-    // Also update in our mock runtime DB
-    if (mockUsers[updatedUser.id]) {
-        mockUsers[updatedUser.id] = updatedUser;
-    }
-    return updatedUser;
+  return response.savedSearches.map(transformBackendSavedSearch);
 };
 
 export const updateSavedSearchAccessTime = async (searchId: string): Promise<{ success: true }> => {
-    await sleep(LATENCY / 4);
-    console.log(`Simulating update of lastAccessed for search: ${searchId}`);
-    return { success: true };
+  await apiRequest(`/saved-searches/${searchId}/access`, {
+    method: 'PATCH',
+    requiresAuth: true,
+  });
+
+  return { success: true };
 };
+
+export const deleteSavedSearch = async (searchId: string): Promise<void> => {
+  await apiRequest(`/saved-searches/${searchId}`, {
+    method: 'DELETE',
+    requiresAuth: true,
+  });
+};
+
+// --- CONVERSATIONS/MESSAGING API ---
+
+export const getConversations = async (): Promise<Conversation[]> => {
+  const response = await apiRequest<{ conversations: any[] }>('/conversations', {
+    requiresAuth: true,
+  });
+
+  return response.conversations.map(transformBackendConversation);
+};
+
+export const getConversation = async (conversationId: string): Promise<{ conversation: Conversation; messages: Message[] }> => {
+  const response = await apiRequest<{ conversation: any; messages: any[] }>(`/conversations/${conversationId}`, {
+    requiresAuth: true,
+  });
+
+  return {
+    conversation: transformBackendConversation(response.conversation),
+    messages: response.messages.map(transformBackendMessage),
+  };
+};
+
+export const createConversation = async (propertyId: string): Promise<Conversation> => {
+  const response = await apiRequest<{ conversation: any }>('/conversations', {
+    method: 'POST',
+    body: { propertyId },
+    requiresAuth: true,
+  });
+
+  return transformBackendConversation(response.conversation);
+};
+
+export const sendMessage = async (conversationId: string, message: Message): Promise<Message> => {
+  const response = await apiRequest<{ message: any }>(`/conversations/${conversationId}/messages`, {
+    method: 'POST',
+    body: { text: message.text },
+    requiresAuth: true,
+  });
+
+  return transformBackendMessage(response.message);
+};
+
+export const markConversationAsRead = async (conversationId: string): Promise<void> => {
+  await apiRequest(`/conversations/${conversationId}/read`, {
+    method: 'PATCH',
+    requiresAuth: true,
+  });
+};
+
+// --- USER DATA API ---
+
+export const getMyData = async (): Promise<{ savedHomes: Property[]; savedSearches: SavedSearch[]; conversations: Conversation[] }> => {
+  const [favorites, savedSearches, conversations] = await Promise.all([
+    getFavorites(),
+    getSavedSearches(),
+    getConversations(),
+  ]);
+
+  return {
+    savedHomes: favorites,
+    savedSearches,
+    conversations,
+  };
+};
+
+// --- SUBSCRIPTION API ---
+
+export const subscribe = async (plan: string): Promise<{ success: true }> => {
+  // TODO: Implement subscription endpoint on backend
+  console.log(`Subscribing to ${plan}`);
+  return { success: true };
+};
+
+// --- TRANSFORMATION HELPERS ---
+
+// Transform backend property to frontend Property type
+function transformBackendProperty(backendProp: any): Property {
+  const seller = backendProp.sellerId;
+
+  return {
+    id: backendProp._id,
+    sellerId: seller._id || seller,
+    status: backendProp.status,
+    price: backendProp.price,
+    address: backendProp.address,
+    city: backendProp.city,
+    country: backendProp.country,
+    beds: backendProp.beds,
+    baths: backendProp.baths,
+    livingRooms: backendProp.livingRooms,
+    sqft: backendProp.sqft,
+    yearBuilt: backendProp.yearBuilt,
+    parking: backendProp.parking,
+    description: backendProp.description,
+    specialFeatures: backendProp.specialFeatures || [],
+    materials: backendProp.materials || [],
+    tourUrl: backendProp.tourUrl,
+    imageUrl: backendProp.imageUrl,
+    images: backendProp.images || [],
+    lat: backendProp.lat,
+    lng: backendProp.lng,
+    seller: {
+      type: seller.role === 'agent' ? 'agent' : 'private',
+      name: seller.name,
+      phone: seller.phone,
+      avatarUrl: seller.avatarUrl,
+      agencyName: seller.agencyName,
+    },
+    propertyType: backendProp.propertyType,
+    floorNumber: backendProp.floorNumber,
+    totalFloors: backendProp.totalFloors,
+    floorplanUrl: backendProp.floorplanUrl,
+    createdAt: new Date(backendProp.createdAt).getTime(),
+    lastRenewed: new Date(backendProp.lastRenewed).getTime(),
+    views: backendProp.views || 0,
+    saves: backendProp.saves || 0,
+    inquiries: backendProp.inquiries || 0,
+  };
+}
+
+// Transform frontend Property to backend format
+function transformToBackendProperty(frontendProp: Property): any {
+  return {
+    status: frontendProp.status,
+    price: frontendProp.price,
+    address: frontendProp.address,
+    city: frontendProp.city,
+    country: frontendProp.country,
+    beds: frontendProp.beds,
+    baths: frontendProp.baths,
+    livingRooms: frontendProp.livingRooms,
+    sqft: frontendProp.sqft,
+    yearBuilt: frontendProp.yearBuilt,
+    parking: frontendProp.parking,
+    description: frontendProp.description,
+    specialFeatures: frontendProp.specialFeatures,
+    materials: frontendProp.materials,
+    tourUrl: frontendProp.tourUrl,
+    imageUrl: frontendProp.imageUrl,
+    images: frontendProp.images,
+    lat: frontendProp.lat,
+    lng: frontendProp.lng,
+    propertyType: frontendProp.propertyType,
+    floorNumber: frontendProp.floorNumber,
+    totalFloors: frontendProp.totalFloors,
+    floorplanUrl: frontendProp.floorplanUrl,
+  };
+}
+
+// Transform backend saved search to frontend SavedSearch type
+function transformBackendSavedSearch(backendSearch: any): SavedSearch {
+  return {
+    id: backendSearch._id,
+    name: backendSearch.name,
+    filters: backendSearch.filters,
+    drawnBoundsJSON: backendSearch.drawnBoundsJSON,
+    createdAt: new Date(backendSearch.createdAt).getTime(),
+    lastAccessed: new Date(backendSearch.lastAccessed).getTime(),
+  };
+}
+
+// Transform backend conversation to frontend Conversation type
+function transformBackendConversation(backendConv: any): Conversation {
+  const property = backendConv.propertyId;
+  const buyer = backendConv.buyerId;
+  const seller = backendConv.sellerId;
+
+  return {
+    id: backendConv._id,
+    propertyId: property._id || property,
+    property: property._id ? transformBackendProperty(property) : undefined,
+    buyerId: buyer._id || buyer,
+    sellerId: seller._id || seller,
+    buyer: buyer._id ? {
+      id: buyer._id,
+      name: buyer.name,
+      avatarUrl: buyer.avatarUrl,
+    } : undefined,
+    seller: seller._id ? {
+      id: seller._id,
+      name: seller.name,
+      avatarUrl: seller.avatarUrl,
+      role: seller.role,
+      agencyName: seller.agencyName,
+    } : undefined,
+    messages: [],
+    lastMessage: backendConv.lastMessage ? transformBackendMessage(backendConv.lastMessage) : undefined,
+    createdAt: new Date(backendConv.createdAt).getTime(),
+    isRead: backendConv.buyerUnreadCount === 0 && backendConv.sellerUnreadCount === 0,
+  };
+}
+
+// Transform backend message to frontend Message type
+function transformBackendMessage(backendMsg: any): Message {
+  return {
+    id: backendMsg._id,
+    senderId: backendMsg.senderId._id || backendMsg.senderId,
+    text: backendMsg.text,
+    timestamp: new Date(backendMsg.createdAt).getTime(),
+    isRead: backendMsg.isRead,
+  };
+}
