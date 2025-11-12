@@ -31,6 +31,13 @@ const TILE_LAYERS = {
 
 type TileLayerType = keyof typeof TILE_LAYERS;
 
+// Bounding box for the Balkan region
+const BALKAN_BOUNDS = L.latLngBounds(
+    [34, 13], // Southwest corner (Southern Greece, Western Croatia)
+    [49, 31]  // Northeast corner (Northern Romania, Eastern Bulgaria)
+);
+
+
 interface MapComponentProps {
   properties: Property[];
   onMapMove: (bounds: L.LatLngBounds, center: L.LatLng) => void;
@@ -356,9 +363,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, user
   
     const { center, zoom } = useMemo(() => {
         if (userLocation) return { center: userLocation, zoom: 13 };
-        if (validProperties.length > 0) return { center: [validProperties[0].lat, validProperties[0].lng] as [number, number], zoom: 10 };
-        return { center: [44.2, 19.9] as [number, number], zoom: 7 };
-      }, [validProperties, userLocation]);
+        return { center: [41.5, 22] as [number, number], zoom: 7 };
+      }, [userLocation]);
     
   const handlePopupClick = (propertyId: string) => {
     dispatch({ type: 'SET_SELECTED_PROPERTY', payload: propertyId });
@@ -366,7 +372,17 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, user
 
   return (
     <div className="w-full h-full relative">
-      <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full" maxZoom={18} minZoom={7} zoomControl={false}>
+      <MapContainer 
+        center={center} 
+        zoom={zoom} 
+        scrollWheelZoom={true} 
+        className="w-full h-full" 
+        maxZoom={18} 
+        minZoom={7} 
+        zoomControl={false}
+        maxBounds={BALKAN_BOUNDS}
+        maxBoundsViscosity={1.0}
+      >
         <FlyToController target={flyToTarget} onComplete={onFlyComplete} />
         <MapEvents onMove={onMapMove} />
         <MapDrawEvents isDrawing={isDrawing} onDrawComplete={onDrawComplete} />

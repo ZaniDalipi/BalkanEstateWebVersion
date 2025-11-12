@@ -39,6 +39,7 @@ const basePricePerSqftByCountry: { [key: string]: number } = {
     'Bulgaria': 1300,
     'North Macedonia': 1200,
     'Kosovo': 1100,
+    'Romania': 1400,
 };
 
 const coastalCities = new Set([
@@ -62,6 +63,7 @@ const simpleLocations = [
     { country: 'Croatia', city: 'Split', lat: 43.50, lng: 16.44 },
     { country: 'Montenegro', city: 'Budva', lat: 42.28, lng: 18.84 },
     { country: 'Serbia', city: 'Zlatibor', lat: 43.72, lng: 19.70 },
+    { country: 'Romania', city: 'Bucharest', lat: 44.42, lng: 26.10 },
 ];
 
 const generateMockProperties = (count: number): Property[] => {

@@ -9,6 +9,7 @@ const countryCurrencyMap: { [key: string]: string } = {
   'Bulgaria': 'EUR',
   'Greece': 'EUR',
   'Kosovo': 'EUR',
+  'Romania': 'EUR',
 };
 
 export const formatPrice = (price: number, country: string): string => {
