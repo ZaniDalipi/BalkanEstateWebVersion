@@ -366,6 +366,24 @@ const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) => {
     );
 };
 
+const Legend: React.FC = () => (
+    <div className="bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-neutral-200 animate-fade-in">
+        <h4 className="font-bold text-sm mb-2 text-neutral-800">Legend</h4>
+        <div className="space-y-1.5">
+            {Object.entries(PROPERTY_TYPE_COLORS).map(([type, color]) => (
+                <div key={type} className="flex items-center gap-2">
+                    <span
+                        className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm"
+                        style={{ backgroundColor: color }}
+                    ></span>
+                    <span className="text-xs font-semibold text-neutral-700 capitalize">{type}</span>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+
 const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, userLocation, onSaveSearch, isSaving, isAuthenticated, mapBounds, drawnBounds, onDrawComplete, isDrawing, onDrawStart, flyToTarget, onFlyComplete, onRecenter, isMobile, searchMode }) => {
   const { dispatch } = useAppContext();
   const [mapType, setMapType] = useState<TileLayerType>('street');
@@ -429,87 +447,81 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, user
       </MapContainer>
       
       {!isMobile && (
-        <div className="absolute top-4 right-4 z-[1000] flex flex-col items-end gap-3">
-            <div className="bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-lg flex items-center gap-2">
-                <button
-                    onClick={() => setIsLegendOpen(prev => !prev)}
-                    className="p-2 rounded-full hover:bg-black/10 transition-colors"
-                    title={isLegendOpen ? "Hide Legend" : "Show Legend"}
-                >
-                    <Bars3Icon className="w-6 h-6 text-neutral-700" />
-                </button>
-                 <button
-                    onClick={onRecenter}
-                    className="p-2 rounded-full hover:bg-black/10 transition-colors"
-                    title="Center on my location"
-                >
-                    <CrosshairsIcon className="w-6 h-6 text-neutral-700" />
-                </button>
-                <div className="flex items-center gap-1 bg-neutral-200/50 p-1 rounded-full">
-                    <button
-                        onClick={() => setMapType('street')}
-                        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${mapType === 'street' ? 'bg-white shadow text-primary' : 'text-neutral-600 hover:bg-white/50'}`}
+        <>
+            <div className="absolute top-4 right-4 z-[1000] flex flex-col items-end gap-3">
+                <div className="bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-lg flex items-center gap-2">
+                     <button
+                        onClick={onRecenter}
+                        className="p-2 rounded-full hover:bg-black/10 transition-colors"
+                        title="Center on my location"
                     >
-                        Street
+                        <CrosshairsIcon className="w-6 h-6 text-neutral-700" />
                     </button>
-                    <button
-                        onClick={() => setMapType('satellite')}
-                        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${mapType === 'satellite' ? 'bg-white shadow text-primary' : 'text-neutral-600 hover:bg-white/50'}`}
-                    >
-                        Satellite
-                    </button>
-                </div>
-                <button 
-                    onClick={onDrawStart}
-                    className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-full shadow-md transition-colors ${
-                        isDrawing 
-                        ? 'bg-red-600 text-white hover:bg-red-700' 
-                        : 'bg-neutral-800 text-white hover:bg-neutral-900'
-                    }`}
-                >
-                    {isDrawing ? <XCircleIcon className="w-5 h-5" /> : <PencilIcon className="w-5 h-5" />}
-                    <span>{isDrawing ? 'Cancel' : 'Draw Area'}</span>
-                </button>
-            </div>
-
-            {drawnBounds && !isDrawing && (
-                <div className="flex flex-col items-end gap-2 animate-fade-in">
-                    {isAuthenticated && (
-                        <button 
-                            onClick={onSaveSearch} 
-                            disabled={isSaving}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+                    <div className="flex items-center gap-1 bg-neutral-200/50 p-1 rounded-full">
+                        <button
+                            onClick={() => setMapType('street')}
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${mapType === 'street' ? 'bg-white shadow text-primary' : 'text-neutral-600 hover:bg-white/50'}`}
                         >
-                            <BellIcon className="w-5 h-5" />
-                            <span>{isSaving ? 'Saving...' : 'Save Area'}</span>
+                            Street
                         </button>
-                    )}
-                    <button
-                        onClick={() => onDrawComplete(null)}
-                        className="flex items-center gap-2 px-4 py-2 bg-neutral-800 text-white font-bold rounded-full shadow-lg hover:bg-neutral-900"
+                        <button
+                            onClick={() => setMapType('satellite')}
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${mapType === 'satellite' ? 'bg-white shadow text-primary' : 'text-neutral-600 hover:bg-white/50'}`}
+                        >
+                            Satellite
+                        </button>
+                    </div>
+                    <button 
+                        onClick={onDrawStart}
+                        className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-full shadow-md transition-colors ${
+                            isDrawing 
+                            ? 'bg-red-600 text-white hover:bg-red-700' 
+                            : 'bg-neutral-800 text-white hover:bg-neutral-900'
+                        }`}
                     >
-                        <XCircleIcon className="w-5 h-5" />
-                        <span>Clear Area</span>
+                        {isDrawing ? <XCircleIcon className="w-5 h-5" /> : <PencilIcon className="w-5 h-5" />}
+                        <span>{isDrawing ? 'Cancel' : 'Draw Area'}</span>
                     </button>
                 </div>
-            )}
 
-            {isLegendOpen && (
-                <div className="bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-neutral-200 animate-fade-in">
-                    <h4 className="font-bold text-sm mb-2 text-neutral-800">Legend</h4>
-                    <div className="space-y-1.5">
-                        {Object.entries(PROPERTY_TYPE_COLORS).map(([type, color]) => (
-                            <div key={type} className="flex items-center gap-2">
-                                <span
-                                    className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm"
-                                    style={{ backgroundColor: color }}
-                                ></span>
-                                <span className="text-xs font-semibold text-neutral-700 capitalize">{type}</span>
-                            </div>
-                        ))}
+                {drawnBounds && !isDrawing && (
+                    <div className="flex flex-col items-end gap-2 animate-fade-in">
+                        {isAuthenticated && (
+                            <button 
+                                onClick={onSaveSearch} 
+                                disabled={isSaving}
+                                className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+                            >
+                                <BellIcon className="w-5 h-5" />
+                                <span>{isSaving ? 'Saving...' : 'Save Area'}</span>
+                            </button>
+                        )}
+                        <button
+                            onClick={() => onDrawComplete(null)}
+                            className="flex items-center gap-2 px-4 py-2 bg-neutral-800 text-white font-bold rounded-full shadow-lg hover:bg-neutral-900"
+                        >
+                            <XCircleIcon className="w-5 h-5" />
+                            <span>Clear Area</span>
+                        </button>
                     </div>
+                )}
+            </div>
+            <div className="absolute bottom-4 left-4 z-[1000]">
+                <Legend />
+            </div>
+        </>
+      )}
+
+      {isMobile && (
+        <div className="absolute bottom-20 left-4 z-[1000] pointer-events-none">
+            {isLegendOpen && (
+                <div className="absolute bottom-full mb-2 pointer-events-auto">
+                    <Legend />
                 </div>
             )}
+            <button onClick={() => setIsLegendOpen(p => !p)} className="bg-white/80 backdrop-blur-sm p-2.5 rounded-full shadow-lg pointer-events-auto">
+                <Bars3Icon className="w-6 h-6 text-neutral-800" />
+            </button>
         </div>
       )}
     </div>

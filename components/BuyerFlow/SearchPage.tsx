@@ -84,7 +84,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const shownErrorToast = useRef(false);
     const [isDrawing, setIsDrawing] = useState(false);
     const [flyToTarget, setFlyToTarget] = useState<{ center: [number, number], zoom: number } | null>(null);
-    const [isLegendOpen, setIsLegendOpen] = useState(false);
     const [localFilters, setLocalFilters] = useState<Filters>(filters);
     const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
     const searchWrapperRef = useRef<HTMLDivElement>(null);
@@ -592,13 +591,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                                 )}
                                 <div className="pointer-events-auto flex justify-between items-end">
                                     <div>
-                                        <button onClick={() => setIsLegendOpen(p => !p)} className="bg-white/80 backdrop-blur-sm p-2.5 rounded-full shadow-lg"><Bars3Icon className="w-6 h-6 text-neutral-800" /></button>
-                                        {isLegendOpen && (
-                                            <div className="absolute bottom-14 left-2 bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-neutral-200 animate-fade-in w-36">
-                                                <h4 className="font-bold text-sm mb-2 text-neutral-800">Legend</h4>
-                                                <div className="space-y-1.5">{Object.entries({ house: '#0252CD', apartment: '#28a745', villa: '#6f42c1', other: '#6c757d' }).map(([type, color]) => (<div key={type} className="flex items-center gap-2"><span className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: color }}></span><span className="text-xs font-semibold text-neutral-700 capitalize">{type}</span></div>))}</div>
-                                            </div>
-                                        )}
+                                        {/* This is where the mobile legend used to be */}
                                     </div>
                                     <div className="bg-white/80 text-neutral-800 p-2 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
                                         <button onClick={handleRecenterOnUser} className="p-2.5 rounded-full hover:bg-black/10 transition-colors" title="My Location"><CrosshairsIcon className="w-5 h-5" /></button>
