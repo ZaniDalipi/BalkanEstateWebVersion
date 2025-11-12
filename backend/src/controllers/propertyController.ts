@@ -22,7 +22,6 @@ export const getProperties = async (
       minSqft,
       maxSqft,
       sortBy,
-      sellerType,
       propertyType,
       city,
       country,
@@ -195,8 +194,8 @@ export const updateProperty = async (
       return;
     }
 
-    // Check ownership
-    if (property.sellerId.toString() !== req.user._id.toString()) {
+    // Check ownership - FIXED: Add type assertion for req.user._id
+    if (property.sellerId.toString() !== (req.user._id as string).toString()) {
       res.status(403).json({ message: 'Not authorized to update this property' });
       return;
     }
@@ -235,8 +234,8 @@ export const deleteProperty = async (
       return;
     }
 
-    // Check ownership
-    if (property.sellerId.toString() !== req.user._id.toString()) {
+    // Check ownership - FIXED: Add type assertion for req.user._id
+    if (property.sellerId.toString() !== (req.user._id as string).toString()) {
       res.status(403).json({ message: 'Not authorized to delete this property' });
       return;
     }
@@ -348,8 +347,8 @@ export const markAsSold = async (
       return;
     }
 
-    // Check ownership
-    if (property.sellerId.toString() !== req.user._id.toString()) {
+    // Check ownership - FIXED: Add type assertion for req.user._id
+    if (property.sellerId.toString() !== (req.user._id as string).toString()) {
       res.status(403).json({ message: 'Not authorized to update this property' });
       return;
     }
@@ -384,8 +383,8 @@ export const renewProperty = async (
       return;
     }
 
-    // Check ownership
-    if (property.sellerId.toString() !== req.user._id.toString()) {
+    // Check ownership - FIXED: Add type assertion for req.user._id
+    if (property.sellerId.toString() !== (req.user._id as string).toString()) {
       res.status(403).json({ message: 'Not authorized to renew this property' });
       return;
     }

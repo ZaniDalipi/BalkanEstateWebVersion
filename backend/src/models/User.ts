@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 export interface IUser extends Document {
+  _id:string,
   email: string;
   password: string;
   name: string;
@@ -92,7 +93,8 @@ UserSchema.pre('save', async function (next) {
 
   try {
     const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    const password = this.get('password') as string;
+    this.set('password', await bcrypt.hash(password, salt));
     next();
   } catch (error: any) {
     next(error);
