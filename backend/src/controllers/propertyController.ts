@@ -159,7 +159,7 @@ export const createProperty = async (
 
     const propertyData = {
       ...req.body,
-      sellerId: req.user._id,
+      sellerId: String(req.user!._id),
     };
 
     const property = await Property.create(propertyData);
@@ -194,8 +194,8 @@ export const updateProperty = async (
       return;
     }
 
-    // Check ownership - FIXED: Add type assertion for req.user._id
-    if (property.sellerId.toString() !== (req.user._id as string).toString()) {
+    // Check ownership
+    if (property.sellerId.toString() !== String(req.user!._id).toString()) {
       res.status(403).json({ message: 'Not authorized to update this property' });
       return;
     }
@@ -234,8 +234,8 @@ export const deleteProperty = async (
       return;
     }
 
-    // Check ownership - FIXED: Add type assertion for req.user._id
-    if (property.sellerId.toString() !== (req.user._id as string).toString()) {
+    // Check ownership
+    if (property.sellerId.toString() !== String(req.user!._id).toString()) {
       res.status(403).json({ message: 'Not authorized to delete this property' });
       return;
     }
@@ -262,7 +262,7 @@ export const getMyListings = async (
       return;
     }
 
-    const properties = await Property.find({ sellerId: req.user._id })
+    const properties = await Property.find({ sellerId: String(req.user!._id) })
       .populate('sellerId', 'name email phone avatarUrl role agencyName')
       .sort({ createdAt: -1 });
 
@@ -347,8 +347,8 @@ export const markAsSold = async (
       return;
     }
 
-    // Check ownership - FIXED: Add type assertion for req.user._id
-    if (property.sellerId.toString() !== (req.user._id as string).toString()) {
+    // Check ownership
+    if (property.sellerId.toString() !== String(req.user!._id).toString()) {
       res.status(403).json({ message: 'Not authorized to update this property' });
       return;
     }
@@ -383,8 +383,8 @@ export const renewProperty = async (
       return;
     }
 
-    // Check ownership - FIXED: Add type assertion for req.user._id
-    if (property.sellerId.toString() !== (req.user._id as string).toString()) {
+    // Check ownership
+    if (property.sellerId.toString() !== String(req.user!._id).toString()) {
       res.status(403).json({ message: 'Not authorized to renew this property' });
       return;
     }

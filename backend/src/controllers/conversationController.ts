@@ -19,7 +19,7 @@ export const getConversations = async (
 
     // Find conversations where user is either buyer or seller
     const conversations = await Conversation.find({
-      $or: [{ buyerId: req.user._id }, { sellerId: req.user._id }],
+      $or: [{ buyerId: String(req.user!._id) }, { sellerId: String(req.user!._id) }],
     })
       .populate('propertyId')
       .populate('buyerId', 'name email phone avatarUrl')
@@ -71,8 +71,8 @@ export const getConversation = async (
     }
 
     // Check if user is part of conversation
-    const isBuyer = conversation.buyerId._id.toString() === req.user._id.toString();
-    const isSeller = conversation.sellerId._id.toString() === req.user._id.toString();
+    const isBuyer = conversation.buyerId._id.toString() === String(req.user!._id).toString();
+    const isSeller = conversation.sellerId._id.toString() === String(req.user!._id).toString();
 
     if (!isBuyer && !isSeller) {
       res.status(403).json({ message: 'Not authorized to view this conversation' });
@@ -145,7 +145,7 @@ export const createConversation = async (
     }
 
     // Can't create conversation with yourself
-    if (property.sellerId.toString() === req.user._id.toString()) {
+    if (property.sellerId.toString() === String(req.user!._id).toString()) {
       res.status(400).json({ message: 'Cannot create conversation with yourself' });
       return;
     }
@@ -153,7 +153,7 @@ export const createConversation = async (
     // Check if conversation already exists
     let conversation = await Conversation.findOne({
       propertyId,
-      buyerId: req.user._id,
+      buyerId: String(req.user!._id),
       sellerId: property.sellerId,
     })
       .populate('propertyId')
@@ -164,7 +164,7 @@ export const createConversation = async (
       // Create new conversation
       conversation = await Conversation.create({
         propertyId,
-        buyerId: req.user._id,
+        buyerId: String(req.user!._id),
         sellerId: property.sellerId,
       });
 
@@ -215,8 +215,8 @@ export const sendMessage = async (
     }
 
     // Check if user is part of conversation
-    const isBuyer = conversation.buyerId.toString() === req.user._id.toString();
-    const isSeller = conversation.sellerId.toString() === req.user._id.toString();
+    const isBuyer = conversation.buyerId.toString() === String(req.user!._id).toString();
+    const isSeller = conversation.sellerId.toString() === String(req.user!._id).toString();
 
     if (!isBuyer && !isSeller) {
       res.status(403).json({ message: 'Not authorized to send message' });
@@ -226,7 +226,7 @@ export const sendMessage = async (
     // Create message
     const message = await Message.create({
       conversationId: conversation._id,
-      senderId: req.user._id,
+      senderId: String(req.user!._id),
       text,
     });
 
@@ -269,8 +269,8 @@ export const markAsRead = async (
     }
 
     // Check if user is part of conversation
-    const isBuyer = conversation.buyerId.toString() === req.user._id.toString();
-    const isSeller = conversation.sellerId.toString() === req.user._id.toString();
+    const isBuyer = conversation.buyerId.toString() === String(req.user!._id).toString();
+    const isSeller = conversation.sellerId.toString() === String(req.user!._id).toString();
 
     if (!isBuyer && !isSeller) {
       res.status(403).json({ message: 'Not authorized' });

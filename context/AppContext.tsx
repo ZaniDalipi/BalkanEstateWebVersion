@@ -153,8 +153,12 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
             const newConversation: Conversation = {
                 id: `conv-${Date.now()}`,
                 propertyId,
+                buyerId: state.currentUser.id,
+                sellerId: property.sellerId,
                 participants: [state.currentUser.id, property.sellerId],
                 messages: [message],
+                createdAt: Date.now(),
+                isRead: false,
             };
             return { ...state, conversations: [newConversation, ...state.conversations] };
         }

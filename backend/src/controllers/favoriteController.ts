@@ -16,7 +16,7 @@ export const getFavorites = async (
       return;
     }
 
-    const favorites = await Favorite.find({ userId: req.user._id })
+    const favorites = await Favorite.find({ userId: String(req.user!._id) })
       .populate({
         path: 'propertyId',
         populate: {
@@ -66,7 +66,7 @@ export const toggleFavorite = async (
 
     // Check if already favorited
     const existingFavorite = await Favorite.findOne({
-      userId: req.user._id,
+      userId: String(req.user!._id),
       propertyId,
     });
 
@@ -82,7 +82,7 @@ export const toggleFavorite = async (
     } else {
       // Add favorite
       await Favorite.create({
-        userId: req.user._id,
+        userId: String(req.user!._id),
         propertyId,
       });
 
@@ -112,7 +112,7 @@ export const checkFavorite = async (
     }
 
     const favorite = await Favorite.findOne({
-      userId: req.user._id,
+      userId: String(req.user!._id),
       propertyId: req.params.propertyId,
     });
 
