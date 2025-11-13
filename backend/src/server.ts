@@ -1,7 +1,6 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import connectDB from './config/database';
@@ -18,6 +17,15 @@ import conversationRoutes from './routes/conversationRoutes';
 
 // Create Express app
 const app: Application = express();
+
+// Health check route - MUST be first, no middleware
+app.get('/health', (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    port: process.env.PORT || 5000
+  });
+});
 
 // Connect to database
 connectDB();
@@ -51,11 +59,6 @@ app.use(morgan('dev'));
 
 // Compression
 app.use(compression());
-
-// Health check route
-app.get('/health', (_req: Request, res: Response) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
 
 // API routes
 app.use('/api/auth', authRoutes);
