@@ -61,16 +61,10 @@ const AuthPage: React.FC = () => {
         setSocialLoginProvider(provider);
     };
 
-    const handleSocialLoginSuccess = async (provider: SocialProvider) => {
-        try {
-            await loginWithSocial(provider);
-            handleClose();
-        } catch (err: any) {
-            setError(err.message || 'Social login failed.');
-        } finally {
-            setIsLoading(false);
-            setSocialLoginProvider(null);
-        }
+    const handleSocialLoginSuccess = (provider: SocialProvider) => {
+        // Initiate OAuth flow by redirecting to backend
+        loginWithSocial(provider);
+        // No need to close modal or handle success here - the OAuth callback page will handle it
     };
     
     const handleEmailSubmit = async (e: React.FormEvent) => {
