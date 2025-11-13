@@ -207,10 +207,11 @@ interface AppContextType {
     state: AppState;
     dispatch: Dispatch<AppAction>;
     checkAuthStatus: () => Promise<void>;
-    login: (email: string, pass: string) => Promise<User>;
+    login: (emailOrPhone: string, pass: string) => Promise<User>;
     signup: (email: string, pass: string) => Promise<User>;
     logout: () => Promise<void>;
     requestPasswordReset: (email: string) => Promise<void>;
+    resetPassword: (token: string, newPassword: string) => Promise<User>;
     loginWithSocial: (provider: 'google' | 'facebook' | 'apple') => void;
     handleOAuthCallback: (token: string, user: User) => void;
     sendPhoneCode: (phone: string) => Promise<void>;
@@ -244,8 +245,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
-  const login = useCallback(async (email: string, pass: string) => {
-    const user = await api.login(email, pass);
+  const login = useCallback(async (emailOrPhone: string, pass: string) => {
+    const user = await api.login(emailOrPhone, pass);
     dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user } });
     dispatch({ type: 'USER_DATA_LOADING' });
     const userData = await api.getMyData();
@@ -267,6 +268,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const requestPasswordReset = useCallback(async (email: string) => {
       await api.requestPasswordReset(email);
+  }, []);
+
+  const resetPassword = useCallback(async (token: string, newPassword: string) => {
+    const user = await api.resetPassword(token, newPassword);
+    dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user } });
+    dispatch({ type: 'USER_DATA_LOADING' });
+    const userData = await api.getMyData();
+    dispatch({ type: 'USER_DATA_SUCCESS', payload: userData });
+    return user;
   }, []);
 
   const loginWithSocial = useCallback((provider: 'google' | 'facebook' | 'apple') => {
@@ -367,7 +377,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'UPDATE_SAVED_SEARCH_ACCESS_TIME', payload: searchId });
   }, []);
 
-  const value = { state, dispatch, checkAuthStatus, login, signup, logout, requestPasswordReset, loginWithSocial, handleOAuthCallback, sendPhoneCode, verifyPhoneCode, completePhoneSignup, fetchProperties, toggleSavedHome, addSavedSearch, sendMessage, createListing, updateListing, updateUser, updateSearchPageState, updateSavedSearchAccessTime };
+  const value = { state, dispatch, checkAuthStatus, login, signup, logout, requestPasswordReset, resetPassword, loginWithSocial, handleOAuthCallback, sendPhoneCode, verifyPhoneCode, completePhoneSignup, fetchProperties, toggleSavedHome, addSavedSearch, sendMessage, createListing, updateListing, updateUser, updateSearchPageState, updateSavedSearchAccessTime };
 
   return (
     <AppContext.Provider value={value}>

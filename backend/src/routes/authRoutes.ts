@@ -6,6 +6,8 @@ import {
   updateProfile,
   logout,
   oauthCallback,
+  requestPasswordReset,
+  resetPassword,
 } from '../controllers/authController';
 import { protect } from '../middleware/auth';
 import passport from '../config/passport';
@@ -18,6 +20,10 @@ router.post('/login', login);
 router.post('/logout', protect, logout);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
+
+// Password reset routes
+router.post('/forgot-password', requestPasswordReset);
+router.post('/reset-password', resetPassword);
 
 // Google OAuth routes
 router.get(

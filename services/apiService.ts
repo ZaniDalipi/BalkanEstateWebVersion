@@ -108,10 +108,16 @@ export const checkAuth = async (): Promise<User | null> => {
   }
 };
 
-export const login = async (email: string, password: string): Promise<User> => {
+export const login = async (emailOrPhone: string, password: string): Promise<User> => {
+  // Determine if it's an email or phone number
+  const isEmail = emailOrPhone.includes('@');
+  const body = isEmail
+    ? { email: emailOrPhone, password }
+    : { phone: emailOrPhone, password };
+
   const response = await apiRequest<{ user: User; token: string }>('/auth/login', {
     method: 'POST',
-    body: { email, password },
+    body,
   });
 
   setToken(response.token);
@@ -133,9 +139,23 @@ export const logout = async (): Promise<void> => {
   removeToken();
 };
 
-export const requestPasswordReset = async (email: string): Promise<void> => {
-  // TODO: Implement password reset endpoint on backend
-  console.log(`Password reset request for ${email}`);
+export const requestPasswordReset = async (email: string): Promise<{ message: string; resetToken?: string }> => {
+  const response = await apiRequest<{ message: string; resetToken?: string }>('/auth/forgot-password', {
+    method: 'POST',
+    body: { email },
+  });
+
+  return response;
+};
+
+export const resetPassword = async (token: string, newPassword: string): Promise<User> => {
+  const response = await apiRequest<{ user: User; token: string }>('/auth/reset-password', {
+    method: 'POST',
+    body: { token, newPassword },
+  });
+
+  setToken(response.token);
+  return response.user;
 };
 
 export const getOAuthUrl = (provider: 'google' | 'facebook' | 'apple'): string => {

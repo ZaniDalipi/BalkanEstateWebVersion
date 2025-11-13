@@ -20,6 +20,8 @@ export interface IUser extends Document {
   isSubscribed: boolean;
   subscriptionPlan?: string;
   subscriptionExpiresAt?: Date;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -94,6 +96,12 @@ const UserSchema: Schema = new Schema(
       default: 'free',
     },
     subscriptionExpiresAt: {
+      type: Date,
+    },
+    resetPasswordToken: {
+      type: String,
+    },
+    resetPasswordExpires: {
       type: Date,
     },
   },
