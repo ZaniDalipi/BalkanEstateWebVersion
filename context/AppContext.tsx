@@ -211,7 +211,8 @@ interface AppContextType {
     signup: (email: string, pass: string) => Promise<User>;
     logout: () => Promise<void>;
     requestPasswordReset: (email: string) => Promise<void>;
-    loginWithSocial: (provider: 'google' | 'facebook' | 'apple') => Promise<User>;
+    loginWithSocial: (provider: 'google' | 'facebook' | 'apple') => void;
+    handleOAuthCallback: (token: string, user: User) => void;
     sendPhoneCode: (phone: string) => Promise<void>;
     verifyPhoneCode: (phone: string, code: string) => Promise<{ user: User | null, isNew: boolean }>;
     completePhoneSignup: (phone: string, name: string, email: string) => Promise<User>;
@@ -268,13 +269,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await api.requestPasswordReset(email);
   }, []);
 
-  const loginWithSocial = useCallback(async (provider: 'google' | 'facebook' | 'apple') => {
-    const user = await api.loginWithSocial(provider);
+  const loginWithSocial = useCallback((provider: 'google' | 'facebook' | 'apple') => {
+    // Redirect to OAuth endpoint
+    api.loginWithSocial(provider);
+  }, []);
+
+  const handleOAuthCallback = useCallback(async (token: string, user: User) => {
+    // Store token manually (since we're not going through the normal login flow)
+    localStorage.setItem('balkan_estate_token', token);
+
     dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user } });
     dispatch({ type: 'USER_DATA_LOADING' });
-    const userData = await api.getMyData();
-    dispatch({ type: 'USER_DATA_SUCCESS', payload: userData });
-    return user;
+
+    try {
+      const userData = await api.getMyData();
+      dispatch({ type: 'USER_DATA_SUCCESS', payload: userData });
+    } catch (error) {
+      console.error('Error fetching user data after OAuth:', error);
+      // Still mark as successful even if user data fetch fails
+      dispatch({ type: 'USER_DATA_SUCCESS', payload: { savedHomes: [], savedSearches: [], conversations: [] } });
+    }
   }, []);
   
   const sendPhoneCode = useCallback(async (phone: string) => {
@@ -353,7 +367,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'UPDATE_SAVED_SEARCH_ACCESS_TIME', payload: searchId });
   }, []);
 
-  const value = { state, dispatch, checkAuthStatus, login, signup, logout, requestPasswordReset, loginWithSocial, sendPhoneCode, verifyPhoneCode, completePhoneSignup, fetchProperties, toggleSavedHome, addSavedSearch, sendMessage, createListing, updateListing, updateUser, updateSearchPageState, updateSavedSearchAccessTime };
+  const value = { state, dispatch, checkAuthStatus, login, signup, logout, requestPasswordReset, loginWithSocial, handleOAuthCallback, sendPhoneCode, verifyPhoneCode, completePhoneSignup, fetchProperties, toggleSavedHome, addSavedSearch, sendMessage, createListing, updateListing, updateUser, updateSearchPageState, updateSavedSearchAccessTime };
 
   return (
     <AppContext.Provider value={value}>

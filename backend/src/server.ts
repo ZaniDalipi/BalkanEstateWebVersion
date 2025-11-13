@@ -1,10 +1,10 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import connectDB from './config/database';
+import passport from './config/passport';
 
 // Load environment variables
 dotenv.config();
@@ -45,6 +45,9 @@ app.use((_req: Request, _res: Response, next: NextFunction) => {
 // Body parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Initialize Passport
+app.use(passport.initialize());
 
 // Logging
 app.use(morgan('dev'));

@@ -155,11 +155,40 @@ const FullScreenLoader: React.FC = () => (
 
 
 const AppWrapper: React.FC = () => {
-    const { state, checkAuthStatus } = useAppContext();
+    const { state, checkAuthStatus, handleOAuthCallback } = useAppContext();
 
     useEffect(() => {
-        checkAuthStatus();
-    }, [checkAuthStatus]);
+        // Check for OAuth callback parameters in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const userParam = urlParams.get('user');
+        const error = urlParams.get('error');
+
+        if (error) {
+            console.error('OAuth error:', error);
+            alert(`Authentication failed: ${error}`);
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            return;
+        }
+
+        if (token && userParam) {
+            try {
+                const user = JSON.parse(decodeURIComponent(userParam));
+                handleOAuthCallback(token, user);
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } catch (err) {
+                console.error('Error parsing OAuth callback data:', err);
+                alert('Authentication failed. Please try again.');
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        } else {
+            // Normal auth check
+            checkAuthStatus();
+        }
+    }, [checkAuthStatus, handleOAuthCallback]);
 
 
     if (state.isAuthenticating) {
