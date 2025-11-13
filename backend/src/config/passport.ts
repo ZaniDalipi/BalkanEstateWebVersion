@@ -12,7 +12,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/google/callback`,
+        callbackURL: `${process.env.BACKEND_URL || 'http://localhost:50001'}/api/auth/google/callback`,
         scope: ['profile', 'email'],
       },
       async (accessToken: string, refreshToken: string, profile: GoogleProfile, done: VerifyCallback) => {
@@ -68,7 +68,7 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
       {
         clientID: process.env.FACEBOOK_APP_ID,
         clientSecret: process.env.FACEBOOK_APP_SECRET,
-        callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/facebook/callback`,
+        callbackURL: `${process.env.BACKEND_URL || 'http://localhost:50001'}/api/auth/facebook/callback`,
         profileFields: ['id', 'emails', 'name', 'picture.type(large)'],
       },
       async (accessToken: string, refreshToken: string, profile: FacebookProfile, done: VerifyCallback) => {
@@ -131,7 +131,7 @@ if (
         teamID: process.env.APPLE_TEAM_ID,
         keyID: process.env.APPLE_KEY_ID,
         privateKeyLocation: process.env.APPLE_PRIVATE_KEY_PATH,
-        callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/apple/callback`,
+        callbackURL: `${process.env.BACKEND_URL || 'http://localhost:50001'}/api/auth/apple/callback`,
         scope: ['name', 'email'],
       },
       async (accessToken: any, refreshToken: any, idToken: any, profile: any, done: any) => {
