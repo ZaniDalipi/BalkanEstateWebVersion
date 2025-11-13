@@ -1,7 +1,7 @@
 import { Property, Seller, User, UserRole, SavedSearch, Message, Conversation, Filters } from '../types';
 
 // Get API URL from environment variables
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 // --- TOKEN MANAGEMENT ---
 

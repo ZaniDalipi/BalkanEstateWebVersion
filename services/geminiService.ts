@@ -307,7 +307,7 @@ export const generateSearchName = async (filters: Filters): Promise<string> => {
         Bitola, under €100k, by agent, 3+ beds, 2+ baths
 
         Example 2 Input:
-        { "minPrice": 250000, "beds": 4, "livingRooms": 2 }
+        { "minPrice": 250010, "beds": 4, "livingRooms": 2 }
         Example 2 Output:
         Over €250k, 4+ beds, 2+ living rooms
 

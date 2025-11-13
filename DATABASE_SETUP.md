@@ -150,7 +150,7 @@ Run the all-in-one startup script:
 This will:
 1. Check MongoDB is installed and running
 2. Install dependencies if needed
-3. Start the backend (port 5000)
+3. Start the backend (port 5001)
 4. Start the frontend (port 3000)
 
 ### Manual Startup
@@ -159,7 +159,7 @@ This will:
 ```bash
 cd backend
 npm install         # First time only
-npm run dev        # Starts on port 5000
+npm run dev        # Starts on port 5001
 ```
 
 #### Terminal 2 - Frontend:
@@ -186,13 +186,13 @@ This will check:
 
 1. **Check backend health:**
    ```bash
-   curl http://localhost:5000/health
+   curl http://localhost:5001/health
    ```
    Should return: `{"status":"ok","timestamp":"..."}`
 
 2. **Test signup endpoint:**
    ```bash
-   curl -X POST http://localhost:5000/api/auth/signup \
+   curl -X POST http://localhost:5001/api/auth/signup \
      -H "Content-Type: application/json" \
      -d '{"email":"test@example.com","password":"Password123","name":"Test User","phone":"+1234567890"}'
    ```
@@ -229,7 +229,7 @@ Look for error messages about MongoDB connection.
 
 **Verify backend is running:**
 ```bash
-curl http://localhost:5000/health
+curl http://localhost:5001/health
 ```
 
 ### MongoDB connection errors
@@ -251,8 +251,8 @@ curl http://localhost:5000/health
 # MongoDB
 pgrep -x mongod
 
-# Backend (port 5000)
-lsof -i :5000
+# Backend (port 5001)
+lsof -i :5001
 
 # Frontend (port 3000)
 lsof -i :3000

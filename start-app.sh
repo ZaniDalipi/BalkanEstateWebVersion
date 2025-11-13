@@ -72,11 +72,11 @@ echo ""
 
 # Step 4: Start backend
 echo "4️⃣  Starting backend server..."
-if check_port 5000; then
-    echo -e "${YELLOW}⚠️  Port 5000 is already in use${NC}"
+if check_port 5001; then
+    echo -e "${YELLOW}⚠️  Port 5001 is already in use${NC}"
     echo "   Backend might already be running"
 else
-    echo "   Starting backend on port 5000..."
+    echo "   Starting backend on port 5001..."
     cd backend
     npm run dev > ../backend.log 2>&1 &
     BACKEND_PID=$!
@@ -85,16 +85,16 @@ else
     # Wait for backend to start
     echo -n "   Waiting for backend"
     for i in {1..10}; do
-        if curl -s http://localhost:5000/health > /dev/null 2>&1; then
+        if curl -s http://localhost:5001/health > /dev/null 2>&1; then
             echo ""
-            echo -e "${GREEN}✅ Backend is running on http://localhost:5000${NC}"
+            echo -e "${GREEN}✅ Backend is running on http://localhost:5001${NC}"
             break
         fi
         echo -n "."
         sleep 1
     done
 
-    if ! curl -s http://localhost:5000/health > /dev/null 2>&1; then
+    if ! curl -s http://localhost:5001/health > /dev/null 2>&1; then
         echo ""
         echo -e "${RED}❌ Backend failed to start${NC}"
         echo "   Check backend.log for errors"
@@ -122,7 +122,7 @@ echo "======================================"
 echo -e "${GREEN}🎉 Application is running!${NC}"
 echo ""
 echo "📱 Frontend:  http://localhost:3000"
-echo "🔧 Backend:   http://localhost:5000"
+echo "🔧 Backend:   http://localhost:5001"
 echo "💾 Database:  mongodb://localhost:27017/balkan-estate"
 echo ""
 echo "📝 Logs:"

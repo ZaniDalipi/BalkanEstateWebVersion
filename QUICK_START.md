@@ -56,7 +56,7 @@ npm run dev
 
 You should see:
 ```
-Server running in development mode on port 5000
+Server running in development mode on port 5001
 MongoDB connected successfully
 ```
 
@@ -105,13 +105,13 @@ npm run dev
 
 ### Backend won't start?
 
-Check if something is already running on port 5000:
+Check if something is already running on port 5001:
 ```bash
 # macOS/Linux
-lsof -i :5000
+lsof -i :5001
 
 # Windows
-netstat -ano | findstr :5000
+netstat -ano | findstr :5001
 ```
 
 Kill the process if needed:
@@ -153,7 +153,7 @@ net start MongoDB
 
 **Test the backend directly:**
 ```bash
-curl http://localhost:5000/health
+curl http://localhost:5001/health
 ```
 
 Should return: `{"status":"ok","timestamp":"..."}`
@@ -210,7 +210,7 @@ Check these files:
 ## Success Checklist
 
 - [ ] MongoDB is installed and running
-- [ ] Backend starts without errors (port 5000)
+- [ ] Backend starts without errors (port 5001)
 - [ ] Frontend starts without errors (port 3000)
 - [ ] Can access http://localhost:3000 in browser
 - [ ] No CORS errors in browser console

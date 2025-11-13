@@ -41,7 +41,7 @@ echo "Starting servers..."
 echo ""
 
 # Start backend in background
-echo "📦 Starting Backend API (http://localhost:5000)..."
+echo "📦 Starting Backend API (http://localhost:5001)..."
 cd backend
 npm run dev > ../backend.log 2>&1 &
 BACKEND_PID=$!
@@ -56,7 +56,7 @@ echo ""
 echo "================================================"
 echo "✅ Development environment is starting!"
 echo ""
-echo "Backend:  http://localhost:5000"
+echo "Backend:  http://localhost:5001"
 echo "Frontend: http://localhost:5173"
 echo ""
 echo "Backend logs: tail -f backend.log"
