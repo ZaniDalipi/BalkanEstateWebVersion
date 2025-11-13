@@ -5,8 +5,16 @@ import { Strategy as FacebookStrategy, Profile as FacebookProfile } from 'passpo
 import AppleStrategy from 'passport-apple';
 import User from '../models/User';
 
+// Track which strategies are enabled
+export const oauthStrategies = {
+  google: false,
+  facebook: false,
+  apple: false,
+};
+
 // Google OAuth Strategy
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  oauthStrategies.google = true;
   passport.use(
     new GoogleStrategy(
       {
@@ -63,6 +71,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
 // Facebook OAuth Strategy
 if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
+  oauthStrategies.facebook = true;
   passport.use(
     new FacebookStrategy(
       {
@@ -124,6 +133,7 @@ if (
   process.env.APPLE_KEY_ID &&
   process.env.APPLE_PRIVATE_KEY_PATH
 ) {
+  oauthStrategies.apple = true;
   passport.use(
     new AppleStrategy(
       {
