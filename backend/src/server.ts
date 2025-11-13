@@ -1,5 +1,4 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
-import cors from 'cors';
 import dotenv from 'dotenv';
 import compression from 'compression';
 import morgan from 'morgan';
@@ -18,35 +17,31 @@ import conversationRoutes from './routes/conversationRoutes';
 // Create Express app
 const app: Application = express();
 
-// Health check route - MUST be first, no middleware
-app.get('/health', (_req: Request, res: Response) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    port: process.env.PORT || 5000
-  });
-});
-
 // Connect to database
 connectDB();
 
-// CORS configuration - MUST be FIRST before any other middleware
-app.use(
-  cors({
-    origin: true, // Allow all origins in development
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-    exposedHeaders: ['Content-Range', 'X-Content-Range'],
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
-    maxAge: 86400 // Cache preflight requests for 24 hours
-  })
-);
+// ============================================================================
+// MANUAL CORS MIDDLEWARE - Handle ALL CORS manually for maximum control
+// ============================================================================
+app.use((req: Request, res: Response, next: NextFunction) => {
+  // Allow any origin in development
+  const origin = req.headers.origin || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Range, X-Content-Range');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
 
-// Debug middleware to log all requests
-app.use((_req: Request, _res: Response, next: NextFunction) => {
-  console.log(`${_req.method} ${_req.url} - Origin: ${_req.headers.origin || 'no origin'}`);
+  // Handle preflight OPTIONS requests immediately
+  if (req.method === 'OPTIONS') {
+    console.log(`✅ CORS Preflight: ${req.method} ${req.url} - Origin: ${req.headers.origin || 'none'}`);
+    res.status(204).end();
+    return;
+  }
+
+  // Log all other requests
+  console.log(`📥 Request: ${req.method} ${req.url} - Origin: ${req.headers.origin || 'none'}`);
   next();
 });
 
@@ -54,11 +49,23 @@ app.use((_req: Request, _res: Response, next: NextFunction) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Logging
-app.use(morgan('dev'));
+// Logging (in development)
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
 
 // Compression
 app.use(compression());
+
+// Health check route
+app.get('/health', (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    port: process.env.PORT || 5000,
+    cors: 'enabled'
+  });
+});
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -74,7 +81,7 @@ app.use((_req: Request, res: Response) => {
 
 // Error handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('Error:', err);
+  console.error('❌ Error:', err);
 
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal server error';
@@ -89,7 +96,16 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  console.log('');
+  console.log('🚀 ============================================');
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log('🚀 CORS: Enabled for all origins');
+  console.log('🚀 ============================================');
+  console.log('');
+  console.log('📍 Health check: http://localhost:' + PORT + '/health');
+  console.log('📍 API base URL: http://localhost:' + PORT + '/api');
+  console.log('');
 });
 
 export default app;
