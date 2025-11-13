@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
 import { generateToken } from '../utils/jwt';
-import { AuthRequest } from '../middleware/auth';
+import { Request } from '../middleware/auth';
 
 // @desc    Register new user
 // @route   POST /api/auth/signup
@@ -105,7 +105,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 // @desc    Get current user
 // @route   GET /api/auth/me
 // @access  Private
-export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getMe = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ message: 'Not authorized' });
@@ -138,7 +138,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
 // @route   PUT /api/auth/profile
 // @access  Private
 export const updateProfile = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -193,6 +193,6 @@ export const updateProfile = async (
 // @desc    Logout user
 // @route   POST /api/auth/logout
 // @access  Private
-export const logout = async (req: AuthRequest, res: Response): Promise<void> => {
+export const logout = async (req: Request, res: Response): Promise<void> => {
   res.json({ message: 'Logged out successfully' });
 };
