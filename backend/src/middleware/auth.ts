@@ -50,7 +50,7 @@ export const protect = async (
 
 export const restrictTo = (...roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    if (!req.user || !roles.includes(req.user.role)) {
+    if (!req.user || !roles.includes((req.user as IUser).role)) {
       res.status(403).json({
         message: 'You do not have permission to perform this action',
       });
