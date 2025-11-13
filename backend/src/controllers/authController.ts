@@ -112,20 +112,21 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const user = req.user as IUser;
     res.json({
       user: {
-        id: String(req.user!._id),
-        email: req.user.email,
-        name: req.user.name,
-        phone: req.user.phone,
-        role: req.user.role,
-        avatarUrl: req.user.avatarUrl,
-        city: req.user.city,
-        country: req.user.country,
-        agencyName: req.user.agencyName,
-        agentId: req.user.agentId,
-        licenseNumber: req.user.licenseNumber,
-        isSubscribed: req.user.isSubscribed,
+        id: String(user._id),
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+        avatarUrl: user.avatarUrl,
+        city: user.city,
+        country: user.country,
+        agencyName: user.agencyName,
+        agentId: user.agentId,
+        licenseNumber: user.licenseNumber,
+        isSubscribed: user.isSubscribed,
       },
     });
   } catch (error: any) {
@@ -150,7 +151,8 @@ export const updateProfile = async (
     const { name, phone, city, country, agencyName, licenseNumber, avatarUrl } =
       req.body;
 
-    const user = await User.findById(String(req.user!._id));
+    const currentUser = req.user as IUser;
+    const user = await User.findById(String(currentUser._id));
 
     if (!user) {
       res.status(404).json({ message: 'User not found' });

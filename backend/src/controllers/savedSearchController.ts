@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import SavedSearch from '../models/SavedSearch';
+import { IUser } from '../models/User';
 
 // @desc    Get user's saved searches
 // @route   GET /api/saved-searches
@@ -14,7 +15,7 @@ export const getSavedSearches = async (
       return;
     }
 
-    const savedSearches = await SavedSearch.find({ userId: String(req.user!._id) }).sort({
+    const savedSearches = await SavedSearch.find({ userId: String((req.user as IUser)._id) }).sort({
       lastAccessed: -1,
     });
 
@@ -46,7 +47,7 @@ export const createSavedSearch = async (
     }
 
     const savedSearch = await SavedSearch.create({
-      userId: String(req.user!._id),
+      userId: String((req.user as IUser)._id),
       name,
       filters,
       drawnBoundsJSON: drawnBoundsJSON || null,
@@ -80,7 +81,7 @@ export const updateAccessTime = async (
     }
 
     // Check ownership
-    if (savedSearch.userId.toString() !== String(req.user!._id).toString()) {
+    if (savedSearch.userId.toString() !== String((req.user as IUser)._id).toString()) {
       res.status(403).json({ message: 'Not authorized to update this search' });
       return;
     }
@@ -116,7 +117,7 @@ export const deleteSavedSearch = async (
     }
 
     // Check ownership
-    if (savedSearch.userId.toString() !== String(req.user!._id).toString()) {
+    if (savedSearch.userId.toString() !== String((req.user as IUser)._id).toString()) {
       res.status(403).json({ message: 'Not authorized to delete this search' });
       return;
     }
