@@ -4,11 +4,14 @@ import bcrypt from 'bcryptjs';
 export interface IUser extends Document {
   _id:string,
   email: string;
-  password: string;
+  password?: string;
   name: string;
   phone?: string;
   avatarUrl?: string;
   role: 'buyer' | 'private_seller' | 'agent';
+  provider: 'local' | 'google' | 'facebook' | 'apple';
+  providerId?: string;
+  isEmailVerified: boolean;
   city?: string;
   country?: string;
   agencyName?: string;
@@ -33,7 +36,7 @@ const UserSchema: Schema = new Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: false,
       minlength: 6,
     },
     name: {
@@ -45,6 +48,18 @@ const UserSchema: Schema = new Schema(
       type: String,
       required: false,
       trim: true,
+    },
+    provider: {
+      type: String,
+      enum: ['local', 'google', 'facebook', 'apple'],
+      default: 'local',
+    },
+    providerId: {
+      type: String,
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
     },
     avatarUrl: {
       type: String,
@@ -87,9 +102,13 @@ const UserSchema: Schema = new Schema(
   }
 );
 
-// Hash password before saving
+// Create compound index for OAuth users
+UserSchema.index({ provider: 1, providerId: 1 }, { unique: true, sparse: true });
+
+// Hash password before saving (only for local auth users)
 UserSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  // Skip password hashing if no password (OAuth users) or password not modified
+  if (!this.get('password') || !this.isModified('password')) return next();
 
   try {
     const salt = await bcrypt.genSalt(10);

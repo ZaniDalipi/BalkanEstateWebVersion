@@ -138,9 +138,14 @@ export const requestPasswordReset = async (email: string): Promise<void> => {
   console.log(`Password reset request for ${email}`);
 };
 
-export const loginWithSocial = async (provider: 'google' | 'facebook' | 'apple'): Promise<User> => {
-  // TODO: Implement social login on backend
-  throw new Error('Social login not yet implemented');
+export const getOAuthUrl = (provider: 'google' | 'facebook' | 'apple'): string => {
+  const baseUrl = API_URL.replace('/api', '');
+  return `${baseUrl}/api/auth/${provider}`;
+};
+
+export const loginWithSocial = (provider: 'google' | 'facebook' | 'apple'): void => {
+  // Redirect to backend OAuth endpoint
+  window.location.href = getOAuthUrl(provider);
 };
 
 export const sendPhoneCode = async (phone: string): Promise<void> => {

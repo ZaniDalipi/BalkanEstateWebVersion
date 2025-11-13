@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import User from '../models/User';
 import { generateToken } from '../utils/jwt';
 import { AuthRequest } from '../middleware/auth';
+import { IUser } from '../models/User';
 
 // @desc    Register new user
 // @route   POST /api/auth/signup
@@ -195,4 +196,48 @@ export const updateProfile = async (
 // @access  Private
 export const logout = async (req: AuthRequest, res: Response): Promise<void> => {
   res.json({ message: 'Logged out successfully' });
+};
+
+// @desc    OAuth callback handler
+// @route   GET /api/auth/:provider/callback
+// @access  Public
+export const oauthCallback = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = req.user as IUser;
+
+    if (!user) {
+      // Redirect to frontend with error
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      res.redirect(`${frontendUrl}/auth/callback?error=authentication_failed`);
+      return;
+    }
+
+    // Generate token
+    const token = generateToken(String(user._id));
+
+    // Redirect to frontend with token and user data
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const userData = encodeURIComponent(JSON.stringify({
+      id: String(user._id),
+      email: user.email,
+      name: user.name,
+      phone: user.phone,
+      role: user.role,
+      avatarUrl: user.avatarUrl,
+      city: user.city,
+      country: user.country,
+      agencyName: user.agencyName,
+      agentId: user.agentId,
+      licenseNumber: user.licenseNumber,
+      isSubscribed: user.isSubscribed,
+      provider: user.provider,
+      isEmailVerified: user.isEmailVerified,
+    }));
+
+    res.redirect(`${frontendUrl}/auth/callback?token=${token}&user=${userData}`);
+  } catch (error: any) {
+    console.error('OAuth callback error:', error);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.redirect(`${frontendUrl}/auth/callback?error=server_error`);
+  }
 };

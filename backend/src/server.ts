@@ -4,6 +4,7 @@ import compression from 'compression';
 import morgan from 'morgan';
 import connectDB from './config/database';
 
+
 // Load environment variables
 dotenv.config();
 
