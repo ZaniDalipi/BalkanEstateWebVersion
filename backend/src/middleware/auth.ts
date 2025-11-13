@@ -2,12 +2,15 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/User';
 
+// Import the global type augmentation
+import '../types/passport';
+
 export interface AuthRequest extends Request {
   user?: IUser;
 }
 
 export const protect = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -49,7 +52,7 @@ export const protect = async (
 };
 
 export const restrictTo = (...roles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user || !roles.includes(req.user.role)) {
       res.status(403).json({
         message: 'You do not have permission to perform this action',
