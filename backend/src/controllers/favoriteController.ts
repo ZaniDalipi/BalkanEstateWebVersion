@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import Favorite from '../models/Favorite';
 import Property from '../models/Property';
-import '../types/passport';
 
 // @desc    Get user's favorites
 // @route   GET /api/favorites

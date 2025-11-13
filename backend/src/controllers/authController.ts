@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import User from '../models/User';
 import { generateToken } from '../utils/jwt';
 import { IUser } from '../models/User';
-import '../types/passport';
 
 // @desc    Register new user
 // @route   POST /api/auth/signup

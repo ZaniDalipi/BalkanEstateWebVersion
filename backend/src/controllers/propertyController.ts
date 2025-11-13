@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import Property from '../models/Property';
 import cloudinary from '../config/cloudinary';
 import { Readable } from 'stream';
-import '../types/passport';
 
 // @desc    Get all properties with filters
 // @route   GET /api/properties
