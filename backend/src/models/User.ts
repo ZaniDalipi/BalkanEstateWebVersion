@@ -6,7 +6,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   name: string;
-  phone: string;
+  phone?: string;
   avatarUrl?: string;
   role: 'buyer' | 'private_seller' | 'agent';
   city?: string;
@@ -43,7 +43,7 @@ const UserSchema: Schema = new Schema(
     },
     phone: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
     },
     avatarUrl: {
