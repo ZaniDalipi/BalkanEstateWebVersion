@@ -62,7 +62,7 @@ app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    port: process.env.PORT || 5000,
+    port: process.env.PORT || 5001,
     cors: 'enabled'
   });
 });
@@ -93,7 +93,7 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 app.listen(PORT, () => {
   console.log('');
