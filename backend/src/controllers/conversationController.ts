@@ -2,7 +2,6 @@ import { Response } from 'express';
 import Conversation from '../models/Conversation';
 import Message from '../models/Message';
 import Property from '../models/Property';
-import { Request } from '../middleware/auth';
 
 // @desc    Get user's conversations
 // @route   GET /api/conversations

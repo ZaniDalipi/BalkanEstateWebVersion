@@ -1,6 +1,5 @@
 import { Response } from 'express';
 import SavedSearch from '../models/SavedSearch';
-import { Request } from '../middleware/auth';
 
 // @desc    Get user's saved searches
 // @route   GET /api/saved-searches

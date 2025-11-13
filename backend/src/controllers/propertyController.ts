@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import Property from '../models/Property';
-import { Request } from '../middleware/auth';
 import cloudinary from '../config/cloudinary';
 import { Readable } from 'stream';
 

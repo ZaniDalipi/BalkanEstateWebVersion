@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import Favorite from '../models/Favorite';
 import Property from '../models/Property';
-import { Request } from '../middleware/auth';
 
 // @desc    Get user's favorites
 // @route   GET /api/favorites

@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
 import { generateToken } from '../utils/jwt';
-import { Request } from '../middleware/auth';
 
 // @desc    Register new user
 // @route   POST /api/auth/signup
