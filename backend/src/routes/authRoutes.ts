@@ -19,6 +19,17 @@ router.post('/logout', protect, logout);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
 
+// Get available OAuth providers
+router.get('/oauth/providers', (req, res) => {
+  res.json({
+    providers: {
+      google: oauthStrategies.google,
+      facebook: oauthStrategies.facebook,
+      apple: oauthStrategies.apple,
+    },
+  });
+});
+
 // Google OAuth routes - only register if Google strategy is configured
 if (oauthStrategies.google) {
   router.get(

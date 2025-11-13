@@ -29,12 +29,13 @@ const SocialButton: React.FC<{ icon: React.ReactNode; label: string, onClick: ()
 
 const AuthPage: React.FC = () => {
     const { state, dispatch, login, signup, requestPasswordReset, loginWithSocial, sendPhoneCode, verifyPhoneCode, completePhoneSignup } = useAppContext();
-    
+
     const [method, setMethod] = useState<Method>('email');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
     const [socialLoginProvider, setSocialLoginProvider] = useState<SocialProvider | null>(null);
+    const [availableProviders, setAvailableProviders] = useState<{ google: boolean; facebook: boolean; apple: boolean }>({ google: false, facebook: false, apple: false });
 
     // Form fields state
     const [email, setEmail] = useState('');
@@ -43,6 +44,20 @@ const AuthPage: React.FC = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [code, setCode] = useState('');
     const [name, setName] = useState('');
+
+    useEffect(() => {
+        // Fetch available OAuth providers
+        const fetchProviders = async () => {
+            try {
+                const { getAvailableOAuthProviders } = await import('../../services/apiService');
+                const providers = await getAvailableOAuthProviders();
+                setAvailableProviders(providers);
+            } catch (error) {
+                console.error('Error fetching OAuth providers:', error);
+            }
+        };
+        fetchProviders();
+    }, []);
 
     useEffect(() => {
         // Reset state when modal opens or view changes
@@ -194,12 +209,16 @@ const AuthPage: React.FC = () => {
                             </form>
                         )}
                         
-                        <div className="my-4 sm:my-6 flex items-center"><div className="flex-grow border-t border-neutral-300"></div><span className="flex-shrink mx-4 text-neutral-500 font-medium text-sm">Or continue with</span><div className="flex-grow border-t border-neutral-300"></div></div>
-                        <div className="space-y-3">
-                            <SocialButton icon={<GoogleIcon/>} label="Continue with Google" onClick={() => handleSocialLoginClick('google')} disabled={isLoading} />
-                            <SocialButton icon={<FacebookIcon/>} label="Continue with Facebook" onClick={() => handleSocialLoginClick('facebook')} disabled={isLoading} />
-                            <SocialButton icon={<AppleIcon className="text-black"/>} label="Continue with Apple" onClick={() => handleSocialLoginClick('apple')} disabled={isLoading} />
-                        </div>
+                        {(availableProviders.google || availableProviders.facebook || availableProviders.apple) && (
+                            <>
+                                <div className="my-4 sm:my-6 flex items-center"><div className="flex-grow border-t border-neutral-300"></div><span className="flex-shrink mx-4 text-neutral-500 font-medium text-sm">Or continue with</span><div className="flex-grow border-t border-neutral-300"></div></div>
+                                <div className="space-y-3">
+                                    {availableProviders.google && <SocialButton icon={<GoogleIcon/>} label="Continue with Google" onClick={() => handleSocialLoginClick('google')} disabled={isLoading} />}
+                                    {availableProviders.facebook && <SocialButton icon={<FacebookIcon/>} label="Continue with Facebook" onClick={() => handleSocialLoginClick('facebook')} disabled={isLoading} />}
+                                    {availableProviders.apple && <SocialButton icon={<AppleIcon className="text-black"/>} label="Continue with Apple" onClick={() => handleSocialLoginClick('apple')} disabled={isLoading} />}
+                                </div>
+                            </>
+                        )}
                     </>
                 );
             case 'forgotPassword':
