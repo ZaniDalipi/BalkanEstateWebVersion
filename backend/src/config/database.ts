@@ -18,7 +18,9 @@ const connectDB = async (): Promise<void> => {
 
   } catch (error) {
     console.error('Error connecting to MongoDB:', error);
-    process.exit(1);
+    console.error('⚠️  Server will continue running but database operations will fail');
+    console.error('💡 Make sure MongoDB is running: brew services start mongodb-community (macOS) or sudo systemctl start mongod (Linux)');
+    // Don't exit - allow server to start for debugging
   }
 };
 

@@ -22,29 +22,35 @@ const app: Application = express();
 // Connect to database
 connectDB();
 
-// Body parser - MUST come before routes
+// CORS configuration - MUST be FIRST before any other middleware
+app.use(
+  cors({
+    origin: true, // Allow all origins in development
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+    maxAge: 86400 // Cache preflight requests for 24 hours
+  })
+);
+
+// Debug middleware to log all requests
+app.use((_req: Request, _res: Response, next: NextFunction) => {
+  console.log(`${_req.method} ${_req.url} - Origin: ${_req.headers.origin || 'no origin'}`);
+  next();
+});
+
+// Body parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// CORS configuration - MUST come before routes
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
+// Logging
+app.use(morgan('dev'));
 
-// Security middleware - Configure helmet to be less strict
-app.use(
-  helmet({
-    crossOriginResourcePolicy: false,
-    contentSecurityPolicy: false,
-  })
-);
-app.use(compression()); // Compress responses
-app.use(morgan('dev')); // Logging
+// Compression
+app.use(compression());
 
 // Health check route
 app.get('/health', (_req: Request, res: Response) => {
