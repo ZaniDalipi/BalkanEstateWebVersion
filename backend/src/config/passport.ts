@@ -1,6 +1,6 @@
 import passport from 'passport';
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { Strategy as FacebookStrategy } from 'passport-facebook';
+import { Strategy as GoogleStrategy, Profile as GoogleProfile, VerifyCallback } from 'passport-google-oauth20';
+import { Strategy as FacebookStrategy, Profile as FacebookProfile } from 'passport-facebook';
 // @ts-ignore - passport-apple doesn't have TypeScript definitions
 import AppleStrategy from 'passport-apple';
 import User from '../models/User';
@@ -15,7 +15,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
         callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/google/callback`,
         scope: ['profile', 'email'],
       },
-      async (accessToken, refreshToken, profile, done) => {
+      async (accessToken: string, refreshToken: string, profile: GoogleProfile, done: VerifyCallback) => {
         try {
           // Check if user already exists
           let user = await User.findOne({
@@ -71,7 +71,7 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
         callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/facebook/callback`,
         profileFields: ['id', 'emails', 'name', 'picture.type(large)'],
       },
-      async (accessToken, refreshToken, profile, done) => {
+      async (accessToken: string, refreshToken: string, profile: FacebookProfile, done: VerifyCallback) => {
         try {
           // Check if user already exists
           let user = await User.findOne({
@@ -177,12 +177,12 @@ if (
 }
 
 // Serialize user for the session
-passport.serializeUser((user: any, done) => {
+passport.serializeUser((user: any, done: (err: any, id?: any) => void) => {
   done(null, user.id);
 });
 
 // Deserialize user from the session
-passport.deserializeUser(async (id: string, done) => {
+passport.deserializeUser(async (id: string, done: (err: any, user?: any) => void) => {
   try {
     const user = await User.findById(id);
     done(null, user);
