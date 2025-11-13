@@ -5,8 +5,6 @@ import compression from 'compression';
 import morgan from 'morgan';
 import connectDB from './config/database';
 import passport from './config/passport';
-// Load type augmentations
-import './types/passport';
 
 // Load environment variables
 dotenv.config();
