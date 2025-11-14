@@ -110,8 +110,15 @@ const UserSchema: Schema = new Schema(
   }
 );
 
-// Create compound index for OAuth users
-UserSchema.index({ provider: 1, providerId: 1 }, { unique: true, sparse: true });
+// Create compound index for OAuth users only (when providerId is not null)
+// This prevents duplicate key errors for local users who all have providerId = null
+UserSchema.index(
+  { provider: 1, providerId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { providerId: { $ne: null } }
+  }
+);
 
 // Hash password before saving (only for local auth users)
 UserSchema.pre('save', async function (next) {
