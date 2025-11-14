@@ -174,14 +174,52 @@ export const completePhoneSignup = async (phone: string, name: string, email: st
   throw new Error('Phone signup not yet implemented');
 };
 
-export const updateUser = async (userData: Partial<User>): Promise<User> => {
-  const response = await apiRequest<{ user: User }>('/auth/profile', {
-    method: 'PUT',
-    body: userData,
-    requiresAuth: true,
-  });
+export const updateUser = async (userData: Partial<User>, avatarFile?: File | null): Promise<User> => {
+  const token = getToken();
 
-  return response.user;
+  // If there's a file, use FormData
+  if (avatarFile) {
+    const formData = new FormData();
+
+    // Append all user data fields
+    Object.entries(userData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
+      }
+    });
+
+    formData.append('avatar', avatarFile);
+
+    const config: RequestInit = {
+      method: 'PUT',
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: formData,
+    };
+
+    try {
+      const response = await fetch(`${API_URL}/auth/profile`, config);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'An error occurred');
+      }
+      const data = await response.json();
+      return data.user;
+    } catch (error: any) {
+      console.error('API request error:', error);
+      throw error;
+    }
+  } else {
+    // No file, use regular JSON request
+    const response = await apiRequest<{ user: User }>('/auth/profile', {
+      method: 'PUT',
+      body: userData,
+      requiresAuth: true,
+    });
+
+    return response.user;
+  }
 };
 
 export const switchRole = async (

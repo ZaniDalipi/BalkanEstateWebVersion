@@ -162,6 +162,7 @@ export const updateProfile = async (
 
     const { name, phone, city, country, agencyName, licenseNumber, avatarUrl } =
       req.body;
+    const file = req.file;
 
     const currentUser = req.user as IUser;
     const user = await User.findById(String(currentUser._id));
@@ -179,6 +180,26 @@ export const updateProfile = async (
     if (agencyName) user.agencyName = agencyName;
     if (licenseNumber) user.licenseNumber = licenseNumber;
     if (avatarUrl) user.avatarUrl = avatarUrl;
+
+    // Handle avatar upload
+    if (file) {
+      // Ensure uploads directory exists
+      const uploadsDir = path.join(__dirname, '../../uploads/avatars');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      // Generate unique filename
+      const fileExtension = path.extname(file.originalname);
+      const filename = `avatar-${user._id}-${Date.now()}${fileExtension}`;
+      const filePath = path.join(uploadsDir, filename);
+
+      // Write file to disk
+      fs.writeFileSync(filePath, file.buffer);
+
+      // Store relative path for URL
+      user.avatarUrl = `/uploads/avatars/${filename}`;
+    }
 
     await user.save();
 

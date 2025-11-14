@@ -61,6 +61,8 @@ const RoleSelector: React.FC<{
 const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const { updateUser, dispatch } = useAppContext();
     const [formData, setFormData] = useState<User>(user);
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
     const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
@@ -74,6 +76,19 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
         setFormData(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setAvatarFile(file);
+            // Create preview URL
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setAvatarPreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     const handleRoleChange = async (role: UserRole) => {
@@ -118,11 +133,16 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
         e.preventDefault();
         setIsSaving(true);
         try {
-            await updateUser(formData);
+            const updatedUser = await updateUser(formData, avatarFile);
+            dispatch({ type: 'UPDATE_USER', payload: updatedUser });
+            setFormData(updatedUser);
+            setAvatarFile(null);
+            setAvatarPreview(null);
             setIsSaved(true);
             setTimeout(() => setIsSaved(false), 2000);
         } catch (error) {
             console.error("Failed to update user", error);
+            setError('Failed to update profile. Please try again.');
         } finally {
             setIsSaving(false);
         }
@@ -162,6 +182,46 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                             Active listings: {formData.listingsCount} {!formData.isSubscribed && `(${5 - (formData.listingsCount || 0)} free listings remaining)`}
                         </p>
                     )}
+                </fieldset>
+
+                <fieldset>
+                    <legend className="block text-sm font-medium text-neutral-700 mb-3">Profile Photo</legend>
+                    <div className="flex items-center gap-6">
+                        <div className="flex-shrink-0">
+                            {avatarPreview || formData.avatarUrl ? (
+                                <img
+                                    src={avatarPreview || formData.avatarUrl}
+                                    alt="Profile"
+                                    className="w-24 h-24 rounded-full object-cover border-2 border-neutral-200"
+                                />
+                            ) : (
+                                <UserCircleIcon className="w-24 h-24 text-neutral-300" />
+                            )}
+                        </div>
+                        <div className="flex-1">
+                            <input
+                                type="file"
+                                id="avatarFile"
+                                accept="image/*"
+                                onChange={handleAvatarChange}
+                                className="hidden"
+                            />
+                            <label
+                                htmlFor="avatarFile"
+                                className="inline-block px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg cursor-pointer transition-colors text-sm font-medium"
+                            >
+                                Choose Photo
+                            </label>
+                            <p className="text-xs text-neutral-500 mt-2">
+                                Upload a profile photo (JPG, PNG - max 5MB)
+                            </p>
+                            {avatarFile && (
+                                <p className="text-xs text-green-600 mt-1 font-medium">
+                                    ✓ {avatarFile.name} ready to upload
+                                </p>
+                            )}
+                        </div>
+                    </div>
                 </fieldset>
 
             <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6">
