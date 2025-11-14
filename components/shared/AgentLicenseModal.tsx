@@ -19,18 +19,6 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    // Validate inputs
-    if (!licenseNumber.trim() || !agencyName.trim()) {
-      setError('License number and agency name are required');
-      return;
-    }
-
-    if (licenseNumber.length < 5) {
-      setError('License number must be at least 5 characters');
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
@@ -40,13 +28,15 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
         agentId: agentId.trim() || undefined,
       });
 
-      // Reset form
+      // Only reset form and close on success
       setLicenseNumber('');
       setAgencyName('');
       setAgentId('');
+      setError('');
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to verify license. Please try again.');
+      // Keep form open with user data on error
+      setError(err.message || 'Failed to verify license. Please check your information and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -103,7 +93,6 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
                 disabled={isSubmitting}
                 placeholder="e.g., RS-LIC-12345"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                required
               />
               <p className="text-xs text-gray-500 mt-1">
                 Your official real estate license number
@@ -123,7 +112,6 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
                 disabled={isSubmitting}
                 placeholder="e.g., Balkan Premier Estates"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                required
               />
               <p className="text-xs text-gray-500 mt-1">
                 The name of your real estate agency
