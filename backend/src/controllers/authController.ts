@@ -3,8 +3,27 @@ import User from '../models/User';
 import Agent from '../models/Agent';
 import { generateToken } from '../utils/jwt';
 import { IUser } from '../models/User';
-import fs from 'fs';
-import path from 'path';
+import cloudinary from '../config/cloudinary';
+import { Readable } from 'stream';
+
+// Helper function to upload buffer to Cloudinary
+const uploadToCloudinary = (buffer: Buffer, folder: string, resourceType: 'image' | 'raw' = 'image'): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: folder,
+        resource_type: resourceType,
+      },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    );
+
+    const readableStream = Readable.from(buffer);
+    readableStream.pipe(uploadStream);
+  });
+};
 
 // @desc    Register new user
 // @route   POST /api/auth/signup
@@ -181,24 +200,16 @@ export const updateProfile = async (
     if (licenseNumber) user.licenseNumber = licenseNumber;
     if (avatarUrl) user.avatarUrl = avatarUrl;
 
-    // Handle avatar upload
+    // Handle avatar upload to Cloudinary
     if (file) {
-      // Ensure uploads directory exists
-      const uploadsDir = path.join(__dirname, '../../uploads/avatars');
-      if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
+      try {
+        const result = await uploadToCloudinary(file.buffer, 'avatars', 'image');
+        user.avatarUrl = result.secure_url;
+      } catch (uploadError) {
+        console.error('Cloudinary upload error:', uploadError);
+        res.status(500).json({ message: 'Failed to upload avatar' });
+        return;
       }
-
-      // Generate unique filename
-      const fileExtension = path.extname(file.originalname);
-      const filename = `avatar-${user._id}-${Date.now()}${fileExtension}`;
-      const filePath = path.join(uploadsDir, filename);
-
-      // Write file to disk
-      fs.writeFileSync(filePath, file.buffer);
-
-      // Store relative path for URL
-      user.avatarUrl = `/uploads/avatars/${filename}`;
     }
 
     await user.save();
@@ -338,22 +349,16 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
       const isVerifying = file !== undefined;
 
       if (file) {
-        // Ensure uploads directory exists
-        const uploadsDir = path.join(__dirname, '../../uploads/documents');
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir, { recursive: true });
+        try {
+          // Upload to Cloudinary - use 'raw' for PDFs, 'image' for images
+          const resourceType = file.mimetype === 'application/pdf' ? 'raw' : 'image';
+          const result = await uploadToCloudinary(file.buffer, 'license_documents', resourceType);
+          licenseDocumentUrl = result.secure_url;
+        } catch (uploadError) {
+          console.error('Cloudinary upload error:', uploadError);
+          res.status(500).json({ message: 'Failed to upload license document' });
+          return;
         }
-
-        // Generate unique filename
-        const fileExtension = path.extname(file.originalname);
-        const filename = `license-${user._id}-${Date.now()}${fileExtension}`;
-        const filePath = path.join(uploadsDir, filename);
-
-        // Write file to disk
-        fs.writeFileSync(filePath, file.buffer);
-
-        // Store relative path for URL
-        licenseDocumentUrl = `/uploads/documents/${filename}`;
       }
 
       // Generate agent ID if not provided
