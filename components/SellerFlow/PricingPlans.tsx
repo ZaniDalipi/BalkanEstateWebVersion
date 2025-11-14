@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../shared/Modal';
+import PaymentWindow from '../shared/PaymentWindow';
 import { BuildingOfficeIcon, ChartBarIcon, CurrencyDollarIcon, BoltIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 
@@ -19,6 +20,13 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
   const { activeDiscount } = state;
   const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes in seconds
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showPaymentWindow, setShowPaymentWindow] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{
+    name: string;
+    price: number;
+    interval: 'month' | 'year';
+    discount: number;
+  } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -74,9 +82,37 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
   const discountedProMonthly = applyDiscount(proMonthlyPrice, proMonthlyDiscount);
   const discountedEnterprise = applyDiscount(enterprisePrice, enterpriseDiscount);
 
+  const handlePlanSelection = (planName: string, price: number, interval: 'month' | 'year', discount: number) => {
+    setSelectedPlan({ name: planName, price, interval, discount });
+    setShowPaymentWindow(true);
+  };
+
+  const handlePaymentSuccess = (paymentIntentId: string) => {
+    console.log('Payment successful:', paymentIntentId);
+    // TODO: Update user subscription status via API
+    setShowPaymentWindow(false);
+    onClose();
+    if (onSubscribe) {
+      onSubscribe();
+    }
+    alert('Subscription activated successfully!');
+  };
+
+  const handlePaymentError = (error: string) => {
+    console.error('Payment error:', error);
+    // Error is already shown in the PaymentWindow component
+  };
+
+  // Determine user role for payment methods
+  const getUserRole = (): 'buyer' | 'private_seller' | 'agent' => {
+    if (!state.user) return 'private_seller';
+    return state.user.role === 'agent' ? 'agent' : 'private_seller';
+  };
+
 
   return (
-    <Modal isOpen={isOpen} onClose={handleCloseAttempt} size="5xl">
+    <>
+      <Modal isOpen={isOpen} onClose={handleCloseAttempt} size="5xl">
         <div className="relative p-4 sm:p-8">
             {showConfirmation && (
                 <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-10 flex flex-col justify-center items-center p-8 text-center rounded-2xl">
@@ -150,7 +186,10 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                         <li className="flex items-center"><TickIcon /> Professional photography tips</li>
                         <li className="flex items-center"><TickIcon /> Priority customer support</li>
                     </ul>
-                    <button onClick={onSubscribe} className="w-full mt-8 py-3.5 rounded-lg font-bold text-white bg-indigo-500 hover:bg-indigo-600 transition-colors shadow-md text-base sm:text-lg">
+                    <button
+                        onClick={() => handlePlanSelection('Pro Annual', proYearlyPrice, 'year', proYearlyDiscount)}
+                        className="w-full mt-8 py-3.5 rounded-lg font-bold text-white bg-indigo-500 hover:bg-indigo-600 hover:shadow-xl hover:scale-[1.02] transition-all shadow-md text-base sm:text-lg"
+                    >
                         {isOffer ? `Get Pro Annual - €${discountedProYearly}/year` : `Get Pro Annual - €${proYearlyPrice}/year`}
                     </button>
                 </div>
@@ -204,7 +243,10 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                             <p className="text-neutral-600 text-sm">Manage on the go</p>
                         </div>
                     </div>
-                     <button onClick={onSubscribe} className="w-full mt-8 py-3.5 rounded-lg font-bold bg-white border border-neutral-300 text-neutral-700 hover:bg-neutral-100 transition-colors shadow-sm text-base sm:text-lg">
+                     <button
+                        onClick={() => handlePlanSelection('Pro Monthly', proMonthlyPrice, 'month', proMonthlyDiscount)}
+                        className="w-full mt-8 py-3.5 rounded-lg font-bold bg-white border-2 border-neutral-300 text-neutral-700 hover:bg-neutral-50 hover:border-primary hover:shadow-lg hover:scale-[1.02] transition-all shadow-sm text-base sm:text-lg"
+                    >
                         {isOffer ? `Get Pro Monthly - €${discountedProMonthly}/month` : `Get Pro Monthly - €${proMonthlyPrice}/month`}
                     </button>
                 </div>
@@ -253,8 +295,11 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                             <p className="text-neutral-300 text-sm">Personal support for your business</p>
                         </div>
                     </div>
-                     <button onClick={onSubscribe} className="w-full mt-8 py-3.5 rounded-lg font-bold bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-md text-base sm:text-lg">
-                         {isOffer ? `Contact Sales - €${discountedEnterprise}/year` : 'Perfect for Real Estate Companies'}
+                     <button
+                        onClick={() => handlePlanSelection('Enterprise', enterprisePrice, 'year', enterpriseDiscount)}
+                        className="w-full mt-8 py-3.5 rounded-lg font-bold bg-amber-500 text-white hover:bg-amber-600 hover:shadow-xl hover:scale-[1.02] transition-all shadow-md text-base sm:text-lg"
+                    >
+                         {isOffer ? `Get Enterprise - €${discountedEnterprise}/year` : `Get Enterprise - €${enterprisePrice}/year`}
                     </button>
                 </div>
             </div>
@@ -276,7 +321,25 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                 </div>
             </div>
         </div>
-    </Modal>
+      </Modal>
+
+      {/* Payment Window */}
+      {selectedPlan && (
+        <PaymentWindow
+          isOpen={showPaymentWindow}
+          onClose={() => setShowPaymentWindow(false)}
+          planName={selectedPlan.name}
+          planPrice={selectedPlan.price}
+          planInterval={selectedPlan.interval}
+          userRole={getUserRole()}
+          userEmail={state.user?.email}
+          userCountry={state.user?.country || 'RS'}
+          onSuccess={handlePaymentSuccess}
+          onError={handlePaymentError}
+          discountPercent={selectedPlan.discount}
+        />
+      )}
+    </>
   );
 };
 

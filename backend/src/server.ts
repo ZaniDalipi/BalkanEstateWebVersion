@@ -14,6 +14,7 @@ import propertyRoutes from './routes/propertyRoutes';
 import favoriteRoutes from './routes/favoriteRoutes';
 import savedSearchRoutes from './routes/savedSearchRoutes';
 import conversationRoutes from './routes/conversationRoutes';
+import paymentRoutes from './routes/paymentRoutes';
 
 // Create Express app
 const app: Application = express();
@@ -74,6 +75,7 @@ app.use('/api/properties', propertyRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/saved-searches', savedSearchRoutes);
 app.use('/api/conversations', conversationRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
