@@ -133,7 +133,7 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
             ),
         };
     case 'UPDATE_USER':
-      return { ...state, currentUser: state.currentUser ? { ...state.currentUser, ...action.payload } : null };
+      return { ...state, currentUser: action.payload };
     case 'ADD_MESSAGE':
         return { ...state, conversations: state.conversations.map(c => c.id === action.payload.conversationId ? { ...c, messages: [...c.messages, action.payload.message] } : c ) };
     // FIX: Add missing reducer case for creating a new conversation or adding a message to an existing one.
@@ -352,8 +352,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return updatedProperty;
   }, []);
   
-  const updateUser = useCallback(async (userData: Partial<User>) => {
-      const updatedUser = await api.updateUser(userData);
+  const updateUser = useCallback(async (userData: Partial<User>, avatarFile?: File | null) => {
+      const updatedUser = await api.updateUser(userData, avatarFile);
       dispatch({ type: 'UPDATE_USER', payload: updatedUser });
       return updatedUser;
   }, []);
