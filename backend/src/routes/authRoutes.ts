@@ -6,6 +6,8 @@ import {
   updateProfile,
   logout,
   oauthCallback,
+  requestPasswordReset,
+  resetPassword,
 } from '../controllers/authController';
 import { protect } from '../middleware/auth';
 import passport, { oauthStrategies } from '../config/passport';
@@ -19,16 +21,20 @@ router.post('/logout', protect, logout);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
 
-// Get available OAuth providers
-router.get('/oauth/providers', (req, res) => {
-  res.json({
-    providers: {
-      google: oauthStrategies.google,
-      facebook: oauthStrategies.facebook,
-      apple: oauthStrategies.apple,
-    },
-  });
-});
+// Password reset routes
+router.post('/forgot-password', requestPasswordReset);
+router.post('/reset-password', resetPassword);
+
+// Google OAuth routes
+router.get(
+  '/google',
+  passport.authenticate('google', { session: false, scope: ['profile', 'email'] })
+);
+router.get(
+  '/google/callback',
+  passport.authenticate('google', { session: false, failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/callback?error=google_auth_failed` }),
+  oauthCallback
+);
 
 // Google OAuth routes - only register if Google strategy is configured
 if (oauthStrategies.google) {

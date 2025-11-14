@@ -100,13 +100,28 @@ const AuthPage: React.FC = () => {
                 return;
             }
         }
-        
+
         try {
             if (state.authModalView === 'login') {
                 await login(email, password);
             } else {
                 await signup(email, password);
             }
+            handleClose();
+        } catch (err: any) {
+            setError(err.message || "An error occurred. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handlePhoneLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            await login(phone, password);
             handleClose();
         } catch (err: any) {
             setError(err.message || "An error occurred. Please try again.");
@@ -201,6 +216,12 @@ const AuthPage: React.FC = () => {
                                 {state.authModalView === 'login' && <div className="text-right"><button type="button" onClick={() => dispatch({ type: 'SET_AUTH_MODAL_VIEW', payload: 'forgotPassword'})} className="text-sm font-semibold text-primary hover:underline">Forgot Password?</button></div>}
                                 {state.authModalView === 'signup' && <div className="relative"><input type="password" id="confirmPassword" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="confirmPassword" className={floatingLabelClasses}>Confirm Password</label></div>}
                                 <button type="submit" disabled={isLoading} className="w-full mt-2 py-3 px-4 rounded-lg shadow-sm text-base sm:text-lg font-bold text-white bg-primary hover:bg-primary-dark disabled:opacity-50">{isLoading ? 'Processing...' : (state.authModalView === 'login' ? 'Log In' : 'Sign Up')}</button>
+                            </form>
+                        ) : state.authModalView === 'login' ? (
+                            <form onSubmit={handlePhoneLogin} className="space-y-4">
+                                <div className="relative"><input type="tel" id="phone" value={phone} onChange={e => setPhone(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="phone" className={floatingLabelClasses}>Phone Number</label></div>
+                                <div className="relative"><input type="password" id="password" value={password} onChange={e => setPassword(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="password" className={floatingLabelClasses}>Password</label></div>
+                                <button type="submit" disabled={isLoading} className="w-full mt-2 py-3 px-4 rounded-lg shadow-sm text-base sm:text-lg font-bold text-white bg-primary hover:bg-primary-dark disabled:opacity-50">{isLoading ? 'Processing...' : 'Log In'}</button>
                             </form>
                         ) : (
                              <form onSubmit={handlePhoneSubmit} className="space-y-4">

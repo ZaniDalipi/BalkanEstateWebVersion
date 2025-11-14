@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { initializeDatabase } from '../utils/initDatabase';
 
 const connectDB = async (): Promise<void> => {
   try {
@@ -7,6 +8,9 @@ const connectDB = async (): Promise<void> => {
     await mongoose.connect(mongoURI);
 
     console.log('MongoDB connected successfully');
+
+    // Initialize database (fix indexes, etc.)
+    await initializeDatabase();
 
     mongoose.connection.on('error', (err) => {
       console.error('MongoDB connection error:', err);

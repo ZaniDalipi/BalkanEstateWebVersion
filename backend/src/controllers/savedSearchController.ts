@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import SavedSearch from '../models/SavedSearch';
-import { IUser } from '../models/User';
 
 // @desc    Get user's saved searches
 // @route   GET /api/saved-searches

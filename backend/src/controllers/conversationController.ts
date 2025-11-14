@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import Conversation from '../models/Conversation';
 import Message from '../models/Message';
 import Property from '../models/Property';
-import { IUser } from '../models/User';
 
 // @desc    Get user's conversations
 // @route   GET /api/conversations
