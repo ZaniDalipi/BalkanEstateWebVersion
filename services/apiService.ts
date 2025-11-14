@@ -181,10 +181,12 @@ export const updateUser = async (userData: Partial<User>, avatarFile?: File | nu
   if (avatarFile) {
     const formData = new FormData();
 
-    // Append all user data fields
-    Object.entries(userData).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        formData.append(key, String(value));
+    // Only append specific editable fields (not id, email, etc.)
+    const editableFields = ['name', 'phone', 'city', 'country', 'agencyName', 'licenseNumber'];
+    editableFields.forEach(key => {
+      const value = (userData as any)[key];
+      if (value !== undefined && value !== null && value !== '') {
+        formData.append(key, value);
       }
     });
 
@@ -201,14 +203,14 @@ export const updateUser = async (userData: Partial<User>, avatarFile?: File | nu
     try {
       const response = await fetch(`${API_URL}/auth/profile`, config);
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'An error occurred');
+        const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
+        throw new Error(errorData.message || 'Failed to upload avatar');
       }
       const data = await response.json();
       return data.user;
     } catch (error: any) {
       console.error('API request error:', error);
-      throw error;
+      throw new Error(error.message || 'Failed to update profile');
     }
   } else {
     // No file, use regular JSON request

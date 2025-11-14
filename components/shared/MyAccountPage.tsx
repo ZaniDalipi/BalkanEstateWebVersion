@@ -76,12 +76,14 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
         setFormData(prev => ({ ...prev, [id]: value }));
+        setError(''); // Clear error when user makes changes
     };
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             setAvatarFile(file);
+            setError(''); // Clear error when user selects a file
             // Create preview URL
             const reader = new FileReader();
             reader.onloadend = () => {
@@ -140,9 +142,10 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
             setAvatarPreview(null);
             setIsSaved(true);
             setTimeout(() => setIsSaved(false), 2000);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to update user", error);
-            setError('Failed to update profile. Please try again.');
+            const errorMessage = error?.message || 'Failed to update profile. Please try again.';
+            setError(errorMessage);
         } finally {
             setIsSaving(false);
         }
