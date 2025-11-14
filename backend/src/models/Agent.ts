@@ -13,6 +13,7 @@ export interface IAgent extends Document {
   agencyName: string;
   agentId: string;
   licenseNumber: string;
+  licenseDocumentUrl?: string;
   licenseVerified: boolean;
   licenseVerificationDate: Date;
   bio?: string;
@@ -88,6 +89,9 @@ const AgentSchema: Schema = new Schema(
       required: true,
       unique: true,
       index: true,
+    },
+    licenseDocumentUrl: {
+      type: String,
     },
     licenseVerified: {
       type: Boolean,

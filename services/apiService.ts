@@ -186,15 +186,49 @@ export const updateUser = async (userData: Partial<User>): Promise<User> => {
 
 export const switchRole = async (
   role: UserRole,
-  licenseData?: { licenseNumber: string; agencyName: string; agentId?: string }
+  licenseData?: { licenseNumber: string; agencyName: string; agentId?: string; licenseDocument?: File }
 ): Promise<User> => {
-  const response = await apiRequest<{ user: User; message: string }>('/auth/switch-role', {
-    method: 'POST',
-    body: { role, ...licenseData },
-    requiresAuth: true,
-  });
+  const token = getToken();
 
-  return response.user;
+  // If there's a file, use FormData
+  if (licenseData?.licenseDocument) {
+    const formData = new FormData();
+    formData.append('role', role);
+    if (licenseData.licenseNumber) formData.append('licenseNumber', licenseData.licenseNumber);
+    if (licenseData.agencyName) formData.append('agencyName', licenseData.agencyName);
+    if (licenseData.agentId) formData.append('agentId', licenseData.agentId);
+    formData.append('licenseDocument', licenseData.licenseDocument);
+
+    const config: RequestInit = {
+      method: 'POST',
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: formData,
+    };
+
+    try {
+      const response = await fetch(`${API_URL}/auth/switch-role`, config);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'An error occurred');
+      }
+      const data = await response.json();
+      return data.user;
+    } catch (error: any) {
+      console.error('API request error:', error);
+      throw error;
+    }
+  } else {
+    // No file, use regular JSON request
+    const response = await apiRequest<{ user: User; message: string }>('/auth/switch-role', {
+      method: 'POST',
+      body: { role, ...licenseData },
+      requiresAuth: true,
+    });
+
+    return response.user;
+  }
 };
 
 // --- PROPERTIES API ---

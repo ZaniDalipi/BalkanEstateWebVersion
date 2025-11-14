@@ -3,6 +3,8 @@ import User from '../models/User';
 import Agent from '../models/Agent';
 import { generateToken } from '../utils/jwt';
 import { IUser } from '../models/User';
+import fs from 'fs';
+import path from 'path';
 
 // @desc    Register new user
 // @route   POST /api/auth/signup
@@ -45,6 +47,9 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
         agencyName: user.agencyName,
         agentId: user.agentId,
         licenseNumber: user.licenseNumber,
+        licenseDocumentUrl: user.licenseDocumentUrl,
+        licenseVerified: user.licenseVerified,
+        licenseVerificationDate: user.licenseVerificationDate,
         isSubscribed: user.isSubscribed,
       },
     });
@@ -94,6 +99,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         agencyName: user.agencyName,
         agentId: user.agentId,
         licenseNumber: user.licenseNumber,
+        licenseDocumentUrl: user.licenseDocumentUrl,
+        licenseVerified: user.licenseVerified,
+        licenseVerificationDate: user.licenseVerificationDate,
         isSubscribed: user.isSubscribed,
       },
     });
@@ -127,6 +135,9 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
         agencyName: user.agencyName,
         agentId: user.agentId,
         licenseNumber: user.licenseNumber,
+        licenseDocumentUrl: user.licenseDocumentUrl,
+        licenseVerified: user.licenseVerified,
+        licenseVerificationDate: user.licenseVerificationDate,
         isSubscribed: user.isSubscribed,
       },
     });
@@ -184,6 +195,9 @@ export const updateProfile = async (
         agencyName: user.agencyName,
         agentId: user.agentId,
         licenseNumber: user.licenseNumber,
+        licenseDocumentUrl: user.licenseDocumentUrl,
+        licenseVerified: user.licenseVerified,
+        licenseVerificationDate: user.licenseVerificationDate,
         isSubscribed: user.isSubscribed,
       },
     });
@@ -231,6 +245,9 @@ export const oauthCallback = async (req: Request, res: Response): Promise<void> 
       agencyName: user.agencyName,
       agentId: user.agentId,
       licenseNumber: user.licenseNumber,
+      licenseDocumentUrl: user.licenseDocumentUrl,
+      licenseVerified: user.licenseVerified,
+      licenseVerificationDate: user.licenseVerificationDate,
       isSubscribed: user.isSubscribed,
       provider: user.provider,
       isEmailVerified: user.isEmailVerified,
@@ -255,6 +272,7 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
     }
 
     const { role, licenseNumber, agencyName, agentId } = req.body;
+    const file = req.file;
 
     // Validate role
     const validRoles = ['buyer', 'private_seller', 'agent'];
@@ -294,6 +312,29 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
         return;
       }
 
+      // If a document is uploaded, require it for verification
+      let licenseDocumentUrl: string | undefined;
+      const isVerifying = file !== undefined;
+
+      if (file) {
+        // Ensure uploads directory exists
+        const uploadsDir = path.join(__dirname, '../../uploads/documents');
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+
+        // Generate unique filename
+        const fileExtension = path.extname(file.originalname);
+        const filename = `license-${user._id}-${Date.now()}${fileExtension}`;
+        const filePath = path.join(uploadsDir, filename);
+
+        // Write file to disk
+        fs.writeFileSync(filePath, file.buffer);
+
+        // Store relative path for URL
+        licenseDocumentUrl = `/uploads/documents/${filename}`;
+      }
+
       // Generate agent ID if not provided
       const generatedAgentId = agentId || `AG-${Date.now()}`;
 
@@ -301,8 +342,16 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
       user.licenseNumber = licenseNumber;
       user.agencyName = agencyName;
       user.agentId = generatedAgentId;
-      user.licenseVerified = true;
-      user.licenseVerificationDate = new Date();
+
+      // Only mark as verified if document is uploaded
+      if (isVerifying && licenseDocumentUrl) {
+        user.licenseDocumentUrl = licenseDocumentUrl;
+        user.licenseVerified = true;
+        user.licenseVerificationDate = new Date();
+      } else {
+        // Allow saving license info without verification
+        user.licenseVerified = false;
+      }
 
       // Create or update Agent record in separate table
       const existingAgentRecord = await Agent.findOne({ userId: user._id });
@@ -312,8 +361,12 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
         existingAgentRecord.agencyName = agencyName;
         existingAgentRecord.agentId = generatedAgentId;
         existingAgentRecord.licenseNumber = licenseNumber;
-        existingAgentRecord.licenseVerified = true;
-        existingAgentRecord.licenseVerificationDate = new Date();
+
+        if (isVerifying && licenseDocumentUrl) {
+          existingAgentRecord.licenseDocumentUrl = licenseDocumentUrl;
+          existingAgentRecord.licenseVerified = true;
+          existingAgentRecord.licenseVerificationDate = new Date();
+        }
         existingAgentRecord.isActive = true;
         await existingAgentRecord.save();
       } else {
@@ -323,8 +376,9 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
           agencyName,
           agentId: generatedAgentId,
           licenseNumber,
-          licenseVerified: true,
-          licenseVerificationDate: new Date(),
+          licenseDocumentUrl,
+          licenseVerified: isVerifying && licenseDocumentUrl ? true : false,
+          licenseVerificationDate: isVerifying && licenseDocumentUrl ? new Date() : undefined,
           isActive: true,
         });
       }
@@ -348,7 +402,9 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
         agencyName: user.agencyName,
         agentId: user.agentId,
         licenseNumber: user.licenseNumber,
+        licenseDocumentUrl: user.licenseDocumentUrl,
         licenseVerified: user.licenseVerified,
+        licenseVerificationDate: user.licenseVerificationDate,
         listingsCount: user.listingsCount,
         totalListingsCreated: user.totalListingsCreated,
         isSubscribed: user.isSubscribed,

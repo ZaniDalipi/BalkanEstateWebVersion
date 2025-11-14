@@ -4,13 +4,14 @@ import { X } from 'lucide-react';
 interface AgentLicenseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (licenseData: { licenseNumber: string; agencyName: string; agentId?: string }) => Promise<void>;
+  onSubmit: (licenseData: { licenseNumber: string; agencyName: string; agentId?: string; licenseDocument?: File }) => Promise<void>;
 }
 
 const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, onSubmit }) => {
   const [licenseNumber, setLicenseNumber] = useState('');
   const [agencyName, setAgencyName] = useState('');
   const [agentId, setAgentId] = useState('');
+  const [licenseDocument, setLicenseDocument] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -21,17 +22,26 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
     setError('');
     setIsSubmitting(true);
 
+    // Validate that a document is uploaded
+    if (!licenseDocument) {
+      setError('Please upload a license document (image or PDF) to verify your license.');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       await onSubmit({
         licenseNumber: licenseNumber.trim(),
         agencyName: agencyName.trim(),
         agentId: agentId.trim() || undefined,
+        licenseDocument: licenseDocument,
       });
 
       // Only reset form and close on success
       setLicenseNumber('');
       setAgencyName('');
       setAgentId('');
+      setLicenseDocument(null);
       setError('');
       onClose();
     } catch (err: any) {
@@ -47,6 +57,7 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
       setLicenseNumber('');
       setAgencyName('');
       setAgentId('');
+      setLicenseDocument(null);
       setError('');
       onClose();
     }
@@ -135,6 +146,29 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
               <p className="text-xs text-gray-500 mt-1">
                 Your unique agent identifier (will be generated if not provided)
               </p>
+            </div>
+
+            {/* License Document (Required) */}
+            <div>
+              <label htmlFor="licenseDocument" className="block text-sm font-medium text-gray-700 mb-1">
+                License Document <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="file"
+                id="licenseDocument"
+                accept="image/*,.pdf"
+                onChange={(e) => setLicenseDocument(e.target.files?.[0] || null)}
+                disabled={isSubmitting}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Upload a photo or PDF of your real estate license (Max 10MB)
+              </p>
+              {licenseDocument && (
+                <p className="text-xs text-green-600 mt-1 font-medium">
+                  ✓ {licenseDocument.name} ({(licenseDocument.size / 1024 / 1024).toFixed(2)} MB)
+                </p>
+              )}
             </div>
           </div>
 

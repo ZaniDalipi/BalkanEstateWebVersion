@@ -17,6 +17,7 @@ export interface IUser extends Document {
   agencyName?: string;
   agentId?: string;
   licenseNumber?: string;
+  licenseDocumentUrl?: string;
   licenseVerified: boolean;
   licenseVerificationDate?: Date;
   listingsCount: number;
@@ -86,6 +87,9 @@ const UserSchema: Schema = new Schema(
       type: String,
     },
     licenseNumber: {
+      type: String,
+    },
+    licenseDocumentUrl: {
       type: String,
     },
     licenseVerified: {

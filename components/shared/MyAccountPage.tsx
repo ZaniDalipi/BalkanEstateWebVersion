@@ -212,7 +212,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                             <label htmlFor="agentId" className={floatingLabelClasses}>Agent ID</label>
                         </div>
                         <div className="relative md:col-span-2">
-                            <input type="text" id="licenseNumber" value={formData.licenseNumber || ''} onChange={handleInputChange} className={floatingInputClasses} placeholder=" " disabled={user.licenseVerified} />
+                            <input type="text" id="licenseNumber" value={formData.licenseNumber || ''} onChange={handleInputChange} className={floatingInputClasses} placeholder=" " />
                             <label htmlFor="licenseNumber" className={floatingLabelClasses}>License Number</label>
                         </div>
                     </div>

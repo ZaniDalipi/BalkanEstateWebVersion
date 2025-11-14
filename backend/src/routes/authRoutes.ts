@@ -10,6 +10,7 @@ import {
 } from '../controllers/authController';
 import { protect } from '../middleware/auth';
 import passport, { oauthStrategies } from '../config/passport';
+import { documentUpload } from '../utils/upload';
 
 const router = express.Router();
 
@@ -19,7 +20,7 @@ router.post('/login', login);
 router.post('/logout', protect, logout);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
-router.post('/switch-role', protect, switchRole);
+router.post('/switch-role', protect, documentUpload.single('licenseDocument'), switchRole);
 
 // Get available OAuth providers
 router.get('/oauth/providers', (req, res) => {

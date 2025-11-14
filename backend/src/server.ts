@@ -2,6 +2,7 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import compression from 'compression';
 import morgan from 'morgan';
+import path from 'path';
 import connectDB from './config/database';
 
 
@@ -58,6 +59,9 @@ if (process.env.NODE_ENV === 'development') {
 
 // Compression
 app.use(compression());
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check route
 app.get('/health', (_req: Request, res: Response) => {
