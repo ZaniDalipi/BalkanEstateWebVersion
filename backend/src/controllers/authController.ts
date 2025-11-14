@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
+import Agent from '../models/Agent';
 import { generateToken } from '../utils/jwt';
 import { IUser } from '../models/User';
 
@@ -270,7 +271,7 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // If switching to agent, validate license information
+    // If switching to agent, validate license information and create Agent record
     if (role === 'agent') {
       if (!licenseNumber || !agencyName) {
         res.status(400).json({
@@ -287,11 +288,10 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
         return;
       }
 
-      // Check if license number is already in use by another user
-      const existingAgent = await User.findOne({
+      // Check if license number is already in use by another agent
+      const existingAgent = await Agent.findOne({
         licenseNumber,
-        _id: { $ne: user._id },
-        licenseVerified: true
+        userId: { $ne: user._id },
       });
 
       if (existingAgent) {
@@ -301,12 +301,40 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
         return;
       }
 
-      // Update agent-specific fields
+      // Generate agent ID if not provided
+      const generatedAgentId = agentId || `AG-${Date.now()}`;
+
+      // Update agent-specific fields in User model
       user.licenseNumber = licenseNumber;
       user.agencyName = agencyName;
-      user.agentId = agentId || `AG-${Date.now()}`; // Generate agent ID if not provided
+      user.agentId = generatedAgentId;
       user.licenseVerified = true;
       user.licenseVerificationDate = new Date();
+
+      // Create or update Agent record in separate table
+      const existingAgentRecord = await Agent.findOne({ userId: user._id });
+
+      if (existingAgentRecord) {
+        // Update existing agent record
+        existingAgentRecord.agencyName = agencyName;
+        existingAgentRecord.agentId = generatedAgentId;
+        existingAgentRecord.licenseNumber = licenseNumber;
+        existingAgentRecord.licenseVerified = true;
+        existingAgentRecord.licenseVerificationDate = new Date();
+        existingAgentRecord.isActive = true;
+        await existingAgentRecord.save();
+      } else {
+        // Create new agent record
+        await Agent.create({
+          userId: user._id,
+          agencyName,
+          agentId: generatedAgentId,
+          licenseNumber,
+          licenseVerified: true,
+          licenseVerificationDate: new Date(),
+          isActive: true,
+        });
+      }
     }
 
     // Update role

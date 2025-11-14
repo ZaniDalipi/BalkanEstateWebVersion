@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Property from '../models/Property';
 import User, { IUser } from '../models/User';
+import Agent from '../models/Agent';
 import cloudinary from '../config/cloudinary';
 import { Readable } from 'stream';
 
@@ -189,6 +190,15 @@ export const createProperty = async (
     user.totalListingsCreated += 1;
     await user.save();
 
+    // Update agent activeListings count if user is an agent
+    if (user.role === 'agent') {
+      const agent = await Agent.findOne({ userId: user._id });
+      if (agent) {
+        agent.activeListings += 1;
+        await agent.save();
+      }
+    }
+
     // Populate seller info
     await property.populate('sellerId', 'name email phone avatarUrl role agencyName');
 
@@ -272,6 +282,15 @@ export const deleteProperty = async (
       if (user && user.listingsCount > 0) {
         user.listingsCount -= 1;
         await user.save();
+
+        // Update agent activeListings count if user is an agent
+        if (user.role === 'agent') {
+          const agent = await Agent.findOne({ userId: user._id });
+          if (agent && agent.activeListings > 0) {
+            agent.activeListings -= 1;
+            await agent.save();
+          }
+        }
       }
     }
 
@@ -395,6 +414,21 @@ export const markAsSold = async (
       if (user && user.listingsCount > 0) {
         user.listingsCount -= 1;
         await user.save();
+
+        // Update agent stats if user is an agent
+        if (user.role === 'agent') {
+          const agent = await Agent.findOne({ userId: user._id });
+          if (agent) {
+            // Decrement active listings
+            if (agent.activeListings > 0) {
+              agent.activeListings -= 1;
+            }
+            // Increment total sales and sales value
+            agent.totalSales += 1;
+            agent.totalSalesValue += property.price || 0;
+            await agent.save();
+          }
+        }
       }
     }
 

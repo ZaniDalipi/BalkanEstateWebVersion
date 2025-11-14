@@ -79,14 +79,14 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const handleRoleChange = async (role: UserRole) => {
         setError('');
 
-        // If switching to agent and not already an agent with verified license, show modal
-        if (role === UserRole.AGENT && (!user.licenseVerified || user.role !== UserRole.AGENT)) {
+        // If switching to agent and user is not already a verified agent, show license modal
+        if (role === UserRole.AGENT && !user.licenseVerified) {
             setPendingRole(role);
             setIsLicenseModalOpen(true);
             return;
         }
 
-        // For other role changes, switch directly
+        // For other role changes (or if already verified agent), switch directly
         try {
             setIsSaving(true);
             const updatedUser = await switchRole(role);
