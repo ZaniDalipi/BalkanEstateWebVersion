@@ -28,6 +28,7 @@ export interface IAgent extends Document {
   officePhone?: string;
   testimonials: ITestimonial[];
   rating: number; // Calculated average rating
+  calculateRating: () => void;
   totalReviews: number;
   totalSales: number;
   totalSalesValue: number;

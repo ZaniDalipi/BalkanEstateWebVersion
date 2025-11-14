@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import Agent from '../models/Agent';
-import User, { IUser } from '../models/User';
-import Property from '../models/Property';
+import { IUser } from '../models/User';
+
+
 
 // @desc    Get all agents
 // @route   GET /api/agents
