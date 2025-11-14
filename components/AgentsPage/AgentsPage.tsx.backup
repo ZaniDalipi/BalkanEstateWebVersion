@@ -1,125 +1,70 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { Agent } from '../../types';
+import { Agent, User, UserRole, Property } from '../../types';
+// FIX: `mockUsers` is located in `apiService`, not `propertyService`. The import path has been corrected.
+import { mockUsers } from '../../services/apiService';
 import AgentCard from './AgentCard';
 import AgentProfilePage from './AgentProfilePage';
-import { Bars3Icon, Squares2x2Icon, TrophyIcon, CheckCircleIcon, ExclamationTriangleIcon } from '../../constants';
+import { Bars3Icon, Squares2x2Icon, TrophyIcon, CheckCircleIcon } from '../../constants';
 import StarRating from '../shared/StarRating';
 import { formatPrice } from '../../utils/currency';
 
-type SortKey = 'verified' | 'sales' | 'rating' | 'name' | 'sold';
+type SortKey = 'sales' | 'rating' | 'name' | 'sold';
 type ViewMode = 'grid' | 'list';
 
-interface AgentData {
-  _id: string;
-  userId: {
-    _id: string;
-    name: string;
-    email: string;
-    phone: string;
-    avatarUrl?: string;
-    city?: string;
-    country?: string;
-    role: string;
-    agencyName?: string;
-    agentId?: string;
-    licenseNumber?: string;
-    licenseVerified?: boolean;
-  };
-  agencyName: string;
-  agentId: string;
-  licenseNumber: string;
-  licenseVerified: boolean;
-  rating: number;
-  totalSales: number;
-  totalSalesValue: number;
-  activeListings: number;
-}
+const calculateAgentStats = (users: { [key: string]: User }, properties: Property[]): Agent[] => {
+  const agents = Object.values(users).filter(u => u.role === UserRole.AGENT);
+  
+  const agentStats = agents.map(agentUser => {
+    const agentProperties = properties.filter(p => p.sellerId === agentUser.id);
+    const soldProperties = agentProperties.filter(p => p.status === 'sold');
+    
+    const totalSalesValue = soldProperties.reduce((sum, p) => sum + p.price, 0);
+    const propertiesSold = soldProperties.length;
+    const activeListings = agentProperties.filter(p => p.status === 'active').length;
+    
+    // Mock rating based on sales and testimonials
+    const rating = Math.min(5, 3.5 + (propertiesSold * 0.1) + (agentUser.testimonials?.length || 0) * 0.2);
+
+    return {
+      ...agentUser,
+      totalSalesValue,
+      propertiesSold,
+      activeListings,
+      rating,
+    };
+  });
+
+  return agentStats;
+};
 
 const AgentsPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
-  const { selectedAgentId } = state;
-
-  const [sortBy, setSortBy] = useState<SortKey>('verified');
+  const { properties, selectedAgentId } = state;
+  
+  const [sortBy, setSortBy] = useState<SortKey>('sales');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [locationFilter, setLocationFilter] = useState<string>('all');
-  const [agents, setAgents] = useState<AgentData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchAgents = async () => {
-      try {
-        const apiUrl = (import.meta.env.VITE_API_URL as string) || 'http://localhost:5001/api';
-        const response = await fetch(`${apiUrl}/agents`);
-        const data = await response.json();
-        setAgents(data.agents || []);
-      } catch (error) {
-        console.error('Error fetching agents:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAgents();
-  }, []);
-
+  const agentsWithStats = useMemo(() => calculateAgentStats(mockUsers, properties), [properties]);
+  
   const uniqueLocations = useMemo(() => {
-    const locations = new Set<string>();
-    agents.forEach(agent => {
-      if (agent.userId.city && agent.userId.country) {
-        locations.add(`${agent.userId.city}, ${agent.userId.country}`);
-      }
-    });
+    const locations = new Set(properties.map(p => `${p.city}, ${p.country}`));
     return ['All Locations', ...Array.from(locations).sort()];
-  }, [agents]);
-
-  const agentsAsAgentType: Agent[] = useMemo(() => {
-    return agents.map(agent => ({
-      id: agent.userId._id,
-      name: agent.userId.name,
-      email: agent.userId.email,
-      phone: agent.userId.phone,
-      avatarUrl: agent.userId.avatarUrl,
-      city: agent.userId.city,
-      country: agent.userId.country,
-      role: agent.userId.role as any,
-      agencyName: agent.agencyName,
-      agentId: agent.agentId,
-      licenseNumber: agent.licenseNumber,
-      licenseVerified: agent.licenseVerified,
-      isSubscribed: false,
-      totalSalesValue: agent.totalSalesValue,
-      propertiesSold: agent.totalSales,
-      activeListings: agent.activeListings,
-      rating: agent.rating,
-    }));
-  }, [agents]);
+  }, [properties]);
 
   const sortedAgents = useMemo(() => {
-    let filtered = [...agentsAsAgentType];
+    let filtered = [...agentsWithStats];
 
     if (locationFilter !== 'all') {
-      const [city, country] = locationFilter.split(', ');
-      filtered = filtered.filter(agent => agent.city === city && agent.country === country);
+        const [city, country] = locationFilter.split(', ');
+        filtered = agentsWithStats.filter(agent => 
+            properties.some(prop => prop.sellerId === agent.id && prop.city === city && prop.country === country)
+        );
     }
-
+    
     const sorted = [...filtered];
     sorted.sort((a, b) => {
-      // Always sort verified first when sorting by verified
-      if (sortBy === 'verified') {
-        if (a.licenseVerified !== b.licenseVerified) {
-          return b.licenseVerified ? 1 : -1;
-        }
-        // If both verified or both unverified, sort by total sales
-        return b.totalSalesValue - a.totalSalesValue;
-      }
-
-      // For other sorts, still prioritize verified agents
-      if (a.licenseVerified !== b.licenseVerified) {
-        return b.licenseVerified ? 1 : -1;
-      }
-
-      // Then sort by selected criteria
       switch (sortBy) {
         case 'rating':
           return b.rating - a.rating;
@@ -133,8 +78,8 @@ const AgentsPage: React.FC = () => {
       }
     });
     return sorted;
-  }, [agentsAsAgentType, sortBy, locationFilter]);
-
+  }, [agentsWithStats, sortBy, locationFilter, properties]);
+  
   const selectedAgent = useMemo(() => {
       if (!selectedAgentId) return null;
       return sortedAgents.find(a => a.id === selectedAgentId) || null;
@@ -143,50 +88,28 @@ const AgentsPage: React.FC = () => {
   const handleSelectAgent = (id: string) => {
     dispatch({ type: 'SET_SELECTED_AGENT', payload: id });
   };
-
+  
   if (selectedAgent) {
       return <AgentProfilePage agent={selectedAgent} />;
-  }
-
-  if (isLoading) {
-    return (
-      <div className="bg-neutral-50 min-h-full flex items-center justify-center">
-        <p className="text-neutral-600">Loading agents...</p>
-      </div>
-    );
   }
 
   return (
     <div className="bg-neutral-50 min-h-full">
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-6">
+        <div className="text-center mb-8">
             <TrophyIcon className="w-12 h-12 text-primary mx-auto mb-2" />
-            <h1 className="text-3xl font-bold text-neutral-900">Real Estate Agents</h1>
+            <h1 className="text-3xl font-bold text-neutral-900">Top Agents</h1>
             <p className="text-lg text-neutral-600 mt-2">
-                Discover real estate agents in the Balkans
+                Discover the best real estate agents in the Balkans.
             </p>
         </div>
-
-        {/* Verification Disclaimer */}
-        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex gap-3">
-            <ExclamationTriangleIcon className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-900">
-              <p className="font-semibold mb-1">About Agent Verification</p>
-              <p>
-                Agents with a <span className="inline-flex items-center gap-1 font-semibold"><CheckCircleIcon className="w-4 h-4 inline text-green-600" /> Verified License</span> badge have provided valid license information that meets regional requirements.
-                Unverified agents have registered but not provided license credentials. Always verify agent credentials independently before engaging their services.
-              </p>
-            </div>
-          </div>
-        </div>
-
+        
         <div className="mb-6 bg-white p-3 rounded-lg shadow-sm border flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">
                     <label htmlFor="location-filter" className="text-sm font-semibold text-neutral-700 whitespace-nowrap">Location:</label>
                     <div className="relative">
-                        <select
+                        <select 
                             id="location-filter"
                             value={locationFilter}
                             onChange={(e) => setLocationFilter(e.target.value)}
@@ -202,13 +125,12 @@ const AgentsPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <label htmlFor="sort-by" className="text-sm font-semibold text-neutral-700 whitespace-nowrap">Sort by:</label>
                      <div className="relative">
-                        <select
+                        <select 
                             id="sort-by"
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value as SortKey)}
                             className="appearance-none block w-full bg-neutral-100 border border-neutral-200 text-neutral-800 py-1.5 sm:py-2 pl-3 pr-8 rounded-md leading-tight focus:outline-none focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/50 text-sm font-semibold"
                         >
-                            <option value="verified">Verified First</option>
                             <option value="sales">Total Sales</option>
                             <option value="sold">Properties Sold</option>
                             <option value="rating">Rating</option>
@@ -226,11 +148,7 @@ const AgentsPage: React.FC = () => {
             </div>
         </div>
 
-        {sortedAgents.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-xl shadow-md border">
-            <p className="text-neutral-600">No agents found</p>
-          </div>
-        ) : viewMode === 'grid' ? (
+        {viewMode === 'grid' ? (
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {sortedAgents.map((agent, index) => (
                     <AgentCard key={agent.id} agent={agent} rank={index + 1} />
@@ -242,7 +160,7 @@ const AgentsPage: React.FC = () => {
                      {sortedAgents.map((agent, index) => (
                         <div key={agent.id} onClick={() => handleSelectAgent(agent.id)} className={`p-4 flex items-center gap-4 hover:bg-neutral-50 cursor-pointer transition-colors`}>
                             <span className="font-bold text-lg text-neutral-500 w-8 text-center">#{index + 1}</span>
-                            <img src={agent.avatarUrl || 'https://i.pravatar.cc/150'} alt={agent.name} className="w-12 h-12 rounded-full object-cover"/>
+                            <img src={agent.avatarUrl} alt={agent.name} className="w-12 h-12 rounded-full object-cover"/>
                             <div className="flex-grow">
                                 <p className="font-bold text-neutral-800">{agent.name}</p>
                                 {agent.city && agent.country && (
@@ -250,15 +168,10 @@ const AgentsPage: React.FC = () => {
                                 )}
                                 <div className="flex items-center gap-2 mt-1">
                                     <StarRating rating={agent.rating} className="w-4 h-4"/>
-                                    {agent.licenseVerified ? (
+                                    {agent.licenseNumber && (
                                         <div className="flex items-center gap-1 bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-semibold">
                                             <CheckCircleIcon className="w-3.5 h-3.5"/>
-                                            <span>Verified License</span>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-1 bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full text-xs font-semibold">
-                                            <ExclamationTriangleIcon className="w-3.5 h-3.5"/>
-                                            <span>Not Verified</span>
+                                            <span>Trusted</span>
                                         </div>
                                     )}
                                 </div>

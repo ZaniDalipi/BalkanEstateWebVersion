@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Agent } from '../../types';
 import StarRating from '../shared/StarRating';
-import { TrophyIcon, UserCircleIcon, CheckCircleIcon } from '../../constants';
+import { TrophyIcon, UserCircleIcon, CheckCircleIcon, ExclamationTriangleIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
 
@@ -18,9 +18,9 @@ const AgentAvatar: React.FC<{ agent: Agent }> = ({ agent }) => {
     }
 
     return (
-        <img 
-            src={agent.avatarUrl} 
-            alt={agent.name} 
+        <img
+            src={agent.avatarUrl}
+            alt={agent.name}
             className="w-16 h-16 rounded-full object-cover"
             onError={() => setError(true)}
         />
@@ -43,7 +43,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
   };
 
   return (
-    <div 
+    <div
       className={`bg-white rounded-xl shadow-md border hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer ${rank <= 3 ? rankColor.border : 'border-neutral-200'}`}
       onClick={handleSelectAgent}
     >
@@ -56,10 +56,15 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
               {agent.city && agent.country && (
                   <p className="text-sm text-neutral-500 font-medium">{agent.city}, {agent.country}</p>
               )}
-              {agent.licenseNumber && (
-                  <div className="flex items-center gap-1 mt-1 text-green-700">
+              {agent.licenseVerified ? (
+                  <div className="flex items-center gap-1 mt-1 text-green-700 bg-green-100 px-2 py-0.5 rounded-full w-fit">
                       <CheckCircleIcon className="w-4 h-4" />
-                      <span className="text-xs font-bold">Trusted Agent</span>
+                      <span className="text-xs font-bold">Verified License</span>
+                  </div>
+              ) : (
+                  <div className="flex items-center gap-1 mt-1 text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full w-fit">
+                      <ExclamationTriangleIcon className="w-4 h-4" />
+                      <span className="text-xs font-bold">Not Verified</span>
                   </div>
               )}
               <div className="flex items-center gap-1.5 mt-1">
