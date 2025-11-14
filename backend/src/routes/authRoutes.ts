@@ -6,6 +6,7 @@ import {
   updateProfile,
   logout,
   oauthCallback,
+  switchRole,
 } from '../controllers/authController';
 import { protect } from '../middleware/auth';
 import passport, { oauthStrategies } from '../config/passport';
@@ -18,6 +19,7 @@ router.post('/login', login);
 router.post('/logout', protect, logout);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
+router.post('/switch-role', protect, switchRole);
 
 // Get available OAuth providers
 router.get('/oauth/providers', (req, res) => {

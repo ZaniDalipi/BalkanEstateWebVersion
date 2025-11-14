@@ -242,3 +242,99 @@ export const oauthCallback = async (req: Request, res: Response): Promise<void> 
     res.redirect(`${frontendUrl}/auth/callback?error=server_error`);
   }
 };
+
+// @desc    Switch user role (with license validation for agent)
+// @route   POST /api/auth/switch-role
+// @access  Private
+export const switchRole = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const { role, licenseNumber, agencyName, agentId } = req.body;
+
+    // Validate role
+    const validRoles = ['buyer', 'private_seller', 'agent'];
+    if (!validRoles.includes(role)) {
+      res.status(400).json({ message: 'Invalid role' });
+      return;
+    }
+
+    const currentUser = req.user as IUser;
+    const user = await User.findById(String(currentUser._id));
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // If switching to agent, validate license information
+    if (role === 'agent') {
+      if (!licenseNumber || !agencyName) {
+        res.status(400).json({
+          message: 'License number and agency name are required to become an agent'
+        });
+        return;
+      }
+
+      // Validate license format (basic validation - you can enhance this)
+      if (licenseNumber.length < 5) {
+        res.status(400).json({
+          message: 'License number must be at least 5 characters'
+        });
+        return;
+      }
+
+      // Check if license number is already in use by another user
+      const existingAgent = await User.findOne({
+        licenseNumber,
+        _id: { $ne: user._id },
+        licenseVerified: true
+      });
+
+      if (existingAgent) {
+        res.status(400).json({
+          message: 'This license number is already registered to another agent'
+        });
+        return;
+      }
+
+      // Update agent-specific fields
+      user.licenseNumber = licenseNumber;
+      user.agencyName = agencyName;
+      user.agentId = agentId || `AG-${Date.now()}`; // Generate agent ID if not provided
+      user.licenseVerified = true;
+      user.licenseVerificationDate = new Date();
+    }
+
+    // Update role
+    user.role = role;
+    await user.save();
+
+    res.json({
+      message: 'Role updated successfully',
+      user: {
+        id: String(user._id),
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+        avatarUrl: user.avatarUrl,
+        city: user.city,
+        country: user.country,
+        agencyName: user.agencyName,
+        agentId: user.agentId,
+        licenseNumber: user.licenseNumber,
+        licenseVerified: user.licenseVerified,
+        listingsCount: user.listingsCount,
+        totalListingsCreated: user.totalListingsCreated,
+        isSubscribed: user.isSubscribed,
+      },
+    });
+  } catch (error: any) {
+    console.error('Switch role error:', error);
+    res.status(500).json({ message: 'Error switching role', error: error.message });
+  }
+};

@@ -42,6 +42,10 @@ export interface User {
     agencyName?: string;
     agentId?: string;
     licenseNumber?: string;
+    licenseVerified?: boolean;
+    licenseVerificationDate?: Date;
+    listingsCount?: number;
+    totalListingsCreated?: number;
     testimonials?: Testimonial[];
     isSubscribed: boolean;
 }
