@@ -334,11 +334,16 @@ export const getMyListings = async (): Promise<Property[]> => {
   return response.properties.map(transformBackendProperty);
 };
 
-export const uploadPropertyImages = async (images: File[]): Promise<{ url: string; tag: string }[]> => {
+export const uploadPropertyImages = async (images: File[], propertyId?: string): Promise<{ url: string; tag: string }[]> => {
   const formData = new FormData();
   images.forEach((image) => {
     formData.append('images', image);
   });
+
+  // Add propertyId to organize images by listing ID in Cloudinary
+  if (propertyId) {
+    formData.append('propertyId', propertyId);
+  }
 
   const token = getToken();
   const response = await fetch(`${API_URL}/properties/upload-images`, {

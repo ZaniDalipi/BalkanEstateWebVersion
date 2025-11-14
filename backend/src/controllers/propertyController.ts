@@ -345,15 +345,23 @@ export const uploadImages = async (
       return;
     }
 
+    // Get property ID from request body or query
+    const propertyId = req.body.propertyId || req.query.propertyId;
+
     const files = req.files as Express.Multer.File[];
     const uploadedImages: { url: string; tag: string }[] = [];
+
+    // Determine folder path - organize by property ID if provided
+    const folderPath = propertyId
+      ? `properties/${propertyId}`
+      : `properties/temp/${Date.now()}`;
 
     // Upload each file to Cloudinary
     for (const file of files) {
       const result = await new Promise<any>((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           {
-            folder: 'balkan-estate/properties',
+            folder: folderPath,
             resource_type: 'image',
           },
           (error, result) => {
