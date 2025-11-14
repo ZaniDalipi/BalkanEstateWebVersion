@@ -79,14 +79,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const handleRoleChange = async (role: UserRole) => {
         setError('');
 
-        // If switching to agent and user is not already a verified agent, show license modal
-        if (role === UserRole.AGENT && !user.licenseVerified) {
-            setPendingRole(role);
-            setIsLicenseModalOpen(true);
-            return;
-        }
-
-        // For other role changes (or if already verified agent), switch directly
+        // Allow switching to any role freely without requiring license
         try {
             setIsSaving(true);
             const updatedUser = await switchRole(role);
@@ -103,11 +96,11 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     };
 
     const handleLicenseSubmit = async (licenseData: { licenseNumber: string; agencyName: string; agentId?: string }) => {
-        if (!pendingRole) return;
-
         setIsSaving(true);
         try {
-            const updatedUser = await switchRole(pendingRole, licenseData);
+            // Use current role or pending role (for verification)
+            const roleToSwitch = pendingRole || formData.role;
+            const updatedUser = await switchRole(roleToSwitch, licenseData);
             dispatch({ type: 'UPDATE_USER', payload: updatedUser });
             setFormData(updatedUser);
             setIsLicenseModalOpen(false);
@@ -189,7 +182,26 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
 
             {formData.role === UserRole.AGENT && (
                 <fieldset className="space-y-6 animate-fade-in border-t pt-8">
-                     <legend className="text-lg font-semibold text-neutral-700 -mt-2 mb-4">Agent Information</legend>
+                     <div className="flex items-center justify-between -mt-2 mb-4">
+                        <legend className="text-lg font-semibold text-neutral-700">Agent Information</legend>
+                        {!user.licenseVerified && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setPendingRole(UserRole.AGENT);
+                                    setIsLicenseModalOpen(true);
+                                }}
+                                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                                Verify License
+                            </button>
+                        )}
+                        {user.licenseVerified && (
+                            <span className="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-full font-medium">
+                                ✓ License Verified
+                            </span>
+                        )}
+                     </div>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="relative">
                             <input type="text" id="agencyName" value={formData.agencyName || ''} onChange={handleInputChange} className={floatingInputClasses} placeholder=" " />
@@ -200,8 +212,8 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                             <label htmlFor="agentId" className={floatingLabelClasses}>Agent ID</label>
                         </div>
                         <div className="relative md:col-span-2">
-                            <input type="text" id="licenseNumber" value={formData.licenseNumber || ''} onChange={handleInputChange} className={floatingInputClasses} placeholder=" " />
-                            <label htmlFor="licenseNumber" className={floatingLabelClasses}>License Number (optional)</label>
+                            <input type="text" id="licenseNumber" value={formData.licenseNumber || ''} onChange={handleInputChange} className={floatingInputClasses} placeholder=" " disabled={user.licenseVerified} />
+                            <label htmlFor="licenseNumber" className={floatingLabelClasses}>License Number</label>
                         </div>
                     </div>
                 </fieldset>

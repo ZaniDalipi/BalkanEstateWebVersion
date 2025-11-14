@@ -271,15 +271,8 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // If switching to agent, validate license information and create Agent record
-    if (role === 'agent') {
-      if (!licenseNumber || !agencyName) {
-        res.status(400).json({
-          message: 'License number and agency name are required to become an agent'
-        });
-        return;
-      }
-
+    // If switching to agent and license info is provided, validate and save it
+    if (role === 'agent' && licenseNumber && agencyName) {
       // Validate license format (basic validation - you can enhance this)
       if (licenseNumber.length < 5) {
         res.status(400).json({
