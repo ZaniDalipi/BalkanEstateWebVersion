@@ -188,7 +188,7 @@ AgentSchema.methods.calculateRating = function () {
 };
 
 // Auto-calculate rating before saving
-AgentSchema.pre('save', function (next) {
+AgentSchema.pre<IAgent>('save', function (next) {
   if (this.isModified('testimonials')) {
     this.calculateRating();
   }
