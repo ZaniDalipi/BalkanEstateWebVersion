@@ -1,12 +1,11 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import SavedSearch from '../models/SavedSearch';
-import { AuthRequest } from '../middleware/auth';
 
 // @desc    Get user's saved searches
 // @route   GET /api/saved-searches
 // @access  Private
 export const getSavedSearches = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -30,7 +29,7 @@ export const getSavedSearches = async (
 // @route   POST /api/saved-searches
 // @access  Private
 export const createSavedSearch = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -64,7 +63,7 @@ export const createSavedSearch = async (
 // @route   PATCH /api/saved-searches/:id/access
 // @access  Private
 export const updateAccessTime = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -100,7 +99,7 @@ export const updateAccessTime = async (
 // @route   DELETE /api/saved-searches/:id
 // @access  Private
 export const deleteSavedSearch = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {

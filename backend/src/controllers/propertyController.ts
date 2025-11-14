@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import Property from '../models/Property';
-import { AuthRequest } from '../middleware/auth';
 import cloudinary from '../config/cloudinary';
 import { Readable } from 'stream';
 
@@ -148,7 +147,7 @@ export const getProperty = async (
 // @route   POST /api/properties
 // @access  Private
 export const createProperty = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -178,7 +177,7 @@ export const createProperty = async (
 // @route   PUT /api/properties/:id
 // @access  Private
 export const updateProperty = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -218,7 +217,7 @@ export const updateProperty = async (
 // @route   DELETE /api/properties/:id
 // @access  Private
 export const deleteProperty = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -253,7 +252,7 @@ export const deleteProperty = async (
 // @route   GET /api/properties/my-listings
 // @access  Private
 export const getMyListings = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -277,7 +276,7 @@ export const getMyListings = async (
 // @route   POST /api/properties/upload-images
 // @access  Private
 export const uploadImages = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -331,7 +330,7 @@ export const uploadImages = async (
 // @route   PATCH /api/properties/:id/mark-sold
 // @access  Private
 export const markAsSold = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -367,7 +366,7 @@ export const markAsSold = async (
 // @route   PATCH /api/properties/:id/renew
 // @access  Private
 export const renewProperty = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {

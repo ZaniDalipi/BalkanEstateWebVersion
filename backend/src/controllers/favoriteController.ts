@@ -1,13 +1,12 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import Favorite from '../models/Favorite';
 import Property from '../models/Property';
-import { AuthRequest } from '../middleware/auth';
 
 // @desc    Get user's favorites
 // @route   GET /api/favorites
 // @access  Private
 export const getFavorites = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -40,7 +39,7 @@ export const getFavorites = async (
 // @route   POST /api/favorites/toggle
 // @access  Private
 export const toggleFavorite = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -102,7 +101,7 @@ export const toggleFavorite = async (
 // @route   GET /api/favorites/check/:propertyId
 // @access  Private
 export const checkFavorite = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {

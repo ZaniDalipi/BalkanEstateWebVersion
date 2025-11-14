@@ -1,14 +1,13 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import Conversation from '../models/Conversation';
 import Message from '../models/Message';
 import Property from '../models/Property';
-import { AuthRequest } from '../middleware/auth';
 
 // @desc    Get user's conversations
 // @route   GET /api/conversations
 // @access  Private
 export const getConversations = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -51,7 +50,7 @@ export const getConversations = async (
 // @route   GET /api/conversations/:id
 // @access  Private
 export const getConversation = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -120,7 +119,7 @@ export const getConversation = async (
 // @route   POST /api/conversations
 // @access  Private
 export const createConversation = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -191,7 +190,7 @@ export const createConversation = async (
 // @route   POST /api/conversations/:id/messages
 // @access  Private
 export const sendMessage = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -252,7 +251,7 @@ export const sendMessage = async (
 // @route   PATCH /api/conversations/:id/read
 // @access  Private
 export const markAsRead = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
