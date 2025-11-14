@@ -65,9 +65,9 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
+        <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white z-10">
           <h2 className="text-xl font-semibold text-gray-900">Agent License Verification</h2>
           <button
             onClick={handleClose}
@@ -81,7 +81,7 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
         {/* Content */}
         <form onSubmit={handleSubmit} className="p-6">
           <p className="text-sm text-gray-600 mb-6">
-            To become an agent, you need to provide your valid real estate license information. This helps maintain trust and credibility in our platform.
+            To become a verified agent, you need to provide your valid real estate license information and upload a document. This helps maintain trust and credibility in our platform.
           </p>
 
           {error && (
