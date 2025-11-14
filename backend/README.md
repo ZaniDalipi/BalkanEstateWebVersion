@@ -46,7 +46,7 @@ Backend API server for the Balkan Estate real estate application built with Node
 
 4. **Configure `.env` file**:
    ```env
-   PORT=5000
+   PORT=5001
    NODE_ENV=development
 
    # MongoDB
@@ -117,7 +117,7 @@ Backend API server for the Balkan Estate real estate application built with Node
 npm run dev
 ```
 
-Server will run on `http://localhost:5000` with auto-reload on file changes.
+Server will run on `http://localhost:5001` with auto-reload on file changes.
 
 ### Production Build
 
@@ -348,7 +348,7 @@ backend/
 
 | Variable | Description | Required | Default |
 |----------|-------------|----------|---------|
-| `PORT` | Server port | No | 5000 |
+| `PORT` | Server port | No | 5001 |
 | `NODE_ENV` | Environment | No | development |
 | `MONGODB_URI` | MongoDB connection string | Yes | - |
 | `JWT_SECRET` | JWT signing secret | Yes | - |

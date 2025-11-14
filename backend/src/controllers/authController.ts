@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
 import { generateToken } from '../utils/jwt';
-import { AuthRequest } from '../middleware/auth';
 import { IUser } from '../models/User';
 
 // @desc    Register new user
@@ -106,27 +105,28 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 // @desc    Get current user
 // @route   GET /api/auth/me
 // @access  Private
-export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getMe = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ message: 'Not authorized' });
       return;
     }
 
+    const user = req.user as IUser;
     res.json({
       user: {
-        id: String(req.user!._id),
-        email: req.user.email,
-        name: req.user.name,
-        phone: req.user.phone,
-        role: req.user.role,
-        avatarUrl: req.user.avatarUrl,
-        city: req.user.city,
-        country: req.user.country,
-        agencyName: req.user.agencyName,
-        agentId: req.user.agentId,
-        licenseNumber: req.user.licenseNumber,
-        isSubscribed: req.user.isSubscribed,
+        id: String(user._id),
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+        avatarUrl: user.avatarUrl,
+        city: user.city,
+        country: user.country,
+        agencyName: user.agencyName,
+        agentId: user.agentId,
+        licenseNumber: user.licenseNumber,
+        isSubscribed: user.isSubscribed,
       },
     });
   } catch (error: any) {
@@ -139,7 +139,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
 // @route   PUT /api/auth/profile
 // @access  Private
 export const updateProfile = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -151,7 +151,8 @@ export const updateProfile = async (
     const { name, phone, city, country, agencyName, licenseNumber, avatarUrl } =
       req.body;
 
-    const user = await User.findById(String(req.user!._id));
+    const currentUser = req.user as IUser;
+    const user = await User.findById(String(currentUser._id));
 
     if (!user) {
       res.status(404).json({ message: 'User not found' });
@@ -194,7 +195,7 @@ export const updateProfile = async (
 // @desc    Logout user
 // @route   POST /api/auth/logout
 // @access  Private
-export const logout = async (req: AuthRequest, res: Response): Promise<void> => {
+export const logout = async (req: Request, res: Response): Promise<void> => {
   res.json({ message: 'Logged out successfully' });
 };
 

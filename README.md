@@ -91,13 +91,13 @@ Maps: Leaflet + OpenStreetMap
 
    **Frontend** (`.env` in project root):
    ```env
-   VITE_API_URL=http://localhost:5000/api
+   VITE_API_URL=http://localhost:5001/api
    VITE_GEMINI_API_KEY=your-gemini-api-key
    ```
 
    **Backend** (`backend/.env`):
    ```env
-   PORT=5000
+   PORT=5001
    NODE_ENV=development
 
    # MongoDB connection

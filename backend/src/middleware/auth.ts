@@ -7,7 +7,7 @@ export interface AuthRequest extends Request {
 }
 
 export const protect = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -49,8 +49,8 @@ export const protect = async (
 };
 
 export const restrictTo = (...roles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
-    if (!req.user || !roles.includes(req.user.role)) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user || !roles.includes((req.user as IUser).role)) {
       res.status(403).json({
         message: 'You do not have permission to perform this action',
       });

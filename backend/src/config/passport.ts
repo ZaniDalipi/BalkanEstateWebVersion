@@ -1,21 +1,29 @@
 import passport from 'passport';
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { Strategy as FacebookStrategy } from 'passport-facebook';
+import { Strategy as GoogleStrategy, Profile as GoogleProfile, VerifyCallback } from 'passport-google-oauth20';
+import { Strategy as FacebookStrategy, Profile as FacebookProfile } from 'passport-facebook';
 // @ts-ignore - passport-apple doesn't have TypeScript definitions
 import AppleStrategy from 'passport-apple';
 import User from '../models/User';
 
+// Track which strategies are enabled
+export const oauthStrategies = {
+  google: false,
+  facebook: false,
+  apple: false,
+};
+
 // Google OAuth Strategy
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  oauthStrategies.google = true;
   passport.use(
     new GoogleStrategy(
       {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/google/callback`,
+        callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5001'}/api/auth/google/callback`,
         scope: ['profile', 'email'],
       },
-      async (accessToken, refreshToken, profile, done) => {
+      async (accessToken: string, refreshToken: string, profile: GoogleProfile, done: VerifyCallback) => {
         try {
           // Check if user already exists
           let user = await User.findOne({
@@ -63,15 +71,16 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
 // Facebook OAuth Strategy
 if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
+  oauthStrategies.facebook = true;
   passport.use(
     new FacebookStrategy(
       {
         clientID: process.env.FACEBOOK_APP_ID,
         clientSecret: process.env.FACEBOOK_APP_SECRET,
-        callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/facebook/callback`,
+        callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5001'}/api/auth/facebook/callback`,
         profileFields: ['id', 'emails', 'name', 'picture.type(large)'],
       },
-      async (accessToken, refreshToken, profile, done) => {
+      async (accessToken: string, refreshToken: string, profile: FacebookProfile, done: VerifyCallback) => {
         try {
           // Check if user already exists
           let user = await User.findOne({
@@ -124,6 +133,7 @@ if (
   process.env.APPLE_KEY_ID &&
   process.env.APPLE_PRIVATE_KEY_PATH
 ) {
+  oauthStrategies.apple = true;
   passport.use(
     new AppleStrategy(
       {
@@ -131,7 +141,7 @@ if (
         teamID: process.env.APPLE_TEAM_ID,
         keyID: process.env.APPLE_KEY_ID,
         privateKeyLocation: process.env.APPLE_PRIVATE_KEY_PATH,
-        callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/apple/callback`,
+        callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5001'}/api/auth/apple/callback`,
         scope: ['name', 'email'],
       },
       async (accessToken: any, refreshToken: any, idToken: any, profile: any, done: any) => {
@@ -177,12 +187,12 @@ if (
 }
 
 // Serialize user for the session
-passport.serializeUser((user: any, done) => {
+passport.serializeUser((user: any, done: (err: any, id?: any) => void) => {
   done(null, user.id);
 });
 
 // Deserialize user from the session
-passport.deserializeUser(async (id: string, done) => {
+passport.deserializeUser(async (id: string, done: (err: any, user?: any) => void) => {
   try {
     const user = await User.findById(id);
     done(null, user);

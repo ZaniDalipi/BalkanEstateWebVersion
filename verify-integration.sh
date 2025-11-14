@@ -49,7 +49,7 @@ test_endpoint() {
 
 # Test 1: Backend Health
 echo -e "${BLUE}1. Testing Backend Health${NC}"
-test_endpoint "Health endpoint" "GET" "http://localhost:5000/health" "" 200
+test_endpoint "Health endpoint" "GET" "http://localhost:5001/health" "" 200
 echo ""
 
 # Test 2: Authentication Endpoints
@@ -60,7 +60,7 @@ RANDOM_EMAIL="test-$(date +%s)@example.com"
 
 # Test signup
 SIGNUP_DATA="{\"email\":\"$RANDOM_EMAIL\",\"password\":\"Password123\",\"name\":\"Test User\",\"phone\":\"+1234567890\"}"
-if test_endpoint "User signup" "POST" "http://localhost:5000/api/auth/signup" "$SIGNUP_DATA" 201; then
+if test_endpoint "User signup" "POST" "http://localhost:5001/api/auth/signup" "$SIGNUP_DATA" 201; then
     # Extract token from response
     TOKEN=$(echo "$body" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
     if [ -n "$TOKEN" ]; then
@@ -70,7 +70,7 @@ fi
 
 # Test login
 LOGIN_DATA="{\"email\":\"$RANDOM_EMAIL\",\"password\":\"Password123\"}"
-if test_endpoint "User login" "POST" "http://localhost:5000/api/auth/login" "$LOGIN_DATA" 200; then
+if test_endpoint "User login" "POST" "http://localhost:5001/api/auth/login" "$LOGIN_DATA" 200; then
     # Extract token
     TOKEN=$(echo "$body" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
 fi
@@ -85,7 +85,7 @@ if [ -n "$TOKEN" ]; then
     PROPERTY_DATA='{
         "title": "Test Property",
         "description": "A beautiful test property",
-        "price": 250000,
+        "price": 250010,
         "location": {
             "address": "123 Test St",
             "city": "Prishtina",
@@ -103,7 +103,7 @@ if [ -n "$TOKEN" ]; then
     }'
 
     echo -n "Creating property... "
-    CREATE_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "http://localhost:5000/api/properties" \
+    CREATE_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "http://localhost:5001/api/properties" \
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $TOKEN" \
         -d "$PROPERTY_DATA" 2>&1)
@@ -120,11 +120,11 @@ if [ -n "$TOKEN" ]; then
         echo -e "   ${GREEN}Property created: $PROPERTY_ID${NC}"
 
         # Test get all properties
-        test_endpoint "Get all properties" "GET" "http://localhost:5000/api/properties" "" 200
+        test_endpoint "Get all properties" "GET" "http://localhost:5001/api/properties" "" 200
 
         # Test get single property
         if [ -n "$PROPERTY_ID" ]; then
-            test_endpoint "Get property by ID" "GET" "http://localhost:5000/api/properties/$PROPERTY_ID" "" 200
+            test_endpoint "Get property by ID" "GET" "http://localhost:5001/api/properties/$PROPERTY_ID" "" 200
         fi
     else
         echo -e "${RED}❌ FAILED${NC} (Expected 201, got $CREATE_CODE)"
@@ -144,7 +144,7 @@ if [ -n "$TOKEN" ] && [ -n "$PROPERTY_ID" ]; then
     FAVORITE_DATA="{\"propertyId\":\"$PROPERTY_ID\"}"
 
     echo -n "Adding to favorites... "
-    FAV_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "http://localhost:5000/api/favorites" \
+    FAV_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "http://localhost:5001/api/favorites" \
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $TOKEN" \
         -d "$FAVORITE_DATA" 2>&1)
@@ -156,7 +156,7 @@ if [ -n "$TOKEN" ] && [ -n "$PROPERTY_ID" ]; then
         ((PASSED++))
 
         # Test get favorites
-        test_endpoint "Get user favorites" "GET" "http://localhost:5000/api/favorites" "" 200
+        test_endpoint "Get user favorites" "GET" "http://localhost:5001/api/favorites" "" 200
     else
         echo -e "${RED}❌ FAILED${NC} (Expected 201, got $FAV_CODE)"
         ((FAILED++))
@@ -180,8 +180,8 @@ if [ -n "$TOKEN" ]; then
         }
     }'
 
-    test_endpoint "Save search" "POST" "http://localhost:5000/api/saved-searches" "$SEARCH_DATA" 201
-    test_endpoint "Get saved searches" "GET" "http://localhost:5000/api/saved-searches" "" 200
+    test_endpoint "Save search" "POST" "http://localhost:5001/api/saved-searches" "$SEARCH_DATA" 201
+    test_endpoint "Get saved searches" "GET" "http://localhost:5001/api/saved-searches" "" 200
 else
     echo -e "${YELLOW}⚠️  Skipped (no auth token)${NC}"
 fi

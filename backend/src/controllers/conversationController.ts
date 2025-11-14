@@ -1,14 +1,14 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import Conversation from '../models/Conversation';
 import Message from '../models/Message';
 import Property from '../models/Property';
-import { AuthRequest } from '../middleware/auth';
+import { IUser } from '../models/User';
 
 // @desc    Get user's conversations
 // @route   GET /api/conversations
 // @access  Private
 export const getConversations = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -19,7 +19,7 @@ export const getConversations = async (
 
     // Find conversations where user is either buyer or seller
     const conversations = await Conversation.find({
-      $or: [{ buyerId: String(req.user!._id) }, { sellerId: String(req.user!._id) }],
+      $or: [{ buyerId: String((req.user as IUser)._id) }, { sellerId: String((req.user as IUser)._id) }],
     })
       .populate('propertyId')
       .populate('buyerId', 'name email phone avatarUrl')
@@ -51,7 +51,7 @@ export const getConversations = async (
 // @route   GET /api/conversations/:id
 // @access  Private
 export const getConversation = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -71,8 +71,8 @@ export const getConversation = async (
     }
 
     // Check if user is part of conversation
-    const isBuyer = conversation.buyerId._id.toString() === String(req.user!._id).toString();
-    const isSeller = conversation.sellerId._id.toString() === String(req.user!._id).toString();
+    const isBuyer = conversation.buyerId._id.toString() === String((req.user as IUser)._id).toString();
+    const isSeller = conversation.sellerId._id.toString() === String((req.user as IUser)._id).toString();
 
     if (!isBuyer && !isSeller) {
       res.status(403).json({ message: 'Not authorized to view this conversation' });
@@ -120,7 +120,7 @@ export const getConversation = async (
 // @route   POST /api/conversations
 // @access  Private
 export const createConversation = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -145,7 +145,7 @@ export const createConversation = async (
     }
 
     // Can't create conversation with yourself
-    if (property.sellerId.toString() === String(req.user!._id).toString()) {
+    if (property.sellerId.toString() === String((req.user as IUser)._id).toString()) {
       res.status(400).json({ message: 'Cannot create conversation with yourself' });
       return;
     }
@@ -153,7 +153,7 @@ export const createConversation = async (
     // Check if conversation already exists
     let conversation = await Conversation.findOne({
       propertyId,
-      buyerId: String(req.user!._id),
+      buyerId: String((req.user as IUser)._id),
       sellerId: property.sellerId,
     })
       .populate('propertyId')
@@ -164,7 +164,7 @@ export const createConversation = async (
       // Create new conversation
       conversation = await Conversation.create({
         propertyId,
-        buyerId: String(req.user!._id),
+        buyerId: String((req.user as IUser)._id),
         sellerId: property.sellerId,
       });
 
@@ -191,7 +191,7 @@ export const createConversation = async (
 // @route   POST /api/conversations/:id/messages
 // @access  Private
 export const sendMessage = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -215,8 +215,8 @@ export const sendMessage = async (
     }
 
     // Check if user is part of conversation
-    const isBuyer = conversation.buyerId.toString() === String(req.user!._id).toString();
-    const isSeller = conversation.sellerId.toString() === String(req.user!._id).toString();
+    const isBuyer = conversation.buyerId.toString() === String((req.user as IUser)._id).toString();
+    const isSeller = conversation.sellerId.toString() === String((req.user as IUser)._id).toString();
 
     if (!isBuyer && !isSeller) {
       res.status(403).json({ message: 'Not authorized to send message' });
@@ -226,7 +226,7 @@ export const sendMessage = async (
     // Create message
     const message = await Message.create({
       conversationId: conversation._id,
-      senderId: String(req.user!._id),
+      senderId: String((req.user as IUser)._id),
       text,
     });
 
@@ -252,7 +252,7 @@ export const sendMessage = async (
 // @route   PATCH /api/conversations/:id/read
 // @access  Private
 export const markAsRead = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -269,8 +269,8 @@ export const markAsRead = async (
     }
 
     // Check if user is part of conversation
-    const isBuyer = conversation.buyerId.toString() === String(req.user!._id).toString();
-    const isSeller = conversation.sellerId.toString() === String(req.user!._id).toString();
+    const isBuyer = conversation.buyerId.toString() === String((req.user as IUser)._id).toString();
+    const isSeller = conversation.sellerId.toString() === String((req.user as IUser)._id).toString();
 
     if (!isBuyer && !isSeller) {
       res.status(403).json({ message: 'Not authorized' });

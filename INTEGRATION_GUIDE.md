@@ -82,7 +82,7 @@ cp .env.example .env
 Edit `backend/.env`:
 
 ```env
-PORT=5000
+PORT=5001
 NODE_ENV=development
 
 # MongoDB - Use your connection string
@@ -112,7 +112,7 @@ cd ..  # Back to project root
 The `.env` file already exists with:
 
 ```env
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:5001/api
 VITE_GEMINI_API_KEY=your-gemini-api-key-here
 ```
 
@@ -137,7 +137,7 @@ npm run dev
 You should see:
 ```
 MongoDB connected successfully
-Server running in development mode on port 5000
+Server running in development mode on port 5001
 ```
 
 **Terminal 2 - Frontend**:
@@ -217,12 +217,12 @@ sudo systemctl start mongod            # Linux
 
 ### Port Already in Use
 
-**Error**: `Port 5000 is already in use`
+**Error**: `Port 5001 is already in use`
 
 **Solution**:
 ```bash
 # Find process using port
-lsof -i :5000
+lsof -i :5001
 
 # Kill process
 kill -9 <PID>
@@ -291,7 +291,7 @@ db.dropDatabase()
 
 2. **Login**:
    ```
-   POST http://localhost:5000/api/auth/login
+   POST http://localhost:5001/api/auth/login
    Body (JSON):
    {
      "email": "test@example.com",
@@ -303,7 +303,7 @@ db.dropDatabase()
 
 4. **Get Properties** (with auth):
    ```
-   GET http://localhost:5000/api/properties
+   GET http://localhost:5001/api/properties
    Headers:
    Authorization: Bearer <your-token>
    ```

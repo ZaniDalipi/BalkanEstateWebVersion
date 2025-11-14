@@ -1,13 +1,13 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import Favorite from '../models/Favorite';
 import Property from '../models/Property';
-import { AuthRequest } from '../middleware/auth';
+import { IUser } from '../models/User';
 
 // @desc    Get user's favorites
 // @route   GET /api/favorites
 // @access  Private
 export const getFavorites = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -16,7 +16,8 @@ export const getFavorites = async (
       return;
     }
 
-    const favorites = await Favorite.find({ userId: String(req.user!._id) })
+    const user = req.user as IUser;
+    const favorites = await Favorite.find({ userId: String(user._id) })
       .populate({
         path: 'propertyId',
         populate: {
@@ -40,7 +41,7 @@ export const getFavorites = async (
 // @route   POST /api/favorites/toggle
 // @access  Private
 export const toggleFavorite = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -66,7 +67,7 @@ export const toggleFavorite = async (
 
     // Check if already favorited
     const existingFavorite = await Favorite.findOne({
-      userId: String(req.user!._id),
+      userId: String((req.user as IUser)._id),
       propertyId,
     });
 
@@ -82,7 +83,7 @@ export const toggleFavorite = async (
     } else {
       // Add favorite
       await Favorite.create({
-        userId: String(req.user!._id),
+        userId: String((req.user as IUser)._id),
         propertyId,
       });
 
@@ -102,7 +103,7 @@ export const toggleFavorite = async (
 // @route   GET /api/favorites/check/:propertyId
 // @access  Private
 export const checkFavorite = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -112,7 +113,7 @@ export const checkFavorite = async (
     }
 
     const favorite = await Favorite.findOne({
-      userId: String(req.user!._id),
+      userId: String((req.user as IUser)._id),
       propertyId: req.params.propertyId,
     });
 

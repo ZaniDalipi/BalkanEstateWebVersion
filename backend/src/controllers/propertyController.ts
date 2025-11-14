@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import Property from '../models/Property';
-import { AuthRequest } from '../middleware/auth';
 import cloudinary from '../config/cloudinary';
 import { Readable } from 'stream';
+import { IUser } from '../models/User';
 
 // @desc    Get all properties with filters
 // @route   GET /api/properties
@@ -148,7 +148,7 @@ export const getProperty = async (
 // @route   POST /api/properties
 // @access  Private
 export const createProperty = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -159,7 +159,7 @@ export const createProperty = async (
 
     const propertyData = {
       ...req.body,
-      sellerId: String(req.user!._id),
+      sellerId: String((req.user as IUser)._id),
     };
 
     const property = await Property.create(propertyData);
@@ -178,7 +178,7 @@ export const createProperty = async (
 // @route   PUT /api/properties/:id
 // @access  Private
 export const updateProperty = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -195,7 +195,7 @@ export const updateProperty = async (
     }
 
     // Check ownership
-    if (property.sellerId.toString() !== String(req.user!._id).toString()) {
+    if (property.sellerId.toString() !== String((req.user as IUser)._id).toString()) {
       res.status(403).json({ message: 'Not authorized to update this property' });
       return;
     }
@@ -218,7 +218,7 @@ export const updateProperty = async (
 // @route   DELETE /api/properties/:id
 // @access  Private
 export const deleteProperty = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -235,7 +235,7 @@ export const deleteProperty = async (
     }
 
     // Check ownership
-    if (property.sellerId.toString() !== String(req.user!._id).toString()) {
+    if (property.sellerId.toString() !== String((req.user as IUser)._id).toString()) {
       res.status(403).json({ message: 'Not authorized to delete this property' });
       return;
     }
@@ -253,7 +253,7 @@ export const deleteProperty = async (
 // @route   GET /api/properties/my-listings
 // @access  Private
 export const getMyListings = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -262,7 +262,7 @@ export const getMyListings = async (
       return;
     }
 
-    const properties = await Property.find({ sellerId: String(req.user!._id) })
+    const properties = await Property.find({ sellerId: String((req.user as IUser)._id) })
       .populate('sellerId', 'name email phone avatarUrl role agencyName')
       .sort({ createdAt: -1 });
 
@@ -277,7 +277,7 @@ export const getMyListings = async (
 // @route   POST /api/properties/upload-images
 // @access  Private
 export const uploadImages = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -331,7 +331,7 @@ export const uploadImages = async (
 // @route   PATCH /api/properties/:id/mark-sold
 // @access  Private
 export const markAsSold = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -348,7 +348,7 @@ export const markAsSold = async (
     }
 
     // Check ownership
-    if (property.sellerId.toString() !== String(req.user!._id).toString()) {
+    if (property.sellerId.toString() !== String((req.user as IUser)._id).toString()) {
       res.status(403).json({ message: 'Not authorized to update this property' });
       return;
     }
@@ -367,7 +367,7 @@ export const markAsSold = async (
 // @route   PATCH /api/properties/:id/renew
 // @access  Private
 export const renewProperty = async (
-  req: AuthRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -384,7 +384,7 @@ export const renewProperty = async (
     }
 
     // Check ownership
-    if (property.sellerId.toString() !== String(req.user!._id).toString()) {
+    if (property.sellerId.toString() !== String((req.user as IUser)._id).toString()) {
       res.status(403).json({ message: 'Not authorized to renew this property' });
       return;
     }

@@ -24,7 +24,7 @@ Add the following environment variables to your `backend/.env` file:
 
 ```bash
 # Backend URL (for OAuth callbacks)
-BACKEND_URL=http://localhost:5000
+BACKEND_URL=http://localhost:5001
 
 # Google OAuth
 GOOGLE_CLIENT_ID=your-google-client-id
@@ -79,7 +79,7 @@ The User model has been updated to support OAuth. If you have existing users, yo
      ```
    - Authorized redirect URIs:
      ```
-     http://localhost:5000/api/auth/google/callback
+     http://localhost:5001/api/auth/google/callback
      https://yourbackend.com/api/auth/google/callback
      ```
 
@@ -103,7 +103,7 @@ The User model has been updated to support OAuth. If you have existing users, yo
    - Go to "Facebook Login" > "Settings"
    - Valid OAuth Redirect URIs:
      ```
-     http://localhost:5000/api/auth/facebook/callback
+     http://localhost:5001/api/auth/facebook/callback
      https://yourbackend.com/api/auth/facebook/callback
      ```
 
@@ -128,7 +128,7 @@ The User model has been updated to support OAuth. If you have existing users, yo
    - Enable "Sign In with Apple"
    - Configure the Return URLs:
      ```
-     http://localhost:5000/api/auth/apple/callback
+     http://localhost:5001/api/auth/apple/callback
      https://yourbackend.com/api/auth/apple/callback
      ```
    - Note: Apple doesn't support localhost in production, only for testing

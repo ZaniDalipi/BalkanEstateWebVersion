@@ -138,6 +138,17 @@ export const requestPasswordReset = async (email: string): Promise<void> => {
   console.log(`Password reset request for ${email}`);
 };
 
+export const getAvailableOAuthProviders = async (): Promise<{ google: boolean; facebook: boolean; apple: boolean }> => {
+  try {
+    const response = await apiRequest<{ providers: { google: boolean; facebook: boolean; apple: boolean } }>('/auth/oauth/providers');
+    return response.providers;
+  } catch (error) {
+    console.error('Error fetching OAuth providers:', error);
+    // Return all false if endpoint fails
+    return { google: false, facebook: false, apple: false };
+  }
+};
+
 export const getOAuthUrl = (provider: 'google' | 'facebook' | 'apple'): string => {
   const baseUrl = API_URL.replace('/api', '');
   return `${baseUrl}/api/auth/${provider}`;

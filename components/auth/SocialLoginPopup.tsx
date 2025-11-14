@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { GoogleIcon, FacebookIcon, AppleIcon, SpinnerIcon, CheckCircleIcon, XMarkIcon } from '../../constants';
+import React, { useEffect } from 'react';
+import { GoogleIcon, FacebookIcon, AppleIcon, SpinnerIcon, XMarkIcon } from '../../constants';
 
 type Provider = 'google' | 'facebook' | 'apple';
-type Status = 'authenticating' | 'success';
 
 interface SocialLoginPopupProps {
     provider: Provider;
@@ -17,28 +16,16 @@ const providerDetails: Record<Provider, { name: string; icon: React.ReactNode }>
 };
 
 const SocialLoginPopup: React.FC<SocialLoginPopupProps> = ({ provider, onSuccess, onClose }) => {
-    const [status, setStatus] = useState<Status>('authenticating');
     const details = providerDetails[provider];
 
     useEffect(() => {
-        // Simulate the authentication process
-        const authTimer = setTimeout(() => {
-            setStatus('success');
-        }, 2500); // 2.5 seconds for fake network request
+        // Immediately trigger the OAuth redirect
+        const redirectTimer = setTimeout(() => {
+            onSuccess();
+        }, 500); // Small delay to show the "Redirecting..." message
 
-        return () => clearTimeout(authTimer);
-    }, []);
-
-    useEffect(() => {
-        if (status === 'success') {
-            // After showing success, trigger the actual login and close the popup
-            const successTimer = setTimeout(() => {
-                onSuccess();
-            }, 1000); // Show success message for 1 second
-
-            return () => clearTimeout(successTimer);
-        }
-    }, [status, onSuccess]);
+        return () => clearTimeout(redirectTimer);
+    }, [onSuccess]);
 
     return (
         <div className="fixed inset-0 bg-black/30 z-[6000] flex items-center justify-center p-4">
@@ -54,18 +41,8 @@ const SocialLoginPopup: React.FC<SocialLoginPopupProps> = ({ provider, onSuccess
                 </div>
 
                 <div className="p-8 flex flex-col items-center justify-center h-48">
-                    {status === 'authenticating' && (
-                        <>
-                            <SpinnerIcon className="w-12 h-12 text-primary" />
-                            <p className="mt-4 text-neutral-600 font-medium">Authenticating...</p>
-                        </>
-                    )}
-                    {status === 'success' && (
-                        <>
-                            <CheckCircleIcon className="w-16 h-16 text-green-500" />
-                            <p className="mt-4 text-neutral-600 font-medium">Authentication Successful!</p>
-                        </>
-                    )}
+                    <SpinnerIcon className="w-12 h-12 text-primary" />
+                    <p className="mt-4 text-neutral-600 font-medium">Redirecting to {details.name}...</p>
                 </div>
             </div>
         </div>
