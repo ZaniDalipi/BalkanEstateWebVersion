@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
+import Agent from '../models/Agent';
 import { generateToken } from '../utils/jwt';
 import { IUser } from '../models/User';
 import crypto from 'crypto';
@@ -268,9 +269,122 @@ export const oauthCallback = async (req: Request, res: Response): Promise<void> 
   }
 };
 
-// @desc    Request password reset
-// @route   POST /api/auth/forgot-password
-// @access  Public
+// @desc    Switch user role (with license validation for agent)
+// @route   POST /api/auth/switch-role
+// @access  Private
+export const switchRole = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const { role, licenseNumber, agencyName, agentId } = req.body;
+
+    // Validate role
+    const validRoles = ['buyer', 'private_seller', 'agent'];
+    if (!validRoles.includes(role)) {
+      res.status(400).json({ message: 'Invalid role' });
+      return;
+    }
+
+    const currentUser = req.user as IUser;
+    const user = await User.findById(String(currentUser._id));
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // If switching to agent and license info is provided, validate and save it
+    if (role === 'agent' && licenseNumber && agencyName) {
+      // Validate license format (basic validation - you can enhance this)
+      if (licenseNumber.length < 5) {
+        res.status(400).json({
+          message: 'License number must be at least 5 characters'
+        });
+        return;
+      }
+
+      // Check if license number is already in use by another agent
+      const existingAgent = await Agent.findOne({
+        licenseNumber,
+        userId: { $ne: user._id },
+      });
+
+      if (existingAgent) {
+        res.status(400).json({
+          message: 'This license number is already registered to another agent'
+        });
+        return;
+      }
+
+      // Generate agent ID if not provided
+      const generatedAgentId = agentId || `AG-${Date.now()}`;
+
+      // Update agent-specific fields in User model
+      user.licenseNumber = licenseNumber;
+      user.agencyName = agencyName;
+      user.agentId = generatedAgentId;
+      user.licenseVerified = true;
+      user.licenseVerificationDate = new Date();
+
+      // Create or update Agent record in separate table
+      const existingAgentRecord = await Agent.findOne({ userId: user._id });
+
+      if (existingAgentRecord) {
+        // Update existing agent record
+        existingAgentRecord.agencyName = agencyName;
+        existingAgentRecord.agentId = generatedAgentId;
+        existingAgentRecord.licenseNumber = licenseNumber;
+        existingAgentRecord.licenseVerified = true;
+        existingAgentRecord.licenseVerificationDate = new Date();
+        existingAgentRecord.isActive = true;
+        await existingAgentRecord.save();
+      } else {
+        // Create new agent record
+        await Agent.create({
+          userId: user._id,
+          agencyName,
+          agentId: generatedAgentId,
+          licenseNumber,
+          licenseVerified: true,
+          licenseVerificationDate: new Date(),
+          isActive: true,
+        });
+      }
+    }
+
+    // Update role
+    user.role = role;
+    await user.save();
+
+    res.json({
+      message: 'Role updated successfully',
+      user: {
+        id: String(user._id),
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+        avatarUrl: user.avatarUrl,
+        city: user.city,
+        country: user.country,
+        agencyName: user.agencyName,
+        agentId: user.agentId,
+        licenseNumber: user.licenseNumber,
+        licenseVerified: user.licenseVerified,
+        listingsCount: user.listingsCount,
+        totalListingsCreated: user.totalListingsCreated,
+        isSubscribed: user.isSubscribed,
+      },
+    });
+  } catch (error: any) {
+    console.error('Switch role error:', error);
+    res.status(500).json({ message: 'Error switching role', error: error.message });
+  }
+};
+
 export const requestPasswordReset = async (
   req: Request,
   res: Response

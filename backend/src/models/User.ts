@@ -17,6 +17,10 @@ export interface IUser extends Document {
   agencyName?: string;
   agentId?: string;
   licenseNumber?: string;
+  licenseVerified: boolean;
+  licenseVerificationDate?: Date;
+  listingsCount: number;
+  totalListingsCreated: number;
   isSubscribed: boolean;
   subscriptionPlan?: string;
   subscriptionExpiresAt?: Date;
@@ -85,6 +89,21 @@ const UserSchema: Schema = new Schema(
     },
     licenseNumber: {
       type: String,
+    },
+    licenseVerified: {
+      type: Boolean,
+      default: false,
+    },
+    licenseVerificationDate: {
+      type: Date,
+    },
+    listingsCount: {
+      type: Number,
+      default: 0,
+    },
+    totalListingsCreated: {
+      type: Number,
+      default: 0,
     },
     isSubscribed: {
       type: Boolean,

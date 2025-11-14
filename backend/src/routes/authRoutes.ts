@@ -6,11 +6,13 @@ import {
   updateProfile,
   logout,
   oauthCallback,
+  switchRole,
   requestPasswordReset,
-  resetPassword,
+  resetPassword
 } from '../controllers/authController';
 import { protect } from '../middleware/auth';
 import passport, { oauthStrategies } from '../config/passport';
+
 
 const router = express.Router();
 
@@ -20,6 +22,7 @@ router.post('/login', login);
 router.post('/logout', protect, logout);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
+router.post('/switch-role', protect, switchRole);
 
 // Password reset routes
 router.post('/forgot-password', requestPasswordReset);

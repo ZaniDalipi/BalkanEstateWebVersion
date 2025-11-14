@@ -204,6 +204,19 @@ export const updateUser = async (userData: Partial<User>): Promise<User> => {
   return response.user;
 };
 
+export const switchRole = async (
+  role: UserRole,
+  licenseData?: { licenseNumber: string; agencyName: string; agentId?: string }
+): Promise<User> => {
+  const response = await apiRequest<{ user: User; message: string }>('/auth/switch-role', {
+    method: 'POST',
+    body: { role, ...licenseData },
+    requiresAuth: true,
+  });
+
+  return response.user;
+};
+
 // --- PROPERTIES API ---
 
 export const getProperties = async (filters?: Filters): Promise<Property[]> => {

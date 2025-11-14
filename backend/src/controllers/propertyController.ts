@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import Property from '../models/Property';
+import User, { IUser } from '../models/User';
+import Agent from '../models/Agent';
 import cloudinary from '../config/cloudinary';
 import { Readable } from 'stream';
-import { IUser } from '../models/User';
 
 // @desc    Get all properties with filters
 // @route   GET /api/properties
@@ -157,12 +158,46 @@ export const createProperty = async (
       return;
     }
 
+    const currentUser = req.user as IUser;
+    const user = await User.findById(String(currentUser._id));
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Check listing limit for non-subscribed users (5 free listings)
+    const FREE_LISTING_LIMIT = 5;
+    if (!user.isSubscribed && user.listingsCount >= FREE_LISTING_LIMIT) {
+      res.status(403).json({
+        message: `You have reached the limit of ${FREE_LISTING_LIMIT} free listings. Please subscribe to create more listings.`,
+        code: 'LISTING_LIMIT_REACHED',
+        limit: FREE_LISTING_LIMIT,
+        current: user.listingsCount,
+      });
+      return;
+    }
+
     const propertyData = {
       ...req.body,
-      sellerId: String((req.user as IUser)._id),
+      sellerId: String(currentUser._id),
     };
 
     const property = await Property.create(propertyData);
+
+    // Update user listing counts
+    user.listingsCount += 1;
+    user.totalListingsCreated += 1;
+    await user.save();
+
+    // Update agent activeListings count if user is an agent
+    if (user.role === 'agent') {
+      const agent = await Agent.findOne({ userId: user._id });
+      if (agent) {
+        agent.activeListings += 1;
+        await agent.save();
+      }
+    }
 
     // Populate seller info
     await property.populate('sellerId', 'name email phone avatarUrl role agencyName');
@@ -235,9 +270,28 @@ export const deleteProperty = async (
     }
 
     // Check ownership
-    if (property.sellerId.toString() !== String((req.user as IUser)._id).toString()) {
+    const currentUser = req.user as IUser;
+    if (property.sellerId.toString() !== String(currentUser._id).toString()) {
       res.status(403).json({ message: 'Not authorized to delete this property' });
       return;
+    }
+
+    // Decrement listing count if property is active or pending
+    if (property.status === 'active' || property.status === 'pending' || property.status === 'draft') {
+      const user = await User.findById(String(currentUser._id));
+      if (user && user.listingsCount > 0) {
+        user.listingsCount -= 1;
+        await user.save();
+
+        // Update agent activeListings count if user is an agent
+        if (user.role === 'agent') {
+          const agent = await Agent.findOne({ userId: user._id });
+          if (agent && agent.activeListings > 0) {
+            agent.activeListings -= 1;
+            await agent.save();
+          }
+        }
+      }
     }
 
     await property.deleteOne();
@@ -348,9 +402,34 @@ export const markAsSold = async (
     }
 
     // Check ownership
-    if (property.sellerId.toString() !== String((req.user as IUser)._id).toString()) {
+    const currentUser = req.user as IUser;
+    if (property.sellerId.toString() !== String(currentUser._id).toString()) {
       res.status(403).json({ message: 'Not authorized to update this property' });
       return;
+    }
+
+    // Decrement listing count if property was active
+    if (property.status === 'active' || property.status === 'pending') {
+      const user = await User.findById(String(currentUser._id));
+      if (user && user.listingsCount > 0) {
+        user.listingsCount -= 1;
+        await user.save();
+
+        // Update agent stats if user is an agent
+        if (user.role === 'agent') {
+          const agent = await Agent.findOne({ userId: user._id });
+          if (agent) {
+            // Decrement active listings
+            if (agent.activeListings > 0) {
+              agent.activeListings -= 1;
+            }
+            // Increment total sales and sales value
+            agent.totalSales += 1;
+            agent.totalSalesValue += property.price || 0;
+            await agent.save();
+          }
+        }
+      }
     }
 
     property.status = 'sold';
