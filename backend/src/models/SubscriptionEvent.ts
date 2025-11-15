@@ -51,6 +51,7 @@ export interface ISubscriptionEvent extends Document {
   productId?: string;
   expirationDate?: Date;
   autoRenewing?: boolean;
+  metadata?: any; // Generic metadata field for additional data
 
   // Reconciliation
   isReconciliationEvent: boolean;
@@ -140,6 +141,9 @@ const SubscriptionEventSchema: Schema = new Schema(
     },
     autoRenewing: {
       type: Boolean,
+    },
+    metadata: {
+      type: Schema.Types.Mixed,
     },
 
     // Reconciliation

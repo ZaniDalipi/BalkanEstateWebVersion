@@ -129,7 +129,7 @@ export const handleGooglePlayNotification = async (
         userId: subscription.userId,
         eventType: eventType.toLowerCase().replace(/_/g, '_'),
         store: 'google',
-        storeEventId: pubsubMessage.messageId || undefined,
+        notificationId: pubsubMessage.messageId || undefined,
         rawNotification: notification,
         createdAt: new Date(),
       });

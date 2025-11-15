@@ -30,21 +30,16 @@ export const createSubscription = async (req: Request, res: Response): Promise<v
     }
 
     // Validate purchase based on store
-    let validatedPurchase: any = null;
-
     if (store === 'google' && purchaseToken) {
       const googlePlayService = getGooglePlayService();
-      validatedPurchase = await googlePlayService.validateSubscription(
+      await googlePlayService.validateSubscription(
         product.googlePlayProductId!,
         purchaseToken
       );
     } else if (store === 'apple' && transactionId) {
       const appStoreService = getAppStoreService();
-      validatedPurchase = await appStoreService.validateTransaction(transactionId);
-    } else if (store === 'web' || store === 'stripe') {
-      // For web purchases, validation is done separately
-      validatedPurchase = { valid: true };
-    } else {
+      await appStoreService.validateTransaction(transactionId);
+    } else if (store !== 'web' && store !== 'stripe') {
       res.status(400).json({ message: 'Invalid store or missing purchase information' });
       return;
     }

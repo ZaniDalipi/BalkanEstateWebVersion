@@ -16,10 +16,16 @@ export interface ISubscription extends Document {
   store: SubscriptionStore;
   productId: string;
 
+  // Store-specific product IDs
+  googlePlayProductId?: string;
+  appStoreProductId?: string;
+  stripeProductId?: string;
+
   // Store-specific identifiers
   purchaseToken?: string; // Google Play
   transactionId?: string; // Apple
   stripeSubscriptionId?: string; // Stripe
+  receiptData?: string; // Apple receipt
 
   // Dates
   startDate: Date;
@@ -27,7 +33,11 @@ export interface ISubscription extends Document {
   expirationDate: Date;
   trialEndDate?: Date;
   canceledDate?: Date;
+  canceledAt?: Date; // Alias for canceledDate
   pausedDate?: Date;
+  pausedAt?: Date; // Alias for pausedDate
+  refundedAt?: Date;
+  willCancelAt?: Date;
 
   // Status
   status: SubscriptionStatus;
@@ -40,11 +50,14 @@ export interface ISubscription extends Document {
 
   // Grace period tracking
   graceExpirationDate?: Date;
+  gracePeriodEndDate?: Date;
 
   // Metadata
   originalTransactionId?: string; // Apple - for tracking renewals
   orderId?: string; // Google Play order ID
   linkedPurchaseToken?: string; // For upgrade/downgrade tracking
+  environment?: string; // sandbox or production
+  isAcknowledged?: boolean; // Google Play acknowledgment status
 
   // Cancellation
   cancellationReason?: string;
@@ -56,6 +69,11 @@ export interface ISubscription extends Document {
 
   createdAt: Date;
   updatedAt: Date;
+
+  // Methods
+  isActive(): boolean;
+  isPremium(): boolean;
+  isInGracePeriod(): boolean;
 }
 
 const SubscriptionSchema: Schema = new Schema(
@@ -63,7 +81,6 @@ const SubscriptionSchema: Schema = new Schema(
     userId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
       index: true,
     },
     store: {
@@ -76,6 +93,17 @@ const SubscriptionSchema: Schema = new Schema(
       type: String,
       required: true,
       index: true,
+    },
+
+    // Store-specific product IDs
+    googlePlayProductId: {
+      type: String,
+    },
+    appStoreProductId: {
+      type: String,
+    },
+    stripeProductId: {
+      type: String,
     },
 
     // Store-specific identifiers
@@ -93,6 +121,9 @@ const SubscriptionSchema: Schema = new Schema(
       type: String,
       index: true,
       sparse: true,
+    },
+    receiptData: {
+      type: String,
     },
 
     // Dates
@@ -114,7 +145,19 @@ const SubscriptionSchema: Schema = new Schema(
     canceledDate: {
       type: Date,
     },
+    canceledAt: {
+      type: Date,
+    },
     pausedDate: {
+      type: Date,
+    },
+    pausedAt: {
+      type: Date,
+    },
+    refundedAt: {
+      type: Date,
+    },
+    willCancelAt: {
       type: Date,
     },
 
@@ -148,6 +191,9 @@ const SubscriptionSchema: Schema = new Schema(
     graceExpirationDate: {
       type: Date,
     },
+    gracePeriodEndDate: {
+      type: Date,
+    },
 
     // Metadata
     originalTransactionId: {
@@ -158,6 +204,13 @@ const SubscriptionSchema: Schema = new Schema(
     },
     linkedPurchaseToken: {
       type: String,
+    },
+    environment: {
+      type: String,
+    },
+    isAcknowledged: {
+      type: Boolean,
+      default: false,
     },
 
     // Cancellation

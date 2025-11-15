@@ -130,7 +130,7 @@ export const handleAppStoreNotification = async (
         userId: subscription.userId,
         eventType: appStoreService.parseNotificationType(notificationType).toLowerCase(),
         store: 'apple',
-        storeEventId: notification.notificationUUID || undefined,
+        notificationId: notification.notificationUUID || undefined,
         rawNotification: notification,
         createdAt: new Date(),
       });
