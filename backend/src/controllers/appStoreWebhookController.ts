@@ -4,7 +4,7 @@ import Subscription from '../models/Subscription';
 import SubscriptionEvent from '../models/SubscriptionEvent';
 import PaymentRecord from '../models/PaymentRecord';
 import Product from '../models/Product';
-import User from '../models/User';
+// import User from '../models/User';
 
 /**
  * App Store Server Notifications v2 webhook handler
@@ -51,13 +51,8 @@ export const handleAppStoreNotification = async (
     const transactionData = appStoreService2.decodeNotification(signedTransactionInfo);
 
     const {
-      transactionId,
       originalTransactionId,
       productId,
-      purchaseDate,
-      expiresDate,
-      price,
-      currency,
     } = transactionData;
 
     // Find the subscription
