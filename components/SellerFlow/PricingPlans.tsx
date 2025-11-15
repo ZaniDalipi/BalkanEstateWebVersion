@@ -16,7 +16,7 @@ const TickIcon: React.FC = () => (
 );
 
 const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscribe, isOffer }) => {
-  const { state } = useAppContext();
+  const { state, dispatch } = useAppContext();
   const { activeDiscount } = state;
   const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes in seconds
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -83,6 +83,31 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
   const discountedEnterprise = applyDiscount(enterprisePrice, enterpriseDiscount);
 
   const handlePlanSelection = (planName: string, price: number, interval: 'month' | 'year', discount: number) => {
+    // Check if user is authenticated
+    if (!state.isAuthenticated) {
+      // Save pending subscription
+      dispatch({
+        type: 'SET_PENDING_SUBSCRIPTION',
+        payload: {
+          planName,
+          planPrice: price,
+          planInterval: interval,
+          discountPercent: discount,
+          modalType: 'seller',
+        },
+      });
+
+      // Close this modal
+      onClose();
+
+      // Open auth modal
+      dispatch({
+        type: 'TOGGLE_AUTH_MODAL',
+        payload: { isOpen: true, view: 'login' },
+      });
+      return;
+    }
+
     setSelectedPlan({ name: planName, price, interval, discount });
     setShowPaymentWindow(true);
   };

@@ -38,6 +38,7 @@ const initialState: AppState = {
   conversations: [],
   selectedAgentId: null,
   pendingProperty: null,
+  pendingSubscription: null,
   searchPageState: initialSearchPageState,
   activeDiscount: null,
   isListingLimitWarningOpen: false,
@@ -177,6 +178,8 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     }
     case 'SET_PENDING_PROPERTY':
         return { ...state, pendingProperty: action.payload };
+    case 'SET_PENDING_SUBSCRIPTION':
+        return { ...state, pendingSubscription: action.payload };
     case 'UPDATE_SEARCH_PAGE_STATE':
         return {
             ...state,
@@ -251,15 +254,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'USER_DATA_LOADING' });
     const userData = await api.getMyData();
     dispatch({ type: 'USER_DATA_SUCCESS', payload: userData });
+
+    // Check if there's a pending subscription and reopen the modal
+    if (state.pendingSubscription) {
+      setTimeout(() => {
+        const pendingSub = state.pendingSubscription;
+        if (pendingSub.modalType === 'buyer') {
+          dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true });
+        } else {
+          dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: state.isFirstLoginOffer } });
+        }
+      }, 500);
+    }
+
     return user;
-  }, []);
+  }, [state.pendingSubscription, state.isFirstLoginOffer]);
 
   const signup = useCallback(async (email: string, pass: string) => {
     const user = await api.signup(email, pass);
     dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user } });
     dispatch({ type: 'USER_DATA_SUCCESS', payload: { savedHomes: [], savedSearches: [], conversations: [] } });
+
+    // Check if there's a pending subscription and reopen the modal
+    if (state.pendingSubscription) {
+      setTimeout(() => {
+        const pendingSub = state.pendingSubscription;
+        if (pendingSub.modalType === 'buyer') {
+          dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true });
+        } else {
+          dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: state.isFirstLoginOffer } });
+        }
+      }, 500);
+    }
+
     return user;
-  }, []);
+  }, [state.pendingSubscription, state.isFirstLoginOffer]);
 
   const logout = useCallback(async () => {
     await api.logout();

@@ -25,6 +25,31 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose }
 
   const handleSubscribeClick = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if user is authenticated
+    if (!state.isAuthenticated) {
+      // Save pending subscription
+      dispatch({
+        type: 'SET_PENDING_SUBSCRIPTION',
+        payload: {
+          planName: 'Buyer Pro',
+          planPrice: 1.50,
+          planInterval: 'month',
+          modalType: 'buyer',
+        },
+      });
+
+      // Close this modal
+      onClose();
+
+      // Open auth modal
+      dispatch({
+        type: 'TOGGLE_AUTH_MODAL',
+        payload: { isOpen: true, view: 'login' },
+      });
+      return;
+    }
+
     if (!email || !email.includes('@')) {
       alert('Please enter a valid email address');
       return;
