@@ -42,8 +42,8 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose }
   const handleSubscribeClick = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check if user is authenticated
-    if (!state.isAuthenticated) {
+    // Check if user is authenticated (check both flag and user object)
+    if (!state.isAuthenticated && !state.user) {
       // Save pending subscription
       dispatch({
         type: 'SET_PENDING_SUBSCRIPTION',

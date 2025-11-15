@@ -105,8 +105,8 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
   const discountedEnterprise = applyDiscount(enterprisePrice, enterpriseDiscount);
 
   const handlePlanSelection = (planName: string, price: number, interval: 'month' | 'year', discount: number, productId: string) => {
-    // Check if user is authenticated
-    if (!state.isAuthenticated) {
+    // Check if user is authenticated (check both flag and user object)
+    if (!state.isAuthenticated && !state.user) {
       // Save pending subscription
       dispatch({
         type: 'SET_PENDING_SUBSCRIPTION',
