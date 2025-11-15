@@ -55,7 +55,7 @@ export async function runReconciliation(): Promise<ReconciliationResult> {
             await subscription.save();
             result.expired++;
             result.details.push({
-              subscriptionId: subscription._id.toString(),
+              subscriptionId: String(subscription._id),
               status: 'expired',
               message: 'Web subscription expired',
             });
@@ -75,7 +75,7 @@ export async function runReconciliation(): Promise<ReconciliationResult> {
       } catch (error: any) {
         result.errors++;
         result.details.push({
-          subscriptionId: subscription._id.toString(),
+          subscriptionId: String(subscription._id),
           status: 'error',
           message: error.message,
         });
@@ -167,7 +167,7 @@ async function reconcileGooglePlaySubscription(
       if (subscription.status !== 'canceled' && subscription.status !== 'expired') {
         subscription.status = expiryDate > now ? 'pending_cancellation' : 'canceled';
         subscription.canceledAt = new Date(
-          parseInt(purchaseData.userCancellationTimeMillis || Date.now())
+          parseInt(purchaseData.userCancellationTimeMillis || String(Date.now()))
         );
         statusChanged = true;
       }
@@ -195,7 +195,7 @@ async function reconcileGooglePlaySubscription(
       result.updated++;
 
       result.details.push({
-        subscriptionId: subscription._id.toString(),
+        subscriptionId: String(subscription._id),
         status: 'updated',
         message: `Status changed from ${oldStatus} to ${subscription.status}`,
       });
@@ -295,7 +295,7 @@ async function reconcileAppStoreSubscription(
       result.updated++;
 
       result.details.push({
-        subscriptionId: subscription._id.toString(),
+        subscriptionId: String(subscription._id),
         status: 'updated',
         message: `Status changed from ${oldStatus} to ${subscription.status}`,
       });

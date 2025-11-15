@@ -4,7 +4,7 @@ import Subscription from '../models/Subscription';
 import SubscriptionEvent from '../models/SubscriptionEvent';
 import PaymentRecord from '../models/PaymentRecord';
 import Product from '../models/Product';
-import User from '../models/User';
+
 
 /**
  * Google Play Real-Time Developer Notifications (RTDN) webhook handler
@@ -45,7 +45,6 @@ export const handleGooglePlayNotification = async (
     }
 
     const {
-      version,
       notificationType,
       purchaseToken,
       subscriptionId,

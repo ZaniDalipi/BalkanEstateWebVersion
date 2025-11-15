@@ -1,6 +1,6 @@
 import axios from 'axios';
 import * as jwt from 'jsonwebtoken';
-import * as crypto from 'crypto';
+
 
 /**
  * App Store Server API Service
@@ -179,7 +179,7 @@ class AppStoreService {
         return false;
       }
 
-      const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
+      // const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
 
       // In production, verify the certificate chain from Apple
       // For now, we'll decode and validate the JWT structure
