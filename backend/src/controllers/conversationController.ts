@@ -2,8 +2,7 @@ import { Request, Response } from 'express';
 import Conversation from '../models/Conversation';
 import Message from '../models/Message';
 import Property from '../models/Property';
-import { IUser } from '../models/User';
-import { decryptMessage } from '../utils/encryption';
+import User, { IUser } from '../models/User';
 import { SECURITY_WARNING } from '../utils/messageFilter';
 import cloudinary from '../config/cloudinary';
 
@@ -82,26 +81,12 @@ export const getConversation = async (
       return;
     }
 
-    // Get messages and decrypt them
-    const rawMessages = await Message.find({ conversationId: conversation._id })
+    // Get messages (E2E encrypted, server cannot decrypt)
+    const messages = await Message.find({ conversationId: conversation._id })
       .populate('senderId', 'name avatarUrl')
       .sort({ createdAt: 1 });
 
-    // Decrypt messages for display
-    const messages = rawMessages.map(msg => {
-      const messageObj = msg.toObject();
-      if (messageObj.isEncrypted && messageObj.encryptedText) {
-        try {
-          messageObj.text = decryptMessage(messageObj.encryptedText);
-        } catch (error) {
-          console.error('Failed to decrypt message:', error);
-          messageObj.text = '[Message could not be decrypted]';
-        }
-      }
-      // Remove encrypted text from response
-      delete messageObj.encryptedText;
-      return messageObj;
-    });
+    // Messages remain encrypted, client will decrypt them
 
     // Mark messages as read
     if (isBuyer) {
@@ -219,10 +204,11 @@ export const sendMessage = async (
       return;
     }
 
-    const { text, imageUrl } = req.body;
+    const { text, imageUrl, encryptedMessage, encryptedKeys, iv } = req.body;
 
-    if (!text && !imageUrl) {
-      res.status(400).json({ message: 'Message text or image is required' });
+    // Either have E2E encrypted data or plain text/image
+    if (!encryptedMessage && !text && !imageUrl) {
+      res.status(400).json({ message: 'Message content is required' });
       return;
     }
 
@@ -242,13 +228,25 @@ export const sendMessage = async (
       return;
     }
 
-    // Create message (encryption and sanitization happens in pre-save hook)
-    const message = await Message.create({
+    // Create message (E2E encrypted or plain text)
+    // If text is provided, it will be sanitized by pre-save hook
+    const messageData: any = {
       conversationId: conversation._id,
       senderId: String((req.user as IUser)._id),
-      text: text || '',
       imageUrl,
-    });
+    };
+
+    // E2E encrypted message
+    if (encryptedMessage && encryptedKeys && iv) {
+      messageData.encryptedMessage = encryptedMessage;
+      messageData.encryptedKeys = encryptedKeys;
+      messageData.iv = iv;
+    } else if (text) {
+      // Plain text (will be sanitized by pre-save hook)
+      messageData.text = text;
+    }
+
+    const message = await Message.create(messageData);
 
     // Update conversation
     conversation.lastMessageAt = new Date();
@@ -261,20 +259,8 @@ export const sendMessage = async (
 
     await message.populate('senderId', 'name avatarUrl');
 
-    // Decrypt message for response
-    const messageObj = message.toObject();
-    if (messageObj.isEncrypted && messageObj.encryptedText) {
-      try {
-        messageObj.text = decryptMessage(messageObj.encryptedText);
-      } catch (error) {
-        console.error('Failed to decrypt message:', error);
-      }
-    }
-    // Remove encrypted text from response
-    delete messageObj.encryptedText;
-
-    // Include security warnings if any
-    const response: any = { message: messageObj };
+    // Include security warnings if any (from server-side filtering)
+    const response: any = { message };
     if (message.hadSensitiveInfo && message.securityWarnings.length > 0) {
       response.securityWarnings = message.securityWarnings;
     }
@@ -344,6 +330,51 @@ export const getSecurityWarning = async (
   res: Response
 ): Promise<void> => {
   res.json({ warning: SECURITY_WARNING });
+};
+
+// @desc    Get public keys for conversation participants
+// @route   GET /api/conversations/:id/public-keys
+// @access  Private
+export const getConversationPublicKeys = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const conversation = await Conversation.findById(req.params.id);
+
+    if (!conversation) {
+      res.status(404).json({ message: 'Conversation not found' });
+      return;
+    }
+
+    // Check if user is part of conversation
+    const isBuyer = conversation.buyerId.toString() === String((req.user as IUser)._id).toString();
+    const isSeller = conversation.sellerId.toString() === String((req.user as IUser)._id).toString();
+
+    if (!isBuyer && !isSeller) {
+      res.status(403).json({ message: 'Not authorized' });
+      return;
+    }
+
+    // Get public keys for both participants
+    const buyer = await User.findById(conversation.buyerId).select('publicKey');
+    const seller = await User.findById(conversation.sellerId).select('publicKey');
+
+    res.json({
+      publicKeys: {
+        [String(conversation.buyerId)]: buyer?.publicKey || null,
+        [String(conversation.sellerId)]: seller?.publicKey || null,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get conversation public keys error:', error);
+    res.status(500).json({ message: 'Error getting public keys', error: error.message });
+  }
 };
 
 // @desc    Mark conversation as read

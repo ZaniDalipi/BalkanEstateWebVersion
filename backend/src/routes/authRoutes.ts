@@ -5,6 +5,7 @@ import {
   getMe,
   updateProfile,
   logout,
+  setPublicKey,
   oauthCallback,
   switchRole,
   requestPasswordReset,
@@ -22,6 +23,7 @@ router.post('/login', login);
 router.post('/logout', protect, logout);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
+router.post('/set-public-key', protect, setPublicKey);
 router.post('/switch-role', protect, switchRole);
 
 // Password reset routes

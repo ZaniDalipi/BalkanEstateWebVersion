@@ -1,13 +1,16 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import { encryptMessage } from '../utils/encryption';
 import { sanitizeMessage } from '../utils/messageFilter';
 
 export interface IMessage extends Document {
   conversationId: mongoose.Types.ObjectId;
   senderId: mongoose.Types.ObjectId;
-  text: string;
-  encryptedText?: string;
-  isEncrypted: boolean;
+  text?: string; // Plain text for server-side filtering (will be sanitized before client encryption)
+
+  // E2E Encryption fields
+  encryptedMessage?: string; // Base64 encoded encrypted message
+  encryptedKeys?: Map<string, string>; // userId -> Base64 encoded encrypted AES key
+  iv?: string; // Base64 encoded IV for AES-GCM
+
   imageUrl?: string;
   isRead: boolean;
   hadSensitiveInfo?: boolean;
@@ -32,17 +35,20 @@ const MessageSchema: Schema = new Schema(
     },
     text: {
       type: String,
-      required: function(this: IMessage) {
-        // Text is required only if there's no image
-        return !this.imageUrl;
-      },
+      required: false, // Not required for E2E encrypted messages
     },
-    encryptedText: {
+    encryptedMessage: {
       type: String,
+      required: false,
     },
-    isEncrypted: {
-      type: Boolean,
-      default: true,
+    encryptedKeys: {
+      type: Map,
+      of: String,
+      required: false,
+    },
+    iv: {
+      type: String,
+      required: false,
     },
     imageUrl: {
       type: String,
@@ -69,25 +75,20 @@ const MessageSchema: Schema = new Schema(
 // Index for fetching conversation messages
 MessageSchema.index({ conversationId: 1, createdAt: 1 });
 
-// Pre-save hook to encrypt and sanitize messages
+// Pre-save hook to sanitize messages (only if text is provided for server-side filtering)
 MessageSchema.pre('save', function(next) {
   const message = this as IMessage;
 
-  // Only process if text exists and this is a new message or text has been modified
+  // Only process text if provided (for sensitive info filtering before encryption)
   if (message.text && (message.isNew || message.isModified('text'))) {
     try {
-      // First, sanitize the message for sensitive information
+      // Sanitize the message for sensitive information
       const { sanitized, hadSensitiveInfo, warnings } = sanitizeMessage(message.text);
 
       // Update the text with sanitized version
       message.text = sanitized;
       message.hadSensitiveInfo = hadSensitiveInfo;
       message.securityWarnings = warnings;
-
-      // Then encrypt the sanitized text
-      if (message.isEncrypted) {
-        message.encryptedText = encryptMessage(sanitized);
-      }
     } catch (error) {
       console.error('Error processing message:', error);
       return next(error as Error);

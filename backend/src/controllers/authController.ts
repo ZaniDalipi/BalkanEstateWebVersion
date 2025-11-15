@@ -225,6 +225,53 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
   res.json({ message: 'Logged out successfully' });
 };
 
+// @desc    Set user's public key for E2E encryption
+// @route   POST /api/auth/set-public-key
+// @access  Private
+export const setPublicKey = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const { publicKey } = req.body;
+
+    if (!publicKey) {
+      res.status(400).json({ message: 'Public key is required' });
+      return;
+    }
+
+    // Validate that it's a valid JWK format (basic check)
+    try {
+      JSON.parse(publicKey);
+    } catch (error) {
+      res.status(400).json({ message: 'Invalid public key format' });
+      return;
+    }
+
+    // Update user's public key
+    const user = await User.findByIdAndUpdate(
+      (req.user as IUser)._id,
+      { publicKey },
+      { new: true }
+    );
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    res.json({
+      message: 'Public key set successfully',
+      publicKey: user.publicKey,
+    });
+  } catch (error: any) {
+    console.error('Set public key error:', error);
+    res.status(500).json({ message: 'Error setting public key', error: error.message });
+  }
+};
+
 // @desc    OAuth callback handler
 // @route   GET /api/auth/:provider/callback
 // @access  Public

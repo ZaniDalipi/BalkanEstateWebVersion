@@ -26,6 +26,7 @@ export interface IUser extends Document {
   subscriptionExpiresAt?: Date;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
+  publicKey?: string; // E2E encryption public key (JWK format)
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -122,6 +123,10 @@ const UserSchema: Schema = new Schema(
     },
     resetPasswordExpires: {
       type: Date,
+    },
+    publicKey: {
+      type: String,
+      required: false,
     },
   },
   {
