@@ -3,7 +3,8 @@ import { Conversation, Message } from '../../types';
 import { useAppContext } from '../../context/AppContext';
 import MessageInput from './MessageInput';
 import { formatPrice } from '../../utils/currency';
-import { CalendarIcon, UserCircleIcon, ChevronLeftIcon, BuildingOfficeIcon } from '../../constants';
+import { CalendarIcon, UserCircleIcon, ChevronLeftIcon, BuildingOfficeIcon, ShieldExclamationIcon } from '../../constants';
+import { getConversation, sendMessage as sendMessageAPI, uploadMessageImage, getSecurityWarning } from '../../services/apiService';
 
 interface ConversationViewProps {
     conversation: Conversation;
@@ -18,22 +19,52 @@ const MessageImage: React.FC<{imageUrl: string}> = ({imageUrl}) => {
         return <div className="p-4 bg-neutral-200 rounded-lg text-neutral-500 text-xs">Image failed to load.</div>
     }
 
-    return <img src={imageUrl} alt="Annotated property" className="max-w-full h-auto rounded-lg" onError={() => setError(true)} />
+    return <img src={imageUrl} alt="Annotated property" className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity" onError={() => setError(true)} onClick={() => window.open(imageUrl, '_blank')} />
 }
 
 const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBack }) => {
     const { state, dispatch } = useAppContext();
     const [imageError, setImageError] = useState(false);
-    const property = state.properties.find(p => p.id === conversation.propertyId);
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [securityWarning, setSecurityWarning] = useState<string | null>(null);
+    const [showSecurityAlert, setShowSecurityAlert] = useState(false);
+    const property = conversation.property || state.properties.find(p => p.id === conversation.propertyId);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-    
-    useEffect(scrollToBottom, [conversation.messages]);
-    
-    if (!property) { 
+
+    useEffect(scrollToBottom, [messages]);
+
+    // Load messages when conversation opens
+    useEffect(() => {
+        const loadMessages = async () => {
+            try {
+                const data = await getConversation(conversation.id);
+                setMessages(data.messages);
+            } catch (error) {
+                console.error('Failed to load messages:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadMessages();
+
+        // Load security warning
+        getSecurityWarning().then(setSecurityWarning).catch(console.error);
+
+        // Poll for new messages every 5 seconds
+        const interval = setInterval(() => {
+            loadMessages();
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [conversation.id]);
+
+    if (!property) {
         return (
             <div className="h-full flex items-center justify-center text-center text-neutral-500 p-4">
                 <p>Property data not found. It may have been removed.</p>
@@ -41,17 +72,48 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
         );
     }
 
-    const handleSendMessage = (text: string) => {
-        const newMessage: Message = {
-            id: `msg-${Date.now()}`,
-            senderId: 'user',
-            text,
+    const handleSendMessage = async (text: string, imageFile?: File) => {
+        let imageUrl: string | undefined;
+
+        // Upload image if provided
+        if (imageFile) {
+            try {
+                imageUrl = await uploadMessageImage(conversation.id, imageFile);
+            } catch (error) {
+                console.error('Failed to upload image:', error);
+                alert('Failed to upload image. Please try again.');
+                throw error;
+            }
+        }
+
+        // Send message
+        const messageData: Message = {
+            id: `temp-${Date.now()}`,
+            senderId: state.user?.id || 'user',
+            text: text || '',
+            imageUrl,
             timestamp: Date.now(),
-            isRead: true,
+            isRead: false,
         };
-        dispatch({ type: 'ADD_MESSAGE', payload: { conversationId: conversation.id, message: newMessage }});
+
+        try {
+            const result = await sendMessageAPI(conversation.id, messageData);
+
+            // Add the sent message to the list
+            setMessages(prev => [...prev, result.message]);
+
+            // Show security warnings if any
+            if (result.securityWarnings && result.securityWarnings.length > 0) {
+                setShowSecurityAlert(true);
+                setTimeout(() => setShowSecurityAlert(false), 5000);
+            }
+        } catch (error) {
+            console.error('Failed to send message:', error);
+            alert('Failed to send message. Please try again.');
+            throw error;
+        }
     };
-    
+
     return (
         <div className="h-full flex flex-col bg-white">
             <div className="p-3 border-b border-neutral-200 flex-shrink-0 flex items-center gap-3">
@@ -71,7 +133,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
                     <p className="font-bold text-neutral-800 truncate">{property.address}, {property.city}</p>
                     <p className="text-sm font-semibold text-primary">{formatPrice(property.price, property.country)}</p>
                 </div>
-                <button 
+                <button
                     onClick={() => dispatch({ type: 'SET_SELECTED_PROPERTY', payload: property.id })}
                     className="hidden sm:block px-4 py-2 text-sm font-semibold bg-primary-light text-primary-dark rounded-full hover:bg-primary/20 transition-colors"
                 >
@@ -79,47 +141,87 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
                 </button>
             </div>
 
-            <div className="flex-grow overflow-y-auto p-4 space-y-4">
-                {conversation.messages.map(msg => {
-                    const isUser = msg.senderId === 'user';
-                    const seller = property.seller;
+            {/* Security Alert */}
+            {showSecurityAlert && (
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 flex items-start gap-2 animate-fade-in">
+                    <ShieldExclamationIcon className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-yellow-800">
+                        <p className="font-semibold">Sensitive information detected</p>
+                        <p className="text-xs mt-1">Credit card or financial information has been automatically redacted for your security.</p>
+                    </div>
+                </div>
+            )}
 
-                    return (
-                        <div key={msg.id} className={`flex items-end gap-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
-                            {!isUser && (
-                                <div className="flex-shrink-0">
-                                    {seller.avatarUrl ? (
-                                        <img src={seller.avatarUrl} alt={seller.name} className="w-8 h-8 rounded-full object-cover" />
-                                    ) : (
-                                        <UserCircleIcon className="w-8 h-8 text-neutral-400" />
+            {/* Security Warning Banner */}
+            {securityWarning && (
+                <div className="bg-blue-50 border-b border-blue-200 p-2">
+                    <details className="cursor-pointer">
+                        <summary className="text-xs text-blue-800 font-semibold flex items-center gap-2">
+                            <ShieldExclamationIcon className="w-4 h-4" />
+                            Security Notice - Click to read
+                        </summary>
+                        <div className="mt-2 text-xs text-blue-700 whitespace-pre-line">
+                            {securityWarning}
+                        </div>
+                    </details>
+                </div>
+            )}
+
+            <div className="flex-grow overflow-y-auto p-4 space-y-4">
+                {isLoading ? (
+                    <div className="flex justify-center items-center h-full">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                ) : messages.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-neutral-400">
+                        <p className="text-sm">No messages yet. Start the conversation!</p>
+                    </div>
+                ) : (
+                    messages.map(msg => {
+                        const isUser = msg.senderId === state.user?.id || msg.senderId === 'user';
+                        const otherPerson = isUser ? (conversation.seller || property.seller) : (conversation.buyer || { name: 'Buyer', avatarUrl: null });
+
+                        return (
+                            <div key={msg.id} className={`flex items-end gap-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
+                                {!isUser && (
+                                    <div className="flex-shrink-0">
+                                        {otherPerson.avatarUrl ? (
+                                            <img src={otherPerson.avatarUrl} alt={otherPerson.name} className="w-8 h-8 rounded-full object-cover" />
+                                        ) : (
+                                            <UserCircleIcon className="w-8 h-8 text-neutral-400" />
+                                        )}
+                                    </div>
+                                )}
+                                <div className={`max-w-md p-3 rounded-2xl ${isUser
+                                    ? 'bg-primary text-white rounded-br-lg'
+                                    : 'bg-neutral-100 text-neutral-800 rounded-bl-lg'
+                                }`}>
+                                    {msg.text && <p className="text-sm whitespace-pre-wrap">{msg.text}</p>}
+                                    {msg.imageUrl && (
+                                        <div className={msg.text ? 'mt-2' : ''}>
+                                            <MessageImage imageUrl={msg.imageUrl} />
+                                        </div>
                                     )}
                                 </div>
-                            )}
-                            <div className={`max-w-md p-3 rounded-2xl ${isUser 
-                                ? 'bg-primary text-white rounded-br-lg' 
-                                : 'bg-neutral-100 text-neutral-800 rounded-bl-lg'
-                            }`}>
-                                {msg.text && <p className="text-sm">{msg.text}</p>}
-                                {msg.imageUrl && <MessageImage imageUrl={msg.imageUrl} />}
                             </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })
+                )}
                 <div ref={messagesEndRef} />
             </div>
-            
-             <div className="p-2 border-t border-neutral-200 flex-shrink-0">
-                 <div className="flex items-center justify-center gap-2 flex-wrap">
-                     <button className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-primary-dark bg-primary-light rounded-full hover:bg-primary/20 transition-colors">
-                        <CalendarIcon className="w-4 h-4"/> Schedule a Tour
-                    </button>
-                     <button className="px-3 py-1.5 text-xs font-semibold text-primary-dark bg-primary-light rounded-full hover:bg-primary/20 transition-colors">Request More Info</button>
-                     <button className="px-3 py-1.5 text-xs font-semibold text-primary-dark bg-primary-light rounded-full hover:bg-primary/20 transition-colors">Make an Offer</button>
+
+            <div className="p-2 border-t border-neutral-200 flex-shrink-0">
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                    <button className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-primary-dark bg-primary-light rounded-full hover:bg-primary/20 transition-colors">
+                       <CalendarIcon className="w-4 h-4"/> Schedule a Tour
+                   </button>
+                    <button className="px-3 py-1.5 text-xs font-semibold text-primary-dark bg-primary-light rounded-full hover:bg-primary/20 transition-colors">Request More Info</button>
+                    <button className="px-3 py-1.5 text-xs font-semibold text-primary-dark bg-primary-light rounded-full hover:bg-primary/20 transition-colors">Make an Offer</button>
                 </div>
             </div>
 
             <div className="p-4 border-t border-neutral-200 flex-shrink-0 bg-neutral-50">
-                <MessageInput onSendMessage={handleSendMessage} />
+                <MessageInput onSendMessage={handleSendMessage} disabled={isLoading} />
             </div>
         </div>
     );

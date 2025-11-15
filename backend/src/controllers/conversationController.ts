@@ -3,6 +3,9 @@ import Conversation from '../models/Conversation';
 import Message from '../models/Message';
 import Property from '../models/Property';
 import { IUser } from '../models/User';
+import { decryptMessage } from '../utils/encryption';
+import { SECURITY_WARNING } from '../utils/messageFilter';
+import cloudinary from '../config/cloudinary';
 
 // @desc    Get user's conversations
 // @route   GET /api/conversations
@@ -79,10 +82,26 @@ export const getConversation = async (
       return;
     }
 
-    // Get messages
-    const messages = await Message.find({ conversationId: conversation._id })
+    // Get messages and decrypt them
+    const rawMessages = await Message.find({ conversationId: conversation._id })
       .populate('senderId', 'name avatarUrl')
       .sort({ createdAt: 1 });
+
+    // Decrypt messages for display
+    const messages = rawMessages.map(msg => {
+      const messageObj = msg.toObject();
+      if (messageObj.isEncrypted && messageObj.encryptedText) {
+        try {
+          messageObj.text = decryptMessage(messageObj.encryptedText);
+        } catch (error) {
+          console.error('Failed to decrypt message:', error);
+          messageObj.text = '[Message could not be decrypted]';
+        }
+      }
+      // Remove encrypted text from response
+      delete messageObj.encryptedText;
+      return messageObj;
+    });
 
     // Mark messages as read
     if (isBuyer) {
@@ -200,10 +219,10 @@ export const sendMessage = async (
       return;
     }
 
-    const { text } = req.body;
+    const { text, imageUrl } = req.body;
 
-    if (!text) {
-      res.status(400).json({ message: 'Message text is required' });
+    if (!text && !imageUrl) {
+      res.status(400).json({ message: 'Message text or image is required' });
       return;
     }
 
@@ -223,11 +242,12 @@ export const sendMessage = async (
       return;
     }
 
-    // Create message
+    // Create message (encryption and sanitization happens in pre-save hook)
     const message = await Message.create({
       conversationId: conversation._id,
       senderId: String((req.user as IUser)._id),
-      text,
+      text: text || '',
+      imageUrl,
     });
 
     // Update conversation
@@ -241,11 +261,89 @@ export const sendMessage = async (
 
     await message.populate('senderId', 'name avatarUrl');
 
-    res.status(201).json({ message });
+    // Decrypt message for response
+    const messageObj = message.toObject();
+    if (messageObj.isEncrypted && messageObj.encryptedText) {
+      try {
+        messageObj.text = decryptMessage(messageObj.encryptedText);
+      } catch (error) {
+        console.error('Failed to decrypt message:', error);
+      }
+    }
+    // Remove encrypted text from response
+    delete messageObj.encryptedText;
+
+    // Include security warnings if any
+    const response: any = { message: messageObj };
+    if (message.hadSensitiveInfo && message.securityWarnings.length > 0) {
+      response.securityWarnings = message.securityWarnings;
+    }
+
+    res.status(201).json(response);
   } catch (error: any) {
     console.error('Send message error:', error);
     res.status(500).json({ message: 'Error sending message', error: error.message });
   }
+};
+
+// @desc    Upload image for message
+// @route   POST /api/conversations/:id/upload-image
+// @access  Private
+export const uploadMessageImage = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    if (!req.file) {
+      res.status(400).json({ message: 'No image file provided' });
+      return;
+    }
+
+    const conversation = await Conversation.findById(req.params.id);
+
+    if (!conversation) {
+      res.status(404).json({ message: 'Conversation not found' });
+      return;
+    }
+
+    // Check if user is part of conversation
+    const isBuyer = conversation.buyerId.toString() === String((req.user as IUser)._id).toString();
+    const isSeller = conversation.sellerId.toString() === String((req.user as IUser)._id).toString();
+
+    if (!isBuyer && !isSeller) {
+      res.status(403).json({ message: 'Not authorized' });
+      return;
+    }
+
+    // Upload to Cloudinary
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: 'balkan-estate/messages',
+      resource_type: 'image',
+    });
+
+    res.json({ imageUrl: result.secure_url });
+  } catch (error: any) {
+    console.error('Upload message image error:', error);
+    res.status(500).json({ message: 'Error uploading image', error: error.message });
+  }
+};
+
+// @desc    Get security warning
+// @route   GET /api/conversations/security-warning
+// @access  Public
+export const getSecurityWarning = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  res.json({ warning: SECURITY_WARNING });
 };
 
 // @desc    Mark conversation as read

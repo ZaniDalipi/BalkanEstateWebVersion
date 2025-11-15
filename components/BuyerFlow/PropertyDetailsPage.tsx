@@ -18,6 +18,7 @@ import {
     StreetViewIcon,
 } from '../../constants';
 import { getNeighborhoodInsights } from '../../services/geminiService';
+import { createConversation } from '../../services/apiService';
 import ImageViewerModal from './ImageViewerModal';
 import FloorPlanViewerModal from './FloorPlanViewerModal';
 import PropertyLocationMap from './PropertyLocationMap';
@@ -452,7 +453,7 @@ const SharePopover: React.FC<{ property: Property, onClose: () => void }> = ({ p
 
 const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => {
   const { state, dispatch } = useAppContext();
-  
+
   const [activeCategory, setActiveCategory] = useState<PropertyImageTag | 'all'>('all');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -461,6 +462,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
   const [mainImageError, setMainImageError] = useState(false);
   const [isSharePopoverOpen, setIsSharePopoverOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'photos' | 'streetview'>('photos');
+  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const shareContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -528,7 +530,27 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
           dispatch({ type: 'TOGGLE_SAVED_HOME', payload: property });
       }
   };
-  
+
+  const handleContactSeller = async () => {
+      if (!state.isAuthenticated) {
+          dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
+          return;
+      }
+
+      setIsCreatingConversation(true);
+      try {
+          const conversation = await createConversation(property.id);
+          // Navigate to inbox and open this conversation
+          dispatch({ type: 'SET_CURRENT_VIEW', payload: 'inbox' });
+          dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: conversation.id });
+      } catch (error) {
+          console.error('Error creating conversation:', error);
+          alert('Failed to start conversation. Please try again.');
+      } finally {
+          setIsCreatingConversation(false);
+      }
+  };
+
   const isFavorited = state.savedHomes.some(p => p.id === property.id);
 
   return (
@@ -781,8 +803,12 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                           <PhoneIcon className="w-4 h-4" />
                           Call Seller
                       </a>
-                       <button className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-primary text-primary rounded-lg shadow-sm text-sm font-medium bg-white hover:bg-primary-light">
-                          Request Info
+                       <button
+                          onClick={handleContactSeller}
+                          disabled={isCreatingConversation}
+                          className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-primary text-primary rounded-lg shadow-sm text-sm font-medium bg-white hover:bg-primary-light disabled:opacity-50 disabled:cursor-not-allowed"
+                       >
+                          {isCreatingConversation ? 'Starting Chat...' : 'Message Seller'}
                       </button>
                   </div>
               </div>
