@@ -24,6 +24,7 @@ import bankExportRoutes from './routes/bankExportRoutes';
 import { initializeGooglePlayService } from './services/googlePlayService';
 import { initializeAppStoreService } from './services/appStoreService';
 import { scheduleReconciliation } from './workers/reconciliationWorker';
+import { scheduleExpirationWorker } from './workers/subscriptionExpirationWorker';
 
 // Create Express app
 const app: Application = express();
@@ -64,6 +65,11 @@ if (process.env.APP_STORE_ISSUER_ID && process.env.APP_STORE_KEY_ID && process.e
 if (process.env.ENABLE_RECONCILIATION === 'true') {
   scheduleReconciliation();
   console.log('✅ Reconciliation worker started');
+}
+
+// Start subscription expiration worker (always enabled for security)
+scheduleExpirationWorker();
+console.log('✅ Subscription expiration worker started');
 }
 
 // ============================================================================
