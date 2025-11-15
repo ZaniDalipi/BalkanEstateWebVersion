@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export type ProductType = 'subscription' | 'consumable' | 'non_consumable';
 export type BillingPeriod = 'monthly' | 'yearly' | 'weekly' | 'quarterly' | 'one_time';
+export type TargetRole = 'buyer' | 'seller' | 'agent' | 'all';
 
 export interface IProduct extends Document {
   productId: string;
@@ -29,6 +30,20 @@ export interface IProduct extends Document {
 
   // Features
   features: string[];
+
+  // Target audience and display
+  targetRole: TargetRole;
+  displayOrder: number;
+  badge?: string; // e.g., "MOST POPULAR", "BEST VALUE"
+  badgeColor?: string; // e.g., "red", "green", "amber"
+  highlighted: boolean; // Whether to show with special styling
+
+  // UI customization
+  cardStyle?: {
+    backgroundColor?: string;
+    borderColor?: string;
+    textColor?: string;
+  };
 
   // Status
   isActive: boolean;
@@ -112,6 +127,40 @@ const ProductSchema: Schema = new Schema(
     features: {
       type: [String],
       default: [],
+    },
+
+    // Target audience and display
+    targetRole: {
+      type: String,
+      enum: ['buyer', 'seller', 'agent', 'all'],
+      required: true,
+      default: 'all',
+      index: true,
+    },
+    displayOrder: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
+    badge: {
+      type: String,
+    },
+    badgeColor: {
+      type: String,
+    },
+    highlighted: {
+      type: Boolean,
+      default: false,
+    },
+
+    // UI customization
+    cardStyle: {
+      type: {
+        backgroundColor: String,
+        borderColor: String,
+        textColor: String,
+      },
+      default: undefined,
     },
 
     // Status

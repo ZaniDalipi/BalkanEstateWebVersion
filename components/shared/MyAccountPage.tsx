@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import MyListings from './MyListings';
+import SubscriptionManagement from './SubscriptionManagement';
 import { User, UserRole } from '../../types';
 import { BuildingOfficeIcon, ChartBarIcon, UserCircleIcon, ArrowLeftOnRectangleIcon } from '../../constants';
 
@@ -189,7 +190,7 @@ const MyAccountPage: React.FC = () => {
             case 'performance':
                  return <div className="text-center p-8"><h3 className="text-xl font-bold">Performance Analytics Coming Soon!</h3></div>;
             case 'subscription':
-                 return <div className="text-center p-8"><h3 className="text-xl font-bold">Subscription Management Coming Soon!</h3></div>;
+                 return <SubscriptionManagement userId={state.currentUser!.id} />;
             default:
                 return null;
         }

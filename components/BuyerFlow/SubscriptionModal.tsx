@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '../shared/Modal';
 import PaymentWindow from '../shared/PaymentWindow';
 import { AtSymbolIcon, UserIcon, BuildingOfficeIcon, CheckCircleIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
+import { fetchBuyerProducts, Product } from '../../utils/api';
 
 interface SubscriptionModalProps {
   isOpen: boolean;
@@ -14,6 +15,21 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose }
   const [activeTab, setActiveTab] = useState<'buyer' | 'seller'>('buyer');
   const [showPaymentWindow, setShowPaymentWindow] = useState(false);
   const [email, setEmail] = useState(state.user?.email || '');
+  const [buyerProducts, setBuyerProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch buyer products when modal opens
+  useEffect(() => {
+    if (isOpen && activeTab === 'buyer' && buyerProducts.length === 0) {
+      const loadProducts = async () => {
+        setLoading(true);
+        const products = await fetchBuyerProducts();
+        setBuyerProducts(products);
+        setLoading(false);
+      };
+      loadProducts();
+    }
+  }, [isOpen, activeTab]);
 
   const handleViewSellerPlans = () => {
     onClose();
@@ -32,8 +48,8 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose }
       dispatch({
         type: 'SET_PENDING_SUBSCRIPTION',
         payload: {
-          planName: 'Buyer Pro',
-          planPrice: 1.50,
+          planName: buyerName,
+          planPrice: buyerPrice,
           planInterval: 'month',
           modalType: 'buyer',
         },
@@ -70,37 +86,45 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose }
     console.error('Payment error:', error);
     // Error is already shown in the PaymentWindow component
   };
-  
+
   const inputBaseClasses = "block w-full text-base bg-neutral-50 border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors focus:bg-white placeholder:text-neutral-700";
+
+  // Get buyer product (default to first buyer product or fallback values)
+  const buyerProduct = buyerProducts.find(p => p.productId === 'buyer_pro_monthly') || buyerProducts[0];
+  const buyerPrice = buyerProduct?.price || 1.50;
+  const buyerName = buyerProduct?.name || 'Buyer Pro';
+  const buyerFeatures = buyerProduct?.features || [
+    'Instant email & SMS notifications',
+    'Save unlimited searches',
+    'Early access to new listings',
+    'Advanced market insights',
+  ];
 
   const renderBuyerPlan = () => (
     <div className="animate-fade-in grid md:grid-cols-2 gap-8 items-center">
-        <div>
-             <h3 className="text-xl sm:text-2xl font-bold text-neutral-800">Buyer Pro</h3>
-             <div className="mt-4">
-                <span className="text-3xl sm:text-4xl font-extrabold text-primary">€1.50</span>
-                <span className="text-base sm:text-lg font-semibold text-neutral-500">/month</span>
-             </div>
-             <p className="text-neutral-600 mt-3 text-sm sm:text-base">Never miss a new listing! Get notified the moment a property matching your criteria hits the market.</p>
-            <ul className="mt-8 space-y-4 text-neutral-700 text-sm sm:text-base">
-                <li className="flex items-start gap-3">
-                  <CheckCircleIcon className="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" />
-                  <span>Instant email & SMS notifications</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircleIcon className="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" />
-                  <span>Save unlimited searches</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircleIcon className="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" />
-                  <span>Early access to new listings</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircleIcon className="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" />
-                  <span>Advanced market insights</span>
-                </li>
-            </ul>
-        </div>
+        {loading ? (
+          <div className="col-span-2 text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-neutral-600">Loading plans...</p>
+          </div>
+        ) : (
+          <>
+            <div>
+               <h3 className="text-xl sm:text-2xl font-bold text-neutral-800">{buyerName}</h3>
+               <div className="mt-4">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-primary">€{buyerPrice}</span>
+                  <span className="text-base sm:text-lg font-semibold text-neutral-500">/month</span>
+               </div>
+               <p className="text-neutral-600 mt-3 text-sm sm:text-base">{buyerProduct?.description || 'Never miss a new listing! Get notified the moment a property matching your criteria hits the market.'}</p>
+              <ul className="mt-8 space-y-4 text-neutral-700 text-sm sm:text-base">
+                  {buyerFeatures.map((feature, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <CheckCircleIcon className="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+              </ul>
+            </div>
         <div className="bg-neutral-50 p-6 rounded-xl border border-neutral-200">
              <form onSubmit={handleSubscribeClick}>
                 <div className="mb-6">
@@ -128,6 +152,8 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose }
                 </p>
             </form>
         </div>
+          </>
+        )}
     </div>
   );
 
@@ -184,8 +210,8 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose }
       <PaymentWindow
         isOpen={showPaymentWindow}
         onClose={() => setShowPaymentWindow(false)}
-        planName="Buyer Pro"
-        planPrice={1.50}
+        planName={buyerName}
+        planPrice={buyerPrice}
         planInterval="month"
         userRole="buyer"
         userEmail={email}
