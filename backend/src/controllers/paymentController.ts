@@ -8,7 +8,7 @@ import User from '../models/User';
  */
 export const createPaymentIntent = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { amount, currency, planName, planInterval, userEmail } = req.body;
+    const { amount } = req.body;
     const userId = (req as any).user?._id;
 
     if (!userId) {
@@ -52,7 +52,7 @@ export const createPaymentIntent = async (req: Request, res: Response): Promise<
  */
 export const processPayment = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { paymentIntentId, planName, planInterval } = req.body;
+    const { planName, planInterval } = req.body;
     const userId = (req as any).user?._id;
 
     if (!userId) {
