@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
+import Product from '../models/Product';
+import { processSubscriptionPayment } from '../services/subscriptionPaymentService';
 
 /**
  * @desc    Create a mock payment intent for a subscription
@@ -52,7 +54,7 @@ export const createPaymentIntent = async (req: Request, res: Response): Promise<
  */
 export const processPayment = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { planName, planInterval } = req.body;
+    const { planName, planInterval, amount = 1.50 } = req.body;
     const userId = (req as any).user?._id;
 
     if (!userId) {
@@ -66,38 +68,60 @@ export const processPayment = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Determine subscription plan and expiration
-    let subscriptionPlan: 'free' | 'pro_monthly' | 'pro_yearly' | 'enterprise' = 'free';
-    let expirationDate = new Date();
-
-    if (planName.toLowerCase().includes('buyer')) {
-      subscriptionPlan = 'pro_monthly';
-      expirationDate.setMonth(expirationDate.getMonth() + 1);
-    } else if (planName.toLowerCase().includes('pro') && planInterval === 'month') {
-      subscriptionPlan = 'pro_monthly';
-      expirationDate.setMonth(expirationDate.getMonth() + 1);
-    } else if (planName.toLowerCase().includes('pro') && planInterval === 'year') {
-      subscriptionPlan = 'pro_yearly';
-      expirationDate.setFullYear(expirationDate.getFullYear() + 1);
-    } else if (planName.toLowerCase().includes('enterprise')) {
-      subscriptionPlan = 'enterprise';
-      expirationDate.setFullYear(expirationDate.getFullYear() + 1);
+    // Determine product ID based on plan name and interval
+    let productId = 'buyer_pro_monthly';
+    if (planName.toLowerCase().includes('buyer') && planInterval === 'month') {
+      productId = 'buyer_pro_monthly';
+    } else if (planName.toLowerCase().includes('buyer') && planInterval === 'year') {
+      productId = 'buyer_pro_yearly';
+    } else if (planName.toLowerCase().includes('seller') && planInterval === 'month') {
+      productId = 'seller_premium_monthly';
+    } else if (planName.toLowerCase().includes('seller') && planInterval === 'year') {
+      productId = 'seller_premium_yearly';
     }
 
-    // Update user subscription
-    user.isSubscribed = true;
-    user.subscriptionPlan = subscriptionPlan;
-    user.subscriptionExpiresAt = expirationDate;
-    await user.save();
+    // Try to find the product, or create a default one
+    let product = await Product.findOne({ productId });
 
-    console.log(`Mock payment processed for user ${user.email}: ${subscriptionPlan}`);
+    if (!product) {
+      // Create a default product for testing
+      product = await Product.create({
+        productId,
+        name: planName,
+        description: `${planName} subscription`,
+        price: amount,
+        currency: 'EUR',
+        billingPeriod: planInterval === 'year' ? 'yearly' : 'monthly',
+        isActive: true,
+      });
+    }
+
+    // Use the secure payment processing service (ATOMIC TRANSACTION)
+    const result = await processSubscriptionPayment({
+      userId,
+      productId,
+      store: 'web',
+      amount: product.price,
+      currency: product.currency,
+    });
+
+    console.log(`✅ Payment processed for user ${user.email}: ${productId}`);
 
     res.status(200).json({
       success: true,
       message: 'Payment processed successfully',
       subscription: {
-        plan: subscriptionPlan,
-        expiresAt: expirationDate,
+        id: result.subscription._id,
+        plan: productId,
+        productName: product.name,
+        source: 'web',
+        expiresAt: result.subscription.expirationDate,
+        status: result.subscription.status,
+      },
+      payment: {
+        id: result.paymentRecord._id,
+        amount: result.paymentRecord.amount,
+        currency: result.paymentRecord.currency,
       },
     });
   } catch (error: any) {
@@ -129,7 +153,12 @@ export const getSubscriptionStatus = async (req: Request, res: Response): Promis
     res.status(200).json({
       isSubscribed: user.isSubscribed,
       subscriptionPlan: user.subscriptionPlan,
+      subscriptionProductName: user.subscriptionProductName,
+      subscriptionSource: user.subscriptionSource,
       subscriptionExpiresAt: user.subscriptionExpiresAt,
+      subscriptionStatus: user.subscriptionStatus,
+      hasActiveSubscription: user.hasActiveSubscription(),
+      canAccessPremium: user.canAccessPremiumFeatures(),
     });
   } catch (error: any) {
     console.error('Error getting subscription status:', error);

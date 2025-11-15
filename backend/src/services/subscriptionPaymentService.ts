@@ -138,10 +138,12 @@ export async function processSubscriptionPayment(
 
     // 6. Update user with subscription info
     user.isSubscribed = true;
-    user.subscriptionPlan = productId;
+    user.subscriptionPlan = productId; // Product ID (e.g., 'buyer_pro_monthly')
+    user.subscriptionProductName = product.name; // Human-readable name
+    user.subscriptionSource = store; // Track where subscription came from
     user.subscriptionExpiresAt = expirationDate;
     user.subscriptionStartedAt = startDate;
-    user.activeSubscriptionId = subscription._id;
+    user.activeSubscriptionId = subscription._id as mongoose.Types.ObjectId;
     user.lastPaymentDate = new Date();
     user.lastPaymentAmount = amount;
     user.totalPaid = (user.totalPaid || 0) + amount;
@@ -222,10 +224,11 @@ export async function cancelSubscriptionSecurely(
     subscription.cancellationReason = reason;
     await subscription.save({ session });
 
-    // Update user
+    // Update user (but don't clear subscription fields until it actually expires)
     const user = await User.findById(userId).session(session);
     if (user) {
       user.subscriptionStatus = 'canceled';
+      // Keep subscription fields active until expiration
       await user.save({ session });
     }
 
@@ -283,11 +286,15 @@ export async function updateExpiredSubscriptions(): Promise<number> {
       subscription.status = 'expired';
       await subscription.save({ session });
 
-      // Update user
+      // Update user - clear subscription fields
       const user = await User.findById(subscription.userId).session(session);
       if (user && String(user.activeSubscriptionId) === String(subscription._id)) {
         user.isSubscribed = false;
         user.subscriptionStatus = 'expired';
+        user.subscriptionPlan = undefined;
+        user.subscriptionProductName = undefined;
+        user.subscriptionSource = undefined;
+        user.activeSubscriptionId = undefined;
         await user.save({ session });
       }
 

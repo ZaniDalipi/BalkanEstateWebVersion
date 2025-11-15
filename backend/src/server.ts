@@ -70,7 +70,6 @@ if (process.env.ENABLE_RECONCILIATION === 'true') {
 // Start subscription expiration worker (always enabled for security)
 scheduleExpirationWorker();
 console.log('✅ Subscription expiration worker started');
-}
 
 // ============================================================================
 // MANUAL CORS MIDDLEWARE - Handle ALL CORS manually for maximum control
