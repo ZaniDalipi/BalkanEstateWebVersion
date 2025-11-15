@@ -1,11 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { loadStripe, Stripe, StripeElements } from '@stripe/stripe-js';
-import {
-  Elements,
-  PaymentElement,
-  useStripe,
-  useElements,
-} from '@stripe/react-stripe-js';
 import Modal from './Modal';
 import {
   CreditCardIcon,
@@ -15,10 +8,7 @@ import {
   XCircleIcon,
   LockClosedIcon,
 } from '../../constants';
-import { getPaymentConfigForUser, getAvailablePaymentMethods, STRIPE_CONFIG, PaymentMethod } from '../../config/paymentConfig';
-
-// Initialize Stripe
-const stripePromise = loadStripe(STRIPE_CONFIG.publishableKey);
+import { getPaymentConfigForUser, getAvailablePaymentMethods, PaymentMethod } from '../../config/paymentConfig';
 
 interface PaymentWindowProps {
   isOpen: boolean;
@@ -53,69 +43,263 @@ const PaymentMethodIcon: React.FC<{ methodId: string; className?: string }> = ({
   }
 };
 
-// Stripe Payment Form Component
-const PaymentForm: React.FC<{
+// Mock Payment Form Component
+const MockPaymentForm: React.FC<{
   planName: string;
   planPrice: number;
-  userRole: 'buyer' | 'private_seller' | 'agent';
   onSuccess: (paymentIntentId: string) => void;
   onError: (error: string) => void;
   onProcessing: (isProcessing: boolean) => void;
-}> = ({ planName, planPrice, userRole, onSuccess, onError, onProcessing }) => {
-  const stripe = useStripe();
-  const elements = useElements();
+}> = ({ planName, planPrice, onSuccess, onError, onProcessing }) => {
+  const [cardNumber, setCardNumber] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [cvc, setCvc] = useState('');
+  const [cardholderName, setCardholderName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<'card' | 'sepa' | 'paypal'>('card');
+
+  // Format card number with spaces
+  const formatCardNumber = (value: string) => {
+    const cleaned = value.replace(/\s/g, '');
+    const formatted = cleaned.match(/.{1,4}/g)?.join(' ') || cleaned;
+    return formatted.substring(0, 19); // 16 digits + 3 spaces
+  };
+
+  // Format expiry date as MM/YY
+  const formatExpiryDate = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    if (cleaned.length >= 2) {
+      return cleaned.substring(0, 2) + '/' + cleaned.substring(2, 4);
+    }
+    return cleaned;
+  };
+
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCardNumber(e.target.value.replace(/\D/g, ''));
+    setCardNumber(formatted);
+  };
+
+  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatExpiryDate(e.target.value);
+    setExpiryDate(formatted);
+  };
+
+  const handleCvcChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').substring(0, 3);
+    setCvc(value);
+  };
+
+  const validateForm = (): boolean => {
+    if (selectedMethod === 'card') {
+      const cleanCardNumber = cardNumber.replace(/\s/g, '');
+      if (cleanCardNumber.length !== 16) {
+        setErrorMessage('Please enter a valid 16-digit card number');
+        return false;
+      }
+      if (expiryDate.length !== 5) {
+        setErrorMessage('Please enter a valid expiry date (MM/YY)');
+        return false;
+      }
+      if (cvc.length !== 3) {
+        setErrorMessage('Please enter a valid 3-digit CVC');
+        return false;
+      }
+      if (!cardholderName.trim()) {
+        setErrorMessage('Please enter the cardholder name');
+        return false;
+      }
+    }
+    return true;
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setErrorMessage(null);
 
-    if (!stripe || !elements) {
+    if (!validateForm()) {
       return;
     }
 
     setIsLoading(true);
-    setErrorMessage(null);
     onProcessing(true);
 
-    try {
-      // Confirm the payment
-      const { error, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/payment-success`,
-        },
-        redirect: 'if_required',
-      });
-
-      if (error) {
-        setErrorMessage(error.message || 'Payment failed');
-        onError(error.message || 'Payment failed');
-      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        onSuccess(paymentIntent.id);
-      }
-    } catch (err: any) {
-      setErrorMessage(err.message || 'An unexpected error occurred');
-      onError(err.message || 'An unexpected error occurred');
-    } finally {
+    // Simulate payment processing
+    setTimeout(() => {
+      // Mock success - generate a fake payment ID
+      const mockPaymentId = 'mock_pi_' + Math.random().toString(36).substring(2, 15);
+      onSuccess(mockPaymentId);
       setIsLoading(false);
       onProcessing(false);
-    }
+    }, 2000);
   };
+
+  const inputClasses = "w-full px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-neutral-900 placeholder:text-neutral-400";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Payment Element - Stripe's unified payment UI */}
-      <div className="bg-white rounded-lg border border-neutral-200 p-4">
-        <PaymentElement
-          options={{
-            layout: 'tabs',
-            business: {
-              name: 'Balkan Estate',
-            },
-          }}
-        />
+      {/* Payment Method Selection */}
+      <div className="space-y-3">
+        <label className="block text-sm font-semibold text-neutral-700">Payment Method</label>
+        <div className="grid grid-cols-3 gap-3">
+          <button
+            type="button"
+            onClick={() => setSelectedMethod('card')}
+            className={`p-4 border-2 rounded-lg transition-all ${
+              selectedMethod === 'card'
+                ? 'border-primary bg-primary/5 shadow-md'
+                : 'border-neutral-200 hover:border-neutral-300'
+            }`}
+          >
+            <CreditCardIcon className="w-6 h-6 mx-auto mb-2 text-neutral-700" />
+            <p className="text-xs font-medium text-neutral-700">Card</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedMethod('sepa')}
+            className={`p-4 border-2 rounded-lg transition-all ${
+              selectedMethod === 'sepa'
+                ? 'border-primary bg-primary/5 shadow-md'
+                : 'border-neutral-200 hover:border-neutral-300'
+            }`}
+          >
+            <BanknotesIcon className="w-6 h-6 mx-auto mb-2 text-neutral-700" />
+            <p className="text-xs font-medium text-neutral-700">Bank</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedMethod('paypal')}
+            className={`p-4 border-2 rounded-lg transition-all ${
+              selectedMethod === 'paypal'
+                ? 'border-primary bg-primary/5 shadow-md'
+                : 'border-neutral-200 hover:border-neutral-300'
+            }`}
+          >
+            <DevicePhoneMobileIcon className="w-6 h-6 mx-auto mb-2 text-neutral-700" />
+            <p className="text-xs font-medium text-neutral-700">Digital</p>
+          </button>
+        </div>
       </div>
+
+      {/* Card Payment Form */}
+      {selectedMethod === 'card' && (
+        <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-4">
+          <div>
+            <label htmlFor="cardNumber" className="block text-sm font-semibold text-neutral-700 mb-2">
+              Card Number
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                id="cardNumber"
+                value={cardNumber}
+                onChange={handleCardNumberChange}
+                placeholder="1234 5678 9012 3456"
+                className={inputClasses}
+                required
+              />
+              <CreditCardIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 text-neutral-400" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="expiryDate" className="block text-sm font-semibold text-neutral-700 mb-2">
+                Expiry Date
+              </label>
+              <input
+                type="text"
+                id="expiryDate"
+                value={expiryDate}
+                onChange={handleExpiryChange}
+                placeholder="MM/YY"
+                className={inputClasses}
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="cvc" className="block text-sm font-semibold text-neutral-700 mb-2">
+                CVC
+              </label>
+              <input
+                type="text"
+                id="cvc"
+                value={cvc}
+                onChange={handleCvcChange}
+                placeholder="123"
+                className={inputClasses}
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="cardholderName" className="block text-sm font-semibold text-neutral-700 mb-2">
+              Cardholder Name
+            </label>
+            <input
+              type="text"
+              id="cardholderName"
+              value={cardholderName}
+              onChange={(e) => setCardholderName(e.target.value)}
+              placeholder="John Doe"
+              className={inputClasses}
+              required
+            />
+          </div>
+        </div>
+      )}
+
+      {/* SEPA Bank Transfer */}
+      {selectedMethod === 'sepa' && (
+        <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-4">
+          <div className="text-center py-8">
+            <BanknotesIcon className="w-16 h-16 mx-auto mb-4 text-primary" />
+            <h3 className="text-lg font-semibold text-neutral-900 mb-2">SEPA Bank Transfer</h3>
+            <p className="text-sm text-neutral-600 mb-4">
+              Complete your payment via bank transfer. Processing takes 3-5 business days.
+            </p>
+            <div className="bg-neutral-50 rounded-lg p-4 text-left text-sm space-y-2">
+              <p><span className="font-semibold">Bank:</span> Balkan Estate Bank</p>
+              <p><span className="font-semibold">IBAN:</span> RS35 1234 5678 9012 3456</p>
+              <p><span className="font-semibold">Reference:</span> {planName}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PayPal / Digital Wallet */}
+      {selectedMethod === 'paypal' && (
+        <div className="bg-white rounded-lg border border-neutral-200 p-6">
+          <div className="text-center py-8">
+            <DevicePhoneMobileIcon className="w-16 h-16 mx-auto mb-4 text-primary" />
+            <h3 className="text-lg font-semibold text-neutral-900 mb-2">Digital Wallet</h3>
+            <p className="text-sm text-neutral-600 mb-6">
+              Pay with Apple Pay, Google Pay, or PayPal
+            </p>
+            <div className="space-y-3">
+              <button
+                type="button"
+                className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+              >
+                 Pay
+              </button>
+              <button
+                type="button"
+                className="w-full bg-white border-2 border-neutral-300 text-neutral-700 py-3 rounded-lg font-semibold hover:bg-neutral-50 transition-colors"
+              >
+                G Pay
+              </button>
+              <button
+                type="button"
+                className="w-full bg-[#0070BA] text-white py-3 rounded-lg font-semibold hover:bg-[#005EA6] transition-colors"
+              >
+                PayPal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Error Message */}
       {errorMessage && (
@@ -131,7 +315,7 @@ const PaymentForm: React.FC<{
       {/* Submit Button */}
       <button
         type="submit"
-        disabled={!stripe || isLoading}
+        disabled={isLoading}
         className={`w-full py-4 rounded-lg font-bold text-white text-lg shadow-lg transition-all ${
           isLoading
             ? 'bg-neutral-400 cursor-not-allowed'
@@ -154,7 +338,7 @@ const PaymentForm: React.FC<{
       {/* Security Notice */}
       <div className="flex items-center justify-center gap-2 text-sm text-neutral-500">
         <LockClosedIcon className="w-4 h-4" />
-        <span>Secured by Stripe • SSL Encrypted</span>
+        <span>Secured Payment • SSL Encrypted</span>
       </div>
     </form>
   );
@@ -169,13 +353,11 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
   planInterval,
   userRole,
   userEmail,
-  userCountry = 'RS', // Default to Serbia
+  userCountry = 'RS',
   onSuccess,
   onError,
   discountPercent = 0,
 }) => {
-  const [clientSecret, setClientSecret] = useState<string>('');
-  const [isLoadingIntent, setIsLoadingIntent] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [availableMethods, setAvailableMethods] = useState<PaymentMethod[]>([]);
@@ -191,45 +373,11 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
       // Get available payment methods for this user
       const methods = getAvailablePaymentMethods(userRole, finalPrice, userCountry);
       setAvailableMethods(methods);
-
-      // Create payment intent
-      createPaymentIntent();
     } else {
       // Reset state when modal closes
       setShowSuccess(false);
-      setClientSecret('');
     }
   }, [isOpen, userRole, finalPrice, userCountry]);
-
-  const createPaymentIntent = async () => {
-    setIsLoadingIntent(true);
-    try {
-      // TODO: Replace with actual API call to your backend
-      // For now, this is a mock that demonstrates the structure
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/payments/create-intent`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
-        },
-        body: JSON.stringify({
-          amount: Math.round(finalPrice * 100), // Convert to cents
-          currency: 'eur',
-          planName,
-          planInterval,
-          userEmail,
-        }),
-      });
-
-      const data = await response.json();
-      setClientSecret(data.clientSecret);
-    } catch (error) {
-      console.error('Error creating payment intent:', error);
-      onError('Failed to initialize payment. Please try again.');
-    } finally {
-      setIsLoadingIntent(false);
-    }
-  };
 
   const handleSuccess = (paymentIntentId: string) => {
     setShowSuccess(true);
@@ -237,22 +385,6 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
       onSuccess(paymentIntentId);
       onClose();
     }, 2000);
-  };
-
-  const stripeOptions = {
-    clientSecret,
-    appearance: {
-      theme: 'stripe' as const,
-      variables: {
-        colorPrimary: '#0066CC',
-        colorBackground: '#ffffff',
-        colorText: '#1a1a1a',
-        colorDanger: '#df1b41',
-        fontFamily: 'system-ui, sans-serif',
-        spacingUnit: '4px',
-        borderRadius: '8px',
-      },
-    },
   };
 
   return (
@@ -340,38 +472,13 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
         )}
 
         {/* Payment Form */}
-        {isLoadingIntent ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <svg className="animate-spin h-10 w-10 text-primary mb-4" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            <p className="text-neutral-600">Loading payment options...</p>
-          </div>
-        ) : clientSecret ? (
-          <Elements stripe={stripePromise} options={stripeOptions}>
-            <PaymentForm
-              planName={planName}
-              planPrice={finalPrice}
-              userRole={userRole}
-              onSuccess={handleSuccess}
-              onError={onError}
-              onProcessing={setIsProcessing}
-            />
-          </Elements>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-16">
-            <XCircleIcon className="w-12 h-12 text-red-500 mb-4" />
-            <p className="text-neutral-700 font-semibold mb-2">Unable to load payment</p>
-            <p className="text-sm text-neutral-600 mb-4">Please try again or contact support</p>
-            <button
-              onClick={createPaymentIntent}
-              className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        )}
+        <MockPaymentForm
+          planName={planName}
+          planPrice={finalPrice}
+          onSuccess={handleSuccess}
+          onError={onError}
+          onProcessing={setIsProcessing}
+        />
 
         {/* Money-back Guarantee */}
         <div className="mt-6 pt-6 border-t border-neutral-200">
