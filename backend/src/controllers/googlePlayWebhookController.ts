@@ -45,7 +45,6 @@ export const handleGooglePlayNotification = async (
     }
 
     const {
-      
       notificationType,
       purchaseToken,
       subscriptionId,

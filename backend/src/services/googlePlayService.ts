@@ -30,6 +30,7 @@ interface GooglePlayPurchase {
   priceAmountMicros: string;
   priceCurrencyCode: string;
   countryCode?: string;
+  paymentState?: number; // 0 = payment received, 1 = payment pending (grace period)
 }
 
 class GooglePlayService {
