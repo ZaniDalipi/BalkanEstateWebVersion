@@ -302,7 +302,7 @@ function generateXero(bankExport: any): string {
     'Tax Exempt',
   ]);
 
-  const csv = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+  const csv = [headers.join(','), ...rows.map((row: any[]) => row.join(','))].join('\n');
 
   return csv;
 }
