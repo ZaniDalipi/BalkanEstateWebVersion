@@ -4,15 +4,15 @@ echo "🔍 Checking Backend Status"
 echo "=========================="
 echo ""
 
-# Check if port 5000 is in use
-if lsof -i :5000 > /dev/null 2>&1; then
-    echo "✅ Port 5000 is in use"
+# Check if port 5001 is in use
+if lsof -i :5001 > /dev/null 2>&1; then
+    echo "✅ Port 5001 is in use"
     echo ""
     echo "Process details:"
-    lsof -i :5000
+    lsof -i :5001
     echo ""
 else
-    echo "❌ Port 5000 is NOT in use - backend is not running!"
+    echo "❌ Port 5001 is NOT in use - backend is not running!"
     echo ""
     echo "Start the backend with:"
     echo "  cd backend && npm run dev"
@@ -21,7 +21,7 @@ fi
 
 # Test health endpoint
 echo "Testing health endpoint..."
-HEALTH_RESPONSE=$(curl -s -w "\n%{http_code}" http://localhost:5000/health 2>&1)
+HEALTH_RESPONSE=$(curl -s -w "\n%{http_code}" http://localhost:5001/health 2>&1)
 HTTP_CODE=$(echo "$HEALTH_RESPONSE" | tail -n1)
 BODY=$(echo "$HEALTH_RESPONSE" | head -n-1)
 
@@ -37,7 +37,7 @@ echo ""
 
 # Test OPTIONS request (preflight)
 echo "Testing CORS preflight (OPTIONS request)..."
-OPTIONS_RESPONSE=$(curl -s -w "\n%{http_code}" -X OPTIONS http://localhost:5000/api/properties \
+OPTIONS_RESPONSE=$(curl -s -w "\n%{http_code}" -X OPTIONS http://localhost:5001/api/properties \
     -H "Origin: http://localhost:3000" \
     -H "Access-Control-Request-Method: GET" 2>&1)
 
@@ -52,6 +52,6 @@ fi
 
 echo ""
 echo "Full OPTIONS response headers:"
-curl -v -X OPTIONS http://localhost:5000/api/properties \
+curl -v -X OPTIONS http://localhost:5001/api/properties \
     -H "Origin: http://localhost:3000" \
     -H "Access-Control-Request-Method: GET" 2>&1 | grep -E "^< |^> "
