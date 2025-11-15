@@ -9,12 +9,12 @@ import {
   getSubscriptionPayments,
   verifySubscription,
 } from '../controllers/subscriptionController';
-import { authenticate } from '../middleware/auth';
+import { protect } from '../middleware/auth';
 
 const router = express.Router();
 
 // All routes require authentication
-router.use(authenticate);
+router.use(protect);
 
 // Subscription management
 router.post('/', createSubscription);
