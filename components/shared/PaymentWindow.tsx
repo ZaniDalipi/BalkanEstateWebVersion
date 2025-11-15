@@ -47,10 +47,11 @@ const PaymentMethodIcon: React.FC<{ methodId: string; className?: string }> = ({
 const MockPaymentForm: React.FC<{
   planName: string;
   planPrice: number;
+  planInterval: 'month' | 'year';
   onSuccess: (paymentIntentId: string) => void;
   onError: (error: string) => void;
   onProcessing: (isProcessing: boolean) => void;
-}> = ({ planName, planPrice, onSuccess, onError, onProcessing }) => {
+}> = ({ planName, planPrice, planInterval, onSuccess, onError, onProcessing }) => {
   const [cardNumber, setCardNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [cvc, setCvc] = useState('');
@@ -124,14 +125,53 @@ const MockPaymentForm: React.FC<{
     setIsLoading(true);
     onProcessing(true);
 
-    // Simulate payment processing
-    setTimeout(() => {
-      // Mock success - generate a fake payment ID
-      const mockPaymentId = 'mock_pi_' + Math.random().toString(36).substring(2, 15);
-      onSuccess(mockPaymentId);
+    try {
+      // Get auth token from localStorage
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        throw new Error('Please log in to complete your purchase');
+      }
+
+      // Call backend API to process payment
+      const response = await fetch('http://localhost:5001/api/payment/process', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          planName,
+          planInterval,
+          amount: planPrice,
+          paymentMethod: selectedMethod,
+          // Mock payment details
+          paymentDetails: {
+            cardNumber: selectedMethod === 'card' ? cardNumber.replace(/\s/g, '') : undefined,
+            expiryDate: selectedMethod === 'card' ? expiryDate : undefined,
+            cardholderName: selectedMethod === 'card' ? cardholderName : undefined,
+          },
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Payment failed');
+      }
+
+      // Success!
+      const paymentId = data.payment?.id || data.subscription?.id || 'success_' + Date.now();
+      onSuccess(paymentId);
+
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      setErrorMessage(error.message || 'Payment failed. Please try again.');
+      onError(error.message);
+    } finally {
       setIsLoading(false);
       onProcessing(false);
-    }, 2000);
+    }
   };
 
   const inputClasses = "w-full px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-neutral-900 placeholder:text-neutral-400";
@@ -271,30 +311,58 @@ const MockPaymentForm: React.FC<{
       {/* PayPal / Digital Wallet */}
       {selectedMethod === 'paypal' && (
         <div className="bg-white rounded-lg border border-neutral-200 p-6">
-          <div className="text-center py-8">
-            <DevicePhoneMobileIcon className="w-16 h-16 mx-auto mb-4 text-primary" />
-            <h3 className="text-lg font-semibold text-neutral-900 mb-2">Digital Wallet</h3>
+          <div className="text-center py-4">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-2">Choose Payment Method</h3>
             <p className="text-sm text-neutral-600 mb-6">
-              Pay with Apple Pay, Google Pay, or PayPal
+              Select your preferred digital wallet
             </p>
             <div className="space-y-3">
+              {/* Apple Pay Button */}
               <button
                 type="button"
-                className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+                onClick={() => {
+                  alert('Apple Pay integration would open here. You would be redirected to Apple Pay checkout.');
+                  // TODO: Integrate actual Apple Pay
+                }}
+                className="w-full bg-black text-white py-4 px-6 rounded-xl font-semibold hover:bg-gray-800 transition-all hover:shadow-lg flex items-center justify-center gap-3"
               >
-                 Pay
+                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                </svg>
+                <span className="text-lg">Pay with Apple Pay</span>
               </button>
+
+              {/* Google Pay Button */}
               <button
                 type="button"
-                className="w-full bg-white border-2 border-neutral-300 text-neutral-700 py-3 rounded-lg font-semibold hover:bg-neutral-50 transition-colors"
+                onClick={() => {
+                  alert('Google Pay integration would open here. You would be redirected to Google Pay checkout.');
+                  // TODO: Integrate actual Google Pay
+                }}
+                className="w-full bg-white border-2 border-neutral-300 text-neutral-900 py-4 px-6 rounded-xl font-semibold hover:bg-neutral-50 transition-all hover:shadow-lg flex items-center justify-center gap-3"
               >
-                G Pay
+                <svg className="w-10 h-10" viewBox="0 0 48 48" fill="none">
+                  <path d="M24 9.5C19.26 9.5 15.06 11.69 12.22 15.22L15.05 17.77C17.3 15.08 20.4 13.4 24 13.4C27.59 13.4 30.69 15.08 32.94 17.77L35.77 15.22C32.93 11.69 28.73 9.5 24 9.5Z" fill="#EA4335"/>
+                  <path d="M32.94 17.77C30.69 15.08 27.59 13.4 24 13.4V20.55L29.4 25.95C31.73 23.62 33.15 20.45 33.15 17C33.15 16.2 33.08 15.46 32.94 17.77Z" fill="#FBBC04"/>
+                  <path d="M24 38.45C28.73 38.45 32.93 36.31 35.77 32.78L32.94 30.23C30.69 32.92 27.59 34.55 24 34.55V38.45Z" fill="#34A853"/>
+                  <path d="M24 34.55C20.4 34.55 17.3 32.92 15.05 30.23L12.22 32.78C15.06 36.31 19.26 38.45 24 38.45V34.55Z" fill="#4285F4"/>
+                </svg>
+                <span className="text-lg">Pay with Google Pay</span>
               </button>
+
+              {/* PayPal Button */}
               <button
                 type="button"
-                className="w-full bg-[#0070BA] text-white py-3 rounded-lg font-semibold hover:bg-[#005EA6] transition-colors"
+                onClick={() => {
+                  alert('PayPal integration would open here. You would be redirected to PayPal checkout.');
+                  // TODO: Integrate actual PayPal
+                }}
+                className="w-full bg-[#0070BA] text-white py-4 px-6 rounded-xl font-semibold hover:bg-[#005EA6] transition-all hover:shadow-lg flex items-center justify-center gap-3"
               >
-                PayPal
+                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.563.563 0 0 0-.556.479l-1.187 7.527h-.506l-1.24 7.864a.368.368 0 0 0 .363.426h3.333c.323 0 .598-.235.65-.556l.027-.142 1.019-6.451.065-.352a.65.65 0 0 1 .64-.556h.404c3.957 0 7.05-1.608 7.953-6.248.378-1.943.182-3.564-.793-4.707a3.9 3.9 0 0 0-1.197-.998z"/>
+                </svg>
+                <span className="text-lg">Pay with PayPal</span>
               </button>
             </div>
           </div>
@@ -316,10 +384,10 @@ const MockPaymentForm: React.FC<{
       <button
         type="submit"
         disabled={isLoading}
-        className={`w-full py-4 rounded-lg font-bold text-white text-lg shadow-lg transition-all ${
+        className={`w-full py-4 rounded-xl font-bold text-white text-lg shadow-lg transition-all ${
           isLoading
             ? 'bg-neutral-400 cursor-not-allowed'
-            : 'bg-gradient-to-r from-primary to-secondary hover:shadow-xl hover:scale-[1.02]'
+            : 'bg-primary hover:bg-primary-dark hover:shadow-xl hover:scale-[1.02]'
         }`}
       >
         {isLoading ? (
@@ -475,6 +543,7 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
         <MockPaymentForm
           planName={planName}
           planPrice={finalPrice}
+          planInterval={planInterval}
           onSuccess={handleSuccess}
           onError={onError}
           onProcessing={setIsProcessing}

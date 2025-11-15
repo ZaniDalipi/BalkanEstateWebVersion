@@ -28,13 +28,22 @@ const TabButton: React.FC<{
 
 const RoleSelector: React.FC<{
     selectedRole: UserRole;
+    originalRole: UserRole;
     onChange: (role: UserRole) => void;
-}> = ({ selectedRole, onChange }) => {
+}> = ({ selectedRole, originalRole, onChange }) => {
     const roles: { id: UserRole, label: string }[] = [
         { id: UserRole.BUYER, label: 'Buyer' },
         { id: UserRole.PRIVATE_SELLER, label: 'Private Seller' },
         { id: UserRole.AGENT, label: 'Agent' }
     ];
+
+    // Agents cannot switch to buyer
+    const isDisabled = (role: UserRole) => {
+        if (originalRole === UserRole.AGENT && role === UserRole.BUYER) {
+            return true;
+        }
+        return false;
+    };
 
     return (
         <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200">
@@ -42,12 +51,16 @@ const RoleSelector: React.FC<{
                 <button
                     key={role.id}
                     type="button"
-                    onClick={() => onChange(role.id)}
+                    onClick={() => !isDisabled(role) && onChange(role.id)}
+                    disabled={isDisabled(role)}
                     className={`px-2.5 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex-grow text-center ${
                         selectedRole === role.id
                         ? 'bg-white text-primary shadow'
+                        : isDisabled(role)
+                        ? 'text-neutral-400 cursor-not-allowed opacity-50'
                         : 'text-neutral-600 hover:bg-neutral-200'
                     }`}
+                    title={isDisabled(role) ? 'Agents cannot switch to Buyer role' : ''}
                 >
                     {role.label}
                 </button>
@@ -102,7 +115,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
 
             <fieldset>
                 <legend className="block text-sm font-medium text-neutral-700 mb-2">Your Role</legend>
-                <RoleSelector selectedRole={formData.role} onChange={handleRoleChange} />
+                <RoleSelector selectedRole={formData.role} originalRole={user.role} onChange={handleRoleChange} />
             </fieldset>
 
             <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6">
