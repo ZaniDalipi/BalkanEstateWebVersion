@@ -15,12 +15,56 @@ import favoriteRoutes from './routes/favoriteRoutes';
 import savedSearchRoutes from './routes/savedSearchRoutes';
 import conversationRoutes from './routes/conversationRoutes';
 import paymentRoutes from './routes/paymentRoutes';
+import subscriptionRoutes from './routes/subscriptionRoutes';
+import webhookRoutes from './routes/webhookRoutes';
+import productRoutes from './routes/productRoutes';
+import bankExportRoutes from './routes/bankExportRoutes';
+
+// Import services
+import { initializeGooglePlayService } from './services/googlePlayService';
+import { initializeAppStoreService } from './services/appStoreService';
+import { scheduleReconciliation } from './workers/reconciliationWorker';
 
 // Create Express app
 const app: Application = express();
 
 // Connect to database
 connectDB();
+
+// Initialize store services (if credentials are provided)
+if (process.env.GOOGLE_PLAY_CLIENT_EMAIL && process.env.GOOGLE_PLAY_PRIVATE_KEY) {
+  try {
+    initializeGooglePlayService({
+      clientEmail: process.env.GOOGLE_PLAY_CLIENT_EMAIL,
+      privateKey: process.env.GOOGLE_PLAY_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      packageName: process.env.GOOGLE_PLAY_PACKAGE_NAME || 'com.balkanestate.app',
+    });
+    console.log('✅ Google Play Service initialized');
+  } catch (error) {
+    console.warn('⚠️  Google Play Service not initialized:', error);
+  }
+}
+
+if (process.env.APP_STORE_ISSUER_ID && process.env.APP_STORE_KEY_ID && process.env.APP_STORE_PRIVATE_KEY) {
+  try {
+    initializeAppStoreService({
+      issuerId: process.env.APP_STORE_ISSUER_ID,
+      keyId: process.env.APP_STORE_KEY_ID,
+      privateKey: process.env.APP_STORE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      bundleId: process.env.APP_STORE_BUNDLE_ID || 'com.balkanestate.app',
+      environment: (process.env.APP_STORE_ENVIRONMENT as 'sandbox' | 'production') || 'sandbox',
+    });
+    console.log('✅ App Store Service initialized');
+  } catch (error) {
+    console.warn('⚠️  App Store Service not initialized:', error);
+  }
+}
+
+// Start reconciliation worker (if enabled)
+if (process.env.ENABLE_RECONCILIATION === 'true') {
+  scheduleReconciliation();
+  console.log('✅ Reconciliation worker started');
+}
 
 // ============================================================================
 // MANUAL CORS MIDDLEWARE - Handle ALL CORS manually for maximum control
@@ -76,6 +120,10 @@ app.use('/api/favorites', favoriteRoutes);
 app.use('/api/saved-searches', savedSearchRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/webhooks', webhookRoutes);
+app.use('/api/bank-exports', bankExportRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
