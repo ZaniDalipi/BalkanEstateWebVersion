@@ -40,6 +40,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         if (needsAuth && !isAuthenticated) {
             dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
         } else {
+            // Clear selected agency/property when navigating to different views
+            dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
             dispatch({ type: 'SET_ACTIVE_VIEW', payload: view });
 
             // Update browser URL
@@ -51,6 +53,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
     const handleNewListingClick = () => {
         if (isAuthenticated) {
+            // Clear selected agency when creating new listing
+            dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
             dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'create-listing' });
             window.history.pushState({}, '', '/create-listing');
         } else {
@@ -66,7 +70,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
     const handleLogout = () => {
         logout();
-        // After logout, reset to a default public view
+        // After logout, reset to a default public view and clear any selected items
+        dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
         window.history.pushState({}, '', '/');
         onClose();
