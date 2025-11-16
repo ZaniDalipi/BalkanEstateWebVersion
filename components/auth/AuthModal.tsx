@@ -44,6 +44,9 @@ const AuthPage: React.FC = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [code, setCode] = useState('');
     const [name, setName] = useState('');
+    const [isAgent, setIsAgent] = useState(false);
+    const [selectedAgencyId, setSelectedAgencyId] = useState<string>('');
+    const [agencies, setAgencies] = useState<any[]>([]);
 
     useEffect(() => {
         // Fetch available OAuth providers
@@ -58,6 +61,22 @@ const AuthPage: React.FC = () => {
         };
         fetchProviders();
     }, []);
+
+    useEffect(() => {
+        // Fetch agencies when user selects "I'm an agent"
+        const fetchAgencies = async () => {
+            if (isAgent && state.authModalView === 'signup') {
+                try {
+                    const { getAgencies } = await import('../../services/apiService');
+                    const response = await getAgencies({});
+                    setAgencies(response.agencies || []);
+                } catch (error) {
+                    console.error('Error fetching agencies:', error);
+                }
+            }
+        };
+        fetchAgencies();
+    }, [isAgent, state.authModalView]);
 
     useEffect(() => {
         // Reset state when modal opens or view changes
@@ -105,7 +124,10 @@ const AuthPage: React.FC = () => {
             if (state.authModalView === 'login') {
                 await login(email, password);
             } else {
-                await signup(email, password);
+                await signup(email, password, {
+                    role: isAgent ? 'agent' : 'buyer',
+                    requestAgencyId: isAgent && selectedAgencyId ? selectedAgencyId : undefined,
+                });
             }
             handleClose();
         } catch (err: any) {
@@ -214,7 +236,47 @@ const AuthPage: React.FC = () => {
                                 <div className="relative"><input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="email" className={floatingLabelClasses}>Email Address</label></div>
                                 <div className="relative"><input type="password" id="password" value={password} onChange={e => setPassword(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="password" className={floatingLabelClasses}>Password</label></div>
                                 {state.authModalView === 'login' && <div className="text-right"><button type="button" onClick={() => dispatch({ type: 'SET_AUTH_MODAL_VIEW', payload: 'forgotPassword'})} className="text-sm font-semibold text-primary hover:underline">Forgot Password?</button></div>}
-                                {state.authModalView === 'signup' && <div className="relative"><input type="password" id="confirmPassword" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="confirmPassword" className={floatingLabelClasses}>Confirm Password</label></div>}
+                                {state.authModalView === 'signup' && (
+                                    <>
+                                        <div className="relative"><input type="password" id="confirmPassword" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="confirmPassword" className={floatingLabelClasses}>Confirm Password</label></div>
+
+                                        {/* Agent checkbox */}
+                                        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                            <input
+                                                type="checkbox"
+                                                id="isAgent"
+                                                checked={isAgent}
+                                                onChange={(e) => setIsAgent(e.target.checked)}
+                                                className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                                            />
+                                            <label htmlFor="isAgent" className="text-sm font-medium text-gray-700">
+                                                I'm a real estate agent
+                                            </label>
+                                        </div>
+
+                                        {/* Agency dropdown - shown only if isAgent is true */}
+                                        {isAgent && (
+                                            <div className="relative">
+                                                <select
+                                                    id="agency"
+                                                    value={selectedAgencyId}
+                                                    onChange={(e) => setSelectedAgencyId(e.target.value)}
+                                                    className="block px-2.5 pb-2.5 pt-4 w-full text-base text-neutral-900 bg-white rounded-lg border border-neutral-300 appearance-none focus:outline-none focus:ring-0 focus:border-primary peer"
+                                                >
+                                                    <option value="">No agency (independent agent)</option>
+                                                    {agencies.map((agency) => (
+                                                        <option key={agency._id} value={agency._id}>
+                                                            {agency.name} - {agency.city}, {agency.country}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <label htmlFor="agency" className="absolute text-sm text-neutral-700 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary start-1">
+                                                    Request to join an agency (optional)
+                                                </label>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                                 <button type="submit" disabled={isLoading} className="w-full mt-2 py-3 px-4 rounded-lg shadow-sm text-base sm:text-lg font-bold text-white bg-primary hover:bg-primary-dark disabled:opacity-50">{isLoading ? 'Processing...' : (state.authModalView === 'login' ? 'Log In' : 'Sign Up')}</button>
                             </form>
                         ) : state.authModalView === 'login' ? (

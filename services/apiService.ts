@@ -124,13 +124,39 @@ export const login = async (emailOrPhone: string, password: string): Promise<Use
   return response.user;
 };
 
-export const signup = async (email: string, password: string): Promise<User> => {
+export const signup = async (
+  email: string,
+  password: string,
+  options?: {
+    name?: string;
+    phone?: string;
+    role?: 'buyer' | 'private_seller' | 'agent';
+    requestAgencyId?: string;
+  }
+): Promise<User> => {
   const response = await apiRequest<{ user: User; token: string }>('/auth/signup', {
     method: 'POST',
-    body: { email, password, name: email.split('@')[0], phone: '' },
+    body: {
+      email,
+      password,
+      name: options?.name || email.split('@')[0],
+      phone: options?.phone || '',
+      role: options?.role || 'buyer',
+    },
   });
 
   setToken(response.token);
+
+  // If user is an agent and wants to join an agency, create join request
+  if (options?.role === 'agent' && options?.requestAgencyId) {
+    try {
+      await createJoinRequest(options.requestAgencyId, 'Requested to join during registration');
+    } catch (error) {
+      console.error('Failed to create join request:', error);
+      // Don't fail signup if join request fails
+    }
+  }
+
   return response.user;
 };
 

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, StarIcon, ArrowLeftIcon, UserCircleIcon } from '../constants';
+import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, StarIcon, ArrowLeftIcon, UserCircleIcon, BellIcon } from '../constants';
 import PropertyCard from './BuyerFlow/PropertyCard';
 import PropertyCardSkeleton from './BuyerFlow/PropertyCardSkeleton';
+import AgencyJoinRequestsModal from './AgencyJoinRequestsModal';
 import { formatPrice } from '../utils/currency';
+import { createJoinRequest } from '../services/apiService';
 
 interface Agent {
   id: string;
@@ -40,9 +42,20 @@ interface AgencyDetailPageProps {
 
 const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const { state, dispatch } = useAppContext();
-  const { properties, isLoadingProperties } = state;
+  const { properties, isLoadingProperties, currentUser, isAuthenticated } = state;
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isJoinRequestsModalOpen, setIsJoinRequestsModalOpen] = useState(false);
+  const [isRequesting, setIsRequesting] = useState(false);
+
+  // Check if current user owns this agency (need to add ownerId to Agency interface)
+  const isOwner = currentUser && (agency as any).ownerId === currentUser.id;
+
+  // Check if current user is an agent not in any agency
+  const canRequestToJoin =
+    isAuthenticated &&
+    currentUser?.role === 'agent' &&
+    !currentUser?.agencyId;
 
   useEffect(() => {
     fetchAgencyData();
@@ -72,6 +85,20 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
 
   const handleAgentClick = (agentId: string) => {
     dispatch({ type: 'SET_SELECTED_AGENT', payload: agentId });
+  };
+
+  const handleRequestToJoin = async () => {
+    if (!canRequestToJoin) return;
+
+    setIsRequesting(true);
+    try {
+      await createJoinRequest(agency._id, 'I would like to join your agency');
+      alert('Join request sent successfully! The agency owner will review your request.');
+    } catch (error: any) {
+      alert(error.message || 'Failed to send join request');
+    } finally {
+      setIsRequesting(false);
+    }
   };
 
   return (
@@ -155,6 +182,29 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
                   </div>
                 )}
               </div>
+
+              {/* Action Buttons */}
+              <div className="mt-6 flex flex-wrap gap-3 justify-center md:justify-start">
+                {isOwner && (
+                  <button
+                    onClick={() => setIsJoinRequestsModalOpen(true)}
+                    className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition-colors shadow-md"
+                  >
+                    <BellIcon className="w-5 h-5" />
+                    Manage Join Requests
+                  </button>
+                )}
+
+                {canRequestToJoin && (
+                  <button
+                    onClick={handleRequestToJoin}
+                    disabled={isRequesting}
+                    className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-md disabled:opacity-50"
+                  >
+                    {isRequesting ? 'Sending...' : 'Request to Join Agency'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -235,6 +285,14 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
           )}
         </div>
       </main>
+
+      {/* Join Requests Modal */}
+      <AgencyJoinRequestsModal
+        isOpen={isJoinRequestsModalOpen}
+        onClose={() => setIsJoinRequestsModalOpen(false)}
+        agencyId={agency._id}
+        agencyName={agency.name}
+      />
     </div>
   );
 };

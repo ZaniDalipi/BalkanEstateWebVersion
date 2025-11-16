@@ -276,8 +276,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return user;
   }, [state.pendingSubscription, state.isFirstLoginOffer]);
 
-  const signup = useCallback(async (email: string, pass: string) => {
-    const user = await api.signup(email, pass);
+  const signup = useCallback(async (
+    email: string,
+    pass: string,
+    options?: {
+      name?: string;
+      phone?: string;
+      role?: 'buyer' | 'private_seller' | 'agent';
+      requestAgencyId?: string;
+    }
+  ) => {
+    const user = await api.signup(email, pass, options);
     dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user } });
     dispatch({ type: 'USER_DATA_SUCCESS', payload: { savedHomes: [], savedSearches: [], conversations: [] } });
 
