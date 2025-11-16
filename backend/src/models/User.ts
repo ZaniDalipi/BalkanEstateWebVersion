@@ -23,6 +23,12 @@ export interface IUser extends Document {
   listingsCount: number,
   totalListingsCreated: number
 
+  // Tier-specific features
+  promotedAdsCount?: number;
+  lastPromotionReset?: Date;
+  isEnterpriseTier?: boolean;
+  agencyId?: mongoose.Types.ObjectId;
+  featuredUntil?: Date;
 
   // Enhanced Subscription Fields
   isSubscribed: boolean;
