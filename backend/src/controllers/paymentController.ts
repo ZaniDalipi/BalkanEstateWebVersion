@@ -6,7 +6,7 @@ import { processSubscriptionPayment } from '../services/subscriptionPaymentServi
 
 // Initialize Stripe with your secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2025-10-29.clover',
 });
 
 /**
