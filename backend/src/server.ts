@@ -19,6 +19,9 @@ import subscriptionRoutes from './routes/subscriptionRoutes';
 import webhookRoutes from './routes/webhookRoutes';
 import productRoutes from './routes/productRoutes';
 import bankExportRoutes from './routes/bankExportRoutes';
+import promotionRoutes from './routes/promotionRoutes';
+import agencyRoutes from './routes/agencyRoutes';
+import agencyJoinRequestRoutes from './routes/agencyJoinRequestRoutes';
 
 // Import services
 import { initializeGooglePlayService } from './services/googlePlayService';
@@ -129,6 +132,9 @@ app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/bank-exports', bankExportRoutes);
+app.use('/api/promotions', promotionRoutes);
+app.use('/api/agencies', agencyRoutes);
+app.use('/api/agency-join-requests', agencyJoinRequestRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

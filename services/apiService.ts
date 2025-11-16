@@ -621,6 +621,49 @@ export const removeAgentFromAgency = async (agencyId: string, agentId: string): 
   });
 };
 
+// --- AGENCY JOIN REQUEST API ---
+
+export const createJoinRequest = async (agencyId: string, message?: string): Promise<any> => {
+  return await apiRequest('/agency-join-requests', {
+    method: 'POST',
+    body: { agencyId, message },
+    requiresAuth: true,
+  });
+};
+
+export const getAgentJoinRequests = async (): Promise<any> => {
+  return await apiRequest('/agency-join-requests/my-requests', {
+    requiresAuth: true,
+  });
+};
+
+export const getAgencyJoinRequests = async (agencyId: string): Promise<any> => {
+  return await apiRequest(`/agency-join-requests/agency/${agencyId}`, {
+    requiresAuth: true,
+  });
+};
+
+export const approveJoinRequest = async (requestId: string): Promise<any> => {
+  return await apiRequest(`/agency-join-requests/${requestId}/approve`, {
+    method: 'PUT',
+    requiresAuth: true,
+  });
+};
+
+export const rejectJoinRequest = async (requestId: string): Promise<any> => {
+  return await apiRequest(`/agency-join-requests/${requestId}/reject`, {
+    method: 'PUT',
+    requiresAuth: true,
+  });
+};
+
+export const cancelJoinRequest = async (requestId: string): Promise<any> => {
+  return await apiRequest(`/agency-join-requests/${requestId}`, {
+    method: 'DELETE',
+    requiresAuth: true,
+  });
+};
+
 // --- PROMOTION API ---
 
 export const promoteProperty = async (propertyId: string): Promise<any> => {
