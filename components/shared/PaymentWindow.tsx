@@ -9,6 +9,7 @@ import {
   LockClosedIcon,
 } from '../../constants';
 import { getPaymentConfigForUser, getAvailablePaymentMethods, PaymentMethod } from '../../config/paymentConfig';
+import { useAppContext } from '../../context/AppContext';
 
 interface PaymentWindowProps {
   isOpen: boolean;
@@ -126,8 +127,8 @@ const MockPaymentForm: React.FC<{
     onProcessing(true);
 
     try {
-      // Get auth token from localStorage
-      const token = localStorage.getItem('token');
+      // Get auth token from localStorage (matching the key used by apiService)
+      const token = localStorage.getItem('balkan_estate_token');
 
       if (!token) {
         throw new Error('Please log in to complete your purchase');
@@ -426,6 +427,7 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
   onError,
   discountPercent = 0,
 }) => {
+  const { state } = useAppContext();
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [availableMethods, setAvailableMethods] = useState<PaymentMethod[]>([]);
@@ -438,6 +440,14 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      // Validate user is authenticated when opening payment modal
+      const token = localStorage.getItem('balkan_estate_token');
+      if (!state.isAuthenticated || !token) {
+        onError('Please log in to complete your purchase');
+        onClose();
+        return;
+      }
+
       // Get available payment methods for this user
       const methods = getAvailablePaymentMethods(userRole, finalPrice, userCountry);
       setAvailableMethods(methods);
@@ -445,7 +455,7 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
       // Reset state when modal closes
       setShowSuccess(false);
     }
-  }, [isOpen, userRole, finalPrice, userCountry]);
+  }, [isOpen, userRole, finalPrice, userCountry, state.isAuthenticated, onError, onClose]);
 
   const handleSuccess = (paymentIntentId: string) => {
     setShowSuccess(true);
