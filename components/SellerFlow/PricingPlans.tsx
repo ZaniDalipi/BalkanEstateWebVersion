@@ -105,35 +105,34 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
   const discountedEnterprise = applyDiscount(enterprisePrice, enterpriseDiscount);
 
   const handlePlanSelection = (planName: string, price: number, interval: 'month' | 'year', discount: number, productId: string) => {
-    // Check if user is authenticated (check both flag and user object)
-    if (!state.isAuthenticated && !state.user) {
-      // Save pending subscription
-      dispatch({
-        type: 'SET_PENDING_SUBSCRIPTION',
-        payload: {
-          planName,
-          planPrice: price,
-          planInterval: interval,
-          discountPercent: discount,
-          modalType: 'seller',
-        },
-      });
+  // Check if user is authenticated (check either flag or user object)
+  if (!state.isAuthenticated || !state.currentUser) {
+    // Save pending subscription
+    dispatch({
+      type: 'SET_PENDING_SUBSCRIPTION',
+      payload: {
+        planName,
+        planPrice: price,
+        planInterval: interval,
+        discountPercent: discount,
+        modalType: 'seller',
+      },
+    });
 
-      // Close this modal
-      onClose();
+    // Close this modal
+    onClose();
 
-      // Open auth modal
-      dispatch({
-        type: 'TOGGLE_AUTH_MODAL',
-        payload: { isOpen: true, view: 'login' },
-      });
-      return;
-    }
+    // Open auth modal
+    dispatch({
+      type: 'TOGGLE_AUTH_MODAL',
+      payload: { isOpen: true, view: 'login' },
+    });
+    return;
+  }
 
-    setSelectedPlan({ name: planName, price, interval, discount, productId });
-    setShowPaymentWindow(true);
-  };
-
+  setSelectedPlan({ name: planName, price, interval, discount, productId });
+  setShowPaymentWindow(true);
+};
   const handlePaymentSuccess = (paymentIntentId: string) => {
     console.log('Payment successful:', paymentIntentId);
     // TODO: Update user subscription status via API
@@ -152,8 +151,8 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
 
   // Determine user role for payment methods
   const getUserRole = (): 'buyer' | 'private_seller' | 'agent' => {
-    if (!state.user) return 'private_seller';
-    return state.user.role === 'agent' ? 'agent' : 'private_seller';
+    if (!state.currentUser) return 'private_seller';
+    return state.currentUser.role === 'agent' ? 'agent' : 'private_seller';
   };
 
 
@@ -387,8 +386,8 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
           planPrice={selectedPlan.price}
           planInterval={selectedPlan.interval}
           userRole={getUserRole()}
-          userEmail={state.user?.email}
-          userCountry={state.user?.country || 'RS'}
+          userEmail={state.currentUser?.email}
+          userCountry={state.currentUser?.country || 'RS'}
           onSuccess={handlePaymentSuccess}
           onError={handlePaymentError}
           discountPercent={selectedPlan.discount}

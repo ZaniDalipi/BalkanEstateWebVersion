@@ -14,7 +14,7 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose }
   const { state, dispatch } = useAppContext();
   const [activeTab, setActiveTab] = useState<'buyer' | 'seller'>('buyer');
   const [showPaymentWindow, setShowPaymentWindow] = useState(false);
-  const [email, setEmail] = useState(state.user?.email || '');
+  const [email, setEmail] = useState(state.currentUser?.email || '');
   const [buyerProducts, setBuyerProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -43,7 +43,7 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose }
     e.preventDefault();
 
     // Check if user is authenticated (check both flag and user object)
-    if (!state.isAuthenticated && !state.user) {
+    if (!state.isAuthenticated && !state.currentUser) {
       // Save pending subscription
       dispatch({
         type: 'SET_PENDING_SUBSCRIPTION',
@@ -215,7 +215,7 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose }
         planInterval="month"
         userRole="buyer"
         userEmail={email}
-        userCountry={state.user?.country || 'RS'}
+        userCountry={state.currentUser?.country || 'RS'}
         onSuccess={handlePaymentSuccess}
         onError={handlePaymentError}
       />
