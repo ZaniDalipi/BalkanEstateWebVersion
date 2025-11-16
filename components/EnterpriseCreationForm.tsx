@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Modal from './shared/Modal';
+import PaymentWindow from './shared/PaymentWindow';
 import { BuildingOfficeIcon, PhotoIcon } from '../constants';
 import { createAgency } from '../services/apiService';
 import { useAppContext } from '../context/AppContext';
@@ -14,6 +15,7 @@ const EnterpriseCreationForm: React.FC<EnterpriseCreationFormProps> = ({ isOpen,
   const [step, setStep] = useState<'form' | 'pricing'>('form');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPaymentWindow, setShowPaymentWindow] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -72,17 +74,45 @@ const EnterpriseCreationForm: React.FC<EnterpriseCreationFormProps> = ({ isOpen,
   };
 
   const handleProceedToPayment = () => {
-    // Close this modal
-    onClose();
+    // Open payment window directly for Enterprise plan
+    setShowPaymentWindow(true);
+  };
 
-    // Open pricing modal with enterprise plan highlighted
-    dispatch({
-      type: 'TOGGLE_PRICING_MODAL',
-      payload: {
-        isOpen: true,
-        isOffer: false
-      }
-    });
+  const handlePaymentSuccess = async (paymentIntentId: string) => {
+    console.log('Enterprise payment successful:', paymentIntentId);
+    setShowPaymentWindow(false);
+
+    try {
+      setLoading(true);
+
+      // Create the agency profile
+      const agencyData = {
+        ...formData,
+        yearsInBusiness: formData.yearsInBusiness ? parseInt(formData.yearsInBusiness) : undefined,
+      };
+
+      await createAgency(agencyData);
+
+      // Close the modal
+      onClose();
+
+      // Show success message
+      alert('Congratulations! Your Enterprise Agency has been created successfully. You now have a dedicated agency page with featured advertising.');
+
+      // Optionally navigate to the agencies page or agency dashboard
+      dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
+    } catch (error: any) {
+      console.error('Error creating agency:', error);
+      setError('Payment successful but failed to create agency. Please contact support.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePaymentError = (error: string) => {
+    console.error('Enterprise payment error:', error);
+    setShowPaymentWindow(false);
+    setError('Payment failed: ' + error);
   };
 
   const handleBack = () => {
@@ -93,7 +123,14 @@ const EnterpriseCreationForm: React.FC<EnterpriseCreationFormProps> = ({ isOpen,
     }
   };
 
+  // Determine user role for payment methods
+  const getUserRole = (): 'buyer' | 'private_seller' | 'agent' => {
+    if (!state.currentUser) return 'agent'; // Enterprise is typically for agents
+    return state.currentUser.role === 'agent' ? 'agent' : 'private_seller';
+  };
+
   return (
+    <>
     <Modal isOpen={isOpen} onClose={onClose} size="4xl">
       <div className="p-6">
         {step === 'form' ? (
@@ -387,6 +424,22 @@ const EnterpriseCreationForm: React.FC<EnterpriseCreationFormProps> = ({ isOpen,
         )}
       </div>
     </Modal>
+
+    {/* Payment Window */}
+    <PaymentWindow
+      isOpen={showPaymentWindow}
+      onClose={() => setShowPaymentWindow(false)}
+      planName="Enterprise"
+      planPrice={1000}
+      planInterval="year"
+      userRole={getUserRole()}
+      userEmail={state.currentUser?.email}
+      userCountry={state.currentUser?.country || 'RS'}
+      onSuccess={handlePaymentSuccess}
+      onError={handlePaymentError}
+      discountPercent={0}
+    />
+    </>
   );
 };
 
