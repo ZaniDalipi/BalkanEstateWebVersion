@@ -32,7 +32,7 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
   switch (state.activeView) {
     case 'saved-searches':
       return <SavedSearchesPage />;
-    case 'saved-homes':
+    case 'saved-properties':
       return <SavedHomesPage />;
     case 'inbox':
       return <InboxPage />;

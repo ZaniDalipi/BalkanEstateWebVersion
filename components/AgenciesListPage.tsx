@@ -195,7 +195,7 @@ const AgenciesListPage: React.FC = () => {
                 onClick={() => setViewMode('list')}
                 className={`px-6 py-2.5 rounded-full font-medium transition-all ${
                   viewMode === 'list'
-                    ? 'bg-gray-900 text-white'
+                    ? 'bg-primary text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -205,7 +205,7 @@ const AgenciesListPage: React.FC = () => {
                 onClick={() => setViewMode('map')}
                 className={`px-6 py-2.5 rounded-full font-medium transition-all ${
                   viewMode === 'map'
-                    ? 'bg-gray-900 text-white'
+                    ? 'bg-primary text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -219,7 +219,7 @@ const AgenciesListPage: React.FC = () => {
                 onClick={() => setFilter('all')}
                 className={`px-6 py-2.5 rounded-full font-medium transition-all ${
                   filter === 'all'
-                    ? 'bg-gray-900 text-white'
+                    ? 'bg-primary text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -229,7 +229,7 @@ const AgenciesListPage: React.FC = () => {
                 onClick={() => setFilter('featured')}
                 className={`px-6 py-2.5 rounded-full font-medium transition-all flex items-center gap-1 ${
                   filter === 'featured'
-                    ? 'bg-gray-900 text-white'
+                    ? 'bg-primary text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -246,7 +246,7 @@ const AgenciesListPage: React.FC = () => {
                 placeholder="Search by city..."
                 value={cityFilter}
                 onChange={(e) => setCityFilter(e.target.value)}
-                className="w-full pl-12 pr-4 py-2.5 bg-gray-100 border-0 rounded-full focus:ring-2 focus:ring-gray-900 focus:bg-white transition-all"
+                className="w-full pl-12 pr-4 py-2.5 bg-gray-100 border-0 rounded-full focus:ring-2 focus:ring-primary focus:bg-white transition-all"
               />
             </div>
           </div>

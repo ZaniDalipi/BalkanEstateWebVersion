@@ -8,6 +8,7 @@ import AgentProfilePage from './AgentProfilePage';
 import { Bars3Icon, Squares2x2Icon, TrophyIcon, CheckCircleIcon } from '../../constants';
 import StarRating from '../shared/StarRating';
 import { formatPrice } from '../../utils/currency';
+import AdvertisementBanner from '../AdvertisementBanner';
 
 type SortKey = 'sales' | 'rating' | 'name' | 'sold';
 type ViewMode = 'grid' | 'list';
@@ -95,6 +96,7 @@ const AgentsPage: React.FC = () => {
 
   return (
     <div className="bg-neutral-50 min-h-full">
+      <AdvertisementBanner position="top" />
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
             <TrophyIcon className="w-12 h-12 text-primary mx-auto mb-2" />

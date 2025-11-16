@@ -36,7 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const { activeView, isAuthenticated, currentUser } = state;
 
     const handleNavClick = (view: AppView) => {
-        const needsAuth = ['inbox', 'account', 'saved-searches', 'saved-homes'].includes(view);
+        const needsAuth = ['inbox', 'account', 'saved-searches', 'saved-properties'].includes(view);
         if (needsAuth && !isAuthenticated) {
             dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
         } else {
@@ -69,7 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const navItems = [
       { view: 'search' as AppView, label: 'Search', icon: <SearchIcon /> },
       { view: 'saved-searches' as AppView, label: 'Saved Searches', icon: <MagnifyingGlassPlusIcon /> },
-      { view: 'saved-homes' as AppView, label: 'Saved Homes', icon: <HeartIcon /> },
+      { view: 'saved-properties' as AppView, label: 'Saved Properties', icon: <HeartIcon /> },
       { view: 'inbox' as AppView, label: 'Inbox', icon: <EnvelopeIcon /> },
       { view: 'agents' as AppView, label: 'Top Agents', icon: <UsersIcon /> },
       { view: 'agencies' as AppView, label: 'Agencies', icon: <BuildingOfficeIcon /> },

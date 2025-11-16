@@ -3,6 +3,7 @@ import { useAppContext } from '../../context/AppContext';
 import SavedSearchAccordion from './SavedSearchAccordion';
 import { MagnifyingGlassPlusIcon } from '../../constants';
 import { SavedSearch, Filters, SellerType } from '../../types';
+import AdvertisementBanner from '../AdvertisementBanner';
 
 const initialFilters: Filters = {
     query: '',
@@ -139,6 +140,7 @@ const SavedSearchesPage: React.FC = () => {
 
   return (
     <div className="bg-neutral-50 min-h-full">
+      <AdvertisementBanner position="top" />
       <main className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-8">
