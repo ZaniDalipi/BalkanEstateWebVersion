@@ -20,6 +20,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     dispatch({ type: 'SET_SELECTED_PROPERTY', payload: property.id });
+    // Update browser history to enable back button navigation (web & mobile)
+    window.history.pushState({ propertyId: property.id }, '', `/property/${property.id}`);
   };
 
   const handleFavoriteClick = (e: React.MouseEvent) => {

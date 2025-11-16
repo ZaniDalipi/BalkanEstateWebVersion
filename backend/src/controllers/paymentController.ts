@@ -347,7 +347,7 @@ async function handleSuccessfulCheckout(session: Stripe.Checkout.Session) {
     }
 
     // Process the subscription payment
-    const result = await processSubscriptionPayment({
+    await processSubscriptionPayment({
       userId,
       productId: productId || 'default',
       store: 'stripe',

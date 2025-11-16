@@ -183,14 +183,28 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
   const [selectedAgency, setSelectedAgency] = useState<any>(null);
   const [isLoadingAgency, setIsLoadingAgency] = useState(false);
 
-  // Check URL for routing on mount and when URL changes
+  // Check URL for routing on mount and when URL changes (handles browser/mobile back button)
   useEffect(() => {
     const checkUrlForRouting = () => {
       const path = window.location.pathname;
 
+      console.log('🔙 Navigation detected:', path);
+
       // Payment callback routes (highest priority)
       if (path === '/payment/success' || path === '/payment/cancel') {
         // Don't change active view, let the component handle it
+        dispatch({ type: 'SET_SELECTED_PROPERTY', payload: null });
+        dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
+        return;
+      }
+
+      // Property detail route: /property/:id
+      const propertyMatch = path.match(/^\/property\/(.+)$/);
+      if (propertyMatch) {
+        const propertyId = decodeURIComponent(propertyMatch[1]);
+        dispatch({ type: 'SET_SELECTED_PROPERTY', payload: propertyId });
+        dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
+        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
         return;
       }
 
@@ -205,6 +219,8 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
           agencySlug = agencySlug.split(',')[1];
         }
 
+        // Clear property selection when viewing agency
+        dispatch({ type: 'SET_SELECTED_PROPERTY', payload: null });
         dispatch({ type: 'SET_SELECTED_AGENCY', payload: agencySlug });
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
         return;
@@ -225,14 +241,30 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
 
       const view = routeMap[path];
       if (view) {
+        // Clear selected items when navigating to main routes
+        dispatch({ type: 'SET_SELECTED_PROPERTY', payload: null });
+        dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: view });
+      } else {
+        // Unknown route - default to search and clear selections
+        console.log('⚠️ Unknown route, defaulting to search');
+        dispatch({ type: 'SET_SELECTED_PROPERTY', payload: null });
+        dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
+        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
+        window.history.replaceState({}, '', '/');
       }
     };
 
     checkUrlForRouting();
 
-    // Listen for browser back/forward navigation
+    // Listen for browser back/forward navigation (works on web and mobile)
+    // This includes:
+    // - Browser back button
+    // - Browser forward button
+    // - Mobile swipe back gesture
+    // - History API navigation
     window.addEventListener('popstate', checkUrlForRouting);
+
     return () => window.removeEventListener('popstate', checkUrlForRouting);
   }, [dispatch]);
 

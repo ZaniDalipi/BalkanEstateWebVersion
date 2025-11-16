@@ -519,7 +519,20 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
 
   const handleBack = () => {
     dispatch({ type: 'SET_SELECTED_PROPERTY', payload: null });
+    // Update browser history to maintain navigation graph
+    window.history.pushState({}, '', '/search');
   };
+
+  // Handle browser/mobile back button
+  useEffect(() => {
+    const handlePopState = () => {
+      // When user presses back button, close property details
+      dispatch({ type: 'SET_SELECTED_PROPERTY', payload: null });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [dispatch]);
 
   const handleFavoriteClick = () => {
       if (!state.isAuthenticated && !state.user) {
