@@ -5,7 +5,7 @@ import User from '../models/User';
 
 dotenv.config();
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/balkan-estate';
+const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/balkan-estate';
 
 const sampleAgencies = [
   {

@@ -11,12 +11,22 @@ To see the agency advertising banners in the application, you need to seed the d
    - Cloud: Ensure your connection string in `.env` is correct
 
 2. **Environment Variables**
-   Make sure your `.env` file has the correct MongoDB connection:
+   Create a `.env` file in the `backend` directory with your MongoDB connection:
    ```env
-   MONGO_URI=mongodb://localhost:27017/balkan-estate
-   # OR for cloud MongoDB:
-   # MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/balkan-estate
+   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/balkan-estate
+   # For local MongoDB:
+   # MONGODB_URI=mongodb://localhost:27017/balkan-estate
+
+   JWT_SECRET=your-secret-key-here
+   PORT=5000
    ```
+
+   **Important Security Notes:**
+   - Special characters in passwords must be URL-encoded:
+     - `!` = `%21`, `@` = `%40`, `#` = `%23`, `$` = `%24`, `%` = `%25`
+   - The `.env` file is in `.gitignore` and will NOT be committed to GitHub
+   - Never share your MongoDB credentials publicly
+   - Copy `.env.example` and rename it to `.env` with your actual credentials
 
 ### Seeding Agencies
 
