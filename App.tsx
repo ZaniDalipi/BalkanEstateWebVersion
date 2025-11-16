@@ -271,8 +271,12 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
     fetchAgency();
   }, [state.selectedAgencyId]);
 
-  // Global handler for selected agency view
-  // Show agency detail page if we have a selectedAgencyId (even while loading)
+  // Global handler for selected property view
+  if (state.selectedProperty) {
+    return <PropertyDetailsPage property={state.selectedProperty} />;
+  }
+
+  // Global handler for selected agency view - show detail page if we have a selectedAgencyId
   if (state.selectedAgencyId) {
     if (isLoadingAgency || !selectedAgency) {
       return (
@@ -285,11 +289,6 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
       );
     }
     return <AgencyDetailPage agency={selectedAgency} />;
-  }
-
-  // Global handler for selected property view
-  if (state.selectedProperty) {
-    return <PropertyDetailsPage property={state.selectedProperty} />;
   }
 
   switch (state.activeView) {
@@ -325,8 +324,10 @@ const MainLayout: React.FC = () => {
   }, []);
   
   const isSearchPage = state.activeView === 'search';
-  const isFullHeightView = isSearchPage || state.activeView === 'inbox' || !!state.selectedProperty;
+  const isAgencyDetailView = !!state.selectedAgencyId;
+  const isFullHeightView = isSearchPage || state.activeView === 'inbox' || !!state.selectedProperty || isAgencyDetailView;
   const showHeader = !(isMobile && (isSearchPage || !!state.selectedProperty));
+  // Note: Agency detail pages WILL show header on mobile to allow sidebar access
   
   const anyNonAuthModalOpen = state.isPricingModalOpen || state.isSubscriptionModalOpen || state.isListingLimitWarningOpen || state.isDiscountGameOpen;
   

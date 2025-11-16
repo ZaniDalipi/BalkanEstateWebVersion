@@ -133,10 +133,10 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
           <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary-dark to-black/80" />
         )}
 
-        {/* Back Button */}
+        {/* Back Button - positioned to avoid sidebar on desktop */}
         <button
           onClick={handleBack}
-          className="absolute top-6 left-6 flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-lg bg-black/30 backdrop-blur-sm hover:bg-black/50 transition-colors"
+          className="absolute top-6 left-6 md:left-24 flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-lg bg-black/30 backdrop-blur-sm hover:bg-black/50 transition-colors z-10"
         >
           <ArrowLeftIcon className="w-5 h-5" />
           Back
