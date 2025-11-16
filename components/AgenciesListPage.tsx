@@ -154,6 +154,10 @@ const AgenciesListPage: React.FC = () => {
     dispatch({ type: 'TOGGLE_ENTERPRISE_MODAL', payload: true });
   };
 
+  const handleViewAgency = (agencyId: string) => {
+    dispatch({ type: 'SET_SELECTED_AGENCY', payload: agencyId });
+  };
+
   const getRankBadge = (index: number) => {
     if (index === 0) return { label: '1', icon: '🏆', color: 'from-yellow-400 to-yellow-600' };
     if (index === 1) return { label: '2', icon: '🥈', color: 'from-gray-300 to-gray-500' };
@@ -276,7 +280,8 @@ const AgenciesListPage: React.FC = () => {
               return (
                 <div
                   key={agency._id}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                  onClick={() => handleViewAgency(agency._id)}
+                  className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer"
                 >
                   <div className="flex flex-col lg:flex-row">
                     {/* Logo Section */}

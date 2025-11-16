@@ -264,6 +264,7 @@ export interface AppState {
     comparisonList: string[]; // array of property IDs
     conversations: Conversation[];
     selectedAgentId: string | null;
+    selectedAgencyId: string | null;
     pendingProperty: Property | null;
     pendingSubscription: PendingSubscription | null;
     searchPageState: SearchPageState;
@@ -287,6 +288,7 @@ export type AppAction =
     | { type: 'SET_SELECTED_PROPERTY', payload: string | null }
     | { type: 'SET_PROPERTY_TO_EDIT', payload: Property | null }
     | { type: 'SET_SELECTED_AGENT', payload: string | null }
+    | { type: 'SET_SELECTED_AGENCY', payload: string | null }
     | { type: 'PROPERTIES_LOADING' }
     | { type: 'PROPERTIES_SUCCESS', payload: Property[] }
     | { type: 'PROPERTIES_ERROR', payload: string }

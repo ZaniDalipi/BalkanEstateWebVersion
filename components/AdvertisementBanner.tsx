@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { getFeaturedAgencies } from '../services/apiService';
 import { XMarkIcon, BuildingOfficeIcon } from '../constants';
+import { useAppContext } from '../context/AppContext';
 
 interface AdvertisementBannerProps {
   position?: 'top' | 'bottom' | 'sidebar';
 }
 
 const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 'top' }) => {
+  const { dispatch } = useAppContext();
   const [currentAd, setCurrentAd] = useState<any>(null);
   const [ads, setAds] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -44,6 +46,12 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
     }
   };
 
+  const handleViewAgency = () => {
+    if (currentAd && currentAd._id) {
+      dispatch({ type: 'SET_SELECTED_AGENCY', payload: currentAd._id });
+    }
+  };
+
   if (isDismissed || !currentAd) {
     return null;
   }
@@ -78,7 +86,10 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
             <p className="text-xs opacity-90 mb-3 line-clamp-2">{currentAd.description}</p>
           )}
 
-          <button className="bg-white text-amber-600 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-amber-50 transition-colors w-full">
+          <button
+            onClick={handleViewAgency}
+            className="bg-white text-amber-600 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-amber-50 transition-colors w-full"
+          >
             View Agency
           </button>
 
@@ -148,7 +159,10 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
         </div>
 
         {/* CTA */}
-        <button className="flex-shrink-0 bg-white text-amber-600 px-4 md:px-6 py-2 rounded-full font-bold text-sm hover:bg-amber-50 transition-colors">
+        <button
+          onClick={handleViewAgency}
+          className="flex-shrink-0 bg-white text-amber-600 px-4 md:px-6 py-2 rounded-full font-bold text-sm hover:bg-amber-50 transition-colors"
+        >
           View Agency
         </button>
 

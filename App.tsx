@@ -15,6 +15,7 @@ import Header from './components/shared/Header';
 import SubscriptionModal from './components/BuyerFlow/SubscriptionModal';
 import AgentsPage from './components/AgentsPage/AgentsPage';
 import AgenciesListPage from './components/AgenciesListPage';
+import AgencyDetailPage from './components/AgencyDetailPage';
 import EnterpriseCreationForm from './components/EnterpriseCreationForm';
 import PropertyDetailsPage from './components/BuyerFlow/PropertyDetailsPage';
 import { LogoIcon } from './constants';
@@ -23,12 +24,37 @@ import DiscountGameModal from './components/shared/DiscountGameModal';
 
 const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar }) => {
   const { state } = useAppContext();
+  const [selectedAgency, setSelectedAgency] = useState<any>(null);
+
+  // Fetch selected agency when selectedAgencyId changes
+  useEffect(() => {
+    const fetchAgency = async () => {
+      if (state.selectedAgencyId) {
+        try {
+          const response = await fetch(`/api/agencies/${state.selectedAgencyId}`);
+          const data = await response.json();
+          setSelectedAgency(data.agency);
+        } catch (error) {
+          console.error('Failed to fetch agency:', error);
+          setSelectedAgency(null);
+        }
+      } else {
+        setSelectedAgency(null);
+      }
+    };
+    fetchAgency();
+  }, [state.selectedAgencyId]);
+
+  // Global handler for selected agency view
+  if (selectedAgency) {
+    return <AgencyDetailPage agency={selectedAgency} />;
+  }
 
   // Global handler for selected property view
   if (state.selectedProperty) {
     return <PropertyDetailsPage property={state.selectedProperty} />;
   }
-  
+
   switch (state.activeView) {
     case 'saved-searches':
       return <SavedSearchesPage />;

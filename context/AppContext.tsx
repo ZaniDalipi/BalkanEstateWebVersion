@@ -37,6 +37,7 @@ const initialState: AppState = {
   comparisonList: [],
   conversations: [],
   selectedAgentId: null,
+  selectedAgencyId: null,
   pendingProperty: null,
   pendingSubscription: null,
   searchPageState: initialSearchPageState,
@@ -82,6 +83,8 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, propertyToEdit: action.payload };
     case 'SET_SELECTED_AGENT':
       return { ...state, selectedAgentId: action.payload };
+    case 'SET_SELECTED_AGENCY':
+      return { ...state, selectedAgencyId: action.payload };
     case 'PROPERTIES_LOADING':
         return { ...state, isLoadingProperties: true, propertiesError: null };
     case 'PROPERTIES_SUCCESS':
