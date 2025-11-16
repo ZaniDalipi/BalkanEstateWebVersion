@@ -522,7 +522,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
   };
 
   const handleFavoriteClick = () => {
-      if (!state.isAuthenticated) {
+      if (!state.isAuthenticated && !state.user) {
           dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
       } else {
           dispatch({ type: 'TOGGLE_SAVED_HOME', payload: property });

@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 export interface IUser extends Document {
-  _id:string,
+  _id: string;
   email: string;
   password?: string;
   name: string;
@@ -17,18 +17,29 @@ export interface IUser extends Document {
   agencyName?: string;
   agentId?: string;
   licenseNumber?: string;
-  licenseVerified: boolean;
-  licenseVerificationDate?: Date;
-  listingsCount: number;
-  totalListingsCreated: number;
+
+  // Enhanced Subscription Fields
   isSubscribed: boolean;
-  subscriptionPlan?: string;
+  subscriptionPlan?: string; // Product ID (e.g., 'buyer_pro_monthly')
+  subscriptionProductName?: string; // Human-readable name (e.g., 'Buyer Pro Monthly')
+  subscriptionSource?: 'google' | 'apple' | 'stripe' | 'web'; // Where subscription came from
   subscriptionExpiresAt?: Date;
+  subscriptionStartedAt?: Date;
+  activeSubscriptionId?: mongoose.Types.ObjectId; // Link to active Subscription document
+  lastPaymentDate?: Date;
+  lastPaymentAmount?: number;
+  totalPaid?: number; // Track lifetime payment value
+  subscriptionStatus?: 'active' | 'expired' | 'trial' | 'grace' | 'canceled';
+
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
+
+  // Methods
+  hasActiveSubscription(): boolean;
+  canAccessPremiumFeatures(): boolean;
 }
 
 const UserSchema: Schema = new Schema(
@@ -108,14 +119,44 @@ const UserSchema: Schema = new Schema(
     isSubscribed: {
       type: Boolean,
       default: false,
+      index: true, // Index for fast subscription queries
     },
     subscriptionPlan: {
+      type: String, // Product ID (e.g., 'buyer_pro_monthly', 'seller_premium_yearly')
+    },
+    subscriptionProductName: {
+      type: String, // Human-readable name (e.g., 'Buyer Pro Monthly')
+    },
+    subscriptionSource: {
       type: String,
-      enum: ['free', 'pro_monthly', 'pro_yearly', 'enterprise'],
-      default: 'free',
+      enum: ['google', 'apple', 'stripe', 'web'],
+      index: true, // Index for querying by subscription source
     },
     subscriptionExpiresAt: {
       type: Date,
+      index: true, // Index for expiration queries
+    },
+    subscriptionStartedAt: {
+      type: Date,
+    },
+    activeSubscriptionId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Subscription',
+      index: true,
+    },
+    lastPaymentDate: {
+      type: Date,
+    },
+    lastPaymentAmount: {
+      type: Number,
+    },
+    totalPaid: {
+      type: Number,
+      default: 0,
+    },
+    subscriptionStatus: {
+      type: String,
+      enum: ['active', 'expired', 'trial', 'grace', 'canceled'],
     },
     resetPasswordToken: {
       type: String,
@@ -161,5 +202,41 @@ UserSchema.methods.comparePassword = async function (
   const password = this.get('password') as string;
   return bcrypt.compare(candidatePassword, password);
 };
+
+// Check if user has an active subscription
+UserSchema.methods.hasActiveSubscription = function (): boolean {
+  if (!this.isSubscribed || !this.subscriptionExpiresAt) {
+    return false;
+  }
+  return new Date(this.subscriptionExpiresAt) > new Date();
+};
+
+// Check if user can access premium features (includes grace period)
+UserSchema.methods.canAccessPremiumFeatures = function (): boolean {
+  if (!this.isSubscribed) {
+    return false;
+  }
+
+  const now = new Date();
+  const expiresAt = new Date(this.subscriptionExpiresAt || 0);
+
+  // Allow access if within subscription period
+  if (expiresAt > now) {
+    return true;
+  }
+
+  // Allow access during grace period (7 days after expiration)
+  const gracePeriodEnd = new Date(expiresAt);
+  gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7);
+
+  if (now <= gracePeriodEnd && this.subscriptionStatus === 'grace') {
+    return true;
+  }
+
+  return false;
+};
+
+// Index for finding expiring subscriptions
+UserSchema.index({ subscriptionExpiresAt: 1, isSubscribed: 1 });
 
 export default mongoose.model<IUser>('User', UserSchema);
