@@ -4,6 +4,7 @@ import User, { IUser } from '../models/User';
 import Agent from '../models/Agent';
 import cloudinary from '../config/cloudinary';
 import { Readable } from 'stream';
+import { geocodeProperty } from '../services/geocodingService';
 
 // @desc    Get all properties with filters
 // @route   GET /api/properties
@@ -214,10 +215,25 @@ export const createProperty = async (
       return;
     }
 
+    // Geocode the property address automatically
+    // Only geocode if we have at least city and country (for precision)
+    const coordinates = await geocodeProperty({
+      address: req.body.address,
+      city: req.body.city,
+      country: req.body.country,
+    });
+
     const propertyData = {
       ...req.body,
       sellerId: String(currentUser._id),
+      // Add geocoded coordinates (will be undefined if geocoding failed)
+      ...(coordinates.lat && coordinates.lng && {
+        lat: coordinates.lat,
+        lng: coordinates.lng,
+      }),
     };
+
+    console.log(`📍 Creating property with coordinates:`, coordinates.lat ? `${coordinates.lat}, ${coordinates.lng}` : 'No coordinates');
 
     const property = await Property.create(propertyData);
 

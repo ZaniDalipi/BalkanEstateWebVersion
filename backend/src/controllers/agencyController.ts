@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import Agency from '../models/Agency';
 import User, { IUser } from '../models/User';
 import Property from '../models/Property';
+import { geocodeAgency } from '../services/geocodingService';
 
 // @desc    Create agency profile (Enterprise tier only)
 // @route   POST /api/agencies
@@ -41,11 +42,26 @@ export const createAgency = async (
       return;
     }
 
+    // Geocode the agency address automatically
+    // Only geocode if we have at least city and country (for precision)
+    const coordinates = await geocodeAgency({
+      address: req.body.address,
+      city: req.body.city,
+      country: req.body.country,
+    });
+
     const agencyData = {
       ...req.body,
       ownerId: user._id,
       isFeatured: true, // Enterprise tier gets featured by default
+      // Add geocoded coordinates (will be undefined if geocoding failed)
+      ...(coordinates.lat && coordinates.lng && {
+        lat: coordinates.lat,
+        lng: coordinates.lng,
+      }),
     };
+
+    console.log(`📍 Creating agency with coordinates:`, coordinates.lat ? `${coordinates.lat}, ${coordinates.lng}` : 'No coordinates');
 
     const agency = await Agency.create(agencyData);
 
