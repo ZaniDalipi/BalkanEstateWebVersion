@@ -1,18 +1,26 @@
 import express from 'express';
 import {
-  createPaymentIntent,
+  createCheckoutSession,
   processPayment,
   getSubscriptionStatus,
   cancelSubscription,
+  handleWebhook,
+  verifySession,
 } from '../controllers/paymentController';
 import { protect } from '../middleware/auth';
 
 const router = express.Router();
 
-// Payment intent creation (protected)
-router.post('/create-intent', protect, createPaymentIntent);
+// Stripe Checkout Session (protected) - redirects to external Stripe payment page
+router.post('/create-checkout-session', protect, createCheckoutSession);
 
-// Process payment (protected) - mock payment processing
+// Stripe Webhook (public but verified with signature) - must be BEFORE express.json() middleware
+router.post('/webhook', express.raw({ type: 'application/json' }), handleWebhook);
+
+// Verify payment session after redirect (protected)
+router.get('/verify-session/:sessionId', protect, verifySession);
+
+// Legacy: Process payment (protected) - for backward compatibility
 router.post('/process', protect, processPayment);
 
 // Subscription status (protected)

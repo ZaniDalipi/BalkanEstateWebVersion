@@ -1,20 +1,32 @@
 import { Request, Response } from 'express';
+import Stripe from 'stripe';
 import User from '../models/User';
 import Product from '../models/Product';
 import { processSubscriptionPayment } from '../services/subscriptionPaymentService';
 
+// Initialize Stripe with your secret key
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
+  apiVersion: '2024-12-18.acacia',
+});
+
 /**
- * @desc    Create a mock payment intent for a subscription
- * @route   POST /api/payments/create-intent
+ * @desc    Create a Stripe Checkout Session for external payment
+ * @route   POST /api/payment/create-checkout-session
  * @access  Private
  */
-export const createPaymentIntent = async (req: Request, res: Response): Promise<void> => {
+export const createCheckoutSession = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { amount } = req.body;
+    const { planName, planInterval, amount, productId } = req.body;
     const userId = (req as any).user?._id;
 
     if (!userId) {
       res.status(401).json({ message: 'User not authenticated' });
+      return;
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
       return;
     }
 
@@ -24,26 +36,51 @@ export const createPaymentIntent = async (req: Request, res: Response): Promise<
       return;
     }
 
-    // Get user from database
-    const user = await User.findById(userId);
-    if (!user) {
-      res.status(404).json({ message: 'User not found' });
-      return;
-    }
+    // Get the base URL from environment or request
+    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
-    // Create a mock payment intent (no real payment processing)
-    const mockPaymentIntentId = 'mock_pi_' + Math.random().toString(36).substring(2, 15);
+    // Create Stripe Checkout Session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'eur',
+            product_data: {
+              name: planName,
+              description: `${planName} - ${planInterval} subscription`,
+            },
+            unit_amount: Math.round(amount * 100), // Convert to cents
+            recurring: planInterval === 'month' || planInterval === 'year'
+              ? { interval: planInterval === 'year' ? 'year' : 'month' }
+              : undefined,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: planInterval === 'month' || planInterval === 'year' ? 'subscription' : 'payment',
+      success_url: `${baseUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/payment/cancel`,
+      client_reference_id: userId.toString(),
+      metadata: {
+        userId: userId.toString(),
+        planName,
+        planInterval,
+        productId: productId || 'default',
+        userEmail: user.email,
+      },
+    });
 
-    console.log(`Mock payment intent created for user ${user.email}: ${mockPaymentIntentId}`);
+    console.log(`✅ Checkout session created for user ${user.email}: ${session.id}`);
 
     res.status(200).json({
-      clientSecret: 'mock_secret_' + Math.random().toString(36).substring(2, 15),
-      paymentIntentId: mockPaymentIntentId,
       success: true,
+      sessionId: session.id,
+      url: session.url, // This is the Stripe-hosted payment page URL
     });
   } catch (error: any) {
-    console.error('Error creating payment intent:', error);
-    res.status(500).json({ message: 'Error creating payment intent', error: error.message });
+    console.error('Error creating checkout session:', error);
+    res.status(500).json({ message: 'Error creating checkout session', error: error.message });
   }
 };
 
@@ -205,5 +242,158 @@ export const cancelSubscription = async (req: Request, res: Response): Promise<v
   } catch (error: any) {
     console.error('Error cancelling subscription:', error);
     res.status(500).json({ message: 'Error cancelling subscription', error: error.message });
+  }
+};
+
+/**
+ * @desc    Handle Stripe webhook events
+ * @route   POST /api/payment/webhook
+ * @access  Public (but verified with Stripe signature)
+ */
+export const handleWebhook = async (req: Request, res: Response): Promise<void> => {
+  const sig = req.headers['stripe-signature'] as string;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!webhookSecret) {
+    console.error('⚠️ Webhook secret not configured');
+    res.status(400).send('Webhook secret not configured');
+    return;
+  }
+
+  let event: Stripe.Event;
+
+  try {
+    // Verify webhook signature
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+  } catch (err: any) {
+    console.error('⚠️ Webhook signature verification failed:', err.message);
+    res.status(400).send(`Webhook Error: ${err.message}`);
+    return;
+  }
+
+  // Handle the event
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        await handleSuccessfulCheckout(session);
+        break;
+      }
+
+      case 'customer.subscription.updated':
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log(`Subscription ${event.type}:`, subscription.id);
+        // Handle subscription updates/cancellations
+        break;
+      }
+
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice;
+        console.log('Invoice payment succeeded:', invoice.id);
+        // Handle recurring payment success
+        break;
+      }
+
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice;
+        console.log('Invoice payment failed:', invoice.id);
+        // Handle payment failure
+        break;
+      }
+
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+    }
+
+    res.json({ received: true });
+  } catch (error: any) {
+    console.error('Error handling webhook:', error);
+    res.status(500).json({ error: 'Webhook handler failed' });
+  }
+};
+
+/**
+ * Helper function to process successful checkout
+ */
+async function handleSuccessfulCheckout(session: Stripe.Checkout.Session) {
+  const userId = session.metadata?.userId;
+  const planName = session.metadata?.planName;
+  const planInterval = session.metadata?.planInterval;
+  const productId = session.metadata?.productId;
+
+  if (!userId) {
+    console.error('No userId in session metadata');
+    return;
+  }
+
+  console.log(`✅ Processing successful payment for user ${userId}`);
+
+  try {
+    // Find or create product
+    let product = await Product.findOne({ productId });
+
+    if (!product) {
+      // Create a default product
+      product = await Product.create({
+        productId: productId || 'default',
+        name: planName || 'Subscription',
+        description: `${planName} subscription`,
+        price: (session.amount_total || 0) / 100, // Convert from cents
+        currency: (session.currency || 'eur').toUpperCase(),
+        billingPeriod: planInterval === 'year' ? 'yearly' : 'monthly',
+        isActive: true,
+      });
+    }
+
+    // Process the subscription payment
+    const result = await processSubscriptionPayment({
+      userId,
+      productId: productId || 'default',
+      store: 'stripe',
+      amount: product.price,
+      currency: product.currency,
+    });
+
+    console.log(`✅ Subscription activated for user ${userId}`);
+  } catch (error) {
+    console.error('Error processing successful checkout:', error);
+    throw error;
+  }
+}
+
+/**
+ * @desc    Verify payment session and return status
+ * @route   GET /api/payment/verify-session/:sessionId
+ * @access  Private
+ */
+export const verifySession = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { sessionId } = req.params;
+    const userId = (req as any).user?._id;
+
+    if (!userId) {
+      res.status(401).json({ message: 'User not authenticated' });
+      return;
+    }
+
+    // Retrieve the session from Stripe
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    // Verify this session belongs to the current user
+    if (session.client_reference_id !== userId.toString()) {
+      res.status(403).json({ message: 'Session does not belong to current user' });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      paymentStatus: session.payment_status,
+      customerEmail: session.customer_email,
+      amountTotal: session.amount_total ? session.amount_total / 100 : 0,
+    });
+  } catch (error: any) {
+    console.error('Error verifying session:', error);
+    res.status(500).json({ message: 'Error verifying session', error: error.message });
   }
 };

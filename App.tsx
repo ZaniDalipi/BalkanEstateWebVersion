@@ -18,6 +18,8 @@ import AgenciesListPage from './components/AgenciesListPage';
 import AgencyDetailPage from './components/AgencyDetailPage';
 import EnterpriseCreationForm from './components/EnterpriseCreationForm';
 import PropertyDetailsPage from './components/BuyerFlow/PropertyDetailsPage';
+import PaymentSuccess from './components/PaymentSuccess';
+import PaymentCancel from './components/PaymentCancel';
 import { LogoIcon } from './constants';
 import ListingLimitWarningModal from './components/shared/ListingLimitWarningModal';
 import DiscountGameModal from './components/shared/DiscountGameModal';
@@ -186,6 +188,12 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
     const checkUrlForRouting = () => {
       const path = window.location.pathname;
 
+      // Payment callback routes (highest priority)
+      if (path === '/payment/success' || path === '/payment/cancel') {
+        // Don't change active view, let the component handle it
+        return;
+      }
+
       // Agency detail route: /agencies/:slug
       const agencyMatch = path.match(/^\/agencies\/(.+)$/);
       if (agencyMatch) {
@@ -270,6 +278,15 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
     };
     fetchAgency();
   }, [state.selectedAgencyId]);
+
+  // Payment callback routes (highest priority)
+  const path = window.location.pathname;
+  if (path === '/payment/success') {
+    return <PaymentSuccess />;
+  }
+  if (path === '/payment/cancel') {
+    return <PaymentCancel />;
+  }
 
   // Global handler for selected property view
   if (state.selectedProperty) {
