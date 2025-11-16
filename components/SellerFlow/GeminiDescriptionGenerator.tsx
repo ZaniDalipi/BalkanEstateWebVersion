@@ -732,15 +732,9 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                                 </ul>
                             )}
                         </div>
-                        
-                        <div className="relative">
-                            <input type="number" id="lat" value={listingData.lat !== 0 ? listingData.lat.toFixed(6) : ''} className={`${floatingInputClasses} border-neutral-300 bg-neutral-100 cursor-not-allowed`} placeholder=" " readOnly />
-                            <label htmlFor="lat" className={floatingLabelClasses}>Latitude</label>
-                        </div>
-                        <div className="relative">
-                            <input type="number" id="lng" value={listingData.lng !== 0 ? listingData.lng.toFixed(6) : ''} className={`${floatingInputClasses} border-neutral-300 bg-neutral-100 cursor-not-allowed`} placeholder=" " readOnly />
-                            <label htmlFor="lng" className={floatingLabelClasses}>Longitude</label>
-                        </div>
+
+                        {/* Latitude and Longitude are auto-calculated from address on the backend via geocoding service */}
+                        {/* No need to show these fields to users */}
 
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('streetAddress')?.focus()}><input type="text" id="streetAddress" name="streetAddress" value={listingData.streetAddress} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " required /><label htmlFor="streetAddress" className={floatingLabelClasses}>Street Address (e.g., Main Street 123)</label></div>
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('price')?.focus()}><input type="text" id="price" inputMode="numeric" name="price" value={listingData.price > 0 ? new Intl.NumberFormat('de-DE').format(listingData.price) : ''} onChange={handlePriceChange} className={`${floatingInputClasses} border-neutral-300 pl-8`} placeholder=" " required /><label htmlFor="price" className={floatingLabelClasses}>Price</label><span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">{getCurrencySymbol(selectedLocation?.address?.country || '')}</span></div>
