@@ -13,6 +13,8 @@ export interface IAgency extends Document {
   city?: string;
   country?: string;
   zipCode?: string;
+  lat?: number; // Latitude for map display
+  lng?: number; // Longitude for map display
   website?: string;
   // Agency info
   specialties?: string[];
@@ -107,6 +109,16 @@ const AgencySchema: Schema = new Schema(
     zipCode: {
       type: String,
       trim: true,
+    },
+    lat: {
+      type: Number,
+      min: -90,
+      max: 90,
+    },
+    lng: {
+      type: Number,
+      min: -180,
+      max: 180,
     },
     website: {
       type: String,
