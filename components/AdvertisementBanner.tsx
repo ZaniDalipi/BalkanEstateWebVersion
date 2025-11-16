@@ -71,8 +71,8 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
       dispatch({ type: 'SET_SELECTED_AGENCY', payload: identifier });
       dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
 
-      // Update browser URL with normalized slug
-      window.history.pushState({}, '', `/agency/${identifier}`);
+      // Update browser URL with normalized slug (consistent with /agencies route)
+      window.history.pushState({}, '', `/agencies/${identifier}`);
     }
   };
 

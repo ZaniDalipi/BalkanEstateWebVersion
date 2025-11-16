@@ -186,8 +186,8 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
     const checkUrlForRouting = () => {
       const path = window.location.pathname;
 
-      // Agency detail route: /agency/:slug
-      const agencyMatch = path.match(/^\/agency\/(.+)$/);
+      // Agency detail route: /agencies/:slug
+      const agencyMatch = path.match(/^\/agencies\/(.+)$/);
       if (agencyMatch) {
         let agencySlug = decodeURIComponent(agencyMatch[1]);
 

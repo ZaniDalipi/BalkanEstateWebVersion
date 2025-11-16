@@ -172,8 +172,8 @@ const AgenciesListPage: React.FC = () => {
 
     dispatch({ type: 'SET_SELECTED_AGENCY', payload: identifier });
 
-    // Update browser URL with normalized slug
-    window.history.pushState({}, '', `/agency/${identifier}`);
+    // Update browser URL with normalized slug (consistent with /agencies route)
+    window.history.pushState({}, '', `/agencies/${identifier}`);
   };
 
   const getRankBadge = (index: number) => {
