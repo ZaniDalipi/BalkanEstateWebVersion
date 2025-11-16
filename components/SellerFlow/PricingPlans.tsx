@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../shared/Modal';
+import PaymentWindow from '../shared/PaymentWindow';
 import { BuildingOfficeIcon, ChartBarIcon, CurrencyDollarIcon, BoltIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
+import { fetchSellerProducts, Product } from '../../utils/api';
 
 interface PricingPlansProps {
   isOpen: boolean;
@@ -15,10 +17,33 @@ const TickIcon: React.FC = () => (
 );
 
 const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscribe, isOffer }) => {
-  const { state } = useAppContext();
+  const { state, dispatch } = useAppContext();
   const { activeDiscount } = state;
   const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes in seconds
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showPaymentWindow, setShowPaymentWindow] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{
+    name: string;
+    price: number;
+    interval: 'month' | 'year';
+    discount: number;
+    productId: string;
+  } | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch products from backend
+  useEffect(() => {
+    if (isOpen && products.length === 0) {
+      const loadProducts = async () => {
+        setLoading(true);
+        const fetchedProducts = await fetchSellerProducts();
+        setProducts(fetchedProducts);
+        setLoading(false);
+      };
+      loadProducts();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -62,9 +87,14 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
     return price;
   };
 
-  const proYearlyPrice = 200;
-  const proMonthlyPrice = 25;
-  const enterprisePrice = 1000;
+  // Get products by productId with fallback prices
+  const proYearlyProduct = products.find(p => p.productId === 'seller_pro_yearly');
+  const proMonthlyProduct = products.find(p => p.productId === 'seller_pro_monthly');
+  const enterpriseProduct = products.find(p => p.productId === 'seller_enterprise_yearly');
+
+  const proYearlyPrice = proYearlyProduct?.price || 200;
+  const proMonthlyPrice = proMonthlyProduct?.price || 25;
+  const enterprisePrice = enterpriseProduct?.price || 1000;
 
   const proYearlyDiscount = isOffer && activeDiscount ? activeDiscount.proYearly : 0;
   const proMonthlyDiscount = isOffer && activeDiscount ? activeDiscount.proMonthly : 0;
@@ -74,10 +104,70 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
   const discountedProMonthly = applyDiscount(proMonthlyPrice, proMonthlyDiscount);
   const discountedEnterprise = applyDiscount(enterprisePrice, enterpriseDiscount);
 
+  const handlePlanSelection = (planName: string, price: number, interval: 'month' | 'year', discount: number, productId: string) => {
+  // Check if user is authenticated (check either flag or user object)
+  if (!state.isAuthenticated || !state.currentUser) {
+    // Save pending subscription
+    dispatch({
+      type: 'SET_PENDING_SUBSCRIPTION',
+      payload: {
+        planName,
+        planPrice: price,
+        planInterval: interval,
+        discountPercent: discount,
+        modalType: 'seller',
+      },
+    });
+
+    // Close this modal
+    onClose();
+
+    // Open auth modal
+    dispatch({
+      type: 'TOGGLE_AUTH_MODAL',
+      payload: { isOpen: true, view: 'login' },
+    });
+    return;
+  }
+
+  setSelectedPlan({ name: planName, price, interval, discount, productId });
+  setShowPaymentWindow(true);
+};
+  const handlePaymentSuccess = (paymentIntentId: string) => {
+    console.log('Payment successful:', paymentIntentId);
+    // TODO: Update user subscription status via API
+    setShowPaymentWindow(false);
+    onClose();
+    if (onSubscribe) {
+      onSubscribe();
+    }
+    alert('Subscription activated successfully!');
+  };
+
+  const handlePaymentError = (error: string) => {
+    console.error('Payment error:', error);
+    // Error is already shown in the PaymentWindow component
+  };
+
+  // Determine user role for payment methods
+  const getUserRole = (): 'buyer' | 'private_seller' | 'agent' => {
+    if (!state.currentUser) return 'private_seller';
+    return state.currentUser.role === 'agent' ? 'agent' : 'private_seller';
+  };
+
 
   return (
-    <Modal isOpen={isOpen} onClose={handleCloseAttempt} size="5xl">
+    <>
+      <Modal isOpen={isOpen} onClose={handleCloseAttempt} size="5xl">
         <div className="relative p-4 sm:p-8">
+            {loading && (
+              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex items-center justify-center rounded-2xl">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                  <p className="mt-4 text-neutral-600 font-medium">Loading plans...</p>
+                </div>
+              </div>
+            )}
             {showConfirmation && (
                 <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-10 flex flex-col justify-center items-center p-8 text-center rounded-2xl">
                     <h3 className="text-2xl font-bold text-red-600">Are you sure?</h3>
@@ -150,7 +240,10 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                         <li className="flex items-center"><TickIcon /> Lead management system</li>
                         <li className="flex items-center"><TickIcon /> Priority customer support</li>
                     </ul>
-                    <button onClick={onSubscribe} className="w-full mt-8 py-3.5 rounded-lg font-bold text-white bg-indigo-500 hover:bg-indigo-600 transition-colors shadow-md text-base sm:text-lg">
+                    <button
+                        onClick={() => handlePlanSelection('Pro Annual', proYearlyPrice, 'year', proYearlyDiscount, proYearlyProduct?.productId || 'seller_pro_yearly')}
+                        className="w-full mt-8 py-3.5 rounded-lg font-bold text-white bg-indigo-500 hover:bg-indigo-600 hover:shadow-xl hover:scale-[1.02] transition-all shadow-md text-base sm:text-lg"
+                    >
                         {isOffer ? `Get Pro Annual - €${discountedProYearly}/year` : `Get Pro Annual - €${proYearlyPrice}/year`}
                     </button>
                 </div>
@@ -204,7 +297,10 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                             <p className="text-neutral-600 text-sm">Manage on the go</p>
                         </div>
                     </div>
-                     <button onClick={onSubscribe} className="w-full mt-8 py-3.5 rounded-lg font-bold bg-white border border-neutral-300 text-neutral-700 hover:bg-neutral-100 transition-colors shadow-sm text-base sm:text-lg">
+                     <button
+                        onClick={() => handlePlanSelection('Pro Monthly', proMonthlyPrice, 'month', proMonthlyDiscount, proMonthlyProduct?.productId || 'seller_pro_monthly')}
+                        className="w-full mt-8 py-3.5 rounded-lg font-bold bg-white border-2 border-neutral-300 text-neutral-700 hover:bg-neutral-50 hover:border-primary hover:shadow-lg hover:scale-[1.02] transition-all shadow-sm text-base sm:text-lg"
+                    >
                         {isOffer ? `Get Pro Monthly - €${discountedProMonthly}/month` : `Get Pro Monthly - €${proMonthlyPrice}/month`}
                     </button>
                 </div>
@@ -257,8 +353,11 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                             <p className="text-neutral-300 text-sm">Email, phone, and direct inquiries</p>
                         </div>
                     </div>
-                     <button onClick={onSubscribe} className="w-full mt-8 py-3.5 rounded-lg font-bold bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-md text-base sm:text-lg">
-                         {isOffer ? `Contact Sales - €${discountedEnterprise}/year` : 'Perfect for Real Estate Companies'}
+                     <button
+                        onClick={() => handlePlanSelection('Enterprise', enterprisePrice, 'year', enterpriseDiscount, enterpriseProduct?.productId || 'seller_enterprise_yearly')}
+                        className="w-full mt-8 py-3.5 rounded-lg font-bold bg-amber-500 text-white hover:bg-amber-600 hover:shadow-xl hover:scale-[1.02] transition-all shadow-md text-base sm:text-lg"
+                    >
+                         {isOffer ? `Get Enterprise - €${discountedEnterprise}/year` : `Get Enterprise - €${enterprisePrice}/year`}
                     </button>
                 </div>
             </div>
@@ -280,7 +379,25 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                 </div>
             </div>
         </div>
-    </Modal>
+      </Modal>
+
+      {/* Payment Window */}
+      {selectedPlan && (
+        <PaymentWindow
+          isOpen={showPaymentWindow}
+          onClose={() => setShowPaymentWindow(false)}
+          planName={selectedPlan.name}
+          planPrice={selectedPlan.price}
+          planInterval={selectedPlan.interval}
+          userRole={getUserRole()}
+          userEmail={state.currentUser?.email}
+          userCountry={state.currentUser?.country || 'RS'}
+          onSuccess={handlePaymentSuccess}
+          onError={handlePaymentError}
+          discountPercent={selectedPlan.discount}
+        />
+      )}
+    </>
   );
 };
 

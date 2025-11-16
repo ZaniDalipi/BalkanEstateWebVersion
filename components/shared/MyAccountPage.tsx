@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import MyListings from './MyListings';
+import SubscriptionManagement from './SubscriptionManagement';
 import { User, UserRole } from '../../types';
 import { BuildingOfficeIcon, ChartBarIcon, UserCircleIcon, ArrowLeftOnRectangleIcon } from '../../constants';
 import AgentLicenseModal from './AgentLicenseModal';
@@ -29,13 +30,22 @@ const TabButton: React.FC<{
 
 const RoleSelector: React.FC<{
     selectedRole: UserRole;
+    originalRole: UserRole;
     onChange: (role: UserRole) => void;
-}> = ({ selectedRole, onChange }) => {
+}> = ({ selectedRole, originalRole, onChange }) => {
     const roles: { id: UserRole, label: string }[] = [
         { id: UserRole.BUYER, label: 'Buyer' },
         { id: UserRole.PRIVATE_SELLER, label: 'Private Seller' },
         { id: UserRole.AGENT, label: 'Agent' }
     ];
+
+    // Agents cannot switch to buyer
+    const isDisabled = (role: UserRole) => {
+        if (originalRole === UserRole.AGENT && role === UserRole.BUYER) {
+            return true;
+        }
+        return false;
+    };
 
     return (
         <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200">
@@ -43,12 +53,16 @@ const RoleSelector: React.FC<{
                 <button
                     key={role.id}
                     type="button"
-                    onClick={() => onChange(role.id)}
+                    onClick={() => !isDisabled(role.id) && onChange(role.id)} // Fix: pass role.id instead of role
+                    disabled={isDisabled(role.id)} // Fix: pass role.id instead of role
                     className={`px-2.5 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex-grow text-center ${
                         selectedRole === role.id
                         ? 'bg-white text-primary shadow'
+                        : isDisabled(role.id) // Fix: pass role.id instead of role
+                        ? 'text-neutral-400 cursor-not-allowed opacity-50'
                         : 'text-neutral-600 hover:bg-neutral-200'
                     }`}
+                    title={isDisabled(role.id) ? 'Agents cannot switch to Buyer role' : ''} // Fix: pass role.id instead of role
                 >
                     {role.label}
                 </button>
@@ -132,7 +146,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const floatingLabelClasses = "absolute text-base text-neutral-700 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1";
 
     return (
-        <>
+        <form>
             <AgentLicenseModal
                 isOpen={isLicenseModalOpen}
                 onClose={() => {
@@ -142,27 +156,10 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 onSubmit={handleLicenseSubmit}
             />
 
-            <form onSubmit={handleSaveChanges} className="space-y-8">
-                <div>
-                    <h3 className="text-xl font-bold text-neutral-800 mb-2">Profile Settings</h3>
-                    <p className="text-sm text-neutral-500">Manage your personal information and account type.</p>
-                </div>
-
-                {error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-                        {error}
-                    </div>
-                )}
-
-                <fieldset>
-                    <legend className="block text-sm font-medium text-neutral-700 mb-2">Your Role</legend>
-                    <RoleSelector selectedRole={formData.role} onChange={handleRoleChange} />
-                    {formData.listingsCount !== undefined && (
-                        <p className="text-xs text-neutral-500 mt-2">
-                            Active listings: {formData.listingsCount} {!formData.isSubscribed && `(${5 - (formData.listingsCount || 0)} free listings remaining)`}
-                        </p>
-                    )}
-                </fieldset>
+            <fieldset>
+                <legend className="block text-sm font-medium text-neutral-700 mb-2">Your Role</legend>
+                <RoleSelector selectedRole={formData.role} originalRole={user.role} onChange={handleRoleChange} />
+            </fieldset>
 
             <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <legend className="sr-only">Personal Information</legend>
@@ -225,7 +222,6 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 </button>
             </div>
         </form>
-        </>
     );
 };
 
@@ -269,7 +265,7 @@ const MyAccountPage: React.FC = () => {
             case 'performance':
                  return <div className="text-center p-8"><h3 className="text-xl font-bold">Performance Analytics Coming Soon!</h3></div>;
             case 'subscription':
-                 return <div className="text-center p-8"><h3 className="text-xl font-bold">Subscription Management Coming Soon!</h3></div>;
+                 return <SubscriptionManagement userId={state.currentUser!.id} />;
             default:
                 return null;
         }

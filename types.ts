@@ -234,6 +234,14 @@ export interface SearchPageState {
     isFiltersOpen: boolean;
 }
 
+export interface PendingSubscription {
+    planName: string;
+    planPrice: number;
+    planInterval: 'month' | 'year';
+    discountPercent?: number;
+    modalType: 'buyer' | 'seller'; // which modal to open
+}
+
 export interface AppState {
     onboardingComplete: boolean;
     isAuthenticating: boolean;
@@ -257,6 +265,7 @@ export interface AppState {
     conversations: Conversation[];
     selectedAgentId: string | null;
     pendingProperty: Property | null;
+    pendingSubscription: PendingSubscription | null;
     searchPageState: SearchPageState;
     activeDiscount: { proYearly: number; proMonthly: number; enterprise: number; } | null;
     isListingLimitWarningOpen: boolean;
@@ -296,6 +305,7 @@ export type AppAction =
     | { type: 'CREATE_OR_ADD_MESSAGE', payload: { propertyId: string, message: Message } }
     | { type: 'MARK_CONVERSATION_AS_READ', payload: string }
     | { type: 'SET_PENDING_PROPERTY', payload: Property | null }
+    | { type: 'SET_PENDING_SUBSCRIPTION', payload: PendingSubscription | null }
     | { type: 'UPDATE_SEARCH_PAGE_STATE', payload: Partial<SearchPageState> }
     | { type: 'SET_ACTIVE_DISCOUNT', payload: { proYearly: number; proMonthly: number; enterprise: number; } | null }
     | { type: 'TOGGLE_LISTING_LIMIT_WARNING', payload: boolean }
