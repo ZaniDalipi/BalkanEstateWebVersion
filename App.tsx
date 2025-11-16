@@ -181,12 +181,13 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
   const [selectedAgency, setSelectedAgency] = useState<any>(null);
   const [isLoadingAgency, setIsLoadingAgency] = useState(false);
 
-  // Check URL for agency routing on mount and when URL changes
+  // Check URL for routing on mount and when URL changes
   useEffect(() => {
-    const checkUrlForAgency = () => {
+    const checkUrlForRouting = () => {
       const path = window.location.pathname;
-      const agencyMatch = path.match(/^\/agency\/(.+)$/);
 
+      // Agency detail route: /agency/:slug
+      const agencyMatch = path.match(/^\/agency\/(.+)$/);
       if (agencyMatch) {
         let agencySlug = decodeURIComponent(agencyMatch[1]);
 
@@ -196,17 +197,35 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
           agencySlug = agencySlug.split(',')[1];
         }
 
-        // Set the selected agency in state
         dispatch({ type: 'SET_SELECTED_AGENCY', payload: agencySlug });
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
+        return;
+      }
+
+      // Main navigation routes
+      const routeMap: { [key: string]: any } = {
+        '/': 'search',
+        '/search': 'search',
+        '/saved-searches': 'saved-searches',
+        '/saved-properties': 'saved-properties',
+        '/inbox': 'inbox',
+        '/account': 'account',
+        '/agents': 'agents',
+        '/agencies': 'agencies',
+        '/create-listing': 'create-listing',
+      };
+
+      const view = routeMap[path];
+      if (view) {
+        dispatch({ type: 'SET_ACTIVE_VIEW', payload: view });
       }
     };
 
-    checkUrlForAgency();
+    checkUrlForRouting();
 
     // Listen for browser back/forward navigation
-    window.addEventListener('popstate', checkUrlForAgency);
-    return () => window.removeEventListener('popstate', checkUrlForAgency);
+    window.addEventListener('popstate', checkUrlForRouting);
+    return () => window.removeEventListener('popstate', checkUrlForRouting);
   }, [dispatch]);
 
   // Fetch selected agency when selectedAgencyId changes

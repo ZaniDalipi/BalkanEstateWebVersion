@@ -88,7 +88,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const handleBack = () => {
     dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
     dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
-    window.history.pushState({}, '', '/');
+    window.history.pushState({}, '', '/agencies');
   };
 
   const handleAgentClick = (agentId: string) => {

@@ -41,6 +41,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
         } else {
             dispatch({ type: 'SET_ACTIVE_VIEW', payload: view });
+
+            // Update browser URL
+            const route = view === 'search' ? '/' : `/${view}`;
+            window.history.pushState({}, '', route);
         }
         onClose(); // Close sidebar on mobile after navigation
     };
@@ -48,6 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const handleNewListingClick = () => {
         if (isAuthenticated) {
             dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'create-listing' });
+            window.history.pushState({}, '', '/create-listing');
         } else {
             dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'signup' } });
         }
@@ -63,6 +68,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         logout();
         // After logout, reset to a default public view
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
+        window.history.pushState({}, '', '/');
         onClose();
     };
 
