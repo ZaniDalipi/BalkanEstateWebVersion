@@ -10,7 +10,7 @@ const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb:/
 const sampleAgencies = [
   {
     name: 'Belgrade Premium Properties',
-    slug: 'serbia,belgrade-premium-properties',
+    slug: 'belgrade-premium-properties',
     description: 'Leading real estate agency in Belgrade, specializing in luxury apartments and commercial properties in the heart of Serbia.',
     logo: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
     coverImage: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=1200',
@@ -31,7 +31,7 @@ const sampleAgencies = [
   },
   {
     name: 'Zagreb Elite Estates',
-    slug: 'croatia,zagreb-elite-estates',
+    slug: 'zagreb-elite-estates',
     description: 'Premium real estate services in Croatia\'s capital. Experts in residential and vacation properties along the Adriatic coast.',
     logo: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
     coverImage: 'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=1200',
@@ -52,7 +52,7 @@ const sampleAgencies = [
   },
   {
     name: 'Sofia Property Group',
-    slug: 'bulgaria,sofia-property-group',
+    slug: 'sofia-property-group',
     description: 'Bulgaria\'s most trusted real estate agency. Specializing in residential, commercial, and ski resort properties.',
     logo: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
     coverImage: 'https://images.unsplash.com/photo-1449844908441-8829872d2607?w=1200',
@@ -73,7 +73,7 @@ const sampleAgencies = [
   },
   {
     name: 'Bucharest Luxury Homes',
-    slug: 'romania,bucharest-luxury-homes',
+    slug: 'bucharest-luxury-homes',
     description: 'Exclusive real estate agency in Bucharest offering premium properties in the most sought-after neighborhoods.',
     logo: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
     coverImage: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=1200',
@@ -94,7 +94,7 @@ const sampleAgencies = [
   },
   {
     name: 'Tirana Property Solutions',
-    slug: 'albania,tirana-property-solutions',
+    slug: 'tirana-property-solutions',
     description: 'Albania\'s fastest growing real estate agency. Connecting buyers with the best properties in Tirana and coastal regions.',
     logo: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
     coverImage: 'https://images.unsplash.com/photo-1467638992958-cfe2cd6e9a56?w=1200',
@@ -115,7 +115,7 @@ const sampleAgencies = [
   },
   {
     name: 'Skopje Real Estate Partners',
-    slug: 'north-macedonia,skopje-real-estate-partners',
+    slug: 'skopje-real-estate-partners',
     description: 'Premier real estate agency in North Macedonia, offering comprehensive property services throughout Skopje and beyond.',
     logo: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
     coverImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
@@ -136,7 +136,7 @@ const sampleAgencies = [
   },
   {
     name: 'Pristina Urban Realty',
-    slug: 'kosovo,pristina-urban-realty',
+    slug: 'pristina-urban-realty',
     description: 'Leading real estate agency in Kosovo, specializing in modern apartments and commercial properties in Pristina.',
     logo: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
     coverImage: 'https://images.unsplash.com/photo-1464146072230-91cabc968266?w=1200',
@@ -157,7 +157,7 @@ const sampleAgencies = [
   },
   {
     name: 'Sarajevo Premier Estates',
-    slug: 'bosnia-herzegovina,sarajevo-premier-estates',
+    slug: 'sarajevo-premier-estates',
     description: 'Trusted real estate partner in Bosnia and Herzegovina, offering quality properties in Sarajevo and surrounding areas.',
     logo: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
     coverImage: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1200',
