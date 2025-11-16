@@ -111,7 +111,7 @@ export const promoteProperty = async (
     await property.save();
 
     // Update user's promoted ads count
-    user.promotedAdsCount += 1;
+    user.promotedAdsCount = (user.promotedAdsCount || 0) + 1;
     await user.save();
 
     res.status(201).json({
@@ -190,7 +190,7 @@ export const cancelPromotion = async (
 
     // Update user's promoted ads count
     const user = await User.findById(String((req.user as IUser)._id));
-    if (user && user.promotedAdsCount > 0) {
+    if (user && user.promotedAdsCount && user.promotedAdsCount > 0) {
       user.promotedAdsCount -= 1;
       await user.save();
     }
