@@ -17,6 +17,12 @@ export interface IUser extends Document {
   agencyName?: string;
   agentId?: string;
   licenseNumber?: string;
+  licenseVerified?: boolean,
+  licenseVerificationDate?: Date,
+
+  listingsCount: number,
+  totalListingsCreated: number
+
 
   // Enhanced Subscription Fields
   isSubscribed: boolean;
