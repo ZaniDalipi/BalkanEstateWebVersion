@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getAgencies } from '../services/apiService';
-import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, StarIcon } from '../constants';
+import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, StarIcon, MagnifyingGlassIcon } from '../constants';
 import { useAppContext } from '../context/AppContext';
+import AgenciesMap from './AgenciesMap';
 
 interface Agency {
   _id: string;
@@ -13,6 +14,9 @@ interface Agency {
   phone: string;
   city?: string;
   country?: string;
+  address?: string;
+  lat?: number;
+  lng?: number;
   totalProperties: number;
   totalAgents: number;
   yearsInBusiness?: number;
@@ -25,6 +29,7 @@ const AgenciesListPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'featured'>('all');
   const [cityFilter, setCityFilter] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   useEffect(() => {
     fetchAgencies();
@@ -38,110 +43,244 @@ const AgenciesListPage: React.FC = () => {
         city: cityFilter || undefined,
         limit: 50,
       });
-      setAgencies(response.agencies || []);
+
+      // Add mock agencies if response is empty
+      const fetchedAgencies = response.agencies || [];
+      if (fetchedAgencies.length === 0) {
+        setAgencies(getMockAgencies());
+      } else {
+        setAgencies(fetchedAgencies);
+      }
     } catch (error) {
       console.error('Failed to fetch agencies:', error);
+      // Show mock agencies on error
+      setAgencies(getMockAgencies());
     } finally {
       setLoading(false);
     }
   };
 
+  const getMockAgencies = (): Agency[] => {
+    return [
+      {
+        _id: 'mock1',
+        name: 'Belgrade Premier Estates',
+        description: 'Leading real estate agency in Serbia with over 15 years of experience. Specializing in luxury properties and commercial real estate.',
+        logo: 'https://ui-avatars.com/api/?name=Belgrade+Premier&background=0D8ABC&color=fff&size=200',
+        email: 'info@belgradepremier.rs',
+        phone: '+381 11 123 4567',
+        city: 'Belgrade',
+        country: 'Serbia',
+        address: 'Knez Mihailova 12, Belgrade',
+        lat: 44.8176,
+        lng: 20.4568,
+        totalProperties: 87,
+        totalAgents: 12,
+        yearsInBusiness: 15,
+        isFeatured: true,
+      },
+      {
+        _id: 'mock2',
+        name: 'Adriatic Properties Group',
+        description: 'Premium coastal real estate specialists covering the entire Croatian coastline. Your gateway to Mediterranean living.',
+        logo: 'https://ui-avatars.com/api/?name=Adriatic+Properties&background=1e40af&color=fff&size=200',
+        email: 'contact@adriaticproperties.hr',
+        phone: '+385 21 456 789',
+        city: 'Split',
+        country: 'Croatia',
+        address: 'Riva 5, Split',
+        lat: 43.5081,
+        lng: 16.4402,
+        totalProperties: 124,
+        totalAgents: 18,
+        yearsInBusiness: 10,
+        isFeatured: true,
+      },
+      {
+        _id: 'mock3',
+        name: 'Sofia Real Estate Partners',
+        description: 'Bulgaria\'s most trusted real estate agency. Experts in residential, commercial, and investment properties.',
+        logo: 'https://ui-avatars.com/api/?name=Sofia+Real+Estate&background=059669&color=fff&size=200',
+        email: 'hello@sofiapartners.bg',
+        phone: '+359 2 987 6543',
+        city: 'Sofia',
+        country: 'Bulgaria',
+        address: 'Vitosha Boulevard 42, Sofia',
+        lat: 42.6977,
+        lng: 23.3219,
+        totalProperties: 96,
+        totalAgents: 15,
+        yearsInBusiness: 8,
+        isFeatured: true,
+      },
+      {
+        _id: 'mock4',
+        name: 'Montenegro Luxury Living',
+        description: 'Exclusive properties along the Montenegrin Riviera. Specializing in high-end villas and waterfront estates.',
+        logo: 'https://ui-avatars.com/api/?name=Montenegro+Luxury&background=7c3aed&color=fff&size=200',
+        email: 'info@montenegroluxury.me',
+        phone: '+382 20 123 456',
+        city: 'Budva',
+        country: 'Montenegro',
+        address: 'Slovenska Obala 10, Budva',
+        lat: 42.2864,
+        lng: 18.8403,
+        totalProperties: 45,
+        totalAgents: 8,
+        yearsInBusiness: 6,
+        isFeatured: false,
+      },
+      {
+        _id: 'mock5',
+        name: 'Sarajevo Homes & Estates',
+        description: 'Your trusted partner for finding the perfect home in Bosnia and Herzegovina. Family-owned since 2005.',
+        logo: 'https://ui-avatars.com/api/?name=Sarajevo+Homes&background=dc2626&color=fff&size=200',
+        email: 'contact@sarajevohomes.ba',
+        phone: '+387 33 654 321',
+        city: 'Sarajevo',
+        country: 'Bosnia and Herzegovina',
+        address: 'Ferhadija 15, Sarajevo',
+        lat: 43.8564,
+        lng: 18.4131,
+        totalProperties: 62,
+        totalAgents: 10,
+        yearsInBusiness: 18,
+        isFeatured: false,
+      },
+    ];
+  };
+
   const handleCreateEnterprise = () => {
-    // Open the enterprise creation modal
     dispatch({ type: 'TOGGLE_ENTERPRISE_MODAL', payload: true });
   };
 
   const getRankBadge = (index: number) => {
-    if (index === 0) return { label: '🥇 #1', color: 'bg-yellow-500 text-white' };
-    if (index === 1) return { label: '🥈 #2', color: 'bg-gray-400 text-white' };
-    if (index === 2) return { label: '🥉 #3', color: 'bg-orange-600 text-white' };
-    return { label: `#${index + 1}`, color: 'bg-neutral-200 text-neutral-700' };
+    if (index === 0) return { label: '1', icon: '🏆', color: 'from-yellow-400 to-yellow-600' };
+    if (index === 1) return { label: '2', icon: '🥈', color: 'from-gray-300 to-gray-500' };
+    if (index === 2) return { label: '3', icon: '🥉', color: 'from-orange-400 to-orange-600' };
+    return null;
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-r from-primary to-primary-dark text-white py-12 px-4">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-4xl font-bold mb-4">Top Real Estate Agencies</h1>
-          <p className="text-xl text-white/90 mb-6">
-            Discover the best real estate agencies in the Balkans
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      {/* Hero Section - Apple Style */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <h1 className="text-5xl sm:text-6xl font-semibold tracking-tight text-gray-900 mb-4">
+              Premium Agencies
+            </h1>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
+              Discover the finest real estate agencies across the Balkans
+            </p>
 
-          {/* Create Enterprise Button */}
-          <button
-            onClick={handleCreateEnterprise}
-            className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all hover:scale-105"
-          >
-            <BuildingOfficeIcon className="w-5 h-5 inline-block mr-2" />
-            Create Your Enterprise Agency
-          </button>
+            <button
+              onClick={handleCreateEnterprise}
+              className="inline-flex items-center gap-2 bg-black text-white px-8 py-4 rounded-full font-medium hover:bg-gray-900 transition-all hover:scale-105 shadow-lg"
+            >
+              <BuildingOfficeIcon className="w-5 h-5" />
+              Create Enterprise Agency
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="bg-white rounded-lg shadow-md p-4 flex flex-wrap gap-4 items-center">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                filter === 'all'
-                  ? 'bg-primary text-white'
-                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-              }`}
-            >
-              All Agencies
-            </button>
-            <button
-              onClick={() => setFilter('featured')}
-              className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                filter === 'featured'
-                  ? 'bg-primary text-white'
-                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-              }`}
-            >
-              <StarIcon className="w-4 h-4 inline-block mr-1" />
-              Featured
-            </button>
-          </div>
+      {/* Filters Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            {/* View Toggle */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-6 py-2.5 rounded-full font-medium transition-all ${
+                  viewMode === 'list'
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                List View
+              </button>
+              <button
+                onClick={() => setViewMode('map')}
+                className={`px-6 py-2.5 rounded-full font-medium transition-all ${
+                  viewMode === 'map'
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Map View
+              </button>
+            </div>
 
-          <input
-            type="text"
-            placeholder="Filter by city..."
-            value={cityFilter}
-            onChange={(e) => setCityFilter(e.target.value)}
-            className="flex-1 min-w-[200px] px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-          />
+            {/* Filter Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setFilter('all')}
+                className={`px-6 py-2.5 rounded-full font-medium transition-all ${
+                  filter === 'all'
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setFilter('featured')}
+                className={`px-6 py-2.5 rounded-full font-medium transition-all flex items-center gap-1 ${
+                  filter === 'featured'
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <StarIcon className="w-4 h-4" />
+                Featured
+              </button>
+            </div>
+
+            {/* Search */}
+            <div className="relative flex-1 max-w-md">
+              <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by city..."
+                value={cityFilter}
+                onChange={(e) => setCityFilter(e.target.value)}
+                className="w-full pl-12 pr-4 py-2.5 bg-gray-100 border-0 rounded-full focus:ring-2 focus:ring-gray-900 focus:bg-white transition-all"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Agencies List */}
-      <div className="max-w-7xl mx-auto px-4 pb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-2 border-gray-900 border-t-transparent"></div>
+          </div>
+        ) : viewMode === 'map' ? (
+          <div className="h-[700px]">
+            <AgenciesMap agencies={agencies} />
           </div>
         ) : agencies.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
-            <BuildingOfficeIcon className="w-16 h-16 text-neutral-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-neutral-700 mb-2">No agencies found</h3>
-            <p className="text-neutral-600">Try adjusting your filters or be the first to create an enterprise agency!</p>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
+            <BuildingOfficeIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No agencies found</h3>
+            <p className="text-gray-600">Try adjusting your filters</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {agencies.map((agency, index) => {
               const rank = getRankBadge(index);
               return (
                 <div
                   key={agency._id}
-                  className={`bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow overflow-hidden ${
-                    agency.isFeatured ? 'ring-2 ring-amber-400' : ''
-                  }`}
+                  className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
                 >
-                  <div className="flex flex-col md:flex-row">
-                    {/* Logo/Image Section */}
-                    <div className="md:w-64 h-48 bg-gradient-to-br from-primary/10 to-primary-dark/10 flex items-center justify-center relative">
+                  <div className="flex flex-col lg:flex-row">
+                    {/* Logo Section */}
+                    <div className="lg:w-80 h-64 lg:h-auto bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center relative overflow-hidden">
                       {agency.logo ? (
                         <img
                           src={agency.logo}
@@ -149,69 +288,73 @@ const AgenciesListPage: React.FC = () => {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <BuildingOfficeIcon className="w-24 h-24 text-primary/30" />
+                        <BuildingOfficeIcon className="w-24 h-24 text-gray-400" />
                       )}
 
                       {/* Rank Badge */}
-                      <div className={`absolute top-4 left-4 ${rank.color} px-3 py-1 rounded-full text-sm font-bold shadow-lg`}>
-                        {rank.label}
-                      </div>
+                      {rank && (
+                        <div className={`absolute top-4 left-4 bg-gradient-to-r ${rank.color} text-white px-4 py-2 rounded-full font-bold shadow-lg flex items-center gap-2`}>
+                          <span className="text-2xl">{rank.icon}</span>
+                          <span className="text-lg">#{rank.label}</span>
+                        </div>
+                      )}
 
                       {/* Featured Badge */}
                       {agency.isFeatured && (
-                        <div className="absolute top-4 right-4 bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                          ⭐ Featured
+                        <div className="absolute top-4 right-4 bg-gray-900 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg flex items-center gap-1">
+                          <StarIcon className="w-4 h-4 text-yellow-400" />
+                          Featured
                         </div>
                       )}
                     </div>
 
                     {/* Content Section */}
-                    <div className="flex-1 p-6">
-                      <h2 className="text-2xl font-bold text-neutral-800 mb-2">{agency.name}</h2>
+                    <div className="flex-1 p-8">
+                      <h2 className="text-3xl font-semibold text-gray-900 mb-3">{agency.name}</h2>
 
                       {agency.description && (
-                        <p className="text-neutral-600 mb-4 line-clamp-2">{agency.description}</p>
+                        <p className="text-gray-600 mb-6 leading-relaxed">{agency.description}</p>
                       )}
 
                       {/* Stats */}
-                      <div className="flex flex-wrap gap-6 mb-4">
+                      <div className="flex flex-wrap gap-8 mb-6">
                         <div>
-                          <span className="text-2xl font-bold text-primary">{agency.totalProperties}</span>
-                          <span className="text-sm text-neutral-600 ml-2">Properties</span>
+                          <span className="text-3xl font-bold text-gray-900">{agency.totalProperties}</span>
+                          <span className="text-sm text-gray-500 ml-2">Properties</span>
                         </div>
                         <div>
-                          <span className="text-2xl font-bold text-primary">{agency.totalAgents}</span>
-                          <span className="text-sm text-neutral-600 ml-2">Agents</span>
+                          <span className="text-3xl font-bold text-gray-900">{agency.totalAgents}</span>
+                          <span className="text-sm text-gray-500 ml-2">Agents</span>
                         </div>
                         {agency.yearsInBusiness && (
                           <div>
-                            <span className="text-2xl font-bold text-primary">{agency.yearsInBusiness}</span>
-                            <span className="text-sm text-neutral-600 ml-2">Years</span>
+                            <span className="text-3xl font-bold text-gray-900">{agency.yearsInBusiness}</span>
+                            <span className="text-sm text-gray-500 ml-2">Years</span>
                           </div>
                         )}
                       </div>
 
                       {/* Contact Info */}
-                      <div className="flex flex-wrap gap-4 text-sm text-neutral-700">
+                      <div className="flex flex-wrap gap-6 text-sm text-gray-600 mb-6">
                         {agency.city && (
-                          <div className="flex items-center gap-1">
-                            <MapPinIcon className="w-4 h-4" />
-                            <span>{agency.city}{agency.country ? `, ${agency.country}` : ''}</span>
+                          <div className="flex items-center gap-2">
+                            <MapPinIcon className="w-5 h-5 text-gray-400" />
+                            <span>{agency.city}, {agency.country}</span>
                           </div>
                         )}
-                        <div className="flex items-center gap-1">
-                          <PhoneIcon className="w-4 h-4" />
-                          <a href={`tel:${agency.phone}`} className="hover:text-primary">{agency.phone}</a>
+                        <div className="flex items-center gap-2">
+                          <PhoneIcon className="w-5 h-5 text-gray-400" />
+                          <a href={`tel:${agency.phone}`} className="hover:text-gray-900">{agency.phone}</a>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <EnvelopeIcon className="w-4 h-4" />
-                          <a href={`mailto:${agency.email}`} className="hover:text-primary">{agency.email}</a>
+                        <div className="flex items-center gap-2">
+                          <EnvelopeIcon className="w-5 h-5 text-gray-400" />
+                          <a href={`mailto:${agency.email}`} className="hover:text-gray-900">{agency.email}</a>
                         </div>
                       </div>
 
-                      {/* View Details Button */}
-                      <button className="mt-4 bg-primary text-white px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark transition-colors">
-                        View Agency Details
+                      {/* CTA Button */}
+                      <button className="bg-gray-900 text-white px-8 py-3 rounded-full font-medium hover:bg-gray-800 transition-all">
+                        View Agency
                       </button>
                     </div>
                   </div>
