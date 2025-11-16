@@ -23,8 +23,29 @@ import ListingLimitWarningModal from './components/shared/ListingLimitWarningMod
 import DiscountGameModal from './components/shared/DiscountGameModal';
 
 const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar }) => {
-  const { state } = useAppContext();
+  const { state, dispatch } = useAppContext();
   const [selectedAgency, setSelectedAgency] = useState<any>(null);
+
+  // Check URL for agency routing on mount and when URL changes
+  useEffect(() => {
+    const checkUrlForAgency = () => {
+      const path = window.location.pathname;
+      const agencyMatch = path.match(/^\/agency\/(.+)$/);
+
+      if (agencyMatch) {
+        const agencySlug = agencyMatch[1];
+        // Set the selected agency in state
+        dispatch({ type: 'SET_SELECTED_AGENCY', payload: agencySlug });
+        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
+      }
+    };
+
+    checkUrlForAgency();
+
+    // Listen for browser back/forward navigation
+    window.addEventListener('popstate', checkUrlForAgency);
+    return () => window.removeEventListener('popstate', checkUrlForAgency);
+  }, [dispatch]);
 
   // Fetch selected agency when selectedAgencyId changes
   useEffect(() => {

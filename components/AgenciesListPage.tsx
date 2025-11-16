@@ -154,8 +154,13 @@ const AgenciesListPage: React.FC = () => {
     dispatch({ type: 'TOGGLE_ENTERPRISE_MODAL', payload: true });
   };
 
-  const handleViewAgency = (agencyId: string) => {
-    dispatch({ type: 'SET_SELECTED_AGENCY', payload: agencyId });
+  const handleViewAgency = (agencyId: string, agencySlug?: string) => {
+    // Use slug if available, otherwise use ID
+    const identifier = agencySlug || agencyId;
+    dispatch({ type: 'SET_SELECTED_AGENCY', payload: identifier });
+
+    // Update browser URL
+    window.history.pushState({}, '', `/agency/${identifier}`);
   };
 
   const getRankBadge = (index: number) => {
@@ -280,7 +285,7 @@ const AgenciesListPage: React.FC = () => {
               return (
                 <div
                   key={agency._id}
-                  onClick={() => handleViewAgency(agency._id)}
+                  onClick={() => handleViewAgency(agency._id, (agency as any).slug)}
                   className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer"
                 >
                   <div className="flex flex-col lg:flex-row">

@@ -80,7 +80,11 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   );
 
   const handleBack = () => {
+    dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
     dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
+
+    // Reset URL to agencies list
+    window.history.pushState({}, '', '/');
   };
 
   const handleAgentClick = (agentId: string) => {

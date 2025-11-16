@@ -58,9 +58,14 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
   };
 
   const handleViewAgency = () => {
-    if (currentAd && currentAd._id) {
-      dispatch({ type: 'SET_SELECTED_AGENCY', payload: currentAd._id });
+    if (currentAd) {
+      // Use slug if available, otherwise fall back to _id
+      const identifier = currentAd.slug || currentAd._id;
+      dispatch({ type: 'SET_SELECTED_AGENCY', payload: identifier });
       dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
+
+      // Update browser URL
+      window.history.pushState({}, '', `/agency/${identifier}`);
     }
   };
 
