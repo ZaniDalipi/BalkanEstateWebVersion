@@ -25,6 +25,7 @@ import DiscountGameModal from './components/shared/DiscountGameModal';
 const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar }) => {
   const { state, dispatch } = useAppContext();
   const [selectedAgency, setSelectedAgency] = useState<any>(null);
+  const [isLoadingAgency, setIsLoadingAgency] = useState(false);
 
   // Check URL for agency routing on mount and when URL changes
   useEffect(() => {
@@ -51,6 +52,7 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
   useEffect(() => {
     const fetchAgency = async () => {
       if (state.selectedAgencyId) {
+        setIsLoadingAgency(true);
         try {
           const response = await fetch(`/api/agencies/${state.selectedAgencyId}`);
           const data = await response.json();
@@ -58,16 +60,30 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
         } catch (error) {
           console.error('Failed to fetch agency:', error);
           setSelectedAgency(null);
+        } finally {
+          setIsLoadingAgency(false);
         }
       } else {
         setSelectedAgency(null);
+        setIsLoadingAgency(false);
       }
     };
     fetchAgency();
   }, [state.selectedAgencyId]);
 
   // Global handler for selected agency view
-  if (selectedAgency) {
+  // Show agency detail page if we have a selectedAgencyId (even while loading)
+  if (state.selectedAgencyId) {
+    if (isLoadingAgency || !selectedAgency) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading agency details...</p>
+          </div>
+        </div>
+      );
+    }
     return <AgencyDetailPage agency={selectedAgency} />;
   }
 
