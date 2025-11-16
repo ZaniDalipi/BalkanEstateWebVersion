@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import Agency from '../models/Agency';
 import User, { IUser } from '../models/User';
 import Property from '../models/Property';
@@ -49,7 +50,7 @@ export const createAgency = async (
     const agency = await Agency.create(agencyData);
 
     // Update user with agency reference
-    user.agencyId = agency._id;
+    user.agencyId = agency._id as mongoose.Types.ObjectId;
     user.isEnterpriseTier = true;
     await user.save();
 
@@ -231,7 +232,7 @@ export const addAgentToAgency = async (
 
     // Update agent's agency info
     agentUser.agencyName = agency.name;
-    agentUser.agencyId = agency._id;
+    agentUser.agencyId = agency._id as mongoose.Types.ObjectId;
     await agentUser.save();
 
     await agency.populate('agents', 'name email phone avatarUrl role agencyName');
