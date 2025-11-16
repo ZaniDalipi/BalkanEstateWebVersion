@@ -7,26 +7,26 @@ import {
   rejectJoinRequest,
   cancelJoinRequest,
 } from '../controllers/agencyJoinRequestController';
-import { authenticateToken } from '../middleware/auth';
+import { protect } from '../middleware/auth';
 
 const router = express.Router();
 
 // Create a join request
-router.post('/', authenticateToken, createJoinRequest);
+router.post('/', protect, createJoinRequest);
 
 // Get all join requests for the current agent
-router.get('/my-requests', authenticateToken, getAgentJoinRequests);
+router.get('/my-requests', protect, getAgentJoinRequests);
 
 // Get all join requests for an agency (agency owner only)
-router.get('/agency/:agencyId', authenticateToken, getAgencyJoinRequests);
+router.get('/agency/:agencyId', protect, getAgencyJoinRequests);
 
 // Approve a join request (agency owner only)
-router.put('/:requestId/approve', authenticateToken, approveJoinRequest);
+router.put('/:requestId/approve', protect, approveJoinRequest);
 
 // Reject a join request (agency owner only)
-router.put('/:requestId/reject', authenticateToken, rejectJoinRequest);
+router.put('/:requestId/reject', protect, rejectJoinRequest);
 
 // Cancel a join request (agent only)
-router.delete('/:requestId', authenticateToken, cancelJoinRequest);
+router.delete('/:requestId', protect, cancelJoinRequest);
 
 export default router;

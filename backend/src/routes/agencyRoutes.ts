@@ -18,9 +18,9 @@ router.get('/featured/rotation', getFeaturedAgencies);
 router.get('/:id', getAgency);
 
 // Protected routes
-router.post('/', protect(), createAgency);
-router.put('/:id', protect(), updateAgency);
-router.post('/:id/agents', protect(), addAgentToAgency);
-router.delete('/:id/agents/:agentId', protect(), removeAgentFromAgency);
+router.post('/', protect, createAgency);
+router.put('/:id', protect, updateAgency);
+router.post('/:id/agents', protect, addAgentToAgency);
+router.delete('/:id/agents/:agentId', protect, removeAgentFromAgency);
 
 export default router;

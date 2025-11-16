@@ -13,8 +13,8 @@ const router = express.Router();
 router.get('/featured', getFeaturedProperties);
 
 // Protected routes
-router.post('/', protect(), promoteProperty);
-router.get('/', protect(), getMyPromotions);
-router.delete('/:id', protect(), cancelPromotion);
+router.post('/', protect, promoteProperty);
+router.get('/', protect, getMyPromotions);
+router.delete('/:id', protect, cancelPromotion);
 
 export default router;

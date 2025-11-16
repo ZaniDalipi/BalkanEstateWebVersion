@@ -1,18 +1,19 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import AgencyJoinRequest from '../models/AgencyJoinRequest';
 import Agency from '../models/Agency';
-import User from '../models/User';
-import { AuthRequest } from '../middleware/auth';
+import User, { IUser } from '../models/User';
 
 // Create a join request
-export const createJoinRequest = async (req: AuthRequest, res: Response) => {
+export const createJoinRequest = async (req: Request, res: Response) => {
   try {
     const { agencyId, message } = req.body;
-    const agentId = req.userId;
 
-    if (!agentId) {
+    if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
+
+    const agentId = String((req.user as IUser)._id);
 
     // Check if user is an agent
     const user = await User.findById(agentId);
@@ -63,14 +64,15 @@ export const createJoinRequest = async (req: AuthRequest, res: Response) => {
 };
 
 // Get join requests for an agency (for agency owner)
-export const getAgencyJoinRequests = async (req: AuthRequest, res: Response) => {
+export const getAgencyJoinRequests = async (req: Request, res: Response) => {
   try {
     const { agencyId } = req.params;
-    const userId = req.userId;
 
-    if (!userId) {
+    if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
+
+    const userId = String((req.user as IUser)._id);
 
     // Check if user owns the agency
     const agency = await Agency.findById(agencyId);
@@ -95,13 +97,13 @@ export const getAgencyJoinRequests = async (req: AuthRequest, res: Response) => 
 };
 
 // Get join requests for an agent (their own requests)
-export const getAgentJoinRequests = async (req: AuthRequest, res: Response) => {
+export const getAgentJoinRequests = async (req: Request, res: Response) => {
   try {
-    const userId = req.userId;
-
-    if (!userId) {
+    if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
+
+    const userId = String((req.user as IUser)._id);
 
     const joinRequests = await AgencyJoinRequest.find({ agentId: userId })
       .populate('agencyId', 'name logo email phone city country')
@@ -115,14 +117,15 @@ export const getAgentJoinRequests = async (req: AuthRequest, res: Response) => {
 };
 
 // Approve a join request
-export const approveJoinRequest = async (req: AuthRequest, res: Response) => {
+export const approveJoinRequest = async (req: Request, res: Response) => {
   try {
     const { requestId } = req.params;
-    const userId = req.userId;
 
-    if (!userId) {
+    if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
+
+    const userId = String((req.user as IUser)._id);
 
     const joinRequest = await AgencyJoinRequest.findById(requestId);
     if (!joinRequest) {
@@ -182,14 +185,15 @@ export const approveJoinRequest = async (req: AuthRequest, res: Response) => {
 };
 
 // Reject a join request
-export const rejectJoinRequest = async (req: AuthRequest, res: Response) => {
+export const rejectJoinRequest = async (req: Request, res: Response) => {
   try {
     const { requestId } = req.params;
-    const userId = req.userId;
 
-    if (!userId) {
+    if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
+
+    const userId = String((req.user as IUser)._id);
 
     const joinRequest = await AgencyJoinRequest.findById(requestId);
     if (!joinRequest) {
@@ -227,14 +231,15 @@ export const rejectJoinRequest = async (req: AuthRequest, res: Response) => {
 };
 
 // Cancel a join request (by the agent)
-export const cancelJoinRequest = async (req: AuthRequest, res: Response) => {
+export const cancelJoinRequest = async (req: Request, res: Response) => {
   try {
     const { requestId } = req.params;
-    const userId = req.userId;
 
-    if (!userId) {
+    if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
+
+    const userId = String((req.user as IUser)._id);
 
     const joinRequest = await AgencyJoinRequest.findById(requestId);
     if (!joinRequest) {
