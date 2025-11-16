@@ -188,7 +188,14 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
       const agencyMatch = path.match(/^\/agency\/(.+)$/);
 
       if (agencyMatch) {
-        const agencySlug = agencyMatch[1];
+        let agencySlug = decodeURIComponent(agencyMatch[1]);
+
+        // Normalize slug: remove country prefix with comma if present
+        // Handles old format: "serbia,belgrade-premium-properties" -> "belgrade-premium-properties"
+        if (agencySlug.includes(',')) {
+          agencySlug = agencySlug.split(',')[1];
+        }
+
         // Set the selected agency in state
         dispatch({ type: 'SET_SELECTED_AGENCY', payload: agencySlug });
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
@@ -216,8 +223,17 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
           console.log('API not available, using mock data');
           // Fallback to mock data - match by ID or slug
           const mockAgencies = getMockAgencies();
+
+          // Normalize the search slug (remove country prefix if present)
+          let searchSlug = state.selectedAgencyId;
+          if (searchSlug.includes(',')) {
+            searchSlug = searchSlug.split(',')[1];
+          }
+
           const agency = mockAgencies.find(
-            a => a._id === state.selectedAgencyId || a.slug === state.selectedAgencyId
+            a => a._id === state.selectedAgencyId ||
+                 a.slug === state.selectedAgencyId ||
+                 a.slug === searchSlug
           );
           if (agency) {
             setSelectedAgency(agency);
