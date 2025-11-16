@@ -13,6 +13,8 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
   const [ads, setAds] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDismissed, setIsDismissed] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAds();
@@ -36,23 +38,64 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
 
   const fetchAds = async () => {
     try {
+      setIsLoading(true);
+      setError(null);
       const response = await getFeaturedAgencies(5);
-      setAds(response.agencies || []);
+      console.log('Featured agencies response:', response);
+
       if (response.agencies && response.agencies.length > 0) {
+        setAds(response.agencies);
         setCurrentAd(response.agencies[0]);
+      } else {
+        setError('No featured agencies available. Please run: npm run seed:agencies');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch advertisements:', error);
+      setError(error.message || 'Failed to load agencies');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleViewAgency = () => {
     if (currentAd && currentAd._id) {
       dispatch({ type: 'SET_SELECTED_AGENCY', payload: currentAd._id });
+      dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
     }
   };
 
-  if (isDismissed || !currentAd) {
+  // Don't show anything if dismissed
+  if (isDismissed) {
+    return null;
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg p-4 text-center">
+        <div className="animate-pulse">Loading featured agencies...</div>
+      </div>
+    );
+  }
+
+  // Show error state (helpful for debugging)
+  if (error) {
+    return (
+      <div className="bg-red-500 text-white shadow-lg p-4 text-center relative">
+        <button
+          onClick={() => setIsDismissed(true)}
+          className="absolute top-2 right-2 text-white/80 hover:text-white"
+        >
+          <XMarkIcon className="w-5 h-5" />
+        </button>
+        <div className="font-semibold">⚠️ Agency Banners Not Available</div>
+        <div className="text-sm mt-1">{error}</div>
+      </div>
+    );
+  }
+
+  // Don't show if no current ad
+  if (!currentAd) {
     return null;
   }
 
