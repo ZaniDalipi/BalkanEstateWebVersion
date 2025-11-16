@@ -1,14 +1,32 @@
 # Payment System Setup Guide
 
-This guide explains how to set up and configure the payment system for Balkan Estate.
+This application uses **external payment processing** to ensure security and PCI compliance. All sensitive payment information (credit card details, bank accounts, etc.) is handled by third-party payment providers like Stripe.
 
 ## Overview
 
-The payment system uses **Stripe** as the payment processor and supports:
+**How External Payments Work:**
+1. User clicks "Pay" in the app
+2. App creates a payment session with Stripe (backend API call)
+3. User is **redirected to Stripe's secure external payment page**
+4. User completes payment on Stripe's website (we never see card details)
+5. Stripe redirects back to our app with success/cancel status
+6. Stripe sends webhook confirmation to our backend
+7. Backend updates subscription/payment status in database
+
+**Security Benefits:**
+- ✅ **No credit card data stored in our database**
+- ✅ **PCI DSS compliance handled entirely by Stripe**
+- ✅ Secure payment processing infrastructure
+- ✅ Fraud detection and prevention by Stripe
+- ✅ Multiple payment methods supported
+- ✅ Automatic invoicing and receipts
+
+The payment system supports:
 - Multiple payment methods (cards, SEPA, Apple Pay, Google Pay, etc.)
-- Configurable payment options based on user role (buyer, private seller, agent)
+- Configurable payment options based on user role (buyer, private seller, agent, enterprise)
 - Subscription management
 - Webhook handling for automatic subscription updates
+- One-time payments and recurring subscriptions
 
 ## Prerequisites
 
