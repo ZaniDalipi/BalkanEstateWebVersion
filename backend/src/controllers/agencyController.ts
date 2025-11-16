@@ -110,17 +110,29 @@ export const getAgencies = async (
   }
 };
 
-// @desc    Get single agency by ID
-// @route   GET /api/agencies/:id
+// @desc    Get single agency by ID or slug
+// @route   GET /api/agencies/:idOrSlug
 // @access  Public
 export const getAgency = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const agency = await Agency.findById(req.params.id)
-      .populate('ownerId', 'name email phone avatarUrl')
-      .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber');
+    const { idOrSlug } = req.params;
+
+    // Try to find by ID first, then by slug
+    let agency;
+    if (mongoose.Types.ObjectId.isValid(idOrSlug)) {
+      agency = await Agency.findById(idOrSlug)
+        .populate('ownerId', 'name email phone avatarUrl')
+        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber');
+    }
+
+    if (!agency) {
+      agency = await Agency.findOne({ slug: idOrSlug.toLowerCase() })
+        .populate('ownerId', 'name email phone avatarUrl')
+        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber');
+    }
 
     if (!agency) {
       res.status(404).json({ message: 'Agency not found' });

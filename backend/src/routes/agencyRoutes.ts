@@ -15,7 +15,7 @@ const router = express.Router();
 // Public routes
 router.get('/', getAgencies);
 router.get('/featured/rotation', getFeaturedAgencies);
-router.get('/:id', getAgency);
+router.get('/:idOrSlug', getAgency);
 
 // Protected routes
 router.post('/', protect, createAgency);

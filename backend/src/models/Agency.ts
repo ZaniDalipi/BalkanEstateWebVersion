@@ -3,6 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IAgency extends Document {
   ownerId: mongoose.Types.ObjectId; // User who owns the agency (enterprise tier)
   name: string;
+  slug: string; // URL-friendly identifier: "{country},{name}"
   description?: string;
   logo?: string;
   coverImage?: string;
@@ -11,7 +12,11 @@ export interface IAgency extends Document {
   address?: string;
   city?: string;
   country?: string;
+  zipCode?: string;
   website?: string;
+  // Agency info
+  specialties?: string[];
+  certifications?: string[];
   // Social media links
   facebookUrl?: string;
   instagramUrl?: string;
@@ -57,6 +62,14 @@ const AgencySchema: Schema = new Schema(
       trim: true,
       index: true,
     },
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+      index: true,
+    },
     description: {
       type: String,
       trim: true,
@@ -91,10 +104,22 @@ const AgencySchema: Schema = new Schema(
       type: String,
       trim: true,
     },
+    zipCode: {
+      type: String,
+      trim: true,
+    },
     website: {
       type: String,
       trim: true,
     },
+    specialties: [{
+      type: String,
+      trim: true,
+    }],
+    certifications: [{
+      type: String,
+      trim: true,
+    }],
     facebookUrl: {
       type: String,
       trim: true,
