@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAgencies } from '../services/apiService';
-import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, StarIcon, MagnifyingGlassIcon } from '../constants';
+import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, StarIcon, SearchIcon } from '../constants';
 import { useAppContext } from '../context/AppContext';
 import AgenciesMap from './AgenciesMap';
 
@@ -240,7 +240,7 @@ const AgenciesListPage: React.FC = () => {
 
             {/* Search */}
             <div className="relative flex-1 max-w-md">
-              <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search by city..."
