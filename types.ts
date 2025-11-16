@@ -9,7 +9,7 @@ export type PropertyStatus = 'active' | 'pending' | 'sold' | 'draft';
 
 export type PropertyImageTag = 'exterior' | 'living_room' | 'kitchen' | 'bedroom' | 'bathroom' | 'other';
 
-export type AppView = 'search' | 'saved-searches' | 'saved-homes' | 'inbox' | 'account' | 'create-listing' | 'agents';
+export type AppView = 'search' | 'saved-searches' | 'saved-homes' | 'inbox' | 'account' | 'create-listing' | 'agents' | 'agencies';
 
 export type AuthModalView = 'login' | 'signup' | 'forgotPassword' | 'forgotPasswordSuccess' | 'phoneCode' | 'phoneDetails';
 
@@ -270,6 +270,7 @@ export interface AppState {
     activeDiscount: { proYearly: number; proMonthly: number; enterprise: number; } | null;
     isListingLimitWarningOpen: boolean;
     isDiscountGameOpen: boolean;
+    isEnterpriseModalOpen: boolean;
     allMunicipalities: Record<string, MunicipalityData[]>;
 }
 
@@ -280,6 +281,7 @@ export type AppAction =
     | { type: 'SET_ACTIVE_VIEW', payload: AppView }
     | { type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: boolean, isOffer?: boolean } }
     | { type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: boolean }
+    | { type: 'TOGGLE_ENTERPRISE_MODAL', payload: boolean }
     | { type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: boolean, view?: AuthModalView } }
     | { type: 'SET_AUTH_MODAL_VIEW', payload: AuthModalView }
     | { type: 'SET_SELECTED_PROPERTY', payload: string | null }

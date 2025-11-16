@@ -43,6 +43,7 @@ const initialState: AppState = {
   activeDiscount: null,
   isListingLimitWarningOpen: false,
   isDiscountGameOpen: false,
+  isEnterpriseModalOpen: false,
   // FIX: Initialize allMunicipalities in the initial state.
   allMunicipalities: MUNICIPALITY_DATA,
 };
@@ -69,6 +70,8 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, isPricingModalOpen: action.payload.isOpen, isFirstLoginOffer: action.payload.isOffer ?? state.isFirstLoginOffer };
     case 'TOGGLE_SUBSCRIPTION_MODAL':
       return { ...state, isSubscriptionModalOpen: action.payload };
+    case 'TOGGLE_ENTERPRISE_MODAL':
+      return { ...state, isEnterpriseModalOpen: action.payload };
     case 'TOGGLE_AUTH_MODAL':
       return { ...state, isAuthModalOpen: action.payload.isOpen, authModalView: action.payload.isOpen ? (action.payload.view || 'login') : state.authModalView };
     case 'SET_AUTH_MODAL_VIEW':

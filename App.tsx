@@ -14,6 +14,8 @@ import Sidebar from './components/shared/Sidebar';
 import Header from './components/shared/Header';
 import SubscriptionModal from './components/BuyerFlow/SubscriptionModal';
 import AgentsPage from './components/AgentsPage/AgentsPage';
+import AgenciesListPage from './components/AgenciesListPage';
+import EnterpriseCreationForm from './components/EnterpriseCreationForm';
 import PropertyDetailsPage from './components/BuyerFlow/PropertyDetailsPage';
 import { LogoIcon } from './constants';
 import ListingLimitWarningModal from './components/shared/ListingLimitWarningModal';
@@ -40,6 +42,8 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
       return <CreateListingPage />;
     case 'agents':
       return <AgentsPage />;
+    case 'agencies':
+      return <AgenciesListPage />;
     case 'search':
     default:
       return <SearchPage onToggleSidebar={onToggleSidebar} />;
@@ -141,6 +145,10 @@ const MainLayout: React.FC = () => {
         <SubscriptionModal
             isOpen={state.isSubscriptionModalOpen}
             onClose={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: false })}
+        />
+        <EnterpriseCreationForm
+            isOpen={state.isEnterpriseModalOpen}
+            onClose={() => dispatch({ type: 'TOGGLE_ENTERPRISE_MODAL', payload: false })}
         />
     </div>
   );
