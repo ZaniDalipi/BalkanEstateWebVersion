@@ -5,7 +5,7 @@ import Agency from '../models/Agency';
 import User, { IUser } from '../models/User';
 
 // Create a join request
-export const createJoinRequest = async (req: Request, res: Response) => {
+export const createJoinRequest = async (req: Request, res: Response): Promise<void> => {
   try {
     const { agencyId, message } = req.body;
 
@@ -64,7 +64,7 @@ export const createJoinRequest = async (req: Request, res: Response) => {
 };
 
 // Get join requests for an agency (for agency owner)
-export const getAgencyJoinRequests = async (req: Request, res: Response) => {
+export const getAgencyJoinRequests = async (req: Request, res: Response): Promise<void> => {
   try {
     const { agencyId } = req.params;
 
@@ -97,7 +97,7 @@ export const getAgencyJoinRequests = async (req: Request, res: Response) => {
 };
 
 // Get join requests for an agent (their own requests)
-export const getAgentJoinRequests = async (req: Request, res: Response) => {
+export const getAgentJoinRequests = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });
@@ -117,7 +117,7 @@ export const getAgentJoinRequests = async (req: Request, res: Response) => {
 };
 
 // Approve a join request
-export const approveJoinRequest = async (req: Request, res: Response) => {
+export const approveJoinRequest = async (req: Request, res: Response): Promise<void> => {
   try {
     const { requestId } = req.params;
 
@@ -185,7 +185,7 @@ export const approveJoinRequest = async (req: Request, res: Response) => {
 };
 
 // Reject a join request
-export const rejectJoinRequest = async (req: Request, res: Response) => {
+export const rejectJoinRequest = async (req: Request, res: Response): Promise<void> => {
   try {
     const { requestId } = req.params;
 
@@ -231,7 +231,7 @@ export const rejectJoinRequest = async (req: Request, res: Response) => {
 };
 
 // Cancel a join request (by the agent)
-export const cancelJoinRequest = async (req: Request, res: Response) => {
+export const cancelJoinRequest = async (req: Request, res: Response): Promise<void> => {
   try {
     const { requestId } = req.params;
 
