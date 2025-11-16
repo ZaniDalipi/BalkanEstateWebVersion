@@ -6,6 +6,7 @@ import AgenciesMap from './AgenciesMap';
 
 interface Agency {
   _id: string;
+  slug?: string;
   name: string;
   description?: string;
   logo?: string;
@@ -64,6 +65,7 @@ const AgenciesListPage: React.FC = () => {
     return [
       {
         _id: 'mock1',
+        slug: 'belgrade-premier-estates',
         name: 'Belgrade Premier Estates',
         description: 'Leading real estate agency in Serbia with over 15 years of experience. Specializing in luxury properties and commercial real estate.',
         logo: 'https://ui-avatars.com/api/?name=Belgrade+Premier&background=0D8ABC&color=fff&size=200',
@@ -81,6 +83,7 @@ const AgenciesListPage: React.FC = () => {
       },
       {
         _id: 'mock2',
+        slug: 'adriatic-properties-group',
         name: 'Adriatic Properties Group',
         description: 'Premium coastal real estate specialists covering the entire Croatian coastline. Your gateway to Mediterranean living.',
         logo: 'https://ui-avatars.com/api/?name=Adriatic+Properties&background=1e40af&color=fff&size=200',
@@ -98,6 +101,7 @@ const AgenciesListPage: React.FC = () => {
       },
       {
         _id: 'mock3',
+        slug: 'sofia-real-estate-partners',
         name: 'Sofia Real Estate Partners',
         description: 'Bulgaria\'s most trusted real estate agency. Experts in residential, commercial, and investment properties.',
         logo: 'https://ui-avatars.com/api/?name=Sofia+Real+Estate&background=059669&color=fff&size=200',
@@ -115,6 +119,7 @@ const AgenciesListPage: React.FC = () => {
       },
       {
         _id: 'mock4',
+        slug: 'montenegro-luxury-living',
         name: 'Montenegro Luxury Living',
         description: 'Exclusive properties along the Montenegrin Riviera. Specializing in high-end villas and waterfront estates.',
         logo: 'https://ui-avatars.com/api/?name=Montenegro+Luxury&background=7c3aed&color=fff&size=200',
@@ -132,6 +137,7 @@ const AgenciesListPage: React.FC = () => {
       },
       {
         _id: 'mock5',
+        slug: 'sarajevo-homes-estates',
         name: 'Sarajevo Homes & Estates',
         description: 'Your trusted partner for finding the perfect home in Bosnia and Herzegovina. Family-owned since 2005.',
         logo: 'https://ui-avatars.com/api/?name=Sarajevo+Homes&background=dc2626&color=fff&size=200',
@@ -285,7 +291,7 @@ const AgenciesListPage: React.FC = () => {
               return (
                 <div
                   key={agency._id}
-                  onClick={() => handleViewAgency(agency._id, (agency as any).slug)}
+                  onClick={() => handleViewAgency(agency._id, agency.slug)}
                   className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer"
                 >
                   <div className="flex flex-col lg:flex-row">

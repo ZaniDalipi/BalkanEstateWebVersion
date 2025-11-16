@@ -22,6 +22,112 @@ import { LogoIcon } from './constants';
 import ListingLimitWarningModal from './components/shared/ListingLimitWarningModal';
 import DiscountGameModal from './components/shared/DiscountGameModal';
 
+// Mock agencies data - same as in AgenciesListPage
+const getMockAgencies = () => {
+  return [
+    {
+      _id: 'mock1',
+      slug: 'belgrade-premier-estates',
+      name: 'Belgrade Premier Estates',
+      description: 'Leading real estate agency in Serbia with over 15 years of experience. Specializing in luxury properties and commercial real estate.',
+      logo: 'https://ui-avatars.com/api/?name=Belgrade+Premier&background=0D8ABC&color=fff&size=200',
+      coverImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
+      email: 'info@belgradepremier.rs',
+      phone: '+381 11 123 4567',
+      city: 'Belgrade',
+      country: 'Serbia',
+      address: 'Knez Mihailova 12, Belgrade',
+      website: 'https://belgradepremier.rs',
+      lat: 44.8176,
+      lng: 20.4568,
+      totalProperties: 87,
+      totalAgents: 12,
+      yearsInBusiness: 15,
+      isFeatured: true,
+      specialties: ['Luxury Homes', 'Commercial Properties', 'Investment Properties'],
+      certifications: ['ISO 9001', 'Real Estate Association of Serbia'],
+      agents: [
+        {
+          id: 'agent1',
+          name: 'Marko Petrović',
+          email: 'marko@belgradepremier.rs',
+          phone: '+381 11 111 1111',
+          avatarUrl: 'https://ui-avatars.com/api/?name=Marko+Petrovic&background=random',
+          rating: 4.9,
+          totalSalesValue: 2500000,
+          propertiesSold: 45,
+          activeListings: 12,
+        },
+        {
+          id: 'agent2',
+          name: 'Ana Jovanović',
+          email: 'ana@belgradepremier.rs',
+          phone: '+381 11 222 2222',
+          avatarUrl: 'https://ui-avatars.com/api/?name=Ana+Jovanovic&background=random',
+          rating: 4.8,
+          totalSalesValue: 1800000,
+          propertiesSold: 32,
+          activeListings: 8,
+        },
+      ],
+    },
+    {
+      _id: 'mock2',
+      slug: 'adriatic-properties-group',
+      name: 'Adriatic Properties Group',
+      description: 'Premium coastal real estate specialists covering the entire Croatian coastline. Your gateway to Mediterranean living.',
+      logo: 'https://ui-avatars.com/api/?name=Adriatic+Properties&background=1e40af&color=fff&size=200',
+      coverImage: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=1200',
+      email: 'contact@adriaticproperties.hr',
+      phone: '+385 21 456 789',
+      city: 'Split',
+      country: 'Croatia',
+      address: 'Riva 5, Split',
+      website: 'https://adriaticproperties.hr',
+      lat: 43.5081,
+      lng: 16.4402,
+      totalProperties: 124,
+      totalAgents: 18,
+      yearsInBusiness: 10,
+      isFeatured: true,
+      specialties: ['Coastal Properties', 'Vacation Homes', 'Luxury Villas'],
+      certifications: ['Croatian Real Estate Association'],
+      agents: [
+        {
+          id: 'agent3',
+          name: 'Ivan Horvat',
+          email: 'ivan@adriaticproperties.hr',
+          rating: 4.7,
+          totalSalesValue: 3200000,
+          propertiesSold: 52,
+          activeListings: 15,
+        },
+      ],
+    },
+    {
+      _id: 'mock3',
+      slug: 'sofia-city-realty',
+      name: 'Sofia City Realty',
+      description: 'Your trusted partner for urban properties in Bulgaria\'s capital city.',
+      logo: 'https://ui-avatars.com/api/?name=Sofia+City&background=059669&color=fff&size=200',
+      coverImage: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200',
+      email: 'info@sofiacityrealty.bg',
+      phone: '+359 2 987 6543',
+      city: 'Sofia',
+      country: 'Bulgaria',
+      address: 'Vitosha Boulevard 100, Sofia',
+      lat: 42.6977,
+      lng: 23.3219,
+      totalProperties: 96,
+      totalAgents: 14,
+      yearsInBusiness: 12,
+      isFeatured: true,
+      specialties: ['Urban Apartments', 'Office Spaces'],
+      agents: [],
+    },
+  ];
+};
+
 const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar }) => {
   const { state, dispatch } = useAppContext();
   const [selectedAgency, setSelectedAgency] = useState<any>(null);
@@ -55,11 +161,22 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
         setIsLoadingAgency(true);
         try {
           const response = await fetch(`/api/agencies/${state.selectedAgencyId}`);
+          if (!response.ok) throw new Error('API failed');
           const data = await response.json();
           setSelectedAgency(data.agency);
         } catch (error) {
-          console.error('Failed to fetch agency:', error);
-          setSelectedAgency(null);
+          console.log('API not available, using mock data');
+          // Fallback to mock data - match by ID or slug
+          const mockAgencies = getMockAgencies();
+          const agency = mockAgencies.find(
+            a => a._id === state.selectedAgencyId || a.slug === state.selectedAgencyId
+          );
+          if (agency) {
+            setSelectedAgency(agency);
+          } else {
+            console.error('Agency not found in mock data:', state.selectedAgencyId);
+            setSelectedAgency(null);
+          }
         } finally {
           setIsLoadingAgency(false);
         }
