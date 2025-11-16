@@ -15,6 +15,8 @@ import favoriteRoutes from './routes/favoriteRoutes';
 import savedSearchRoutes from './routes/savedSearchRoutes';
 import conversationRoutes from './routes/conversationRoutes';
 import agentRoutes from './routes/agentRoutes';
+import promotionRoutes from './routes/promotionRoutes';
+import agencyRoutes from './routes/agencyRoutes';
 
 // Create Express app
 const app: Application = express();
@@ -76,6 +78,8 @@ app.use('/api/favorites', favoriteRoutes);
 app.use('/api/saved-searches', savedSearchRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/agents', agentRoutes);
+app.use('/api/promotions', promotionRoutes);
+app.use('/api/agencies', agencyRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

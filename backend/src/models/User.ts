@@ -24,6 +24,13 @@ export interface IUser extends Document {
   isSubscribed: boolean;
   subscriptionPlan?: string;
   subscriptionExpiresAt?: Date;
+  // Tier-specific features
+  promotedAdsCount: number; // Number of ads currently promoted
+  lastPromotionReset?: Date; // Track when promotion quota resets
+  // Enterprise tier fields
+  isEnterpriseTier: boolean;
+  agencyId?: mongoose.Types.ObjectId; // Reference to Agency model
+  featuredUntil?: Date; // For rotating enterprise ads
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   createdAt: Date;
@@ -115,6 +122,26 @@ const UserSchema: Schema = new Schema(
       default: 'free',
     },
     subscriptionExpiresAt: {
+      type: Date,
+    },
+    // Tier-specific features
+    promotedAdsCount: {
+      type: Number,
+      default: 0,
+    },
+    lastPromotionReset: {
+      type: Date,
+    },
+    // Enterprise tier fields
+    isEnterpriseTier: {
+      type: Boolean,
+      default: false,
+    },
+    agencyId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Agency',
+    },
+    featuredUntil: {
       type: Date,
     },
     resetPasswordToken: {

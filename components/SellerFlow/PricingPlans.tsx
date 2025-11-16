@@ -143,11 +143,11 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                         </div>
                     </div>
                     <ul className="mt-8 space-y-4 text-neutral-700 font-medium flex-grow text-sm sm:text-base">
-                        <li className="flex items-center"><TickIcon /> Up to 10 active property ads</li>
+                        <li className="flex items-center"><TickIcon /> Up to 15 active property ads</li>
+                        <li className="flex items-center"><TickIcon /> Promote 2 ads for 15 days</li>
                         <li className="flex items-center"><TickIcon /> Premium listing placement</li>
                         <li className="flex items-center"><TickIcon /> Advanced analytics dashboard</li>
                         <li className="flex items-center"><TickIcon /> Lead management system</li>
-                        <li className="flex items-center"><TickIcon /> Professional photography tips</li>
                         <li className="flex items-center"><TickIcon /> Priority customer support</li>
                     </ul>
                     <button onClick={onSubscribe} className="w-full mt-8 py-3.5 rounded-lg font-bold text-white bg-indigo-500 hover:bg-indigo-600 transition-colors shadow-md text-base sm:text-lg">
@@ -184,20 +184,20 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                     </div>
                     <div className="mt-8 space-y-3 flex-grow flex flex-col">
                         <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-200">
-                            <p className="font-semibold text-neutral-800 text-sm">Up to 3 active ads</p>
-                            <p className="text-neutral-600 text-sm">Great for starting out</p>
+                            <p className="font-semibold text-neutral-800 text-sm">Up to 15 active ads</p>
+                            <p className="text-neutral-600 text-sm">Perfect for active sellers</p>
                         </div>
                         <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-200">
-                            <p className="font-semibold text-neutral-800 text-sm">Standard placement</p>
-                            <p className="text-neutral-600 text-sm">Visible in search results</p>
+                            <p className="font-semibold text-neutral-800 text-sm">Promote 2 ads for 15 days</p>
+                            <p className="text-neutral-600 text-sm">Featured placement boost</p>
                         </div>
                         <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-200">
-                            <p className="font-semibold text-neutral-800 text-sm">Basic analytics</p>
-                            <p className="text-neutral-600 text-sm">Track your listing views</p>
+                            <p className="font-semibold text-neutral-800 text-sm">Advanced analytics</p>
+                            <p className="text-neutral-600 text-sm">Track your listing performance</p>
                         </div>
                         <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-200">
-                            <p className="font-semibold text-neutral-800 text-sm">Email support</p>
-                            <p className="text-neutral-600 text-sm">Get help when you need it</p>
+                            <p className="font-semibold text-neutral-800 text-sm">Priority support</p>
+                            <p className="text-neutral-600 text-sm">Get help faster</p>
                         </div>
                          <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-200">
                             <p className="font-semibold text-neutral-800 text-sm">Mobile app access</p>
@@ -241,16 +241,20 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                     </div>
                     <div className="mt-8 space-y-4 flex-grow">
                         <div className="bg-neutral-700/50 p-4 rounded-lg">
-                            <p className="font-bold text-base sm:text-lg">Unlimited Property Listings</p>
-                            <p className="text-neutral-300 text-sm">Post as many properties as you need</p>
+                            <p className="font-bold text-base sm:text-lg">Dedicated Agency Page</p>
+                            <p className="text-neutral-300 text-sm">Your own branded page on our platform</p>
                         </div>
                          <div className="bg-neutral-700/50 p-4 rounded-lg">
-                            <p className="font-bold text-base sm:text-lg">3 Priority Ads per month</p>
-                            <p className="text-neutral-300 text-sm">Always shown first to users</p>
+                            <p className="font-bold text-base sm:text-lg">Display All Agents & Properties</p>
+                            <p className="text-neutral-300 text-sm">Showcase your team and listings</p>
                         </div>
                          <div className="bg-neutral-700/50 p-4 rounded-lg">
-                            <p className="font-bold text-base sm:text-lg">Dedicated Account Manager</p>
-                            <p className="text-neutral-300 text-sm">Personal support for your business</p>
+                            <p className="font-bold text-base sm:text-lg">Featured in Rotating Ads</p>
+                            <p className="text-neutral-300 text-sm">Monthly homepage advertising rotation</p>
+                        </div>
+                         <div className="bg-neutral-700/50 p-4 rounded-lg">
+                            <p className="font-bold text-base sm:text-lg">Full Contact Information</p>
+                            <p className="text-neutral-300 text-sm">Email, phone, and direct inquiries</p>
                         </div>
                     </div>
                      <button onClick={onSubscribe} className="w-full mt-8 py-3.5 rounded-lg font-bold bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-md text-base sm:text-lg">

@@ -166,14 +166,50 @@ export const createProperty = async (
       return;
     }
 
-    // Check listing limit for non-subscribed users (5 free listings)
-    const FREE_LISTING_LIMIT = 5;
-    if (!user.isSubscribed && user.listingsCount >= FREE_LISTING_LIMIT) {
+    // Tier-based listing limits
+    const getTierLimit = (plan: string): number => {
+      switch (plan) {
+        case 'free':
+          return 3;
+        case 'pro_monthly':
+        case 'pro_yearly':
+          return 15;
+        case 'enterprise':
+          return 100; // Effectively unlimited
+        default:
+          return 3;
+      }
+    };
+
+    const userPlan = user.subscriptionPlan || 'free';
+    const tierLimit = getTierLimit(userPlan);
+
+    // Check if subscription is expired for paid tiers
+    if (userPlan !== 'free' && user.subscriptionExpiresAt && user.subscriptionExpiresAt < new Date()) {
+      // Subscription expired, revert to free tier limits
+      user.subscriptionPlan = 'free';
+      user.isSubscribed = false;
+      await user.save();
+
+      if (user.listingsCount >= 3) {
+        res.status(403).json({
+          message: 'Your subscription has expired. You can only have 3 active listings on the free tier.',
+          code: 'SUBSCRIPTION_EXPIRED',
+          limit: 3,
+          current: user.listingsCount,
+        });
+        return;
+      }
+    }
+
+    // Check tier-based listing limit
+    if (user.listingsCount >= tierLimit) {
       res.status(403).json({
-        message: `You have reached the limit of ${FREE_LISTING_LIMIT} free listings. Please subscribe to create more listings.`,
+        message: `You have reached the limit of ${tierLimit} listings for your ${userPlan} tier. Please upgrade to create more listings.`,
         code: 'LISTING_LIMIT_REACHED',
-        limit: FREE_LISTING_LIMIT,
+        limit: tierLimit,
         current: user.listingsCount,
+        tier: userPlan,
       });
       return;
     }

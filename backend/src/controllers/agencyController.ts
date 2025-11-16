@@ -1,0 +1,332 @@
+import { Request, Response } from 'express';
+import Agency from '../models/Agency';
+import User, { IUser } from '../models/User';
+import Property from '../models/Property';
+
+// @desc    Create agency profile (Enterprise tier only)
+// @route   POST /api/agencies
+// @access  Private
+export const createAgency = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const currentUser = req.user as IUser;
+    const user = await User.findById(String(currentUser._id));
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Check if user has enterprise tier
+    if (user.subscriptionPlan !== 'enterprise') {
+      res.status(403).json({
+        message: 'Agency profiles are only available for Enterprise tier subscribers.',
+        code: 'ENTERPRISE_TIER_REQUIRED',
+      });
+      return;
+    }
+
+    // Check if agency already exists for this user
+    const existingAgency = await Agency.findOne({ ownerId: user._id });
+    if (existingAgency) {
+      res.status(400).json({ message: 'Agency profile already exists for this user' });
+      return;
+    }
+
+    const agencyData = {
+      ...req.body,
+      ownerId: user._id,
+      isFeatured: true, // Enterprise tier gets featured by default
+    };
+
+    const agency = await Agency.create(agencyData);
+
+    // Update user with agency reference
+    user.agencyId = agency._id;
+    user.isEnterpriseTier = true;
+    await user.save();
+
+    res.status(201).json({ agency });
+  } catch (error: any) {
+    console.error('Create agency error:', error);
+    res.status(500).json({ message: 'Error creating agency', error: error.message });
+  }
+};
+
+// @desc    Get all agencies (public, with featured rotation)
+// @route   GET /api/agencies
+// @access  Public
+export const getAgencies = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { city, featured, page = 1, limit = 12 } = req.query;
+
+    const filter: any = {};
+
+    if (city) {
+      filter.city = new RegExp(city as string, 'i');
+    }
+
+    if (featured === 'true') {
+      filter.isFeatured = true;
+    }
+
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Get agencies sorted by rotation order for featured ones
+    const agencies = await Agency.find(filter)
+      .populate('ownerId', 'name email phone avatarUrl')
+      .populate('agents', 'name email phone avatarUrl role agencyName')
+      .sort({ isFeatured: -1, adRotationOrder: 1, createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum);
+
+    const total = await Agency.countDocuments(filter);
+
+    res.json({
+      agencies,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum),
+      },
+    });
+  } catch (error: any) {
+    console.error('Get agencies error:', error);
+    res.status(500).json({ message: 'Error fetching agencies', error: error.message });
+  }
+};
+
+// @desc    Get single agency by ID
+// @route   GET /api/agencies/:id
+// @access  Public
+export const getAgency = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const agency = await Agency.findById(req.params.id)
+      .populate('ownerId', 'name email phone avatarUrl')
+      .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber');
+
+    if (!agency) {
+      res.status(404).json({ message: 'Agency not found' });
+      return;
+    }
+
+    // Get agency's properties
+    const properties = await Property.find({
+      sellerId: { $in: [agency.ownerId, ...agency.agents] },
+      status: 'active',
+    }).sort({ createdAt: -1 });
+
+    res.json({ agency, properties });
+  } catch (error: any) {
+    console.error('Get agency error:', error);
+    res.status(500).json({ message: 'Error fetching agency', error: error.message });
+  }
+};
+
+// @desc    Update agency profile
+// @route   PUT /api/agencies/:id
+// @access  Private
+export const updateAgency = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const agency = await Agency.findById(req.params.id);
+
+    if (!agency) {
+      res.status(404).json({ message: 'Agency not found' });
+      return;
+    }
+
+    // Check ownership
+    if (agency.ownerId.toString() !== String((req.user as IUser)._id)) {
+      res.status(403).json({ message: 'Not authorized to update this agency' });
+      return;
+    }
+
+    // Update agency
+    Object.assign(agency, req.body);
+    await agency.save();
+
+    await agency.populate('ownerId', 'name email phone avatarUrl');
+    await agency.populate('agents', 'name email phone avatarUrl role agencyName');
+
+    res.json({ agency });
+  } catch (error: any) {
+    console.error('Update agency error:', error);
+    res.status(500).json({ message: 'Error updating agency', error: error.message });
+  }
+};
+
+// @desc    Add agent to agency
+// @route   POST /api/agencies/:id/agents
+// @access  Private
+export const addAgentToAgency = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const { agentUserId } = req.body;
+    const agency = await Agency.findById(req.params.id);
+
+    if (!agency) {
+      res.status(404).json({ message: 'Agency not found' });
+      return;
+    }
+
+    // Check ownership
+    if (agency.ownerId.toString() !== String((req.user as IUser)._id)) {
+      res.status(403).json({ message: 'Not authorized to modify this agency' });
+      return;
+    }
+
+    // Check if agent user exists and has agent role
+    const agentUser = await User.findById(agentUserId);
+    if (!agentUser) {
+      res.status(404).json({ message: 'Agent user not found' });
+      return;
+    }
+
+    if (agentUser.role !== 'agent') {
+      res.status(400).json({ message: 'User must have agent role' });
+      return;
+    }
+
+    // Check if agent is already in the agency
+    if (agency.agents.some(id => id.toString() === agentUserId)) {
+      res.status(400).json({ message: 'Agent is already part of this agency' });
+      return;
+    }
+
+    // Add agent to agency
+    agency.agents.push(agentUserId);
+    agency.totalAgents = agency.agents.length;
+    await agency.save();
+
+    // Update agent's agency info
+    agentUser.agencyName = agency.name;
+    agentUser.agencyId = agency._id;
+    await agentUser.save();
+
+    await agency.populate('agents', 'name email phone avatarUrl role agencyName');
+
+    res.json({ agency });
+  } catch (error: any) {
+    console.error('Add agent error:', error);
+    res.status(500).json({ message: 'Error adding agent to agency', error: error.message });
+  }
+};
+
+// @desc    Remove agent from agency
+// @route   DELETE /api/agencies/:id/agents/:agentId
+// @access  Private
+export const removeAgentFromAgency = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const agency = await Agency.findById(req.params.id);
+
+    if (!agency) {
+      res.status(404).json({ message: 'Agency not found' });
+      return;
+    }
+
+    // Check ownership
+    if (agency.ownerId.toString() !== String((req.user as IUser)._id)) {
+      res.status(403).json({ message: 'Not authorized to modify this agency' });
+      return;
+    }
+
+    // Remove agent from agency
+    agency.agents = agency.agents.filter(
+      id => id.toString() !== req.params.agentId
+    );
+    agency.totalAgents = agency.agents.length;
+    await agency.save();
+
+    // Clear agent's agency info
+    const agentUser = await User.findById(req.params.agentId);
+    if (agentUser) {
+      agentUser.agencyName = undefined;
+      agentUser.agencyId = undefined;
+      await agentUser.save();
+    }
+
+    res.json({ message: 'Agent removed from agency successfully' });
+  } catch (error: any) {
+    console.error('Remove agent error:', error);
+    res.status(500).json({ message: 'Error removing agent from agency', error: error.message });
+  }
+};
+
+// @desc    Get featured agencies for rotation (homepage)
+// @route   GET /api/agencies/featured/rotation
+// @access  Public
+export const getFeaturedAgencies = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { limit = 5 } = req.query;
+
+    // Get current month to determine rotation
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+
+    // Get all featured agencies
+    const agencies = await Agency.find({ isFeatured: true })
+      .populate('ownerId', 'name email phone avatarUrl')
+      .sort({ adRotationOrder: 1, createdAt: -1 });
+
+    // Rotate based on month
+    const rotatedAgencies = [];
+    const totalAgencies = agencies.length;
+
+    if (totalAgencies > 0) {
+      const startIndex = currentMonth % totalAgencies;
+      const limitNum = Number(limit);
+
+      for (let i = 0; i < Math.min(limitNum, totalAgencies); i++) {
+        const index = (startIndex + i) % totalAgencies;
+        rotatedAgencies.push(agencies[index]);
+      }
+    }
+
+    res.json({ agencies: rotatedAgencies });
+  } catch (error: any) {
+    console.error('Get featured agencies error:', error);
+    res.status(500).json({ message: 'Error fetching featured agencies', error: error.message });
+  }
+};
