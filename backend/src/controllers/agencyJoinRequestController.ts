@@ -10,7 +10,8 @@ export const createJoinRequest = async (req: Request, res: Response): Promise<vo
     const { agencyId, message } = req.body;
 
     if (!req.user) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
     }
 
     const agentId = String((req.user as IUser)._id);
@@ -18,18 +19,21 @@ export const createJoinRequest = async (req: Request, res: Response): Promise<vo
     // Check if user is an agent
     const user = await User.findById(agentId);
     if (!user || user.role !== 'agent') {
-      return res.status(403).json({ message: 'Only agents can request to join agencies' });
+      res.status(403).json({ message: 'Only agents can request to join agencies' });
+      return;
     }
 
     // Check if agent already belongs to an agency
     if (user.agencyId) {
-      return res.status(400).json({ message: 'You already belong to an agency' });
+      res.status(400).json({ message: 'You already belong to an agency' });
+      return;
     }
 
     // Check if agency exists
     const agency = await Agency.findById(agencyId);
     if (!agency) {
-      return res.status(404).json({ message: 'Agency not found' });
+      res.status(404).json({ message: 'Agency not found' });
+      return;
     }
 
     // Check for existing pending request
@@ -40,7 +44,8 @@ export const createJoinRequest = async (req: Request, res: Response): Promise<vo
     });
 
     if (existingRequest) {
-      return res.status(400).json({ message: 'You already have a pending request to this agency' });
+      res.status(400).json({ message: 'You already have a pending request to this agency' });
+      return;
     }
 
     // Create join request
@@ -69,7 +74,8 @@ export const getAgencyJoinRequests = async (req: Request, res: Response): Promis
     const { agencyId } = req.params;
 
     if (!req.user) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
     }
 
     const userId = String((req.user as IUser)._id);
@@ -77,11 +83,13 @@ export const getAgencyJoinRequests = async (req: Request, res: Response): Promis
     // Check if user owns the agency
     const agency = await Agency.findById(agencyId);
     if (!agency) {
-      return res.status(404).json({ message: 'Agency not found' });
+      res.status(404).json({ message: 'Agency not found' });
+      return;
     }
 
     if (agency.ownerId.toString() !== userId) {
-      return res.status(403).json({ message: 'Only agency owner can view join requests' });
+      res.status(403).json({ message: 'Only agency owner can view join requests' });
+      return;
     }
 
     // Get all join requests for this agency
@@ -100,7 +108,8 @@ export const getAgencyJoinRequests = async (req: Request, res: Response): Promis
 export const getAgentJoinRequests = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
     }
 
     const userId = String((req.user as IUser)._id);
@@ -122,39 +131,46 @@ export const approveJoinRequest = async (req: Request, res: Response): Promise<v
     const { requestId } = req.params;
 
     if (!req.user) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
     }
 
     const userId = String((req.user as IUser)._id);
 
     const joinRequest = await AgencyJoinRequest.findById(requestId);
     if (!joinRequest) {
-      return res.status(404).json({ message: 'Join request not found' });
+      res.status(404).json({ message: 'Join request not found' });
+      return;
     }
 
     // Check if user owns the agency
     const agency = await Agency.findById(joinRequest.agencyId);
     if (!agency) {
-      return res.status(404).json({ message: 'Agency not found' });
+      res.status(404).json({ message: 'Agency not found' });
+      return;
     }
 
     if (agency.ownerId.toString() !== userId) {
-      return res.status(403).json({ message: 'Only agency owner can approve requests' });
+      res.status(403).json({ message: 'Only agency owner can approve requests' });
+      return;
     }
 
     if (joinRequest.status !== 'pending') {
-      return res.status(400).json({ message: 'This request has already been processed' });
+      res.status(400).json({ message: 'This request has already been processed' });
+      return;
     }
 
     // Update agent's agency
     const agent = await User.findById(joinRequest.agentId);
     if (!agent) {
-      return res.status(404).json({ message: 'Agent not found' });
+      res.status(404).json({ message: 'Agent not found' });
+      return;
     }
 
     // Check if agent already joined another agency
     if (agent.agencyId) {
-      return res.status(400).json({ message: 'Agent has already joined another agency' });
+      res.status(400).json({ message: 'Agent has already joined another agency' });
+      return;
     }
 
     agent.agencyId = joinRequest.agencyId;
@@ -190,28 +206,33 @@ export const rejectJoinRequest = async (req: Request, res: Response): Promise<vo
     const { requestId } = req.params;
 
     if (!req.user) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
     }
 
     const userId = String((req.user as IUser)._id);
 
     const joinRequest = await AgencyJoinRequest.findById(requestId);
     if (!joinRequest) {
-      return res.status(404).json({ message: 'Join request not found' });
+      res.status(404).json({ message: 'Join request not found' });
+      return;
     }
 
     // Check if user owns the agency
     const agency = await Agency.findById(joinRequest.agencyId);
     if (!agency) {
-      return res.status(404).json({ message: 'Agency not found' });
+      res.status(404).json({ message: 'Agency not found' });
+      return;
     }
 
     if (agency.ownerId.toString() !== userId) {
-      return res.status(403).json({ message: 'Only agency owner can reject requests' });
+      res.status(403).json({ message: 'Only agency owner can reject requests' });
+      return;
     }
 
     if (joinRequest.status !== 'pending') {
-      return res.status(400).json({ message: 'This request has already been processed' });
+      res.status(400).json({ message: 'This request has already been processed' });
+      return;
     }
 
     // Update join request
@@ -236,23 +257,27 @@ export const cancelJoinRequest = async (req: Request, res: Response): Promise<vo
     const { requestId } = req.params;
 
     if (!req.user) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
     }
 
     const userId = String((req.user as IUser)._id);
 
     const joinRequest = await AgencyJoinRequest.findById(requestId);
     if (!joinRequest) {
-      return res.status(404).json({ message: 'Join request not found' });
+      res.status(404).json({ message: 'Join request not found' });
+      return;
     }
 
     // Check if user is the agent who made the request
     if (joinRequest.agentId.toString() !== userId) {
-      return res.status(403).json({ message: 'You can only cancel your own requests' });
+      res.status(403).json({ message: 'You can only cancel your own requests' });
+      return;
     }
 
     if (joinRequest.status !== 'pending') {
-      return res.status(400).json({ message: 'Only pending requests can be cancelled' });
+      res.status(400).json({ message: 'Only pending requests can be cancelled' });
+      return;
     }
 
     await joinRequest.deleteOne();
