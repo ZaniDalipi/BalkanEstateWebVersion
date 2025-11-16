@@ -162,10 +162,17 @@ const AgenciesListPage: React.FC = () => {
 
   const handleViewAgency = (agencyId: string, agencySlug?: string) => {
     // Use slug if available, otherwise use ID
-    const identifier = agencySlug || agencyId;
+    let identifier = agencySlug || agencyId;
+
+    // Normalize slug: remove country prefix with comma if present
+    // Handles old format: "serbia,belgrade-premium-properties" -> "belgrade-premium-properties"
+    if (identifier.includes(',')) {
+      identifier = identifier.split(',')[1];
+    }
+
     dispatch({ type: 'SET_SELECTED_AGENCY', payload: identifier });
 
-    // Update browser URL
+    // Update browser URL with normalized slug
     window.history.pushState({}, '', `/agency/${identifier}`);
   };
 
