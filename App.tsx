@@ -374,7 +374,8 @@ const MainLayout: React.FC = () => {
   
   const isSearchPage = state.activeView === 'search';
   const isAgencyDetailView = !!state.selectedAgencyId;
-  const isFullHeightView = isSearchPage || state.activeView === 'inbox' || !!state.selectedProperty || isAgencyDetailView;
+  // Agency pages should allow scrolling to show all agents and details
+  const isFullHeightView = isSearchPage || state.activeView === 'inbox' || !!state.selectedProperty;
   const showHeader = !(isMobile && (isSearchPage || !!state.selectedProperty));
   // Note: Agency detail pages WILL show header on mobile to allow sidebar access
   

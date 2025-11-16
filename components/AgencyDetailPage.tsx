@@ -117,9 +117,9 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-y-auto">
       {/* Hero Banner with Cover Image */}
-      <div className="relative h-96 bg-gradient-to-br from-primary to-primary-dark overflow-hidden">
+      <div className="relative h-96 bg-gradient-to-br from-primary to-primary-dark overflow-hidden flex-shrink-0">
         {agency.coverImage ? (
           <>
             <img
