@@ -261,7 +261,7 @@ export const sendMessage = async (
 
     // Include security warnings if any (from server-side filtering)
     const response: any = { message };
-    if (message.hadSensitiveInfo && message.securityWarnings.length > 0) {
+    if (message.hadSensitiveInfo && message.securityWarnings && message.securityWarnings.length > 0) {
       response.securityWarnings = message.securityWarnings;
     }
 

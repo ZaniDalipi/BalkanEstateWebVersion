@@ -77,7 +77,7 @@ MessageSchema.index({ conversationId: 1, createdAt: 1 });
 
 // Pre-save hook to sanitize messages (only if text is provided for server-side filtering)
 MessageSchema.pre('save', function(next) {
-  const message = this as IMessage;
+  const message = this as any as IMessage;
 
   // Only process text if provided (for sensitive info filtering before encryption)
   if (message.text && (message.isNew || message.isModified('text'))) {
