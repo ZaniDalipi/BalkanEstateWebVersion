@@ -8,6 +8,8 @@ import { BuildingOfficeIcon, ChartBarIcon, UserCircleIcon, ArrowLeftOnRectangleI
 import AgentLicenseModal from './AgentLicenseModal';
 import { switchRole, getAgencies } from '../../services/apiService';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
 type AccountTab = 'listings' | 'performance' | 'profile' | 'subscription';
 
 const TabButton: React.FC<{
@@ -250,7 +252,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
             const formData = new FormData();
             formData.append('avatar', file);
 
-            const response = await fetch('/api/auth/upload-avatar', {
+            const response = await fetch(`${API_URL}/auth/upload-avatar`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,

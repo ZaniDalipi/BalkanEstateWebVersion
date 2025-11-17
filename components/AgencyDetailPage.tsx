@@ -7,6 +7,8 @@ import AgencyJoinRequestsModal from './AgencyJoinRequestsModal';
 import { formatPrice } from '../utils/currency';
 import { createJoinRequest } from '../services/apiService';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
 interface Agent {
   _id?: string;
   id: string;
@@ -137,7 +139,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
       const formData = new FormData();
       formData.append('logo', file);
 
-      const response = await fetch(`/api/agencies/${agencyData._id}/upload-logo`, {
+      const response = await fetch(`${API_URL}/agencies/${agencyData._id}/upload-logo`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
@@ -183,7 +185,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
       const formData = new FormData();
       formData.append('cover', file);
 
-      const response = await fetch(`/api/agencies/${agencyData._id}/upload-cover`, {
+      const response = await fetch(`${API_URL}/agencies/${agencyData._id}/upload-cover`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
