@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { IUser } from '../models/User';
+// import { IUser } from '../models/User';
 
 // Create reusable transporter
 const createTransporter = () => {
