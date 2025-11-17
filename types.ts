@@ -9,7 +9,7 @@ export type PropertyStatus = 'active' | 'pending' | 'sold' | 'draft';
 
 export type PropertyImageTag = 'exterior' | 'living_room' | 'kitchen' | 'bedroom' | 'bathroom' | 'other';
 
-export type AppView = 'search' | 'saved-searches' | 'saved-homes' | 'inbox' | 'account' | 'create-listing' | 'agents';
+export type AppView = 'search' | 'saved-searches' | 'saved-properties' | 'inbox' | 'account' | 'create-listing' | 'agents' | 'agencies';
 
 export type AuthModalView = 'login' | 'signup' | 'forgotPassword' | 'forgotPasswordSuccess' | 'phoneCode' | 'phoneDetails';
 
@@ -239,6 +239,14 @@ export interface SearchPageState {
     isFiltersOpen: boolean;
 }
 
+export interface PendingSubscription {
+    planName: string;
+    planPrice: number;
+    planInterval: 'month' | 'year';
+    discountPercent?: number;
+    modalType: 'buyer' | 'seller'; // which modal to open
+}
+
 export interface AppState {
     onboardingComplete: boolean;
     isAuthenticating: boolean;
@@ -261,11 +269,14 @@ export interface AppState {
     comparisonList: string[]; // array of property IDs
     conversations: Conversation[];
     selectedAgentId: string | null;
+    selectedAgencyId: string | null;
     pendingProperty: Property | null;
+    pendingSubscription: PendingSubscription | null;
     searchPageState: SearchPageState;
     activeDiscount: { proYearly: number; proMonthly: number; enterprise: number; } | null;
     isListingLimitWarningOpen: boolean;
     isDiscountGameOpen: boolean;
+    isEnterpriseModalOpen: boolean;
     allMunicipalities: Record<string, MunicipalityData[]>;
 }
 
@@ -276,11 +287,13 @@ export type AppAction =
     | { type: 'SET_ACTIVE_VIEW', payload: AppView }
     | { type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: boolean, isOffer?: boolean } }
     | { type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: boolean }
+    | { type: 'TOGGLE_ENTERPRISE_MODAL', payload: boolean }
     | { type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: boolean, view?: AuthModalView } }
     | { type: 'SET_AUTH_MODAL_VIEW', payload: AuthModalView }
     | { type: 'SET_SELECTED_PROPERTY', payload: string | null }
     | { type: 'SET_PROPERTY_TO_EDIT', payload: Property | null }
     | { type: 'SET_SELECTED_AGENT', payload: string | null }
+    | { type: 'SET_SELECTED_AGENCY', payload: string | null }
     | { type: 'PROPERTIES_LOADING' }
     | { type: 'PROPERTIES_SUCCESS', payload: Property[] }
     | { type: 'PROPERTIES_ERROR', payload: string }
@@ -301,6 +314,7 @@ export type AppAction =
     | { type: 'CREATE_OR_ADD_MESSAGE', payload: { propertyId: string, message: Message } }
     | { type: 'MARK_CONVERSATION_AS_READ', payload: string }
     | { type: 'SET_PENDING_PROPERTY', payload: Property | null }
+    | { type: 'SET_PENDING_SUBSCRIPTION', payload: PendingSubscription | null }
     | { type: 'UPDATE_SEARCH_PAGE_STATE', payload: Partial<SearchPageState> }
     | { type: 'SET_ACTIVE_DISCOUNT', payload: { proYearly: number; proMonthly: number; enterprise: number; } | null }
     | { type: 'TOGGLE_LISTING_LIMIT_WARNING', payload: boolean }

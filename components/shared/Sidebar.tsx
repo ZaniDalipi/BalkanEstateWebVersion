@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { AppView, UserRole } from '../../types';
-import { LogoIcon, SearchIcon, MagnifyingGlassPlusIcon, HeartIcon, EnvelopeIcon, UserCircleIcon, UsersIcon, ArrowLeftOnRectangleIcon, XMarkIcon, PencilIcon, StarIconSolid } from '../../constants';
+import { LogoIcon, SearchIcon, MagnifyingGlassPlusIcon, HeartIcon, EnvelopeIcon, UserCircleIcon, UsersIcon, ArrowLeftOnRectangleIcon, XMarkIcon, PencilIcon, StarIconSolid, BuildingOfficeIcon } from '../../constants';
 
 const NavItem: React.FC<{
   view: AppView;
@@ -36,18 +36,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const { activeView, isAuthenticated, currentUser } = state;
 
     const handleNavClick = (view: AppView) => {
-        const needsAuth = ['inbox', 'account', 'saved-searches', 'saved-homes'].includes(view);
+        const needsAuth = ['inbox', 'account', 'saved-searches', 'saved-properties'].includes(view);
         if (needsAuth && !isAuthenticated) {
             dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
         } else {
+            // Clear selected agency/property when navigating to different views
+            dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
             dispatch({ type: 'SET_ACTIVE_VIEW', payload: view });
+
+            // Update browser URL
+            const route = view === 'search' ? '/' : `/${view}`;
+            window.history.pushState({}, '', route);
         }
         onClose(); // Close sidebar on mobile after navigation
     };
 
     const handleNewListingClick = () => {
         if (isAuthenticated) {
+            // Clear selected agency when creating new listing
+            dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
             dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'create-listing' });
+            window.history.pushState({}, '', '/create-listing');
         } else {
             dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'signup' } });
         }
@@ -61,17 +70,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
     const handleLogout = () => {
         logout();
-        // After logout, reset to a default public view
+        // After logout, reset to a default public view and clear any selected items
+        dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
+        window.history.pushState({}, '', '/');
         onClose();
     };
 
     const navItems = [
       { view: 'search' as AppView, label: 'Search', icon: <SearchIcon /> },
       { view: 'saved-searches' as AppView, label: 'Saved Searches', icon: <MagnifyingGlassPlusIcon /> },
-      { view: 'saved-homes' as AppView, label: 'Saved Homes', icon: <HeartIcon /> },
+      { view: 'saved-properties' as AppView, label: 'Saved Properties', icon: <HeartIcon /> },
       { view: 'inbox' as AppView, label: 'Inbox', icon: <EnvelopeIcon /> },
       { view: 'agents' as AppView, label: 'Top Agents', icon: <UsersIcon /> },
+      { view: 'agencies' as AppView, label: 'Agencies', icon: <BuildingOfficeIcon /> },
     ];
 
     return (
