@@ -95,7 +95,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       { view: 'search' as AppView, label: 'Search', icon: <SearchIcon /> },
       { view: 'saved-searches' as AppView, label: 'Saved Searches', icon: <MagnifyingGlassPlusIcon /> },
       { view: 'saved-properties' as AppView, label: 'Saved Properties', icon: <HeartIcon /> },
-      { view: 'inbox' as AppView, label: 'Inbox', icon: <EnvelopeIcon /> },
       { view: 'agents' as AppView, label: 'Top Agents', icon: <UsersIcon /> },
       { view: 'agencies' as AppView, label: 'Agencies', icon: <BuildingOfficeIcon /> },
     ];
@@ -151,6 +150,24 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                         >
                             <div className={`w-6 h-6 flex-shrink-0 text-neutral-700`}><StarIconSolid /></div>
                             <span className="md:hidden group-hover:md:inline whitespace-nowrap">Subscription</span>
+                        </button>
+                        <button
+                            onClick={() => handleNavClick('inbox')}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-left md:justify-center group-hover:md:justify-start relative ${
+                                activeView === 'inbox'
+                                    ? 'bg-primary-light text-primary-dark'
+                                    : 'text-neutral-700 hover:bg-neutral-100'
+                            }`}
+                        >
+                            <div className={`w-6 h-6 flex-shrink-0 ${activeView === 'inbox' ? 'text-primary' : 'text-neutral-700'} relative`}>
+                                <EnvelopeIcon />
+                                {totalUnreadCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                                        {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                                    </span>
+                                )}
+                            </div>
+                            <span className="md:hidden group-hover:md:inline whitespace-nowrap">Inbox</span>
                         </button>
                     </div>
                 </nav>
