@@ -48,6 +48,7 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        setLoading(true);
         const response = await fetch('/api/users/my-stats', {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,

@@ -65,22 +65,13 @@ const AgenciesListPage: React.FC = () => {
           limit: 50,
         });
 
-        // Add mock agencies if response is empty
+        // Use real agencies from the database
         const fetchedAgencies = response.agencies || [];
-        if (fetchedAgencies.length === 0) {
-          setAgencies(getMockAgencies());
-        } else {
-          setAgencies(fetchedAgencies);
-        }
+        setAgencies(fetchedAgencies);
       }
     } catch (error) {
       console.error('Failed to fetch agencies:', error);
-      // Show mock agencies on error
-      if (filter !== 'myAgency') {
-        setAgencies(getMockAgencies());
-      } else {
-        setAgencies([]);
-      }
+      setAgencies([]);
     } finally {
       setLoading(false);
     }
@@ -299,7 +290,20 @@ const AgenciesListPage: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
             <BuildingOfficeIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No agencies found</h3>
-            <p className="text-gray-600">Try adjusting your filters</p>
+            <p className="text-gray-600 mb-4">
+              {filter === 'all' && !cityFilter
+                ? 'No agencies are registered yet. Be the first to create an enterprise agency!'
+                : 'Try adjusting your filters or search criteria'}
+            </p>
+            {filter === 'all' && !cityFilter && (
+              <button
+                onClick={handleCreateEnterprise}
+                className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-full font-medium hover:bg-primary-dark transition-all mt-4"
+              >
+                <BuildingOfficeIcon className="w-5 h-5" />
+                Create Enterprise Agency
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-6">

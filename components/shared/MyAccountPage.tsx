@@ -505,6 +505,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
 const MyAccountPage: React.FC = () => {
     const { state, dispatch, logout } = useAppContext();
     const [activeTab, setActiveTab] = useState<AccountTab>('listings');
+    const [performanceRefreshKey, setPerformanceRefreshKey] = useState(0);
 
     if (!state.currentUser) {
         return (
@@ -521,6 +522,12 @@ const MyAccountPage: React.FC = () => {
             setActiveTab('profile');
         }
     }, [isSellerProfile, activeTab]);
+
+    useEffect(() => {
+        if (activeTab === 'performance') {
+            setPerformanceRefreshKey(prev => prev + 1);
+        }
+    }, [activeTab]);
 
     const handleLogout = () => {
         logout();
@@ -556,7 +563,7 @@ const MyAccountPage: React.FC = () => {
             case 'profile':
                 return <ProfileSettings user={state.currentUser!} />;
             case 'performance':
-                 return <ProfileStatistics user={state.currentUser!} />;
+                 return <ProfileStatistics key={performanceRefreshKey} user={state.currentUser!} />;
             case 'subscription':
                  return <SubscriptionManagement userId={state.currentUser!.id} />;
             default:
