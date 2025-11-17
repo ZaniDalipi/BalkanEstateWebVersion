@@ -295,11 +295,18 @@ export const sendMessage = async (
     // Emit WebSocket event to conversation room for real-time delivery
     const io = getSocketInstance();
     if (io) {
-      io.to(conversation._id.toString()).emit('message-received', {
-        conversationId: conversation._id.toString(),
+     const conversationId = String((conversation as any)._id);
+
+      io.to(conversationId).emit('message-received', {
+
+        conversationId: conversationId,
+
         message: message.toObject(),
+
       });
-      console.log(`📨 Emitted message to conversation room: ${conversation._id.toString()}`);
+
+      console.log(`📨 Emitted message to conversation room: ${conversationId}`);
+
     }
 
     // Include security warnings if any (from server-side filtering)
