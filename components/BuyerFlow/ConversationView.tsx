@@ -172,8 +172,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
             // Update conversation in AppContext so the list updates
             dispatch({ type: 'ADD_MESSAGE', payload: { conversationId: conversation.id, message: result.message } });
 
-            // Emit message via WebSocket for real-time delivery to other user
-            socketService.sendMessage(conversation.id, result.message);
+            // Note: Backend will emit WebSocket event to conversation room for real-time delivery
 
             // Show security warnings if any
             if (result.securityWarnings && result.securityWarnings.length > 0) {
@@ -280,7 +279,10 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
                         const otherPerson = isUser ? (conversation.seller || property.seller) : (conversation.buyer || { name: 'Buyer', avatarUrl: null });
 
                         return (
-                            <div key={msg.id} className={`flex items-end gap-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
+                            <div
+                                key={msg.id}
+                                className={`flex items-end gap-2 ${isUser ? 'justify-end' : 'justify-start'}`}
+                            >
                                 {!isUser && (
                                     <div className="flex-shrink-0">
                                         {otherPerson.avatarUrl ? (
@@ -290,7 +292,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
                                         )}
                                     </div>
                                 )}
-                                <div className={`max-w-md p-3 rounded-2xl ${isUser
+                                <div className={`max-w-md p-3 rounded-2xl shadow-sm ${isUser
                                     ? 'bg-primary text-white rounded-br-lg'
                                     : 'bg-neutral-100 text-neutral-800 rounded-bl-lg'
                                 }`}>
@@ -307,23 +309,23 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
 
                     {/* Typing Indicator */}
                     {isTyping && (
-                        <div className="flex items-end gap-2 justify-start">
+                        <div className="flex items-end gap-2 justify-start animate-pulse">
                             <div className="flex-shrink-0">
                                 {(conversation.seller?.avatarUrl || property?.seller?.avatarUrl) ? (
                                     <img
                                         src={conversation.seller?.avatarUrl || property?.seller?.avatarUrl}
                                         alt="Seller"
-                                        className="w-8 h-8 rounded-full object-cover"
+                                        className="w-8 h-8 rounded-full object-cover ring-2 ring-primary ring-opacity-50"
                                     />
                                 ) : (
                                     <UserCircleIcon className="w-8 h-8 text-neutral-400" />
                                 )}
                             </div>
-                            <div className="bg-neutral-100 p-3 rounded-2xl rounded-bl-lg">
+                            <div className="bg-neutral-100 p-3 rounded-2xl rounded-bl-lg shadow-sm">
                                 <div className="flex gap-1">
-                                    <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                                    <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                                    <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                                 </div>
                             </div>
                         </div>

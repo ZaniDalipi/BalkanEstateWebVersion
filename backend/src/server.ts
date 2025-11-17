@@ -6,6 +6,7 @@ import compression from 'compression';
 import morgan from 'morgan';
 import connectDB from './config/database';
 import { setupChatSocket } from './sockets/chatSocket';
+import { setSocketInstance } from './utils/socketInstance';
 
 
 // Load environment variables
@@ -46,6 +47,9 @@ const io = new Server(httpServer, {
     credentials: true,
   },
 });
+
+// Store Socket.IO instance for use in controllers
+setSocketInstance(io);
 
 // Setup chat socket handlers
 setupChatSocket(io);

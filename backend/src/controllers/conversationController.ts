@@ -6,6 +6,7 @@ import User, { IUser } from '../models/User';
 import { SECURITY_WARNING } from '../utils/messageFilter';
 import cloudinary from '../config/cloudinary';
 import { sendNewMessageNotification } from '../services/emailService';
+import { getSocketInstance } from '../utils/socketInstance';
 
 // @desc    Get user's conversations
 // @route   GET /api/conversations
@@ -289,6 +290,16 @@ export const sendMessage = async (
     } catch (emailError) {
       console.error('Error sending email notification:', emailError);
       // Don't fail the request if email fails
+    }
+
+    // Emit WebSocket event to conversation room for real-time delivery
+    const io = getSocketInstance();
+    if (io) {
+      io.to(conversation._id.toString()).emit('message-received', {
+        conversationId: conversation._id.toString(),
+        message: message.toObject(),
+      });
+      console.log(`📨 Emitted message to conversation room: ${conversation._id.toString()}`);
     }
 
     // Include security warnings if any (from server-side filtering)
