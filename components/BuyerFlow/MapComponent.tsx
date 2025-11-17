@@ -84,21 +84,29 @@ const MapEvents: React.FC<{ onMove: (bounds: L.LatLngBounds, center: L.LatLng) =
     useEffect(() => {
         const resizeObserver = new ResizeObserver(() => {
             setTimeout(() => {
-                map.invalidateSize();
+                if (map && map.getContainer()) {
+                    map.invalidateSize();
+                }
             }, 0);
         });
 
         const mapContainer = map.getContainer();
-        resizeObserver.observe(mapContainer);
-        
+        if (mapContainer) {
+            resizeObserver.observe(mapContainer);
+        }
+
         // Force a resize check shortly after the component mounts.
         // This helps fix layout issues where the map container size isn't computed correctly on initial render.
         const timer = setTimeout(() => {
-            map.invalidateSize();
+            if (map && map.getContainer()) {
+                map.invalidateSize();
+            }
         }, 100);
-        
+
         return () => {
-            resizeObserver.unobserve(mapContainer);
+            if (mapContainer) {
+                resizeObserver.unobserve(mapContainer);
+            }
             clearTimeout(timer);
         };
     }, [map]);
@@ -110,7 +118,11 @@ const MapEvents: React.FC<{ onMove: (bounds: L.LatLngBounds, center: L.LatLng) =
             // By calling invalidateSize() in a timeout, we ensure the map re-checks its
             // container size *after* the React render cycle completes, fixing any
             // layout shifts that might occur from other components updating (like the property count).
-            const timer = setTimeout(() => map.invalidateSize(), 0);
+            const timer = setTimeout(() => {
+                if (map && map.getContainer()) {
+                    map.invalidateSize();
+                }
+            }, 0);
             return () => clearTimeout(timer);
         }
     }, [map, mapBounds]);
@@ -119,7 +131,11 @@ const MapEvents: React.FC<{ onMove: (bounds: L.LatLngBounds, center: L.LatLng) =
         // When the search mode changes (e.g., from manual to AI), the left panel's content
         // might change, causing a layout shift. We need to tell the map to re-check
         // its container size to fill the space correctly.
-        const timer = setTimeout(() => map.invalidateSize(), 50); // A small delay to let layout settle
+        const timer = setTimeout(() => {
+            if (map && map.getContainer()) {
+                map.invalidateSize();
+            }
+        }, 50); // A small delay to let layout settle
         return () => clearTimeout(timer);
     }, [map, searchMode]);
 
