@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserIcon, Bars3Icon, UserCircleIcon } from '../../constants';
+import { UserIcon, Bars3Icon, UserCircleIcon, EnvelopeIcon } from '../../constants';
 import { UserRole } from '../../types';
 import { useAppContext } from '../../context/AppContext';
 
@@ -10,7 +10,18 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isFloating }) => {
   const { state, dispatch } = useAppContext();
-  const { isAuthenticated, currentUser } = state;
+  const { isAuthenticated, currentUser, conversations } = state;
+
+  // Calculate total unread messages
+  const totalUnreadCount = React.useMemo(() => {
+    if (!isAuthenticated || !currentUser) return 0;
+    return conversations.reduce((total, conversation) => {
+      const unreadCount = conversation.messages?.filter(
+        m => !m.isRead && m.senderId !== currentUser.id && m.senderId !== 'user'
+      ).length || 0;
+      return total + unreadCount;
+    }, 0);
+  }, [conversations, isAuthenticated, currentUser]);
   
   const handleAccountClick = () => {
     if (isAuthenticated) {
@@ -91,13 +102,27 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isFloating }) => {
           </div>
 
           <nav className="flex justify-end items-center space-x-2 sm:space-x-4">
+            {isAuthenticated && (
+              <button
+                onClick={() => dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'inbox' })}
+                className="relative p-2 text-neutral-600 hover:text-primary hover:bg-neutral-100 rounded-full transition-colors"
+                title="Inbox"
+              >
+                <EnvelopeIcon className="w-6 h-6" />
+                {totalUnreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full min-w-[20px] h-[20px] flex items-center justify-center px-1.5">
+                    {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                  </span>
+                )}
+              </button>
+            )}
             <button
               onClick={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true })}
               className="bg-primary text-white px-3 py-2 sm:px-5 sm:py-2.5 rounded-full text-sm sm:text-base font-semibold hover:bg-primary-dark transition-all shadow-sm hover:shadow-md whitespace-nowrap"
             >
                 Subscribe
             </button>
-            <button 
+            <button
               onClick={handleNewListingClick}
               className="bg-secondary text-white px-3 py-2 sm:px-5 sm:py-2.5 rounded-full text-sm sm:text-base font-semibold hover:bg-opacity-90 transition-all shadow-sm hover:shadow-md whitespace-nowrap"
             >
