@@ -300,6 +300,13 @@ export const updateListing = async (propertyData: Property): Promise<Property> =
   return transformBackendProperty(response.property);
 };
 
+export const deleteProperty = async (propertyId: string): Promise<void> => {
+  await apiRequest(`/properties/${propertyId}`, {
+    method: 'DELETE',
+    requiresAuth: true,
+  });
+};
+
 export const getMyListings = async (): Promise<Property[]> => {
   const response = await apiRequest<{ properties: any[] }>('/properties/my/listings', {
     requiresAuth: true,

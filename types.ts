@@ -310,6 +310,7 @@ export type AppAction =
     | { type: 'UPDATE_PROPERTY', payload: Property }
     | { type: 'RENEW_PROPERTY', payload: string }
     | { type: 'MARK_PROPERTY_SOLD', payload: string }
+    | { type: 'DELETE_PROPERTY', payload: string }
     | { type: 'UPDATE_USER', payload: Partial<User> }
     | { type: 'CREATE_CONVERSATION', payload: Conversation }
     | { type: 'DELETE_CONVERSATION', payload: string }

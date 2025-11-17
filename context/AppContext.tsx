@@ -142,6 +142,12 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
                 p.id === action.payload ? { ...p, status: 'sold' } : p
             ),
         };
+    case 'DELETE_PROPERTY':
+        // Remove the property from the list.
+        return {
+            ...state,
+            properties: state.properties.filter(p => p.id !== action.payload),
+        };
     case 'UPDATE_USER':
       return { ...state, currentUser: state.currentUser ? { ...state.currentUser, ...action.payload } : null };
     case 'CREATE_CONVERSATION': {
