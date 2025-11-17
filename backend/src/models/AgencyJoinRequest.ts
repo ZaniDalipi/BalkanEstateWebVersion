@@ -4,10 +4,10 @@ export interface IAgencyJoinRequest extends Document {
   agentId: mongoose.Types.ObjectId;
   agencyId: mongoose.Types.ObjectId;
   status: 'pending' | 'approved' | 'rejected';
-  message?: string; // Optional message from agent
+  message?: string;
   requestedAt: Date;
   respondedAt?: Date;
-  respondedBy?: mongoose.Types.ObjectId; // Agency owner who responded
+  respondedBy?: mongoose.Types.ObjectId; 
 }
 
 const AgencyJoinRequestSchema = new Schema<IAgencyJoinRequest>({
@@ -30,6 +30,7 @@ const AgencyJoinRequestSchema = new Schema<IAgencyJoinRequest>({
     required: true,
     index: true,
   },
+
   message: {
     type: String,
     maxlength: 500,
