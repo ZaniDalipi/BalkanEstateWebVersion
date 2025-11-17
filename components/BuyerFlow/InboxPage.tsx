@@ -9,6 +9,10 @@ const InboxPage: React.FC = () => {
     const { state, dispatch } = useAppContext();
     const { conversations, properties, isAuthenticated, activeConversationId } = state;
 
+    console.log('InboxPage mounted/rendered');
+    console.log('Current activeConversationId:', activeConversationId);
+    console.log('Conversations count:', conversations.length);
+
     // A check to determine if we are on a mobile device based on window width.
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 

@@ -410,8 +410,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const createConversation = useCallback(async (propertyId: string) => {
+      console.log('createConversation called for property:', propertyId);
       const conversation = await api.createConversation(propertyId);
+      console.log('API returned conversation:', conversation.id);
+      console.log('Dispatching CREATE_CONVERSATION');
       dispatch({ type: 'CREATE_CONVERSATION', payload: conversation });
+      console.log('CREATE_CONVERSATION dispatched');
       return conversation;
   }, []);
 
