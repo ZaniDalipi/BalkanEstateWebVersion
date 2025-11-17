@@ -552,7 +552,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
 
       // Navigate to inbox IMMEDIATELY for instant feedback
       console.log('Navigating to inbox immediately');
-      dispatch({ type: 'SET_CURRENT_VIEW', payload: 'inbox' });
+      dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'inbox' });
 
       // Create conversation in the background
       setIsCreatingConversation(true);
