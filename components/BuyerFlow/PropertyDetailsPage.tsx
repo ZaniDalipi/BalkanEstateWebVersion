@@ -452,7 +452,7 @@ const SharePopover: React.FC<{ property: Property, onClose: () => void }> = ({ p
 };
 
 const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => {
-  const { state, dispatch } = useAppContext();
+  const { state, dispatch, createConversation } = useAppContext();
 
   const [activeCategory, setActiveCategory] = useState<PropertyImageTag | 'all'>('all');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
