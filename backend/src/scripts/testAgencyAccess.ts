@@ -100,21 +100,36 @@ const testAgencyAccess = async () => {
       }
     }
 
-    // ===== TEST 4: Test slug with country prefix (old format) =====
-    console.log(`${colors.yellow}\n--- Test 4: Access by Slug with Country Prefix ---${colors.reset}`);
+    // ===== TEST 4: Test slug with country prefix (parsing) =====
+    console.log(`${colors.yellow}\n--- Test 4: Parse Slug with Country Prefix ---${colors.reset}`);
     for (const agency of allAgencies) {
       try {
-        // Simulate old format: "country,slug"
-        const slugWithCountry = `${agency.country?.toLowerCase() || 'unknown'},${agency.slug}`;
-        const normalizedSlug = slugWithCountry.split(',')[1]; // Remove country prefix
+        // Test parsing slug that already has country prefix
+        // Format in DB: "country,name-part"
+        // We should be able to access by the full slug directly
+        const fullSlug = agency.slug; // Already has format: "country,name"
 
-        const fetchedByNormalizedSlug = await Agency.findOne({ slug: normalizedSlug.toLowerCase() });
+        const fetchedByFullSlug = await Agency.findOne({ slug: fullSlug.toLowerCase() });
         logTest(
-          `Access agency by normalized slug: ${slugWithCountry} → ${normalizedSlug}`,
-          !!fetchedByNormalizedSlug,
+          `Access agency by full slug with country prefix: ${fullSlug}`,
+          !!fetchedByFullSlug,
           undefined,
-          { id: fetchedByNormalizedSlug?._id, name: fetchedByNormalizedSlug?.name }
+          { id: fetchedByFullSlug?._id, name: fetchedByFullSlug?.name }
         );
+
+        // Also test extracting just the name part (after comma)
+        if (fullSlug.includes(',')) {
+          const namePart = fullSlug.split(',')[1];
+          const fetchedByNamePart = await Agency.findOne({
+            slug: { $regex: `,${namePart}$`, $options: 'i' }
+          });
+          logTest(
+            `Access agency by name part only: ${namePart}`,
+            !!fetchedByNamePart && fetchedByNamePart._id.toString() === agency._id.toString(),
+            undefined,
+            { id: fetchedByNamePart?._id, name: fetchedByNamePart?.name }
+          );
+        }
       } catch (error: any) {
         logTest(`Access agency with country prefix`, false, error.message);
       }
