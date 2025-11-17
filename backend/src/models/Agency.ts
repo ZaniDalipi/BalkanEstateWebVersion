@@ -205,9 +205,9 @@ AgencySchema.index({ city: 1, isFeatured: 1 });
 AgencySchema.index({ isFeatured: 1, adRotationOrder: 1 });
 
 // Generate invitation code before saving
-AgencySchema.pre('save', async function (next) {
+AgencySchema.pre<IAgency>('save', async function (next) {
   if (!this.invitationCode) {
-    // Generate a unique invitation code: AGY-{first4chars of ID}-{agencyName}-{random6digits}
+    // Generate a unique invitation code: AGY-{agencyName}-{random6digits}
     const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
     const nameCode = this.name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 6).toUpperCase();
     this.invitationCode = `AGY-${nameCode}-${randomCode}`;
