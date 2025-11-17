@@ -6,6 +6,7 @@ import { formatPrice } from '../../utils/currency';
 import { CalendarIcon, UserCircleIcon, ChevronLeftIcon, BuildingOfficeIcon, ShieldExclamationIcon, TrashIcon } from '../../constants';
 import { getConversation, sendMessage as sendMessageAPI, uploadMessageImage, getSecurityWarning } from '../../services/apiService';
 import { socketService } from '../../services/socketService';
+import { notificationService } from '../../services/notificationService';
 
 interface ConversationViewProps {
     conversation: Conversation;
@@ -72,9 +73,19 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
                     return prev;
                 }
 
-                // Play notification sound for messages from other person
+                // Play notification sound and show browser notification for messages from other person
                 if (message.senderId !== currentUserId) {
                     playNotificationSound();
+
+                    // Show browser notification
+                    const otherPerson = conversation.seller || property?.seller;
+                    if (otherPerson && property) {
+                        notificationService.showNewMessageNotification(
+                            otherPerson.name || 'Seller',
+                            message.text || '[Image]',
+                            `${property.address}, ${property.city}`
+                        );
+                    }
                 }
 
                 return [...prev, message];

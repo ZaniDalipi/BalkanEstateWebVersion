@@ -5,6 +5,7 @@ import Property from '../models/Property';
 import User, { IUser } from '../models/User';
 import { SECURITY_WARNING } from '../utils/messageFilter';
 import cloudinary from '../config/cloudinary';
+import { sendNewMessageNotification } from '../services/emailService';
 
 // @desc    Get user's conversations
 // @route   GET /api/conversations
@@ -258,6 +259,37 @@ export const sendMessage = async (
     await conversation.save();
 
     await message.populate('senderId', 'name avatarUrl');
+
+    // Send email notification to recipient
+    try {
+      // Populate conversation with property and user details
+      await conversation.populate('propertyId');
+      await conversation.populate('buyerId', 'name email');
+      await conversation.populate('sellerId', 'name email');
+
+      const sender = req.user as IUser;
+      const recipient = isBuyer ? conversation.sellerId : conversation.buyerId;
+      const property = conversation.propertyId as any;
+
+      // Only send email if recipient has an email
+      if (recipient && recipient.email && property) {
+        const messageText = text || '[Image message]';
+        const appUrl = process.env.APP_URL || 'http://localhost:5173';
+
+        await sendNewMessageNotification({
+          recipientEmail: recipient.email,
+          recipientName: recipient.name || 'User',
+          senderName: sender.name || 'A user',
+          propertyAddress: property.address,
+          propertyCity: property.city,
+          messagePreview: messageText,
+          conversationUrl: `${appUrl}/inbox`,
+        });
+      }
+    } catch (emailError) {
+      console.error('Error sending email notification:', emailError);
+      // Don't fail the request if email fails
+    }
 
     // Include security warnings if any (from server-side filtering)
     const response: any = { message };

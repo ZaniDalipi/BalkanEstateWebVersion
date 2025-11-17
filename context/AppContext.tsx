@@ -3,6 +3,7 @@ import { User, Property, SavedSearch, Conversation, AppState, AppAction, Filters
 import * as api from '../services/apiService';
 import { MUNICIPALITY_DATA } from '../services/propertyService';
 import { socketService } from '../services/socketService';
+import { notificationService } from '../services/notificationService';
 
 const initialSearchPageState: SearchPageState = {
     filters: initialFilters,
@@ -289,6 +290,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       socketService.connect(token);
     }
 
+    // Initialize browser notifications
+    notificationService.initialize();
+
     // Check if there's a pending subscription and reopen the modal
     if (state.pendingSubscription) {
       setTimeout(() => {
@@ -323,6 +327,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (token) {
       socketService.connect(token);
     }
+
+    // Initialize browser notifications
+    notificationService.initialize();
 
     // Check if there's a pending subscription and reopen the modal
     if (state.pendingSubscription) {
