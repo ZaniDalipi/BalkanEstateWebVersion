@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { User, UserRole } from '../../types';
-import { ChartBarIcon, HomeIcon, EyeIcon, HeartIcon, ChatBubbleLeftIcon } from '../../constants';
+import { ChartBarIcon, HomeIcon, EyeIcon, HeartIcon, ChatBubbleBottomCenterTextIcon } from '../../constants';
 
 interface ProfileStatisticsProps {
   user: User;
@@ -119,7 +119,7 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
           {/* Secondary Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <StatCard
-              icon={<ChatBubbleLeftIcon className="w-6 h-6" />}
+              icon={<ChatBubbleBottomCenterTextIcon className="w-6 h-6" />}
               label="Total Inquiries"
               value={stats.totalInquiries.toLocaleString()}
               subtext="Buyer messages received"
