@@ -30,6 +30,7 @@ const AgenciesListPage: React.FC = () => {
   const { dispatch, state } = useAppContext();
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'featured' | 'myAgency'>('all');
   const [cityFilter, setCityFilter] = useState('');
 
@@ -43,9 +44,12 @@ const AgenciesListPage: React.FC = () => {
   const fetchAgencies = async () => {
     try {
       setLoading(true);
+      setError(null);
+      console.log('🔄 Fetching agencies with filter:', filter, 'cityFilter:', cityFilter);
 
       // If viewing "My Agency", fetch only the user's agency
       if (filter === 'myAgency' && currentUser?.agencyId) {
+        console.log('📍 Fetching user agency:', currentUser.agencyId);
         const response = await fetch(`${API_URL}/agencies/${currentUser.agencyId}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
@@ -53,24 +57,43 @@ const AgenciesListPage: React.FC = () => {
         });
         if (response.ok) {
           const data = await response.json();
+          console.log('✅ User agency fetched:', data.agency);
           setAgencies([data.agency]);
         } else {
-          console.error('Failed to fetch agency:', response.status, response.statusText);
+          console.error('❌ Failed to fetch agency:', response.status, response.statusText);
+          setError(`Failed to load agency (${response.status})`);
           setAgencies([]);
         }
       } else {
+        console.log('📍 Fetching all agencies from API...');
         const response = await getAgencies({
           featured: filter === 'featured' ? true : undefined,
           city: cityFilter || undefined,
           limit: 50,
         });
 
+        console.log('📦 API Response:', response);
+
         // Use real agencies from the database
         const fetchedAgencies = response.agencies || [];
+        console.log(`✅ Fetched ${fetchedAgencies.length} agencies`);
+
+        if (fetchedAgencies.length > 0) {
+          console.log('First agency:', fetchedAgencies[0]);
+        }
+
         setAgencies(fetchedAgencies);
       }
     } catch (error) {
-      console.error('Failed to fetch agencies:', error);
+      console.error('❌ Failed to fetch agencies:', error);
+      console.error('Error details:', error instanceof Error ? error.message : String(error));
+
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        setError('Backend server is not running. Please start the backend server.');
+      } else {
+        setError(`Error loading agencies: ${errorMessage}`);
+      }
       setAgencies([]);
     } finally {
       setLoading(false);
@@ -282,7 +305,30 @@ const AgenciesListPage: React.FC = () => {
 
       {/* Agencies List */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        {loading ? (
+        {error ? (
+          <div className="bg-red-50 rounded-2xl shadow-sm border-2 border-red-200 p-12 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+              <span className="text-3xl">⚠️</span>
+            </div>
+            <h3 className="text-xl font-semibold text-red-900 mb-2">Failed to Load Agencies</h3>
+            <p className="text-red-700 mb-4">{error}</p>
+            <button
+              onClick={() => fetchAgencies()}
+              className="inline-flex items-center gap-2 bg-red-600 text-white px-6 py-3 rounded-full font-medium hover:bg-red-700 transition-all"
+            >
+              Try Again
+            </button>
+            <div className="mt-6 text-left max-w-2xl mx-auto bg-white border border-red-200 rounded-lg p-4">
+              <p className="text-sm font-semibold text-gray-900 mb-2">Troubleshooting:</p>
+              <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
+                <li>Make sure the backend server is running on port 5001</li>
+                <li>Check MongoDB is running and accessible</li>
+                <li>Verify VITE_API_URL in your .env file</li>
+                <li>Check browser console for detailed error messages</li>
+              </ul>
+            </div>
+          </div>
+        ) : loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-2 border-gray-900 border-t-transparent"></div>
           </div>
