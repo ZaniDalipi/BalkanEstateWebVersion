@@ -152,6 +152,11 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         console.log('Adding new conversation to state:', action.payload.id);
         return { ...state, conversations: [action.payload, ...state.conversations] };
     }
+    case 'DELETE_CONVERSATION': {
+        const newConversations = state.conversations.filter(c => c.id !== action.payload);
+        const newActiveId = state.activeConversationId === action.payload ? null : state.activeConversationId;
+        return { ...state, conversations: newConversations, activeConversationId: newActiveId };
+    }
     case 'SET_ACTIVE_CONVERSATION':
         console.log('Setting active conversation in reducer:', action.payload);
         return { ...state, activeConversationId: action.payload };
@@ -244,6 +249,7 @@ interface AppContextType {
     toggleSavedHome: (property: Property) => Promise<void>;
     addSavedSearch: (search: SavedSearch) => Promise<void>;
     createConversation: (propertyId: string) => Promise<Conversation>;
+    deleteConversation: (conversationId: string) => Promise<void>;
     sendMessage: (conversationId: string, message: Message) => Promise<void>;
     createListing: (property: Property) => Promise<Property>;
     updateListing: (property: Property) => Promise<Property>;
@@ -409,6 +415,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return conversation;
   }, []);
 
+  const deleteConversation = useCallback(async (conversationId: string) => {
+      await api.deleteConversation(conversationId);
+      dispatch({ type: 'DELETE_CONVERSATION', payload: conversationId });
+  }, []);
+
   const sendMessage = useCallback(async (conversationId: string, message: Message) => {
       const result = await api.sendMessage(conversationId, message);
       dispatch({ type: 'ADD_MESSAGE', payload: { conversationId, message: result.message }});
@@ -446,7 +457,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'UPDATE_SAVED_SEARCH_ACCESS_TIME', payload: searchId });
   }, []);
 
-  const value = { state, dispatch, checkAuthStatus, login, signup, logout, requestPasswordReset, resetPassword, loginWithSocial, handleOAuthCallback, sendPhoneCode, verifyPhoneCode, completePhoneSignup, fetchProperties, toggleSavedHome, addSavedSearch, createConversation, sendMessage, createListing, updateListing, updateUser, updateSearchPageState, updateSavedSearchAccessTime };
+  const value = { state, dispatch, checkAuthStatus, login, signup, logout, requestPasswordReset, resetPassword, loginWithSocial, handleOAuthCallback, sendPhoneCode, verifyPhoneCode, completePhoneSignup, fetchProperties, toggleSavedHome, addSavedSearch, createConversation, deleteConversation, sendMessage, createListing, updateListing, updateUser, updateSearchPageState, updateSavedSearchAccessTime };
 
   return (
     <AppContext.Provider value={value}>

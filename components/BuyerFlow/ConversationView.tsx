@@ -3,7 +3,7 @@ import { Conversation, Message } from '../../types';
 import { useAppContext } from '../../context/AppContext';
 import MessageInput from './MessageInput';
 import { formatPrice } from '../../utils/currency';
-import { CalendarIcon, UserCircleIcon, ChevronLeftIcon, BuildingOfficeIcon, ShieldExclamationIcon } from '../../constants';
+import { CalendarIcon, UserCircleIcon, ChevronLeftIcon, BuildingOfficeIcon, ShieldExclamationIcon, TrashIcon } from '../../constants';
 import { getConversation, sendMessage as sendMessageAPI, uploadMessageImage, getSecurityWarning } from '../../services/apiService';
 
 interface ConversationViewProps {
@@ -23,7 +23,7 @@ const MessageImage: React.FC<{imageUrl: string}> = ({imageUrl}) => {
 }
 
 const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBack }) => {
-    const { state, dispatch } = useAppContext();
+    const { state, dispatch, deleteConversation } = useAppContext();
     const [imageError, setImageError] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -114,6 +114,21 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
         }
     };
 
+    const handleDelete = async () => {
+        if (window.confirm('Are you sure you want to delete this conversation? This action cannot be undone.')) {
+            try {
+                await deleteConversation(conversation.id);
+                // Go back if on mobile, otherwise conversation list will update
+                if (onBack) {
+                    onBack();
+                }
+            } catch (error) {
+                console.error('Failed to delete conversation:', error);
+                alert('Failed to delete conversation. Please try again.');
+            }
+        }
+    };
+
     return (
         <div className="h-full flex flex-col bg-white">
             <div className="p-3 border-b border-neutral-200 flex-shrink-0 flex items-center gap-3">
@@ -133,12 +148,21 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
                     <p className="font-bold text-neutral-800 truncate">{property.address}, {property.city}</p>
                     <p className="text-sm font-semibold text-primary">{formatPrice(property.price, property.country)}</p>
                 </div>
-                <button
-                    onClick={() => dispatch({ type: 'SET_SELECTED_PROPERTY', payload: property.id })}
-                    className="hidden sm:block px-4 py-2 text-sm font-semibold bg-primary-light text-primary-dark rounded-full hover:bg-primary/20 transition-colors"
-                >
-                    View Property
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => dispatch({ type: 'SET_SELECTED_PROPERTY', payload: property.id })}
+                        className="hidden sm:block px-4 py-2 text-sm font-semibold bg-primary-light text-primary-dark rounded-full hover:bg-primary/20 transition-colors"
+                    >
+                        View Property
+                    </button>
+                    <button
+                        onClick={handleDelete}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                        title="Delete conversation"
+                    >
+                        <TrashIcon className="w-5 h-5" />
+                    </button>
+                </div>
             </div>
 
             {/* Security Alert */}

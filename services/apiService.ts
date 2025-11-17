@@ -424,6 +424,13 @@ export const createConversation = async (propertyId: string): Promise<Conversati
   return transformBackendConversation(response.conversation);
 };
 
+export const deleteConversation = async (conversationId: string): Promise<void> => {
+  await apiRequest(`/conversations/${conversationId}`, {
+    method: 'DELETE',
+    requiresAuth: true,
+  });
+};
+
 export const sendMessage = async (conversationId: string, message: Message): Promise<{ message: Message; securityWarnings?: string[] }> => {
   const body: any = {};
 

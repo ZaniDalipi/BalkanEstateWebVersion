@@ -437,3 +437,46 @@ export const markAsRead = async (
     res.status(500).json({ message: 'Error marking as read', error: error.message });
   }
 };
+
+// @desc    Delete a conversation
+// @route   DELETE /api/conversations/:id
+// @access  Private
+export const deleteConversation = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const conversation = await Conversation.findById(req.params.id);
+
+    if (!conversation) {
+      res.status(404).json({ message: 'Conversation not found' });
+      return;
+    }
+
+    // Check if user is part of this conversation
+    const userId = String((req.user as IUser)._id);
+    const isBuyer = String(conversation.buyerId) === userId;
+    const isSeller = String(conversation.sellerId) === userId;
+
+    if (!isBuyer && !isSeller) {
+      res.status(403).json({ message: 'Not authorized to delete this conversation' });
+      return;
+    }
+
+    // Delete all messages in the conversation
+    await Message.deleteMany({ conversationId: conversation._id });
+
+    // Delete the conversation
+    await Conversation.findByIdAndDelete(req.params.id);
+
+    res.json({ message: 'Conversation deleted' });
+  } catch (error: any) {
+    console.error('Delete conversation error:', error);
+    res.status(500).json({ message: 'Error deleting conversation', error: error.message });
+  }
+};

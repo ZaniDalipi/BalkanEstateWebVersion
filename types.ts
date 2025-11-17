@@ -312,6 +312,7 @@ export type AppAction =
     | { type: 'MARK_PROPERTY_SOLD', payload: string }
     | { type: 'UPDATE_USER', payload: Partial<User> }
     | { type: 'CREATE_CONVERSATION', payload: Conversation }
+    | { type: 'DELETE_CONVERSATION', payload: string }
     | { type: 'SET_ACTIVE_CONVERSATION', payload: string | null }
     | { type: 'ADD_MESSAGE', payload: { conversationId: string, message: Message } }
     | { type: 'CREATE_OR_ADD_MESSAGE', payload: { propertyId: string, message: Message } }

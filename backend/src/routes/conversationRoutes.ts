@@ -3,6 +3,7 @@ import {
   getConversations,
   getConversation,
   createConversation,
+  deleteConversation,
   sendMessage,
   markAsRead,
   uploadMessageImage,
@@ -22,6 +23,7 @@ router.use(protect); // All other routes are protected
 router.get('/', getConversations);
 router.post('/', createConversation);
 router.get('/:id', getConversation);
+router.delete('/:id', deleteConversation);
 router.get('/:id/public-keys', getConversationPublicKeys);
 router.post('/:id/messages', sendMessage);
 router.post('/:id/upload-image', upload.single('image'), uploadMessageImage);
