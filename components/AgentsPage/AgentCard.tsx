@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Agent } from '../../types';
 import StarRating from '../shared/StarRating';
-import { TrophyIcon, UserCircleIcon, CheckCircleIcon } from '../../constants';
+import { TrophyIcon, UserCircleIcon, CheckCircleIcon, BuildingOfficeIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
 
@@ -53,6 +53,12 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
             <AgentAvatar agent={agent} />
             <div>
               <h3 className="text-lg font-bold text-neutral-900">{agent.name}</h3>
+              {agent.agencyName && (
+                <div className="flex items-center gap-1 mt-1 mb-1">
+                  <BuildingOfficeIcon className="w-4 h-4 text-gray-600" />
+                  <span className="text-xs font-semibold text-gray-700">{agent.agencyName}</span>
+                </div>
+              )}
               {agent.city && agent.country && (
                   <p className="text-sm text-neutral-500 font-medium">{agent.city}, {agent.country}</p>
               )}

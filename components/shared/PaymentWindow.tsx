@@ -1,0 +1,253 @@
+import React, { useState, useEffect } from 'react';
+import Modal from './Modal';
+import {
+  CreditCardIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  LockClosedIcon,
+  ArrowTopRightOnSquareIcon,
+} from '../../constants';
+import { useAppContext } from '../../context/AppContext';
+
+interface PaymentWindowProps {
+  isOpen: boolean;
+  onClose: () => void;
+  planName: string;
+  planPrice: number;
+  planInterval: 'month' | 'year';
+  userRole: 'buyer' | 'private_seller' | 'agent';
+  userEmail?: string;
+  userCountry?: string;
+  onSuccess: (paymentIntentId: string) => void;
+  onError: (error: string) => void;
+  discountPercent?: number;
+}
+
+const PaymentWindow: React.FC<PaymentWindowProps> = ({
+  isOpen,
+  onClose,
+  planName,
+  planPrice,
+  planInterval,
+  userRole,
+  userEmail,
+  userCountry = 'RS',
+  onSuccess,
+  onError,
+  discountPercent = 0,
+}) => {
+  const { state } = useAppContext();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  const finalPrice = discountPercent > 0
+    ? planPrice * (1 - discountPercent / 100)
+    : planPrice;
+
+  const savings = planPrice - finalPrice;
+
+  useEffect(() => {
+    if (isOpen) {
+      // Validate user is authenticated when opening payment modal
+      const token = localStorage.getItem('balkan_estate_token');
+      if (!state.isAuthenticated || !token) {
+        onError('Please log in to complete your purchase');
+        onClose();
+        return;
+      }
+    } else {
+      // Reset state when modal closes
+      setShowSuccess(false);
+    }
+  }, [isOpen, state.isAuthenticated, onError, onClose]);
+
+  const handlePayment = async () => {
+    setIsProcessing(true);
+
+    try {
+      // Get auth token from localStorage
+      const token = localStorage.getItem('balkan_estate_token');
+
+      if (!token) {
+        throw new Error('Please log in to complete your purchase');
+      }
+
+      // Determine product ID based on plan name and interval
+      let productId = 'buyer_pro_monthly';
+      if (planName.toLowerCase().includes('buyer') && planInterval === 'month') {
+        productId = 'buyer_pro_monthly';
+      } else if (planName.toLowerCase().includes('buyer') && planInterval === 'year') {
+        productId = 'buyer_pro_yearly';
+      } else if (planName.toLowerCase().includes('seller') && planInterval === 'month') {
+        productId = 'seller_premium_monthly';
+      } else if (planName.toLowerCase().includes('seller') && planInterval === 'year') {
+        productId = 'seller_premium_yearly';
+      } else if (planName.toLowerCase().includes('agent') && planInterval === 'month') {
+        productId = 'agent_pro_monthly';
+      } else if (planName.toLowerCase().includes('agent') && planInterval === 'year') {
+        productId = 'agent_pro_yearly';
+      } else if (planName.toLowerCase().includes('enterprise')) {
+        productId = 'enterprise_tier_' + Date.now();
+      }
+
+      // Create checkout session with backend
+      const response = await fetch('http://localhost:5001/api/payment/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          planName,
+          planInterval,
+          amount: finalPrice,
+          productId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to create payment session');
+      }
+
+      // Redirect to Stripe Checkout page
+      if (data.url) {
+        // Store payment intent info for callback
+        sessionStorage.setItem('pending_payment', JSON.stringify({
+          sessionId: data.sessionId,
+          planName,
+          planInterval,
+          productId,
+        }));
+
+        // Redirect to external payment page (Stripe)
+        window.location.href = data.url;
+      } else {
+        throw new Error('No payment URL received');
+      }
+
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      onError(error.message || 'Failed to initialize payment');
+      setIsProcessing(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="">
+      <div className="max-w-md mx-auto">
+        {showSuccess ? (
+          <div className="text-center py-8">
+            <CheckCircleIcon className="w-16 h-16 text-green-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-neutral-800 mb-2">Payment Successful!</h2>
+            <p className="text-neutral-600">Your subscription has been activated.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="text-center pb-4 border-b border-neutral-200">
+              <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary-dark rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <CreditCardIcon className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-neutral-800 mb-2">Secure Checkout</h2>
+              <p className="text-sm text-neutral-500">Complete your purchase on our secure payment partner</p>
+            </div>
+
+            {/* Plan Summary */}
+            <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-xl p-6 border border-neutral-200">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-neutral-800">{planName}</h3>
+                  <p className="text-sm text-neutral-500 capitalize">Billed {planInterval}ly</p>
+                </div>
+                <div className="text-right">
+                  {discountPercent > 0 && (
+                    <>
+                      <p className="text-sm text-neutral-400 line-through">€{planPrice.toFixed(2)}</p>
+                      <p className="text-2xl font-bold text-primary">€{finalPrice.toFixed(2)}</p>
+                      <p className="text-xs text-green-600 font-semibold">Save €{savings.toFixed(2)}</p>
+                    </>
+                  )}
+                  {discountPercent === 0 && (
+                    <p className="text-2xl font-bold text-primary">€{finalPrice.toFixed(2)}</p>
+                  )}
+                </div>
+              </div>
+
+              {discountPercent > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+                  <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <p className="text-sm text-green-700 font-medium">
+                    {discountPercent}% discount applied!
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Security Notice */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
+              <LockClosedIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-blue-900 mb-1">Secure External Payment</p>
+                <p className="text-xs text-blue-700 leading-relaxed">
+                  You'll be redirected to our secure payment partner (Stripe) to complete your purchase.
+                  We never store your card details - they're handled entirely by our certified payment processor.
+                </p>
+              </div>
+            </div>
+
+            {/* Payment Button */}
+            <button
+              onClick={handlePayment}
+              disabled={isProcessing}
+              className="w-full bg-gradient-to-r from-primary to-primary-dark text-white py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+            >
+              {isProcessing ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                  <span>Redirecting to payment...</span>
+                </>
+              ) : (
+                <>
+                  <span>Continue to Payment</span>
+                  <ArrowTopRightOnSquareIcon className="w-5 h-5" />
+                </>
+              )}
+            </button>
+
+            {/* Cancel */}
+            <button
+              onClick={onClose}
+              disabled={isProcessing}
+              className="w-full py-3 text-neutral-600 hover:text-neutral-800 font-medium transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+
+            {/* Trust Badges */}
+            <div className="pt-4 border-t border-neutral-200">
+              <div className="flex items-center justify-center gap-4 text-xs text-neutral-400">
+                <div className="flex items-center gap-1">
+                  <LockClosedIcon className="w-3 h-3" />
+                  <span>SSL Secured</span>
+                </div>
+                <span>•</span>
+                <div className="flex items-center gap-1">
+                  <CheckCircleIcon className="w-3 h-3" />
+                  <span>PCI Compliant</span>
+                </div>
+                <span>•</span>
+                <span>Powered by Stripe</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+};
+
+export default PaymentWindow;

@@ -124,13 +124,39 @@ export const login = async (emailOrPhone: string, password: string): Promise<Use
   return response.user;
 };
 
-export const signup = async (email: string, password: string): Promise<User> => {
+export const signup = async (
+  email: string,
+  password: string,
+  options?: {
+    name?: string;
+    phone?: string;
+    role?: 'buyer' | 'private_seller' | 'agent';
+    requestAgencyId?: string;
+  }
+): Promise<User> => {
   const response = await apiRequest<{ user: User; token: string }>('/auth/signup', {
     method: 'POST',
-    body: { email, password, name: email.split('@')[0], phone: '' },
+    body: {
+      email,
+      password,
+      name: options?.name || email.split('@')[0],
+      phone: options?.phone || '',
+      role: options?.role || 'buyer',
+    },
   });
 
   setToken(response.token);
+
+  // If user is an agent and wants to join an agency, create join request
+  if (options?.role === 'agent' && options?.requestAgencyId) {
+    try {
+      await createJoinRequest(options.requestAgencyId, 'Requested to join during registration');
+    } catch (error) {
+      console.error('Failed to create join request:', error);
+      // Don't fail signup if join request fails
+    }
+  }
+
   return response.user;
 };
 
@@ -598,3 +624,129 @@ function transformBackendMessage(backendMsg: any): Message {
     isRead: backendMsg.isRead,
   };
 }
+
+// --- AGENCY API ---
+
+export const getAgencies = async (filters?: { city?: string; featured?: boolean; page?: number; limit?: number }): Promise<any> => {
+  const params = new URLSearchParams();
+  if (filters?.city) params.append('city', filters.city);
+  if (filters?.featured !== undefined) params.append('featured', String(filters.featured));
+  if (filters?.page) params.append('page', String(filters.page));
+  if (filters?.limit) params.append('limit', String(filters.limit));
+
+  return await apiRequest(`/agencies?${params.toString()}`);
+};
+
+export const getAgency = async (agencyId: string): Promise<any> => {
+  return await apiRequest(`/agencies/${agencyId}`);
+};
+
+export const getFeaturedAgencies = async (limit?: number): Promise<any> => {
+  const params = limit ? `?limit=${limit}` : '';
+  return await apiRequest(`/agencies/featured/rotation${params}`);
+};
+
+export const createAgency = async (agencyData: any): Promise<any> => {
+  return await apiRequest('/agencies', {
+    method: 'POST',
+    body: agencyData,
+    requiresAuth: true,
+  });
+};
+
+export const updateAgency = async (agencyId: string, agencyData: any): Promise<any> => {
+  return await apiRequest(`/agencies/${agencyId}`, {
+    method: 'PUT',
+    body: agencyData,
+    requiresAuth: true,
+  });
+};
+
+export const addAgentToAgency = async (agencyId: string, agentUserId: string): Promise<any> => {
+  return await apiRequest(`/agencies/${agencyId}/agents`, {
+    method: 'POST',
+    body: { agentUserId },
+    requiresAuth: true,
+  });
+};
+
+export const removeAgentFromAgency = async (agencyId: string, agentId: string): Promise<any> => {
+  return await apiRequest(`/agencies/${agencyId}/agents/${agentId}`, {
+    method: 'DELETE',
+    requiresAuth: true,
+  });
+};
+
+// --- AGENCY JOIN REQUEST API ---
+
+export const createJoinRequest = async (agencyId: string, message?: string): Promise<any> => {
+  return await apiRequest('/agency-join-requests', {
+    method: 'POST',
+    body: { agencyId, message },
+    requiresAuth: true,
+  });
+};
+
+export const getAgentJoinRequests = async (): Promise<any> => {
+  return await apiRequest('/agency-join-requests/my-requests', {
+    requiresAuth: true,
+  });
+};
+
+export const getAgencyJoinRequests = async (agencyId: string): Promise<any> => {
+  return await apiRequest(`/agency-join-requests/agency/${agencyId}`, {
+    requiresAuth: true,
+  });
+};
+
+export const approveJoinRequest = async (requestId: string): Promise<any> => {
+  return await apiRequest(`/agency-join-requests/${requestId}/approve`, {
+    method: 'PUT',
+    requiresAuth: true,
+  });
+};
+
+export const rejectJoinRequest = async (requestId: string): Promise<any> => {
+  return await apiRequest(`/agency-join-requests/${requestId}/reject`, {
+    method: 'PUT',
+    requiresAuth: true,
+  });
+};
+
+export const cancelJoinRequest = async (requestId: string): Promise<any> => {
+  return await apiRequest(`/agency-join-requests/${requestId}`, {
+    method: 'DELETE',
+    requiresAuth: true,
+  });
+};
+
+// --- PROMOTION API ---
+
+export const promoteProperty = async (propertyId: string): Promise<any> => {
+  return await apiRequest('/promotions', {
+    method: 'POST',
+    body: { propertyId },
+    requiresAuth: true,
+  });
+};
+
+export const getMyPromotions = async (): Promise<any> => {
+  return await apiRequest('/promotions', {
+    requiresAuth: true,
+  });
+};
+
+export const cancelPromotion = async (promotionId: string): Promise<any> => {
+  return await apiRequest(`/promotions/${promotionId}`, {
+    method: 'DELETE',
+    requiresAuth: true,
+  });
+};
+
+export const getFeaturedProperties = async (filters?: { city?: string; limit?: number }): Promise<any> => {
+  const params = new URLSearchParams();
+  if (filters?.city) params.append('city', filters.city);
+  if (filters?.limit) params.append('limit', String(filters.limit));
+
+  return await apiRequest(`/promotions/featured?${params.toString()}`);
+};

@@ -20,11 +20,13 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     dispatch({ type: 'SET_SELECTED_PROPERTY', payload: property.id });
+    // Update browser history to enable back button navigation (web & mobile)
+    window.history.pushState({ propertyId: property.id }, '', `/property/${property.id}`);
   };
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
       e.stopPropagation(); // Prevent card click
-      if (!state.isAuthenticated) {
+      if (!state.isAuthenticated && !state.user) {
           dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
       } else {
           dispatch({ type: 'TOGGLE_SAVED_HOME', payload: property });

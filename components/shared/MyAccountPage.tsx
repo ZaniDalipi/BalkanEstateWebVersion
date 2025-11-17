@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import MyListings from './MyListings';
+import SubscriptionManagement from './SubscriptionManagement';
 import { User, UserRole } from '../../types';
 import { BuildingOfficeIcon, ChartBarIcon, UserCircleIcon, ArrowLeftOnRectangleIcon } from '../../constants';
 import AgentLicenseModal from './AgentLicenseModal';
-import { switchRole } from '../../services/apiService';
+import { switchRole, getAgencies } from '../../services/apiService';
 
 type AccountTab = 'listings' | 'performance' | 'profile' | 'subscription';
 
@@ -29,13 +30,22 @@ const TabButton: React.FC<{
 
 const RoleSelector: React.FC<{
     selectedRole: UserRole;
+    originalRole: UserRole;
     onChange: (role: UserRole) => void;
-}> = ({ selectedRole, onChange }) => {
+}> = ({ selectedRole, originalRole, onChange }) => {
     const roles: { id: UserRole, label: string }[] = [
         { id: UserRole.BUYER, label: 'Buyer' },
         { id: UserRole.PRIVATE_SELLER, label: 'Private Seller' },
         { id: UserRole.AGENT, label: 'Agent' }
     ];
+
+    // Agents cannot switch to buyer
+    const isDisabled = (role: UserRole) => {
+        if (originalRole === UserRole.AGENT && role === UserRole.BUYER) {
+            return true;
+        }
+        return false;
+    };
 
     return (
         <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200">
@@ -43,12 +53,16 @@ const RoleSelector: React.FC<{
                 <button
                     key={role.id}
                     type="button"
-                    onClick={() => onChange(role.id)}
+                    onClick={() => !isDisabled(role.id) && onChange(role.id)} // Fix: pass role.id instead of role
+                    disabled={isDisabled(role.id)} // Fix: pass role.id instead of role
                     className={`px-2.5 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex-grow text-center ${
                         selectedRole === role.id
                         ? 'bg-white text-primary shadow'
+                        : isDisabled(role.id) // Fix: pass role.id instead of role
+                        ? 'text-neutral-400 cursor-not-allowed opacity-50'
                         : 'text-neutral-600 hover:bg-neutral-200'
                     }`}
+                    title={isDisabled(role.id) ? 'Agents cannot switch to Buyer role' : ''} // Fix: pass role.id instead of role
                 >
                     {role.label}
                 </button>
@@ -66,15 +80,51 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
     const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
     const [error, setError] = useState('');
+    const [agencies, setAgencies] = useState<any[]>([]);
+    const [agencySearch, setAgencySearch] = useState('');
+    const [showAgencyDropdown, setShowAgencyDropdown] = useState(false);
 
     useEffect(() => {
         setFormData(user);
     }, [user]);
 
+    // Fetch agencies when component mounts or when user is an agent
+    useEffect(() => {
+        const fetchAgencies = async () => {
+            if (formData.role === UserRole.AGENT) {
+                try {
+                    const response = await getAgencies();
+                    setAgencies(response.agencies || []);
+                } catch (error) {
+                    console.error('Failed to fetch agencies:', error);
+                    setAgencies([]);
+                }
+            }
+        };
+        fetchAgencies();
+    }, [formData.role]);
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
         setFormData(prev => ({ ...prev, [id]: value }));
     };
+
+    const handleAgencySearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setAgencySearch(value);
+        setFormData(prev => ({ ...prev, agencyName: value }));
+        setShowAgencyDropdown(value.length > 0);
+    };
+
+    const handleAgencySelect = (agencyName: string) => {
+        setAgencySearch(agencyName);
+        setFormData(prev => ({ ...prev, agencyName }));
+        setShowAgencyDropdown(false);
+    };
+
+    const filteredAgencies = agencies.filter(agency =>
+        agency.name.toLowerCase().includes(agencySearch.toLowerCase())
+    ).slice(0, 10); // Limit to 10 results
 
     const handleRoleChange = async (role: UserRole) => {
         setError('');
@@ -132,7 +182,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const floatingLabelClasses = "absolute text-base text-neutral-700 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1";
 
     return (
-        <>
+        <form>
             <AgentLicenseModal
                 isOpen={isLicenseModalOpen}
                 onClose={() => {
@@ -142,27 +192,10 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 onSubmit={handleLicenseSubmit}
             />
 
-            <form onSubmit={handleSaveChanges} className="space-y-8">
-                <div>
-                    <h3 className="text-xl font-bold text-neutral-800 mb-2">Profile Settings</h3>
-                    <p className="text-sm text-neutral-500">Manage your personal information and account type.</p>
-                </div>
-
-                {error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-                        {error}
-                    </div>
-                )}
-
-                <fieldset>
-                    <legend className="block text-sm font-medium text-neutral-700 mb-2">Your Role</legend>
-                    <RoleSelector selectedRole={formData.role} onChange={handleRoleChange} />
-                    {formData.listingsCount !== undefined && (
-                        <p className="text-xs text-neutral-500 mt-2">
-                            Active listings: {formData.listingsCount} {!formData.isSubscribed && `(${5 - (formData.listingsCount || 0)} free listings remaining)`}
-                        </p>
-                    )}
-                </fieldset>
+            <fieldset>
+                <legend className="block text-sm font-medium text-neutral-700 mb-2">Your Role</legend>
+                <RoleSelector selectedRole={formData.role} originalRole={user.role} onChange={handleRoleChange} />
+            </fieldset>
 
             <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <legend className="sr-only">Personal Information</legend>
@@ -204,8 +237,44 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                      </div>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="relative">
-                            <input type="text" id="agencyName" value={formData.agencyName || ''} onChange={handleInputChange} className={floatingInputClasses} placeholder=" " />
-                            <label htmlFor="agencyName" className={floatingLabelClasses}>Agency Name</label>
+                            <input
+                                type="text"
+                                id="agencyName"
+                                value={formData.agencyName || ''}
+                                onChange={handleAgencySearchChange}
+                                onFocus={() => setShowAgencyDropdown(true)}
+                                onBlur={() => setTimeout(() => setShowAgencyDropdown(false), 200)}
+                                className={floatingInputClasses}
+                                placeholder=" "
+                                autoComplete="off"
+                            />
+                            <label htmlFor="agencyName" className={floatingLabelClasses}>Agency Name (Type to search)</label>
+
+                            {/* Agency Autocomplete Dropdown */}
+                            {showAgencyDropdown && filteredAgencies.length > 0 && (
+                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    {filteredAgencies.map((agency) => (
+                                        <button
+                                            key={agency._id}
+                                            type="button"
+                                            onClick={() => handleAgencySelect(agency.name)}
+                                            className="w-full text-left px-4 py-3 hover:bg-primary-light hover:text-primary-dark transition-colors flex items-start gap-3 border-b border-gray-100 last:border-b-0"
+                                        >
+                                            {agency.logo ? (
+                                                <img src={agency.logo} alt={agency.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-lg bg-primary-light flex items-center justify-center flex-shrink-0">
+                                                    <BuildingOfficeIcon className="w-6 h-6 text-primary" />
+                                                </div>
+                                            )}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="font-semibold text-sm text-gray-900">{agency.name}</div>
+                                                <div className="text-xs text-gray-500 truncate">{agency.city}, {agency.country}</div>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                         <div className="relative">
                             <input type="text" id="agentId" value={formData.agentId || ''} onChange={handleInputChange} className={floatingInputClasses} placeholder=" " />
@@ -225,7 +294,6 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 </button>
             </div>
         </form>
-        </>
     );
 };
 
@@ -269,7 +337,7 @@ const MyAccountPage: React.FC = () => {
             case 'performance':
                  return <div className="text-center p-8"><h3 className="text-xl font-bold">Performance Analytics Coming Soon!</h3></div>;
             case 'subscription':
-                 return <div className="text-center p-8"><h3 className="text-xl font-bold">Subscription Management Coming Soon!</h3></div>;
+                 return <SubscriptionManagement userId={state.currentUser!.id} />;
             default:
                 return null;
         }
@@ -289,7 +357,22 @@ const MyAccountPage: React.FC = () => {
                                     <UserCircleIcon className="w-20 h-20 sm:w-24 sm:h-24 text-neutral-300 mb-3" />
                                 )}
                                 <h2 className="font-bold text-lg sm:text-xl text-neutral-800">{state.currentUser.name}</h2>
-                                <p className="text-sm text-neutral-500 capitalize">{roleDisplayMap[state.currentUser.role]}</p>
+                                <p className="text-sm text-neutral-500 capitalize mb-2">{roleDisplayMap[state.currentUser.role]}</p>
+
+                                {/* Agency Badge */}
+                                {state.currentUser.role === UserRole.AGENT && state.currentUser.agencyName && (
+                                    <div className="flex items-center gap-2 mt-2 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-primary-light rounded-full border border-primary/20">
+                                        <BuildingOfficeIcon className="w-4 h-4 text-primary" />
+                                        <span className="text-xs font-semibold text-primary">{state.currentUser.agencyName}</span>
+                                    </div>
+                                )}
+
+                                {/* License Verified Badge */}
+                                {state.currentUser.role === UserRole.AGENT && state.currentUser.licenseVerified && (
+                                    <div className="flex items-center gap-1 mt-2 px-3 py-1 bg-green-50 rounded-full border border-green-200">
+                                        <span className="text-xs font-semibold text-green-700">✓ Verified Agent</span>
+                                    </div>
+                                )}
                             </div>
                             <nav className="space-y-2">
                                 {isSellerProfile && (

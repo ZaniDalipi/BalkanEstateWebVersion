@@ -7,6 +7,7 @@ import ComparisonBar from './ComparisonBar';
 import ComparisonModal from './ComparisonModal';
 import Toast from '../shared/Toast';
 import PropertyCardSkeleton from './PropertyCardSkeleton';
+import AdvertisementBanner from '../AdvertisementBanner';
 
 const SavedHomesPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
@@ -121,11 +122,12 @@ const SavedHomesPage: React.FC = () => {
 
   return (
     <div className="bg-neutral-50 min-h-full">
-      <Toast 
-          show={toast.show} 
-          message={toast.message} 
-          type={toast.type} 
-          onClose={() => setToast({ ...toast, show: false })} 
+      <AdvertisementBanner position="top" />
+      <Toast
+          show={toast.show}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ ...toast, show: false })}
       />
       <ComparisonModal
           isOpen={isComparisonModalOpen}
@@ -135,7 +137,7 @@ const SavedHomesPage: React.FC = () => {
       <main className={`py-8 ${comparisonList.length > 0 ? 'pb-20' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-neutral-900">Saved Homes</h1>
+            <h1 className="text-3xl font-bold text-neutral-900">Saved Properties</h1>
             <p className="text-lg text-neutral-600 mt-2">
               Your favorite properties, all in one place.
             </p>

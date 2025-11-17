@@ -72,6 +72,13 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                     )}
                 </div>
 
+                {agent.agencyName && (
+                    <div className="mb-3 inline-flex items-center gap-2 bg-gradient-to-r from-gray-800 to-gray-900 text-white px-4 py-2 rounded-full shadow-md">
+                        <BuildingOfficeIcon className="w-5 h-5" />
+                        <span className="font-semibold">{agent.agencyName}</span>
+                    </div>
+                )}
+
                 <div className="flex items-center justify-center md:justify-start gap-2">
                     <StarRating rating={agent.rating} />
                     <span className="text-lg font-bold text-neutral-700">{agent.rating.toFixed(1)}</span>

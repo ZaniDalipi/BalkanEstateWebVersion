@@ -37,11 +37,14 @@ const initialState: AppState = {
   comparisonList: [],
   conversations: [],
   selectedAgentId: null,
+  selectedAgencyId: null,
   pendingProperty: null,
+  pendingSubscription: null,
   searchPageState: initialSearchPageState,
   activeDiscount: null,
   isListingLimitWarningOpen: false,
   isDiscountGameOpen: false,
+  isEnterpriseModalOpen: false,
   // FIX: Initialize allMunicipalities in the initial state.
   allMunicipalities: MUNICIPALITY_DATA,
 };
@@ -68,6 +71,8 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, isPricingModalOpen: action.payload.isOpen, isFirstLoginOffer: action.payload.isOffer ?? state.isFirstLoginOffer };
     case 'TOGGLE_SUBSCRIPTION_MODAL':
       return { ...state, isSubscriptionModalOpen: action.payload };
+    case 'TOGGLE_ENTERPRISE_MODAL':
+      return { ...state, isEnterpriseModalOpen: action.payload };
     case 'TOGGLE_AUTH_MODAL':
       return { ...state, isAuthModalOpen: action.payload.isOpen, authModalView: action.payload.isOpen ? (action.payload.view || 'login') : state.authModalView };
     case 'SET_AUTH_MODAL_VIEW':
@@ -78,6 +83,8 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, propertyToEdit: action.payload };
     case 'SET_SELECTED_AGENT':
       return { ...state, selectedAgentId: action.payload };
+    case 'SET_SELECTED_AGENCY':
+      return { ...state, selectedAgencyId: action.payload };
     case 'PROPERTIES_LOADING':
         return { ...state, isLoadingProperties: true, propertiesError: null };
     case 'PROPERTIES_SUCCESS':
@@ -177,6 +184,8 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     }
     case 'SET_PENDING_PROPERTY':
         return { ...state, pendingProperty: action.payload };
+    case 'SET_PENDING_SUBSCRIPTION':
+        return { ...state, pendingSubscription: action.payload };
     case 'UPDATE_SEARCH_PAGE_STATE':
         return {
             ...state,
@@ -251,15 +260,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'USER_DATA_LOADING' });
     const userData = await api.getMyData();
     dispatch({ type: 'USER_DATA_SUCCESS', payload: userData });
-    return user;
-  }, []);
 
-  const signup = useCallback(async (email: string, pass: string) => {
-    const user = await api.signup(email, pass);
+    // Check if there's a pending subscription and reopen the modal
+    if (state.pendingSubscription) {
+      setTimeout(() => {
+        const pendingSub = state.pendingSubscription;
+        if (pendingSub.modalType === 'buyer') {
+          dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true });
+        } else {
+          dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: state.isFirstLoginOffer } });
+        }
+      }, 500);
+    }
+
+    return user;
+  }, [state.pendingSubscription, state.isFirstLoginOffer]);
+
+  const signup = useCallback(async (
+    email: string,
+    pass: string,
+    options?: {
+      name?: string;
+      phone?: string;
+      role?: 'buyer' | 'private_seller' | 'agent';
+      requestAgencyId?: string;
+    }
+  ) => {
+    const user = await api.signup(email, pass, options);
     dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user } });
     dispatch({ type: 'USER_DATA_SUCCESS', payload: { savedHomes: [], savedSearches: [], conversations: [] } });
+
+    // Check if there's a pending subscription and reopen the modal
+    if (state.pendingSubscription) {
+      setTimeout(() => {
+        const pendingSub = state.pendingSubscription;
+        if (pendingSub.modalType === 'buyer') {
+          dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true });
+        } else {
+          dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: state.isFirstLoginOffer } });
+        }
+      }, 500);
+    }
+
     return user;
-  }, []);
+  }, [state.pendingSubscription, state.isFirstLoginOffer]);
 
   const logout = useCallback(async () => {
     await api.logout();

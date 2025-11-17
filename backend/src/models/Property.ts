@@ -34,6 +34,10 @@ export interface IProperty extends Document {
   views: number;
   saves: number;
   inquiries: number;
+  // Promotion fields
+  isPromoted: boolean;
+  promotionStartDate?: Date;
+  promotionEndDate?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -172,6 +176,18 @@ const PropertySchema: Schema = new Schema(
       type: Number,
       default: 0,
     },
+    // Promotion fields
+    isPromoted: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    promotionStartDate: {
+      type: Date,
+    },
+    promotionEndDate: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
@@ -184,5 +200,7 @@ PropertySchema.index({ lat: 1, lng: 1 });
 PropertySchema.index({ price: 1, status: 1 });
 // Index for property type and city queries
 PropertySchema.index({ propertyType: 1, city: 1, status: 1 });
+// Index for promoted properties
+PropertySchema.index({ isPromoted: 1, status: 1 });
 
 export default mongoose.model<IProperty>('Property', PropertySchema);

@@ -14,23 +14,336 @@ import Sidebar from './components/shared/Sidebar';
 import Header from './components/shared/Header';
 import SubscriptionModal from './components/BuyerFlow/SubscriptionModal';
 import AgentsPage from './components/AgentsPage/AgentsPage';
+import AgenciesListPage from './components/AgenciesListPage';
+import AgencyDetailPage from './components/AgencyDetailPage';
+import EnterpriseCreationForm from './components/EnterpriseCreationForm';
 import PropertyDetailsPage from './components/BuyerFlow/PropertyDetailsPage';
+import PaymentSuccess from './components/PaymentSuccess';
+import PaymentCancel from './components/PaymentCancel';
 import { LogoIcon } from './constants';
 import ListingLimitWarningModal from './components/shared/ListingLimitWarningModal';
 import DiscountGameModal from './components/shared/DiscountGameModal';
 
+// Mock agencies data - matches seed file for featured agencies
+const getMockAgencies = () => {
+  return [
+    {
+      _id: 'mock1',
+      slug: 'belgrade-premium-properties',
+      name: 'Belgrade Premium Properties',
+      description: 'Leading real estate agency in Belgrade, specializing in luxury apartments and commercial properties in the heart of Serbia.',
+      logo: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
+      coverImage: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=1200',
+      email: 'info@belgradepremium.rs',
+      phone: '+381 11 1234567',
+      city: 'Belgrade',
+      country: 'Serbia',
+      address: 'Knez Mihailova 42',
+      website: 'www.belgradepremium.rs',
+      lat: 44.8176,
+      lng: 20.4568,
+      totalProperties: 145,
+      totalAgents: 12,
+      yearsInBusiness: 15,
+      isFeatured: true,
+      specialties: ['Luxury Apartments', 'Commercial Properties', 'Investment Opportunities'],
+      certifications: ['Real Estate Association of Serbia', 'European Property Standards'],
+      agents: [
+        {
+          id: 'agent1',
+          name: 'Marko Petrović',
+          email: 'marko@belgradepremium.rs',
+          phone: '+381 11 111 1111',
+          avatarUrl: 'https://ui-avatars.com/api/?name=Marko+Petrovic&background=random',
+          rating: 4.9,
+          totalSalesValue: 2500000,
+          propertiesSold: 45,
+          activeListings: 12,
+        },
+        {
+          id: 'agent2',
+          name: 'Ana Jovanović',
+          email: 'ana@belgradepremium.rs',
+          phone: '+381 11 222 2222',
+          avatarUrl: 'https://ui-avatars.com/api/?name=Ana+Jovanovic&background=random',
+          rating: 4.8,
+          totalSalesValue: 1800000,
+          propertiesSold: 32,
+          activeListings: 8,
+        },
+      ],
+    },
+    {
+      _id: 'mock2',
+      slug: 'zagreb-elite-estates',
+      name: 'Zagreb Elite Estates',
+      description: 'Premium real estate services in Croatia\'s capital. Experts in residential and vacation properties along the Adriatic coast.',
+      logo: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
+      coverImage: 'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=1200',
+      email: 'contact@zagrebelite.hr',
+      phone: '+385 1 2345678',
+      city: 'Zagreb',
+      country: 'Croatia',
+      address: 'Ilica 123',
+      website: 'www.zagrebelite.hr',
+      lat: 45.8150,
+      lng: 15.9819,
+      totalProperties: 98,
+      totalAgents: 8,
+      yearsInBusiness: 10,
+      isFeatured: true,
+      specialties: ['Coastal Properties', 'Vacation Homes', 'Urban Apartments'],
+      certifications: ['Croatian Chamber of Commerce', 'EU Real Estate Standards'],
+      agents: [
+        {
+          id: 'agent3',
+          name: 'Ivan Horvat',
+          email: 'ivan@zagrebelite.hr',
+          rating: 4.7,
+          totalSalesValue: 3200000,
+          propertiesSold: 52,
+          activeListings: 15,
+        },
+      ],
+    },
+    {
+      _id: 'mock3',
+      slug: 'sofia-property-group',
+      name: 'Sofia Property Group',
+      description: 'Bulgaria\'s most trusted real estate agency. Specializing in residential, commercial, and ski resort properties.',
+      logo: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
+      coverImage: 'https://images.unsplash.com/photo-1449844908441-8829872d2607?w=1200',
+      email: 'hello@sofiapropertygroup.bg',
+      phone: '+359 2 9876543',
+      city: 'Sofia',
+      country: 'Bulgaria',
+      address: 'Vitosha Boulevard 89',
+      website: 'www.sofiapropertygroup.bg',
+      lat: 42.6977,
+      lng: 23.3219,
+      totalProperties: 167,
+      totalAgents: 15,
+      yearsInBusiness: 12,
+      isFeatured: true,
+      specialties: ['Ski Properties', 'City Apartments', 'Investment Properties'],
+      certifications: ['Bulgarian Real Estate Chamber', 'ISO 9001'],
+      agents: [],
+    },
+    {
+      _id: 'mock4',
+      slug: 'bucharest-luxury-homes',
+      name: 'Bucharest Luxury Homes',
+      description: 'Exclusive real estate agency in Bucharest offering premium properties in the most sought-after neighborhoods.',
+      logo: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
+      coverImage: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=1200',
+      email: 'info@bucharestluxury.ro',
+      phone: '+40 21 1234567',
+      city: 'Bucharest',
+      country: 'Romania',
+      address: 'Calea Victoriei 155',
+      website: 'www.bucharestluxury.ro',
+      lat: 44.4268,
+      lng: 26.1025,
+      totalProperties: 112,
+      totalAgents: 10,
+      yearsInBusiness: 8,
+      isFeatured: true,
+      specialties: ['Luxury Villas', 'Historic Properties', 'Modern Apartments'],
+      certifications: ['Romanian Real Estate Federation', 'European Quality Standards'],
+      agents: [],
+    },
+    {
+      _id: 'mock5',
+      slug: 'tirana-property-solutions',
+      name: 'Tirana Property Solutions',
+      description: 'Albania\'s fastest growing real estate agency. Connecting buyers with the best properties in Tirana and coastal regions.',
+      logo: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
+      coverImage: 'https://images.unsplash.com/photo-1467638992958-cfe2cd6e9a56?w=1200',
+      email: 'contact@tiranaproperties.al',
+      phone: '+355 4 2123456',
+      city: 'Tirana',
+      country: 'Albania',
+      address: 'Rruga e Kavajes 45',
+      website: 'www.tiranaproperties.al',
+      lat: 41.3275,
+      lng: 19.8187,
+      totalProperties: 89,
+      totalAgents: 7,
+      yearsInBusiness: 6,
+      isFeatured: true,
+      specialties: ['New Developments', 'Coastal Properties', 'Commercial Spaces'],
+      certifications: ['Albanian Real Estate Association'],
+      agents: [],
+    },
+  ];
+};
+
 const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar }) => {
-  const { state } = useAppContext();
+  const { state, dispatch } = useAppContext();
+  const [selectedAgency, setSelectedAgency] = useState<any>(null);
+  const [isLoadingAgency, setIsLoadingAgency] = useState(false);
+
+  // Check URL for routing on mount and when URL changes (handles browser/mobile back button)
+  useEffect(() => {
+    const checkUrlForRouting = () => {
+      const path = window.location.pathname;
+
+      console.log('🔙 Navigation detected:', path);
+
+      // Payment callback routes (highest priority)
+      if (path === '/payment/success' || path === '/payment/cancel') {
+        // Don't change active view, let the component handle it
+        dispatch({ type: 'SET_SELECTED_PROPERTY', payload: null });
+        dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
+        return;
+      }
+
+      // Property detail route: /property/:id
+      const propertyMatch = path.match(/^\/property\/(.+)$/);
+      if (propertyMatch) {
+        const propertyId = decodeURIComponent(propertyMatch[1]);
+        dispatch({ type: 'SET_SELECTED_PROPERTY', payload: propertyId });
+        dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
+        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
+        return;
+      }
+
+      // Agency detail route: /agencies/:slug
+      const agencyMatch = path.match(/^\/agencies\/(.+)$/);
+      if (agencyMatch) {
+        let agencySlug = decodeURIComponent(agencyMatch[1]);
+
+        // Normalize slug: remove country prefix with comma if present
+        // Handles old format: "serbia,belgrade-premium-properties" -> "belgrade-premium-properties"
+        if (agencySlug.includes(',')) {
+          agencySlug = agencySlug.split(',')[1];
+        }
+
+        // Clear property selection when viewing agency
+        dispatch({ type: 'SET_SELECTED_PROPERTY', payload: null });
+        dispatch({ type: 'SET_SELECTED_AGENCY', payload: agencySlug });
+        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
+        return;
+      }
+
+      // Main navigation routes
+      const routeMap: { [key: string]: any } = {
+        '/': 'search',
+        '/search': 'search',
+        '/saved-searches': 'saved-searches',
+        '/saved-properties': 'saved-properties',
+        '/inbox': 'inbox',
+        '/account': 'account',
+        '/agents': 'agents',
+        '/agencies': 'agencies',
+        '/create-listing': 'create-listing',
+      };
+
+      const view = routeMap[path];
+      if (view) {
+        // Clear selected items when navigating to main routes
+        dispatch({ type: 'SET_SELECTED_PROPERTY', payload: null });
+        dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
+        dispatch({ type: 'SET_ACTIVE_VIEW', payload: view });
+      } else {
+        // Unknown route - default to search and clear selections
+        console.log('⚠️ Unknown route, defaulting to search');
+        dispatch({ type: 'SET_SELECTED_PROPERTY', payload: null });
+        dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
+        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
+        window.history.replaceState({}, '', '/');
+      }
+    };
+
+    checkUrlForRouting();
+
+    // Listen for browser back/forward navigation (works on web and mobile)
+    // This includes:
+    // - Browser back button
+    // - Browser forward button
+    // - Mobile swipe back gesture
+    // - History API navigation
+    window.addEventListener('popstate', checkUrlForRouting);
+
+    return () => window.removeEventListener('popstate', checkUrlForRouting);
+  }, [dispatch]);
+
+  // Fetch selected agency when selectedAgencyId changes
+  useEffect(() => {
+    const fetchAgency = async () => {
+      if (state.selectedAgencyId) {
+        setIsLoadingAgency(true);
+        try {
+          const response = await fetch(`/api/agencies/${state.selectedAgencyId}`);
+          if (!response.ok) throw new Error('API failed');
+          const data = await response.json();
+          setSelectedAgency(data.agency);
+        } catch (error) {
+          console.log('API not available, using mock data');
+          // Fallback to mock data - match by ID or slug
+          const mockAgencies = getMockAgencies();
+
+          // Normalize the search slug (remove country prefix if present)
+          let searchSlug = state.selectedAgencyId;
+          if (searchSlug.includes(',')) {
+            searchSlug = searchSlug.split(',')[1];
+          }
+
+          const agency = mockAgencies.find(
+            a => a._id === state.selectedAgencyId ||
+                 a.slug === state.selectedAgencyId ||
+                 a.slug === searchSlug
+          );
+          if (agency) {
+            setSelectedAgency(agency);
+          } else {
+            console.error('Agency not found in mock data:', state.selectedAgencyId);
+            setSelectedAgency(null);
+          }
+        } finally {
+          setIsLoadingAgency(false);
+        }
+      } else {
+        setSelectedAgency(null);
+        setIsLoadingAgency(false);
+      }
+    };
+    fetchAgency();
+  }, [state.selectedAgencyId]);
+
+  // Payment callback routes (highest priority)
+  const path = window.location.pathname;
+  if (path === '/payment/success') {
+    return <PaymentSuccess />;
+  }
+  if (path === '/payment/cancel') {
+    return <PaymentCancel />;
+  }
 
   // Global handler for selected property view
   if (state.selectedProperty) {
     return <PropertyDetailsPage property={state.selectedProperty} />;
   }
-  
+
+  // Global handler for selected agency view - show detail page if we have a selectedAgencyId
+  if (state.selectedAgencyId) {
+    if (isLoadingAgency || !selectedAgency) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading agency details...</p>
+          </div>
+        </div>
+      );
+    }
+    return <AgencyDetailPage agency={selectedAgency} />;
+  }
+
   switch (state.activeView) {
     case 'saved-searches':
       return <SavedSearchesPage />;
-    case 'saved-homes':
+    case 'saved-properties':
       return <SavedHomesPage />;
     case 'inbox':
       return <InboxPage />;
@@ -40,6 +353,8 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
       return <CreateListingPage />;
     case 'agents':
       return <AgentsPage />;
+    case 'agencies':
+      return <AgenciesListPage />;
     case 'search':
     default:
       return <SearchPage onToggleSidebar={onToggleSidebar} />;
@@ -58,8 +373,11 @@ const MainLayout: React.FC = () => {
   }, []);
   
   const isSearchPage = state.activeView === 'search';
+  const isAgencyDetailView = !!state.selectedAgencyId;
+  // Agency pages should allow scrolling to show all agents and details
   const isFullHeightView = isSearchPage || state.activeView === 'inbox' || !!state.selectedProperty;
   const showHeader = !(isMobile && (isSearchPage || !!state.selectedProperty));
+  // Note: Agency detail pages WILL show header on mobile to allow sidebar access
   
   const anyNonAuthModalOpen = state.isPricingModalOpen || state.isSubscriptionModalOpen || state.isListingLimitWarningOpen || state.isDiscountGameOpen;
   
@@ -141,6 +459,10 @@ const MainLayout: React.FC = () => {
         <SubscriptionModal
             isOpen={state.isSubscriptionModalOpen}
             onClose={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: false })}
+        />
+        <EnterpriseCreationForm
+            isOpen={state.isEnterpriseModalOpen}
+            onClose={() => dispatch({ type: 'TOGGLE_ENTERPRISE_MODAL', payload: false })}
         />
     </div>
   );
