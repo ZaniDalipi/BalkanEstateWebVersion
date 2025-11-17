@@ -1,8 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { Agent, User, UserRole, Property } from '../../types';
-// FIX: `mockUsers` is located in `apiService`, not `propertyService`. The import path has been corrected.
-import { mockUsers } from '../../services/apiService';
+import { Agent, Property } from '../../types';
+import { getAllAgents } from '../../services/apiService';
 import AgentCard from './AgentCard';
 import AgentProfilePage from './AgentProfilePage';
 import { Bars3Icon, Squares2x2Icon, TrophyIcon, CheckCircleIcon } from '../../constants';
@@ -13,57 +12,50 @@ import AdvertisementBanner from '../AdvertisementBanner';
 type SortKey = 'sales' | 'rating' | 'name' | 'sold';
 type ViewMode = 'grid' | 'list';
 
-const calculateAgentStats = (users: { [key: string]: User }, properties: Property[]): Agent[] => {
-  const agents = Object.values(users).filter(u => u.role === UserRole.AGENT);
-  
-  const agentStats = agents.map(agentUser => {
-    const agentProperties = properties.filter(p => p.sellerId === agentUser.id);
-    const soldProperties = agentProperties.filter(p => p.status === 'sold');
-    
-    const totalSalesValue = soldProperties.reduce((sum, p) => sum + p.price, 0);
-    const propertiesSold = soldProperties.length;
-    const activeListings = agentProperties.filter(p => p.status === 'active').length;
-    
-    // Mock rating based on sales and testimonials
-    const rating = Math.min(5, 3.5 + (propertiesSold * 0.1) + (agentUser.testimonials?.length || 0) * 0.2);
-
-    return {
-      ...agentUser,
-      totalSalesValue,
-      propertiesSold,
-      activeListings,
-      rating,
-    };
-  });
-
-  return agentStats;
-};
-
 const AgentsPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const { properties, selectedAgentId } = state;
-  
+
   const [sortBy, setSortBy] = useState<SortKey>('sales');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [locationFilter, setLocationFilter] = useState<string>('all');
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const agentsWithStats = useMemo(() => calculateAgentStats(mockUsers, properties), [properties]);
+  useEffect(() => {
+    fetchAgents();
+  }, []);
+
+  const fetchAgents = async () => {
+    try {
+      setLoading(true);
+      const response = await getAllAgents();
+      setAgents(response.agents || []);
+    } catch (error) {
+      console.error('Failed to fetch agents:', error);
+      setAgents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const uniqueLocations = useMemo(() => {
-    const locations = new Set(properties.map(p => `${p.city}, ${p.country}`));
+    const locations = new Set(
+      agents
+        .filter(a => a.city && a.country)
+        .map(a => `${a.city}, ${a.country}`)
+    );
     return ['All Locations', ...Array.from(locations).sort()];
-  }, [properties]);
+  }, [agents]);
 
   const sortedAgents = useMemo(() => {
-    let filtered = [...agentsWithStats];
+    let filtered = [...agents];
 
     if (locationFilter !== 'all') {
-        const [city, country] = locationFilter.split(', ');
-        filtered = agentsWithStats.filter(agent => 
-            properties.some(prop => prop.sellerId === agent.id && prop.city === city && prop.country === country)
-        );
+      const [city, country] = locationFilter.split(', ');
+      filtered = agents.filter(agent => agent.city === city && agent.country === country);
     }
-    
+
     const sorted = [...filtered];
     sorted.sort((a, b) => {
       switch (sortBy) {
@@ -79,7 +71,7 @@ const AgentsPage: React.FC = () => {
       }
     });
     return sorted;
-  }, [agentsWithStats, sortBy, locationFilter, properties]);
+  }, [agents, sortBy, locationFilter]);
   
   const selectedAgent = useMemo(() => {
       if (!selectedAgentId) return null;
@@ -92,6 +84,17 @@ const AgentsPage: React.FC = () => {
   
   if (selectedAgent) {
       return <AgentProfilePage agent={selectedAgent} />;
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-neutral-50 min-h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-neutral-600">Loading agents...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -150,7 +153,17 @@ const AgentsPage: React.FC = () => {
             </div>
         </div>
 
-        {viewMode === 'grid' ? (
+        {sortedAgents.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-md border p-12 text-center">
+            <TrophyIcon className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-neutral-900 mb-2">No agents found</h3>
+            <p className="text-neutral-600">
+              {locationFilter !== 'all'
+                ? 'Try selecting a different location'
+                : 'No agents available at this time'}
+            </p>
+          </div>
+        ) : viewMode === 'grid' ? (
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {sortedAgents.map((agent, index) => (
                     <AgentCard key={agent.id} agent={agent} rank={index + 1} />

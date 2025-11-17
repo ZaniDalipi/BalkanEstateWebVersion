@@ -2,6 +2,62 @@ import { Request, Response } from 'express';
 import User, { IUser } from '../models/User';
 import Property from '../models/Property';
 
+// Get all agents with their statistics
+export const getAllAgents = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Find all users with agent role
+    const agents = await User.find({ role: 'agent' })
+      .select('name email phone avatarUrl city country agencyName agentId licenseNumber licenseVerified stats')
+      .lean();
+
+    // Get property counts for each agent
+    const agentsWithStats = await Promise.all(
+      agents.map(async (agent) => {
+        const agentId = String(agent._id);
+
+        // Get active listings count
+        const activeListings = await Property.countDocuments({
+          sellerId: agentId,
+          status: 'active'
+        });
+
+        // Calculate rating based on stats (simple algorithm)
+        const propertiesSold = agent.stats?.propertiesSold || 0;
+        const totalViews = agent.stats?.totalViews || 0;
+        const rating = Math.min(5, 3.5 + (propertiesSold * 0.1) + (totalViews / 1000) * 0.05);
+
+        return {
+          id: String(agent._id),
+          name: agent.name,
+          email: agent.email,
+          phone: agent.phone,
+          avatarUrl: agent.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=0D8ABC&color=fff&size=200`,
+          city: agent.city,
+          country: agent.country,
+          agencyName: agent.agencyName,
+          agentId: agent.agentId,
+          licenseNumber: agent.licenseNumber,
+          licenseVerified: agent.licenseVerified,
+          totalSalesValue: agent.stats?.totalSalesValue || 0,
+          propertiesSold: agent.stats?.propertiesSold || 0,
+          activeListings,
+          rating: Math.round(rating * 10) / 10, // Round to 1 decimal
+          totalViews: agent.stats?.totalViews || 0,
+          totalInquiries: agent.stats?.totalInquiries || 0,
+        };
+      })
+    );
+
+    // Sort by total sales value by default
+    agentsWithStats.sort((a, b) => b.totalSalesValue - a.totalSalesValue);
+
+    res.json({ agents: agentsWithStats, count: agentsWithStats.length });
+  } catch (error) {
+    console.error('Error fetching agents:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // Get user statistics (uses cached stats from database)
 export const getUserStats = async (req: Request, res: Response): Promise<void> => {
   try {

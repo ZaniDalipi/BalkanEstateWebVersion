@@ -13,7 +13,7 @@ import {
   resetPassword,
   uploadAvatar
 } from '../controllers/authController';
-import { getUserStats } from '../controllers/userController';
+import { getUserStats, getAllAgents } from '../controllers/userController';
 import { protect } from '../middleware/auth';
 import passport, { oauthStrategies } from '../config/passport';
 
@@ -45,6 +45,7 @@ router.put('/profile', protect, updateProfile);
 router.post('/set-public-key', protect, setPublicKey);
 router.post('/switch-role', protect, switchRole);
 router.get('/my-stats', protect, getUserStats);
+router.get('/agents', getAllAgents);
 router.post('/upload-avatar', protect, upload.single('avatar'), uploadAvatar);
 
 // Password reset routes

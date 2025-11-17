@@ -786,3 +786,10 @@ export const getFeaturedProperties = async (filters?: { city?: string; limit?: n
 
   return await apiRequest(`/promotions/featured?${params.toString()}`);
 };
+
+
+// --- AGENTS API ---
+
+export const getAllAgents = async (): Promise<any> => {
+  return await apiRequest("/auth/agents");
+};
