@@ -141,6 +141,14 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         };
     case 'UPDATE_USER':
       return { ...state, currentUser: state.currentUser ? { ...state.currentUser, ...action.payload } : null };
+    case 'CREATE_CONVERSATION': {
+        // Check if conversation already exists
+        const exists = state.conversations.some(c => c.id === action.payload.id);
+        if (exists) {
+            return state;
+        }
+        return { ...state, conversations: [action.payload, ...state.conversations] };
+    }
     case 'ADD_MESSAGE':
         return { ...state, conversations: state.conversations.map(c => c.id === action.payload.conversationId ? { ...c, messages: [...c.messages, action.payload.message] } : c ) };
     // FIX: Add missing reducer case for creating a new conversation or adding a message to an existing one.
@@ -391,7 +399,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const createConversation = useCallback(async (propertyId: string) => {
       const conversation = await api.createConversation(propertyId);
-      dispatch({ type: 'CREATE_CONVERSATION', payload: { propertyId } });
+      dispatch({ type: 'CREATE_CONVERSATION', payload: conversation });
       return conversation;
   }, []);
 

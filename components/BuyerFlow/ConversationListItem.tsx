@@ -18,9 +18,11 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({ conversatio
         return null; // Or some fallback UI
     }
     
-    const lastMessage = conversation.messages[conversation.messages.length - 1];
-    const unreadCount = conversation.messages.filter(m => !m.isRead && m.senderId !== 'user').length;
-    
+    const lastMessage = conversation.messages && conversation.messages.length > 0
+        ? conversation.messages[conversation.messages.length - 1]
+        : null;
+    const unreadCount = conversation.messages?.filter(m => !m.isRead && m.senderId !== 'user').length || 0;
+
     const handleClick = () => {
         onSelect();
         if (unreadCount > 0) {
@@ -29,7 +31,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({ conversatio
     };
 
     return (
-        <button 
+        <button
             onClick={handleClick}
             className={`w-full text-left p-3 flex items-start gap-3 transition-colors duration-200 border-b border-neutral-100 ${
                 isSelected ? 'bg-primary-light' : 'hover:bg-neutral-50'
@@ -40,8 +42,8 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({ conversatio
                     <BuildingOfficeIcon className="w-8 h-8 text-neutral-400" />
                 </div>
             ) : (
-                <img 
-                    src={property.imageUrl} 
+                <img
+                    src={property.imageUrl}
                     alt={property.address}
                     className="w-16 h-16 object-cover rounded-md flex-shrink-0"
                     onError={() => setImageError(true)}
@@ -57,9 +59,13 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({ conversatio
                     )}
                 </div>
                 <p className="text-xs text-neutral-500 truncate">{property.city}, {property.country}</p>
-                <p className="text-xs text-neutral-600 mt-1 truncate">
-                    {lastMessage.senderId === 'user' && 'You: '}{lastMessage.text}
-                </p>
+                {lastMessage ? (
+                    <p className="text-xs text-neutral-600 mt-1 truncate">
+                        {lastMessage.senderId === 'user' && 'You: '}{lastMessage.text || 'Image'}
+                    </p>
+                ) : (
+                    <p className="text-xs text-neutral-400 mt-1 italic">No messages yet</p>
+                )}
             </div>
         </button>
     );

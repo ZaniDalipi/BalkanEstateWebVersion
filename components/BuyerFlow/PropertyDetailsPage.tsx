@@ -552,10 +552,9 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
 
       setIsCreatingConversation(true);
       try {
-          const conversation = await createConversation(property.id);
-          // Navigate to inbox and open this conversation
+          await createConversation(property.id);
+          // Navigate to inbox - the new conversation will be automatically selected
           dispatch({ type: 'SET_CURRENT_VIEW', payload: 'inbox' });
-          dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: conversation.id });
       } catch (error) {
           console.error('Error creating conversation:', error);
           alert('Failed to start conversation. Please try again.');
