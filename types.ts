@@ -95,6 +95,8 @@ export interface Property {
     views?: number;
     saves?: number;
     inquiries?: number;
+    isFeatured?: boolean; // Property from paid subscriber (appears at top)
+    contactRestricted?: boolean; // Contact info hidden for free users
 }
 
 export interface Message {
