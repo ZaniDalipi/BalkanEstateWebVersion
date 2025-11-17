@@ -617,7 +617,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                         </button>
                     ) : (
                         <iframe
-                            src={`https://www.google.com/maps?layer=c&cbll=${property.lat},${property.lng}&cbp=12,90,0,0,5&output=svembed`}
+                            src={`https://www.google.com/maps?layer=c&q=${encodeURIComponent(`${property.address}, ${property.city}, ${property.country}`)}&output=svembed`}
                             className="w-full h-full border-0"
                             allowFullScreen
                             loading="lazy"
@@ -699,7 +699,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                 <div className="p-6">
                     <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900">{formatPrice(property.price, property.country)}</p>
                     <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${property.lat},${property.lng}`}
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${property.address}, ${property.city}, ${property.country}`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center text-neutral-600 mt-2 group"
