@@ -176,7 +176,7 @@ export const updateProfile = async (
       return;
     }
 
-    const { name, phone, city, country, agencyName, licenseNumber, avatarUrl } =
+    const { name, phone, city, country, agencyName, agentId, licenseNumber, avatarUrl } =
       req.body;
 
     const currentUser = req.user as IUser;
@@ -193,10 +193,14 @@ export const updateProfile = async (
     if (city) user.city = city;
     if (country) user.country = country;
     if (agencyName) user.agencyName = agencyName;
+    if (agentId) user.agentId = agentId;
     if (licenseNumber) user.licenseNumber = licenseNumber;
     if (avatarUrl) user.avatarUrl = avatarUrl;
 
     await user.save();
+
+    console.log('Profile updated for user:', user._id);
+    console.log('Updated fields:', { name, phone, city, country, agencyName, agentId, licenseNumber });
 
     res.json({
       user: {
@@ -209,8 +213,10 @@ export const updateProfile = async (
         city: user.city,
         country: user.country,
         agencyName: user.agencyName,
+        agencyId: user.agencyId,
         agentId: user.agentId,
         licenseNumber: user.licenseNumber,
+        licenseVerified: user.licenseVerified,
         isSubscribed: user.isSubscribed,
       },
     });
