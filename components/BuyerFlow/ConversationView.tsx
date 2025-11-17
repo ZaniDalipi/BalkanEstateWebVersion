@@ -30,8 +30,11 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
     const [isLoading, setIsLoading] = useState(true);
     const [securityWarning, setSecurityWarning] = useState<string | null>(null);
     const [showSecurityAlert, setShowSecurityAlert] = useState(false);
+    const [isTyping, setIsTyping] = useState(false);
+    const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
     const property = conversation.property || state.properties.find(p => p.id === conversation.propertyId);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const currentUserId = state.currentUser?.id;
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -68,16 +71,51 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
                 if (prev.some(m => m.id === message.id)) {
                     return prev;
                 }
+
+                // Play notification sound for messages from other person
+                if (message.senderId !== currentUserId) {
+                    playNotificationSound();
+                }
+
                 return [...prev, message];
             });
+        });
+
+        // Listen for typing indicators
+        const unsubscribeTyping = socketService.onTyping(conversation.id, (data) => {
+            if (data.userId !== currentUserId) {
+                setIsTyping(data.isTyping);
+
+                // Auto-hide typing indicator after 3 seconds
+                if (data.isTyping) {
+                    const timeout = setTimeout(() => setIsTyping(false), 3000);
+                    setTypingTimeout(timeout);
+                } else if (typingTimeout) {
+                    clearTimeout(typingTimeout);
+                    setTypingTimeout(null);
+                }
+            }
         });
 
         // Cleanup
         return () => {
             socketService.leaveConversation(conversation.id);
             unsubscribeMessage();
+            unsubscribeTyping();
+            if (typingTimeout) clearTimeout(typingTimeout);
         };
-    }, [conversation.id]);
+    }, [conversation.id, currentUserId, typingTimeout]);
+
+    // Play notification sound
+    const playNotificationSound = () => {
+        try {
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVanl8LBhGgU7k9n0zoAwBSh+zPLaizsIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSl6yvHajjwIHGm97OilURELTKXh8bllHAU2jdXzzn0vBSl6yvHajjwIHGm97OilURELTKXh8bllHAU2jdXzzn0vBSl6yvHajjwIHGm97OilURELTKXh8bllHAU2jdXzzn0vBSl6yvHajjwIHGm97OilURELTKXh8bllHAU2jdXzzn0vBSl6yvHajjwIHGm97OilURELTKXh8bllHAU2jdXzzn0vBSl6yvHajjwIHGm97OilURELTKXh8bllHAU2jdXzzn0vBSl6yvHajjwIHGm97OilURELTKXh8bllHAU2jdXzzn0vBSl6yvHajjwIHGm97OilURELTKXh8bllHAU2jdXzzn0vBSl6yvHajjwIHGm97OilURELTKXh8bllHAU2jdXzzn0vBSl6yvHajjwIHGm97OilURELTKXh8bllHAU2jdXzzn0vBSl6yvHajjwIHGm97OilURE=');
+            audio.volume = 0.3;
+            audio.play().catch(err => console.log('Could not play notification sound:', err));
+        } catch (err) {
+            console.log('Notification sound not available');
+        }
+    };
 
     if (!property) {
         return (
@@ -104,7 +142,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
         // Send message
         const messageData: Message = {
             id: `temp-${Date.now()}`,
-            senderId: state.user?.id || 'user',
+            senderId: currentUserId || 'user',
             text: text || '',
             imageUrl,
             timestamp: Date.now(),
@@ -219,8 +257,9 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
                         <p className="text-sm">No messages yet. Start the conversation!</p>
                     </div>
                 ) : (
-                    messages.map(msg => {
-                        const isUser = msg.senderId === state.user?.id || msg.senderId === 'user';
+                    <>
+                    {messages.map(msg => {
+                        const isUser = msg.senderId === currentUserId || msg.senderId === 'user';
                         const otherPerson = isUser ? (conversation.seller || property.seller) : (conversation.buyer || { name: 'Buyer', avatarUrl: null });
 
                         return (
@@ -247,7 +286,32 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
                                 </div>
                             </div>
                         );
-                    })
+                    })}
+
+                    {/* Typing Indicator */}
+                    {isTyping && (
+                        <div className="flex items-end gap-2 justify-start">
+                            <div className="flex-shrink-0">
+                                {(conversation.seller?.avatarUrl || property?.seller?.avatarUrl) ? (
+                                    <img
+                                        src={conversation.seller?.avatarUrl || property?.seller?.avatarUrl}
+                                        alt="Seller"
+                                        className="w-8 h-8 rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <UserCircleIcon className="w-8 h-8 text-neutral-400" />
+                                )}
+                            </div>
+                            <div className="bg-neutral-100 p-3 rounded-2xl rounded-bl-lg">
+                                <div className="flex gap-1">
+                                    <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                    <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                    <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    </>
                 )}
                 <div ref={messagesEndRef} />
             </div>
@@ -276,7 +340,11 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
             </div>
 
             <div className="p-4 border-t border-neutral-200 flex-shrink-0 bg-neutral-50">
-                <MessageInput onSendMessage={handleSendMessage} disabled={isLoading} />
+                <MessageInput
+                    onSendMessage={handleSendMessage}
+                    onTyping={(isTyping) => socketService.sendTyping(conversation.id, isTyping)}
+                    disabled={isLoading}
+                />
             </div>
         </div>
     );

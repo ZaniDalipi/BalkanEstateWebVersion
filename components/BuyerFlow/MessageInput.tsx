@@ -3,15 +3,17 @@ import { PaperAirplaneIcon, PhotoIcon, XMarkIcon } from '../../constants';
 
 interface MessageInputProps {
     onSendMessage: (text: string, imageFile?: File) => Promise<void>;
+    onTyping?: (isTyping: boolean) => void;
     disabled?: boolean;
 }
 
-const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled = false }) => {
+const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, onTyping, disabled = false }) => {
     const [text, setText] = useState('');
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [isSending, setIsSending] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -33,10 +35,38 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled = f
         }
     };
 
+    const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setText(e.target.value);
+
+        // Send typing indicator
+        if (onTyping) {
+            onTyping(true);
+
+            // Clear existing timeout
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
+
+            // Stop typing indicator after 2 seconds of inactivity
+            typingTimeoutRef.current = setTimeout(() => {
+                onTyping(false);
+            }, 2000);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if ((text.trim() || imageFile) && !isSending) {
             setIsSending(true);
+
+            // Stop typing indicator when sending
+            if (onTyping) {
+                onTyping(false);
+            }
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
+
             try {
                 await onSendMessage(text.trim(), imageFile || undefined);
                 setText('');
@@ -81,7 +111,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled = f
                 </button>
                 <textarea
                     value={text}
-                    onChange={(e) => setText(e.target.value)}
+                    onChange={handleTextChange}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
