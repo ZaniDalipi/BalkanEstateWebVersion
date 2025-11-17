@@ -32,7 +32,11 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
   // Check URL for routing on mount and when URL changes (handles browser/mobile back button)
   useEffect(() => {
     const checkUrlForRouting = () => {
-      const path = window.location.pathname;
+      // Normalize path: remove trailing slashes (except for root '/')
+      let path = window.location.pathname;
+      if (path.length > 1 && path.endsWith('/')) {
+        path = path.slice(0, -1);
+      }
 
       console.log('🔙 Navigation detected:', path);
 
