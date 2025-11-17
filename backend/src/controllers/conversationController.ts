@@ -268,7 +268,7 @@ export const sendMessage = async (
       await conversation.populate('sellerId', 'name email');
 
       const sender = req.user as IUser;
-      const recipient = isBuyer ? conversation.sellerId : conversation.buyerId;
+      const recipient = (isBuyer ? conversation.sellerId : conversation.buyerId) as any;
       const property = conversation.propertyId as any;
 
       // Only send email if recipient has an email
@@ -277,11 +277,11 @@ export const sendMessage = async (
         const appUrl = process.env.APP_URL || 'http://localhost:5173';
 
         await sendNewMessageNotification({
-          recipientEmail: recipient.email,
-          recipientName: recipient.name || 'User',
+          recipientEmail: recipient.email as string,
+          recipientName: (recipient.name as string) || 'User',
           senderName: sender.name || 'A user',
-          propertyAddress: property.address,
-          propertyCity: property.city,
+          propertyAddress: property.address as string,
+          propertyCity: property.city as string,
           messagePreview: messageText,
           conversationUrl: `${appUrl}/inbox`,
         });
