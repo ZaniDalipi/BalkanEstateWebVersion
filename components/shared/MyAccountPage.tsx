@@ -91,6 +91,21 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
+    const handleAgencyClick = async () => {
+        if (user?.agencyId) {
+            try {
+                const response = await fetch(`${API_URL}/agencies/${user.agencyId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    dispatch({ type: 'SET_SELECTED_AGENCY', payload: data.agency });
+                    dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
+                }
+            } catch (error) {
+                console.error('Error fetching agency:', error);
+            }
+        }
+    };
+
     useEffect(() => {
         setFormData(user);
     }, [user]);
@@ -412,18 +427,33 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                      )}
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="relative">
-                            <input
-                                type="text"
-                                id="agencyName"
-                                value={formData.agencyName || ''}
-                                onChange={handleAgencySearchChange}
-                                onFocus={() => setShowAgencyDropdown(true)}
-                                onBlur={() => setTimeout(() => setShowAgencyDropdown(false), 200)}
-                                className={floatingInputClasses}
-                                placeholder=" "
-                                autoComplete="off"
-                            />
-                            <label htmlFor="agencyName" className={floatingLabelClasses}>Agency Name (Type to search)</label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    id="agencyName"
+                                    value={formData.agencyName || ''}
+                                    onChange={handleAgencySearchChange}
+                                    onFocus={() => setShowAgencyDropdown(true)}
+                                    onBlur={() => setTimeout(() => setShowAgencyDropdown(false), 200)}
+                                    className={floatingInputClasses}
+                                    placeholder=" "
+                                    autoComplete="off"
+                                    disabled={!!user.agencyId}
+                                />
+                                <label htmlFor="agencyName" className={floatingLabelClasses}>Agency Name</label>
+                            </div>
+
+                            {/* View Agency Button */}
+                            {user.agencyId && (
+                                <button
+                                    type="button"
+                                    onClick={handleAgencyClick}
+                                    className="mt-2 text-sm text-primary hover:text-primary-dark font-semibold flex items-center gap-1"
+                                >
+                                    <BuildingOfficeIcon className="w-4 h-4" />
+                                    View Agency Details →
+                                </button>
+                            )}
 
                             {/* Agency Autocomplete Dropdown */}
                             {showAgencyDropdown && filteredAgencies.length > 0 && (

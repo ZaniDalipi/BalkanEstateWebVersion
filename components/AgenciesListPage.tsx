@@ -4,6 +4,8 @@ import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, StarIcon, Sear
 import { useAppContext } from '../context/AppContext';
 import AgenciesMap from './AgenciesMap';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
 interface Agency {
   _id: string;
   slug?: string;
@@ -44,11 +46,16 @@ const AgenciesListPage: React.FC = () => {
 
       // If viewing "My Agency", fetch only the user's agency
       if (filter === 'myAgency' && currentUser?.agencyId) {
-        const response = await fetch(`http://localhost:5001/api/agencies/${currentUser.agencyId}`);
+        const response = await fetch(`${API_URL}/agencies/${currentUser.agencyId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
+          },
+        });
         if (response.ok) {
           const data = await response.json();
           setAgencies([data.agency]);
         } else {
+          console.error('Failed to fetch agency:', response.status, response.statusText);
           setAgencies([]);
         }
       } else {
