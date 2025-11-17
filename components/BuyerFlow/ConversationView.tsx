@@ -88,6 +88,9 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
                     }
                 }
 
+                // Update conversation in AppContext so the list updates
+                dispatch({ type: 'ADD_MESSAGE', payload: { conversationId: conversation.id, message } });
+
                 return [...prev, message];
             });
         });
@@ -115,7 +118,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
             unsubscribeTyping();
             if (typingTimeout) clearTimeout(typingTimeout);
         };
-    }, [conversation.id, currentUserId, typingTimeout]);
+    }, [conversation.id, currentUserId]);
 
     // Play notification sound
     const playNotificationSound = () => {
@@ -165,6 +168,9 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
 
             // Add the sent message to the list
             setMessages(prev => [...prev, result.message]);
+
+            // Update conversation in AppContext so the list updates
+            dispatch({ type: 'ADD_MESSAGE', payload: { conversationId: conversation.id, message: result.message } });
 
             // Emit message via WebSocket for real-time delivery to other user
             socketService.sendMessage(conversation.id, result.message);

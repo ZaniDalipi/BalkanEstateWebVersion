@@ -13,15 +13,16 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({ conversatio
     const { state, dispatch } = useAppContext();
     const [imageError, setImageError] = useState(false);
     const property = state.properties.find(p => p.id === conversation.propertyId);
+    const currentUserId = state.currentUser?.id;
 
     if (!property) {
         return null; // Or some fallback UI
     }
-    
+
     const lastMessage = conversation.messages && conversation.messages.length > 0
         ? conversation.messages[conversation.messages.length - 1]
         : null;
-    const unreadCount = conversation.messages?.filter(m => !m.isRead && m.senderId !== 'user').length || 0;
+    const unreadCount = conversation.messages?.filter(m => !m.isRead && m.senderId !== currentUserId && m.senderId !== 'user').length || 0;
 
     const handleClick = () => {
         onSelect();
@@ -60,8 +61,8 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({ conversatio
                 </div>
                 <p className="text-xs text-neutral-500 truncate">{property.city}, {property.country}</p>
                 {lastMessage ? (
-                    <p className="text-xs text-neutral-600 mt-1 truncate">
-                        {lastMessage.senderId === 'user' && 'You: '}{lastMessage.text || 'Image'}
+                    <p className={`text-xs mt-1 truncate ${unreadCount > 0 ? 'font-bold text-neutral-800' : 'text-neutral-600'}`}>
+                        {(lastMessage.senderId === currentUserId || lastMessage.senderId === 'user') && 'You: '}{lastMessage.text || 'Image'}
                     </p>
                 ) : (
                     <p className="text-xs text-neutral-400 mt-1 italic">No messages yet</p>
