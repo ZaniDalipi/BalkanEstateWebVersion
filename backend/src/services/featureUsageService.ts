@@ -1,5 +1,5 @@
-import FeatureUsage, { FeatureType, IFeatureUsage } from '../models/FeatureUsage';
-import User, { IUser } from '../models/User';
+import FeatureUsage, { FeatureType } from '../models/FeatureUsage';
+import User from '../models/User';
 import mongoose from 'mongoose';
 
 /**
