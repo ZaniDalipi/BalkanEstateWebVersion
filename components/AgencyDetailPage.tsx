@@ -54,13 +54,18 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const [loading, setLoading] = useState(true);
   const [isJoinRequestsModalOpen, setIsJoinRequestsModalOpen] = useState(false);
   const [isRequesting, setIsRequesting] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [agencyData, setAgencyData] = useState<Agency>(agency);
+  const [uploadError, setUploadError] = useState('');
 
   const isOwner = currentUser && (agency as any).ownerId === currentUser.id;
   const canRequestToJoin = isAuthenticated && currentUser?.role === 'agent' && !currentUser?.agencyId;
 
   useEffect(() => {
     fetchAgencyData();
-  }, [agency._id]);
+    setAgencyData(agency);
+  }, [agency._id, agency]);
 
   const fetchAgencyData = async () => {
     setLoading(true);
@@ -109,6 +114,98 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     }
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !isOwner) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please select an image file');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('Image size must be less than 5MB');
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    setUploadError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('logo', file);
+
+      const response = await fetch(`/api/agencies/${agencyData._id}/upload-logo`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to upload logo');
+      }
+
+      setAgencyData(data.agency);
+      alert('Logo updated successfully!');
+    } catch (err: any) {
+      setUploadError(err.message || 'Failed to upload logo');
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !isOwner) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please select an image file');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('Image size must be less than 5MB');
+      return;
+    }
+
+    setIsUploadingCover(true);
+    setUploadError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('cover', file);
+
+      const response = await fetch(`/api/agencies/${agencyData._id}/upload-cover`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to upload cover image');
+      }
+
+      setAgencyData(data.agency);
+      alert('Cover image updated successfully!');
+    } catch (err: any) {
+      setUploadError(err.message || 'Failed to upload cover image');
+    } finally {
+      setIsUploadingCover(false);
+    }
+  };
+
   const getRankBadge = (index: number) => {
     if (index === 0) return { emoji: '🥇', color: 'from-yellow-400 to-yellow-600', text: 'Top Agent' };
     if (index === 1) return { emoji: '🥈', color: 'from-gray-300 to-gray-500', text: '2nd Place' };
@@ -120,17 +217,46 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     <div className="min-h-screen bg-gray-50 overflow-y-auto">
       {/* Hero Banner with Cover Image - Larger for agency branding */}
       <div className="relative h-[32rem] md:h-[36rem] bg-gradient-to-br from-primary to-primary-dark overflow-hidden flex-shrink-0">
-        {agency.coverImage ? (
+        {agencyData.coverImage ? (
           <>
             <img
-              src={agency.coverImage}
-              alt={agency.name}
+              src={agencyData.coverImage}
+              alt={agencyData.name}
               className="absolute inset-0 w-full h-full object-cover opacity-40"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           </>
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary-dark to-black/80" />
+        )}
+
+        {/* Cover Upload Button - Only for owners */}
+        {isOwner && (
+          <div className="absolute top-6 right-6 z-10">
+            <input
+              type="file"
+              id="cover-upload"
+              accept="image/*"
+              onChange={handleCoverUpload}
+              disabled={isUploadingCover}
+              className="hidden"
+            />
+            <label
+              htmlFor="cover-upload"
+              className={`inline-flex items-center gap-2 px-4 py-2 bg-black/30 backdrop-blur-sm text-white font-semibold rounded-lg hover:bg-black/50 transition-colors cursor-pointer ${
+                isUploadingCover ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              {isUploadingCover ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Uploading...
+                </>
+              ) : (
+                'Change Cover'
+              )}
+            </label>
+          </div>
         )}
 
         {/* Back Button - positioned to avoid sidebar on desktop */}
@@ -144,11 +270,11 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
 
         {/* Agency Logo and Name */}
         <div className="absolute inset-0 flex flex-col items-center justify-center px-4">
-          <div className="relative">
-            {agency.logo ? (
+          <div className="relative group">
+            {agencyData.logo ? (
               <img
-                src={agency.logo}
-                alt={agency.name}
+                src={agencyData.logo}
+                alt={agencyData.name}
                 className="w-40 h-40 rounded-3xl border-4 border-white shadow-2xl object-cover"
               />
             ) : (
@@ -156,34 +282,70 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
                 <BuildingOfficeIcon className="w-20 h-20 text-primary" />
               </div>
             )}
-            {agency.isFeatured && (
+            {agencyData.isFeatured && (
               <div className="absolute -top-2 -right-2 bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
                 <StarIcon className="w-4 h-4" />
                 Featured
               </div>
             )}
+
+            {/* Logo Upload Button - Only for owners */}
+            {isOwner && (
+              <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2">
+                <input
+                  type="file"
+                  id="logo-upload"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  disabled={isUploadingLogo}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="logo-upload"
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 bg-white text-primary font-semibold rounded-full shadow-lg hover:bg-gray-100 transition-colors cursor-pointer text-sm ${
+                    isUploadingLogo ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {isUploadingLogo ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></div>
+                      Uploading...
+                    </>
+                  ) : (
+                    'Change Logo'
+                  )}
+                </label>
+              </div>
+            )}
           </div>
 
           <h1 className="mt-6 text-4xl md:text-5xl font-bold text-white text-center drop-shadow-lg">
-            {agency.name}
+            {agencyData.name}
           </h1>
 
           <div className="mt-4 flex items-center gap-2 text-white/90 text-lg">
             <MapPinIcon className="w-5 h-5" />
-            <span>{agency.city}, {agency.country}</span>
+            <span>{agencyData.city}, {agencyData.country}</span>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-10 pb-16">
+        {/* Upload Error Message */}
+        {uploadError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            <p className="text-sm font-medium">{uploadError}</p>
+          </div>
+        )}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 font-medium">Active Properties</p>
-                <p className="text-3xl font-bold text-primary mt-1">{agency.totalProperties}</p>
+                <p className="text-3xl font-bold text-primary mt-1">{agencyData.totalProperties}</p>
               </div>
               <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
                 <HomeIcon className="w-7 h-7 text-primary" />
@@ -195,7 +357,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 font-medium">Total Agents</p>
-                <p className="text-3xl font-bold text-green-600 mt-1">{agency.totalAgents}</p>
+                <p className="text-3xl font-bold text-green-600 mt-1">{agencyData.totalAgents}</p>
               </div>
               <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
                 <UsersIcon className="w-7 h-7 text-green-600" />
@@ -207,7 +369,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 font-medium">Years in Business</p>
-                <p className="text-3xl font-bold text-blue-600 mt-1">{agency.yearsInBusiness || 'N/A'}</p>
+                <p className="text-3xl font-bold text-blue-600 mt-1">{agencyData.yearsInBusiness || 'N/A'}</p>
               </div>
               <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center">
                 <ChartBarIcon className="w-7 h-7 text-blue-600" />
@@ -233,9 +395,9 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
 
         {/* About Section */}
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">About {agency.name}</h2>
-          {agency.description && (
-            <p className="text-gray-600 text-lg leading-relaxed mb-6">{agency.description}</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">About {agencyData.name}</h2>
+          {agencyData.description && (
+            <p className="text-gray-600 text-lg leading-relaxed mb-6">{agencyData.description}</p>
           )}
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -243,35 +405,35 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-3">Contact Information</h3>
               <div className="space-y-3">
-                <a href={`tel:${agency.phone}`} className="flex items-center gap-3 text-gray-600 hover:text-primary transition-colors">
+                <a href={`tel:${agencyData.phone}`} className="flex items-center gap-3 text-gray-600 hover:text-primary transition-colors">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <PhoneIcon className="w-5 h-5 text-primary" />
                   </div>
-                  <span className="font-medium">{agency.phone}</span>
+                  <span className="font-medium">{agencyData.phone}</span>
                 </a>
-                <a href={`mailto:${agency.email}`} className="flex items-center gap-3 text-gray-600 hover:text-primary transition-colors">
+                <a href={`mailto:${agencyData.email}`} className="flex items-center gap-3 text-gray-600 hover:text-primary transition-colors">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <EnvelopeIcon className="w-5 h-5 text-primary" />
                   </div>
-                  <span className="font-medium">{agency.email}</span>
+                  <span className="font-medium">{agencyData.email}</span>
                 </a>
-                {agency.address && (
+                {agencyData.address && (
                   <div className="flex items-center gap-3 text-gray-600">
                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                       <MapPinIcon className="w-5 h-5 text-primary" />
                     </div>
-                    <span className="font-medium">{agency.address}</span>
+                    <span className="font-medium">{agencyData.address}</span>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Specialties */}
-            {agency.specialties && agency.specialties.length > 0 && (
+            {agencyData.specialties && agencyData.specialties.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Specialties</h3>
                 <div className="flex flex-wrap gap-2">
-                  {agency.specialties.map((specialty, index) => (
+                  {agencyData.specialties.map((specialty, index) => (
                     <span key={index} className="px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium">
                       {specialty}
                     </span>

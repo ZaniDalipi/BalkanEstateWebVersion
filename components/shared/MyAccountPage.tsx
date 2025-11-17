@@ -86,6 +86,8 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const [showAgencyDropdown, setShowAgencyDropdown] = useState(false);
     const [invitationCode, setInvitationCode] = useState('');
     const [isJoiningAgency, setIsJoiningAgency] = useState(false);
+    const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
     useEffect(() => {
         setFormData(user);
@@ -217,6 +219,67 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
         }
     };
 
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            setError('Please select an image file');
+            return;
+        }
+
+        // Validate file size (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            setError('Image size must be less than 5MB');
+            return;
+        }
+
+        setIsUploadingAvatar(true);
+        setError('');
+
+        try {
+            // Create preview
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setAvatarPreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+
+            // Upload to server
+            const formData = new FormData();
+            formData.append('avatar', file);
+
+            const response = await fetch('/api/auth/upload-avatar', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
+                },
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to upload avatar');
+            }
+
+            // Update user in context
+            dispatch({ type: 'UPDATE_USER', payload: data.user });
+            setFormData(data.user);
+            setIsSaved(true);
+            setTimeout(() => {
+                setIsSaved(false);
+                setAvatarPreview(null);
+            }, 2000);
+        } catch (err: any) {
+            setError(err.message || 'Failed to upload avatar');
+            setAvatarPreview(null);
+        } finally {
+            setIsUploadingAvatar(false);
+        }
+    };
+
     const floatingInputClasses = "block px-2.5 pb-2.5 pt-4 w-full text-base text-neutral-900 bg-white rounded-lg border border-neutral-300 appearance-none focus:outline-none focus:ring-0 focus:border-primary peer";
     const floatingLabelClasses = "absolute text-base text-neutral-700 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1";
 
@@ -234,6 +297,50 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
             <fieldset>
                 <legend className="block text-sm font-medium text-neutral-700 mb-2">Your Role</legend>
                 <RoleSelector selectedRole={formData.role} originalRole={user.role} onChange={handleRoleChange} />
+            </fieldset>
+
+            {/* Avatar Upload Section */}
+            <fieldset className="border-t pt-6">
+                <legend className="block text-sm font-medium text-neutral-700 mb-4">Profile Picture</legend>
+                <div className="flex items-center gap-6">
+                    <div className="relative">
+                        {avatarPreview || formData.avatarUrl ? (
+                            <img
+                                src={avatarPreview || formData.avatarUrl}
+                                alt="Avatar"
+                                className="w-24 h-24 rounded-full object-cover border-4 border-neutral-200"
+                            />
+                        ) : (
+                            <UserCircleIcon className="w-24 h-24 text-neutral-300" />
+                        )}
+                        {isUploadingAvatar && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex-1">
+                        <input
+                            type="file"
+                            id="avatar-upload"
+                            accept="image/*"
+                            onChange={handleAvatarUpload}
+                            disabled={isUploadingAvatar}
+                            className="hidden"
+                        />
+                        <label
+                            htmlFor="avatar-upload"
+                            className={`inline-block px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-sm hover:bg-primary-dark transition-colors cursor-pointer ${
+                                isUploadingAvatar ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
+                        >
+                            {isUploadingAvatar ? 'Uploading...' : 'Change Picture'}
+                        </label>
+                        <p className="text-xs text-neutral-500 mt-2">
+                            JPG, PNG or GIF. Max size 5MB.
+                        </p>
+                    </div>
+                </div>
             </fieldset>
 
             <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6">

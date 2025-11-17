@@ -66,7 +66,7 @@ const createMockAgency = async () => {
       });
 
       // Update user with agency info
-      user.agencyId = agency._id;
+      user.agencyId = agency._id as any;
       user.agencyName = agency.name;
       await user.save();
 
