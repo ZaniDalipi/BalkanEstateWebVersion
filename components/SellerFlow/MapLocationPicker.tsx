@@ -28,11 +28,15 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
     if (!mapContainerRef.current || mapRef.current) return;
 
     // Initialize map with higher zoom for street-level view
-    const map = L.map(mapContainerRef.current).setView([lat, lng], zoom);
+    const map = L.map(mapContainerRef.current, {
+      minZoom: 14, // Prevent zooming out beyond city view
+      maxZoom: 19,
+    }).setView([lat, lng], zoom);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
       maxZoom: 19,
+      minZoom: 14,
     }).addTo(map);
 
     // Add draggable marker
