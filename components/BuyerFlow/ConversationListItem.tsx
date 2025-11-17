@@ -60,12 +60,10 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({ conversatio
                     )}
                 </div>
                 <p className="text-xs text-neutral-500 truncate">{property.city}, {property.country}</p>
-                {lastMessage ? (
+                {lastMessage && (
                     <p className={`text-xs mt-1 truncate ${unreadCount > 0 ? 'font-bold text-neutral-800' : 'text-neutral-600'}`}>
                         {(lastMessage.senderId === currentUserId || lastMessage.senderId === 'user') && 'You: '}{lastMessage.text || 'Image'}
                     </p>
-                ) : (
-                    <p className="text-xs text-neutral-400 mt-1 italic">No messages yet</p>
                 )}
             </div>
         </button>
