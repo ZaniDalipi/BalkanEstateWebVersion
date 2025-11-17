@@ -588,9 +588,25 @@ export const uploadAvatar = async (
     }
 
     // Check if Cloudinary is configured
-    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-      console.error('Cloudinary not configured');
-      res.status(500).json({ message: 'Image upload service not configured' });
+    const cloudinaryConfigured = process.env.CLOUDINARY_CLOUD_NAME &&
+                                   process.env.CLOUDINARY_API_KEY &&
+                                   process.env.CLOUDINARY_API_SECRET;
+
+    console.log('=== Cloudinary Configuration Check ===');
+    console.log('CLOUDINARY_CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME ? `Set (${process.env.CLOUDINARY_CLOUD_NAME})` : 'NOT SET');
+    console.log('CLOUDINARY_API_KEY:', process.env.CLOUDINARY_API_KEY ? 'Set (hidden)' : 'NOT SET');
+    console.log('CLOUDINARY_API_SECRET:', process.env.CLOUDINARY_API_SECRET ? 'Set (hidden)' : 'NOT SET');
+
+    if (!cloudinaryConfigured) {
+      console.error('❌ Cloudinary is not fully configured');
+      res.status(500).json({
+        message: 'Image upload service not configured. Please add your Cloudinary credentials to the .env file.',
+        missingFields: {
+          cloudName: !process.env.CLOUDINARY_CLOUD_NAME,
+          apiKey: !process.env.CLOUDINARY_API_KEY,
+          apiSecret: !process.env.CLOUDINARY_API_SECRET
+        }
+      });
       return;
     }
 
@@ -602,7 +618,9 @@ export const uploadAvatar = async (
       return;
     }
 
-    console.log('Uploading avatar for user:', userId);
+    console.log('✓ Starting avatar upload for user:', userId);
+    console.log('File size:', req.file.size, 'bytes');
+    console.log('File type:', req.file.mimetype);
 
     // Upload to Cloudinary
     const uploadStream = cloudinary.uploader.upload_stream(
