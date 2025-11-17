@@ -5,6 +5,7 @@ import MessageInput from './MessageInput';
 import { formatPrice } from '../../utils/currency';
 import { CalendarIcon, UserCircleIcon, ChevronLeftIcon, BuildingOfficeIcon, ShieldExclamationIcon, TrashIcon } from '../../constants';
 import { getConversation, sendMessage as sendMessageAPI, uploadMessageImage, getSecurityWarning } from '../../services/apiService';
+import { socketService } from '../../services/socketService';
 
 interface ConversationViewProps {
     conversation: Conversation;
@@ -56,12 +57,26 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
         // Load security warning
         getSecurityWarning().then(setSecurityWarning).catch(console.error);
 
-        // Poll for new messages every 5 seconds
-        const interval = setInterval(() => {
-            loadMessages();
-        }, 5000);
+        // Join conversation room for real-time updates
+        socketService.joinConversation(conversation.id);
 
-        return () => clearInterval(interval);
+        // Listen for new messages via WebSocket
+        const unsubscribeMessage = socketService.onMessage(conversation.id, (message: Message) => {
+            console.log('📨 Real-time message received:', message);
+            setMessages(prev => {
+                // Avoid duplicates
+                if (prev.some(m => m.id === message.id)) {
+                    return prev;
+                }
+                return [...prev, message];
+            });
+        });
+
+        // Cleanup
+        return () => {
+            socketService.leaveConversation(conversation.id);
+            unsubscribeMessage();
+        };
     }, [conversation.id]);
 
     if (!property) {
@@ -101,6 +116,9 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
 
             // Add the sent message to the list
             setMessages(prev => [...prev, result.message]);
+
+            // Emit message via WebSocket for real-time delivery to other user
+            socketService.sendMessage(conversation.id, result.message);
 
             // Show security warnings if any
             if (result.securityWarnings && result.securityWarnings.length > 0) {

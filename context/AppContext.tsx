@@ -2,6 +2,7 @@ import React, { createContext, useReducer, useContext, Dispatch, useCallback } f
 import { User, Property, SavedSearch, Conversation, AppState, AppAction, Filters, Message, AuthModalView, initialFilters, SearchPageState } from '../types';
 import * as api from '../services/apiService';
 import { MUNICIPALITY_DATA } from '../services/propertyService';
+import { socketService } from '../services/socketService';
 
 const initialSearchPageState: SearchPageState = {
     filters: initialFilters,
@@ -282,6 +283,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const userData = await api.getMyData();
     dispatch({ type: 'USER_DATA_SUCCESS', payload: userData });
 
+    // Connect to WebSocket for real-time chat
+    const token = localStorage.getItem('balkan_estate_token');
+    if (token) {
+      socketService.connect(token);
+    }
+
     // Check if there's a pending subscription and reopen the modal
     if (state.pendingSubscription) {
       setTimeout(() => {
@@ -311,6 +318,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user } });
     dispatch({ type: 'USER_DATA_SUCCESS', payload: { savedHomes: [], savedSearches: [], conversations: [] } });
 
+    // Connect to WebSocket for real-time chat
+    const token = localStorage.getItem('balkan_estate_token');
+    if (token) {
+      socketService.connect(token);
+    }
+
     // Check if there's a pending subscription and reopen the modal
     if (state.pendingSubscription) {
       setTimeout(() => {
@@ -328,6 +341,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const logout = useCallback(async () => {
     await api.logout();
+    // Disconnect from WebSocket
+    socketService.disconnect();
     dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null } });
   }, []);
   
@@ -355,6 +370,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user } });
     dispatch({ type: 'USER_DATA_LOADING' });
+
+    // Connect to WebSocket for real-time chat
+    socketService.connect(token);
 
     try {
       const userData = await api.getMyData();

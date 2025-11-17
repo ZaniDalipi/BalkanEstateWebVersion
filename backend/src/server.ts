@@ -1,8 +1,11 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import dotenv from 'dotenv';
 import compression from 'compression';
 import morgan from 'morgan';
 import connectDB from './config/database';
+import { setupChatSocket } from './sockets/chatSocket';
 
 
 // Load environment variables
@@ -31,6 +34,21 @@ import { scheduleExpirationWorker } from './workers/subscriptionExpirationWorker
 
 // Create Express app
 const app: Application = express();
+
+// Create HTTP server
+const httpServer = createServer(app);
+
+// Initialize Socket.io with CORS
+const io = new Server(httpServer, {
+  cors: {
+    origin: '*', // Allow all origins in development
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+});
+
+// Setup chat socket handlers
+setupChatSocket(io);
 
 // Connect to database
 connectDB();
@@ -157,16 +175,18 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 // Start server
 const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log('');
   console.log('🚀 ============================================');
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🚀 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log('🚀 CORS: Enabled for all origins');
+  console.log('🚀 WebSocket: Enabled for real-time chat');
   console.log('🚀 ============================================');
   console.log('');
   console.log('📍 Health check: http://localhost:' + PORT + '/health');
   console.log('📍 API base URL: http://localhost:' + PORT + '/api');
+  console.log('📍 WebSocket URL: ws://localhost:' + PORT);
   console.log('');
 });
 
