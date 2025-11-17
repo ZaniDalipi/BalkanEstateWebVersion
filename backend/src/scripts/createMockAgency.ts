@@ -44,16 +44,26 @@ const createMockAgency = async () => {
     let agency = await Agency.findOne({ ownerId: user._id });
 
     if (!agency) {
+      // Generate slug and invitation code
+      const agencyName = 'Zano Real Estate';
+      const country = 'Albania';
+      const slug = `${country.toLowerCase()},${agencyName.toLowerCase().replace(/\s+/g, '-')}`;
+      const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const nameCode = agencyName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 6).toUpperCase();
+      const invitationCode = `AGY-${nameCode}-${randomCode}`;
+
       // Create agency
       agency = await Agency.create({
-        name: 'Zano Real Estate',
+        name: agencyName,
+        slug: slug,
+        invitationCode: invitationCode,
         ownerId: user._id,
         description: 'Premium real estate agency specializing in luxury properties across Albania and the Balkans.',
         email: 'agency@zano.com',
         phone: '+355123456789',
         address: 'Blloku Area, Rruga Ibrahim Rugova',
         city: 'Tirana',
-        country: 'Albania',
+        country: country,
         zipCode: '1001',
         website: 'https://zanorealestate.com',
         totalProperties: 0,
