@@ -92,18 +92,53 @@ export const getProperties = async (
     const limitNum = Number(limit);
     const skip = (pageNum - 1) * limitNum;
 
-    // Execute query with seller population
+    // Execute query with seller population (includes subscription status)
     const properties = await Property.find(filter)
-      .populate('sellerId', 'name email phone avatarUrl role agencyName')
+      .populate('sellerId', 'name email phone avatarUrl role agencyName isSubscribed featuredUntil subscriptionStatus')
       .sort(sort)
       .skip(skip)
       .limit(limitNum);
 
+    // Sort properties to prioritize featured listings (from paid subscribers)
+    // Featured = active subscription AND (no featuredUntil OR featuredUntil is in the future)
+    const now = new Date();
+    const sortedProperties = properties.sort((a, b) => {
+      const aUser = a.sellerId as any;
+      const bUser = b.sellerId as any;
+
+      const aIsFeatured = aUser?.isSubscribed &&
+                          aUser?.subscriptionStatus === 'active' &&
+                          (!aUser?.featuredUntil || new Date(aUser.featuredUntil) > now);
+
+      const bIsFeatured = bUser?.isSubscribed &&
+                          bUser?.subscriptionStatus === 'active' &&
+                          (!bUser?.featuredUntil || new Date(bUser.featuredUntil) > now);
+
+      // Featured listings come first
+      if (aIsFeatured && !bIsFeatured) return -1;
+      if (!aIsFeatured && bIsFeatured) return 1;
+
+      // If both featured or both not featured, maintain original sort order
+      return 0;
+    });
+
     // Get total count for pagination
     const total = await Property.countDocuments(filter);
 
+    // Add isFeatured flag to each property
+    const propertiesWithFlags = sortedProperties.map((property) => {
+      const propertyObj = property.toObject();
+      const user = property.sellerId as any;
+
+      propertyObj.isFeatured = user?.isSubscribed &&
+                               user?.subscriptionStatus === 'active' &&
+                               (!user?.featuredUntil || new Date(user.featuredUntil) > now);
+
+      return propertyObj;
+    });
+
     res.json({
-      properties,
+      properties: propertiesWithFlags,
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -127,7 +162,7 @@ export const getProperty = async (
   try {
     const property = await Property.findById(req.params.id).populate(
       'sellerId',
-      'name email phone avatarUrl role agencyName licenseNumber'
+      'name email phone avatarUrl role agencyName licenseNumber isSubscribed featuredUntil subscriptionStatus'
     );
 
     if (!property) {
@@ -139,7 +174,30 @@ export const getProperty = async (
     property.views += 1;
     await property.save();
 
-    res.json({ property });
+    // Hide contact info for free users
+    const propertyObj = property.toObject();
+    const requestingUser = (req as any).user; // May be undefined if not authenticated
+
+    // Check if requesting user has active subscription
+    const canSeeContact = requestingUser && requestingUser.isSubscribed && requestingUser.subscriptionStatus === 'active';
+
+    if (!canSeeContact && propertyObj.sellerId) {
+      // Hide phone and email for free/non-authenticated users
+      propertyObj.sellerId.phone = undefined;
+      propertyObj.sellerId.email = undefined;
+      propertyObj.contactRestricted = true; // Flag to show upgrade prompt on frontend
+    } else {
+      propertyObj.contactRestricted = false;
+    }
+
+    // Add isFeatured flag
+    const seller = property.sellerId as any;
+    const now = new Date();
+    propertyObj.isFeatured = seller?.isSubscribed &&
+                             seller?.subscriptionStatus === 'active' &&
+                             (!seller?.featuredUntil || new Date(seller.featuredUntil) > now);
+
+    res.json({ property: propertyObj });
   } catch (error: any) {
     console.error('Get property error:', error);
     res.status(500).json({ message: 'Error fetching property', error: error.message });

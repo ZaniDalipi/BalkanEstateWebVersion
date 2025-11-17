@@ -30,6 +30,13 @@ export interface IUser extends Document {
   agencyId?: mongoose.Types.ObjectId;
   featuredUntil?: Date;
 
+  // Engagement tracking
+  conversationsCount?: number; // Active conversations count
+  totalConversationsCreated?: number; // Lifetime total
+  lastConversationReset?: Date; // For daily limit tracking
+  profileViews?: number; // Track profile visibility
+  listingViews?: number; // Total views across all listings
+
   // Enhanced Subscription Fields
   isSubscribed: boolean;
   subscriptionPlan?: string; // Product ID (e.g., 'buyer_pro_monthly')
@@ -190,6 +197,26 @@ const UserSchema: Schema = new Schema(
     },
     featuredUntil: {
       type: Date,
+    },
+    // Engagement tracking
+    conversationsCount: {
+      type: Number,
+      default: 0,
+    },
+    totalConversationsCreated: {
+      type: Number,
+      default: 0,
+    },
+    lastConversationReset: {
+      type: Date,
+    },
+    profileViews: {
+      type: Number,
+      default: 0,
+    },
+    listingViews: {
+      type: Number,
+      default: 0,
     },
     resetPasswordToken: {
       type: String,

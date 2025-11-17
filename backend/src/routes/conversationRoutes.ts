@@ -11,6 +11,7 @@ import {
   getConversationPublicKeys,
 } from '../controllers/conversationController';
 import { protect } from '../middleware/auth';
+import { checkConversationLimit } from '../middleware/checkConversationLimit';
 import { upload } from '../utils/upload';
 
 const router = express.Router();
@@ -21,7 +22,7 @@ router.get('/security-warning', getSecurityWarning);
 router.use(protect); // All other routes are protected
 
 router.get('/', getConversations);
-router.post('/', createConversation);
+router.post('/', checkConversationLimit, createConversation); // Add conversation limit check
 router.get('/:id', getConversation);
 router.delete('/:id', deleteConversation);
 router.get('/:id/public-keys', getConversationPublicKeys);

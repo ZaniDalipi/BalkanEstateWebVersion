@@ -178,6 +178,10 @@ export const createConversation = async (
       property.inquiries += 1;
       await property.save();
 
+      // Increment conversation count for the user (imported from conversationLimitService)
+      const { incrementConversationCount } = require('../services/conversationLimitService');
+      await incrementConversationCount(String((req.user as IUser)._id));
+
       await conversation.populate('propertyId');
       await conversation.populate('buyerId', 'name email phone avatarUrl');
       await conversation.populate(
