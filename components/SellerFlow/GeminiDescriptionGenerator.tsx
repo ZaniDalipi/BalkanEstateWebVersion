@@ -320,9 +320,9 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         }
     };
 
-    // Zoom level for city center - keep it closer, don't zoom out too much
+    // Zoom level for city center - keep it very close, don't zoom out too much
     const getZoomLevel = useMemo(() => {
-        return listingData.streetAddress.trim() ? 17 : 15;
+        return listingData.streetAddress.trim() ? 18 : 16;
     }, [listingData.streetAddress]);
 
     const handleMapLocationChange = (newLat: number, newLng: number) => {
