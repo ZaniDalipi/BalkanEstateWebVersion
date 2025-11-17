@@ -127,7 +127,7 @@ export const getProperties = async (
 
     // Add isFeatured flag to each property
     const propertiesWithFlags = sortedProperties.map((property) => {
-      const propertyObj = property.toObject();
+      const propertyObj: any = property.toObject();
       const user = property.sellerId as any;
 
       propertyObj.isFeatured = user?.isSubscribed &&
@@ -175,16 +175,17 @@ export const getProperty = async (
     await property.save();
 
     // Hide contact info for free users
-    const propertyObj = property.toObject();
+    const propertyObj: any = property.toObject();
     const requestingUser = (req as any).user; // May be undefined if not authenticated
 
     // Check if requesting user has active subscription
     const canSeeContact = requestingUser && requestingUser.isSubscribed && requestingUser.subscriptionStatus === 'active';
 
     if (!canSeeContact && propertyObj.sellerId) {
-      // Hide phone and email for free/non-authenticated users
-      propertyObj.sellerId.phone = undefined;
-      propertyObj.sellerId.email = undefined;
+      // Hide phone and email for free/non-authenticated users (sellerId is populated object)
+      const seller: any = propertyObj.sellerId;
+      if (seller.phone) seller.phone = undefined;
+      if (seller.email) seller.email = undefined;
       propertyObj.contactRestricted = true; // Flag to show upgrade prompt on frontend
     } else {
       propertyObj.contactRestricted = false;
