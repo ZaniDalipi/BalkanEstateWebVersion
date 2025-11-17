@@ -25,12 +25,14 @@ interface Agency {
 }
 
 const AgenciesListPage: React.FC = () => {
-  const { dispatch } = useAppContext();
+  const { dispatch, state } = useAppContext();
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'featured'>('all');
+  const [filter, setFilter] = useState<'all' | 'featured' | 'myAgency'>('all');
   const [cityFilter, setCityFilter] = useState('');
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+
+  const currentUser = state.currentUser;
+  const hasAgency = currentUser?.role === 'agent' && currentUser?.agencyId;
 
   useEffect(() => {
     fetchAgencies();
@@ -39,23 +41,39 @@ const AgenciesListPage: React.FC = () => {
   const fetchAgencies = async () => {
     try {
       setLoading(true);
-      const response = await getAgencies({
-        featured: filter === 'featured' ? true : undefined,
-        city: cityFilter || undefined,
-        limit: 50,
-      });
 
-      // Add mock agencies if response is empty
-      const fetchedAgencies = response.agencies || [];
-      if (fetchedAgencies.length === 0) {
-        setAgencies(getMockAgencies());
+      // If viewing "My Agency", fetch only the user's agency
+      if (filter === 'myAgency' && currentUser?.agencyId) {
+        const response = await fetch(`http://localhost:5001/api/agencies/${currentUser.agencyId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setAgencies([data.agency]);
+        } else {
+          setAgencies([]);
+        }
       } else {
-        setAgencies(fetchedAgencies);
+        const response = await getAgencies({
+          featured: filter === 'featured' ? true : undefined,
+          city: cityFilter || undefined,
+          limit: 50,
+        });
+
+        // Add mock agencies if response is empty
+        const fetchedAgencies = response.agencies || [];
+        if (fetchedAgencies.length === 0) {
+          setAgencies(getMockAgencies());
+        } else {
+          setAgencies(fetchedAgencies);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch agencies:', error);
       // Show mock agencies on error
-      setAgencies(getMockAgencies());
+      if (filter !== 'myAgency') {
+        setAgencies(getMockAgencies());
+      } else {
+        setAgencies([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -211,30 +229,6 @@ const AgenciesListPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            {/* View Toggle */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-6 py-2.5 rounded-full font-medium transition-all ${
-                  viewMode === 'list'
-                    ? 'bg-primary text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                List View
-              </button>
-              <button
-                onClick={() => setViewMode('map')}
-                className={`px-6 py-2.5 rounded-full font-medium transition-all ${
-                  viewMode === 'map'
-                    ? 'bg-primary text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Map View
-              </button>
-            </div>
-
             {/* Filter Buttons */}
             <div className="flex gap-2">
               <button
@@ -245,7 +239,7 @@ const AgenciesListPage: React.FC = () => {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                All
+                All Agencies
               </button>
               <button
                 onClick={() => setFilter('featured')}
@@ -258,6 +252,19 @@ const AgenciesListPage: React.FC = () => {
                 <StarIcon className="w-4 h-4" />
                 Featured
               </button>
+              {hasAgency && (
+                <button
+                  onClick={() => setFilter('myAgency')}
+                  className={`px-6 py-2.5 rounded-full font-medium transition-all flex items-center gap-1 ${
+                    filter === 'myAgency'
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <BuildingOfficeIcon className="w-4 h-4" />
+                  My Agency
+                </button>
+              )}
             </div>
 
             {/* Search */}
@@ -280,10 +287,6 @@ const AgenciesListPage: React.FC = () => {
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-2 border-gray-900 border-t-transparent"></div>
-          </div>
-        ) : viewMode === 'map' ? (
-          <div className="h-[700px]">
-            <AgenciesMap agencies={agencies} />
           </div>
         ) : agencies.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">

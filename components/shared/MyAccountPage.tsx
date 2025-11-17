@@ -483,7 +483,7 @@ const MyAccountPage: React.FC = () => {
             </div>
         );
     }
-    
+
     const isSellerProfile = state.currentUser.role === UserRole.AGENT || state.currentUser.role === UserRole.PRIVATE_SELLER;
 
     useEffect(() => {
@@ -491,10 +491,26 @@ const MyAccountPage: React.FC = () => {
             setActiveTab('profile');
         }
     }, [isSellerProfile, activeTab]);
-    
+
     const handleLogout = () => {
         logout();
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
+    };
+
+    const handleAgencyClick = async () => {
+        if (state.currentUser?.agencyId) {
+            try {
+                // Fetch the agency details
+                const response = await fetch(`${API_URL}/agencies/${state.currentUser.agencyId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    dispatch({ type: 'SET_SELECTED_AGENCY', payload: data.agency });
+                    dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
+                }
+            } catch (error) {
+                console.error('Error fetching agency:', error);
+            }
+        }
     };
 
     const roleDisplayMap: Record<UserRole, string> = {
@@ -536,10 +552,14 @@ const MyAccountPage: React.FC = () => {
 
                                 {/* Agency Badge */}
                                 {state.currentUser.role === UserRole.AGENT && state.currentUser.agencyName && (
-                                    <div className="flex items-center gap-2 mt-2 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-primary-light rounded-full border border-primary/20">
+                                    <button
+                                        onClick={handleAgencyClick}
+                                        className="flex items-center gap-2 mt-2 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-primary-light rounded-full border border-primary/20 hover:from-blue-100 hover:to-primary-light/80 transition-all cursor-pointer"
+                                        title="View agency details"
+                                    >
                                         <BuildingOfficeIcon className="w-4 h-4 text-primary" />
                                         <span className="text-xs font-semibold text-primary">{state.currentUser.agencyName}</span>
-                                    </div>
+                                    </button>
                                 )}
 
                                 {/* License Verified Badge */}

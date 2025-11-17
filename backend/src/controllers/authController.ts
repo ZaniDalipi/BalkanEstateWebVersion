@@ -587,6 +587,13 @@ export const uploadAvatar = async (
       return;
     }
 
+    // Check if Cloudinary is configured
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      console.error('Cloudinary not configured');
+      res.status(500).json({ message: 'Image upload service not configured' });
+      return;
+    }
+
     const userId = String((req.user as IUser)._id);
     const user = await User.findById(userId);
 
@@ -594,6 +601,8 @@ export const uploadAvatar = async (
       res.status(404).json({ message: 'User not found' });
       return;
     }
+
+    console.log('Uploading avatar for user:', userId);
 
     // Upload to Cloudinary
     const uploadStream = cloudinary.uploader.upload_stream(
@@ -607,32 +616,47 @@ export const uploadAvatar = async (
       async (error, result) => {
         if (error) {
           console.error('Cloudinary upload error:', error);
-          res.status(500).json({ message: 'Error uploading avatar' });
+          if (!res.headersSent) {
+            res.status(500).json({ message: 'Error uploading avatar', error: error.message });
+          }
           return;
         }
 
         if (result) {
-          // Update user with new avatar URL
-          user.avatarUrl = result.secure_url;
-          await user.save();
+          try {
+            // Update user with new avatar URL
+            user.avatarUrl = result.secure_url;
+            await user.save();
 
-          res.json({
-            avatarUrl: result.secure_url,
-            user: {
-              id: String(user._id),
-              email: user.email,
-              name: user.name,
-              phone: user.phone,
-              role: user.role,
-              avatarUrl: user.avatarUrl,
-              city: user.city,
-              country: user.country,
-              agencyName: user.agencyName,
-              agentId: user.agentId,
-              licenseNumber: user.licenseNumber,
-              isSubscribed: user.isSubscribed,
+            console.log('Avatar uploaded successfully:', result.secure_url);
+
+            if (!res.headersSent) {
+              res.json({
+                avatarUrl: result.secure_url,
+                user: {
+                  id: String(user._id),
+                  email: user.email,
+                  name: user.name,
+                  phone: user.phone,
+                  role: user.role,
+                  avatarUrl: user.avatarUrl,
+                  city: user.city,
+                  country: user.country,
+                  agencyName: user.agencyName,
+                  agencyId: user.agencyId,
+                  agentId: user.agentId,
+                  licenseNumber: user.licenseNumber,
+                  licenseVerified: user.licenseVerified,
+                  isSubscribed: user.isSubscribed,
+                }
+              });
             }
-          });
+          } catch (saveError: any) {
+            console.error('Error saving user:', saveError);
+            if (!res.headersSent) {
+              res.status(500).json({ message: 'Error saving avatar URL', error: saveError.message });
+            }
+          }
         }
       }
     );
@@ -641,6 +665,8 @@ export const uploadAvatar = async (
     bufferStream.pipe(uploadStream);
   } catch (error: any) {
     console.error('Upload avatar error:', error);
-    res.status(500).json({ message: 'Error uploading avatar', error: error.message });
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Error uploading avatar', error: error.message });
+    }
   }
 };

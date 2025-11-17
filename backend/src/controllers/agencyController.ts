@@ -380,6 +380,13 @@ export const uploadAgencyLogo = async (
       return;
     }
 
+    // Check if Cloudinary is configured
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      console.error('Cloudinary not configured');
+      res.status(500).json({ message: 'Image upload service not configured' });
+      return;
+    }
+
     const agency = await Agency.findById(req.params.id);
 
     if (!agency) {
@@ -393,6 +400,8 @@ export const uploadAgencyLogo = async (
       return;
     }
 
+    console.log('Uploading logo for agency:', agency._id);
+
     // Upload to Cloudinary
     const uploadStream = cloudinary.uploader.upload_stream(
       {
@@ -405,16 +414,29 @@ export const uploadAgencyLogo = async (
       async (error, result) => {
         if (error) {
           console.error('Cloudinary upload error:', error);
-          res.status(500).json({ message: 'Error uploading logo' });
+          if (!res.headersSent) {
+            res.status(500).json({ message: 'Error uploading logo', error: error.message });
+          }
           return;
         }
 
         if (result) {
-          // Update agency with new logo URL
-          agency.logo = result.secure_url;
-          await agency.save();
+          try {
+            // Update agency with new logo URL
+            agency.logo = result.secure_url;
+            await agency.save();
 
-          res.json({ logo: result.secure_url, agency });
+            console.log('Logo uploaded successfully:', result.secure_url);
+
+            if (!res.headersSent) {
+              res.json({ logo: result.secure_url, agency });
+            }
+          } catch (saveError: any) {
+            console.error('Error saving agency:', saveError);
+            if (!res.headersSent) {
+              res.status(500).json({ message: 'Error saving logo URL', error: saveError.message });
+            }
+          }
         }
       }
     );
@@ -423,7 +445,9 @@ export const uploadAgencyLogo = async (
     bufferStream.pipe(uploadStream);
   } catch (error: any) {
     console.error('Upload agency logo error:', error);
-    res.status(500).json({ message: 'Error uploading logo', error: error.message });
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Error uploading logo', error: error.message });
+    }
   }
 };
 
@@ -445,6 +469,13 @@ export const uploadAgencyCover = async (
       return;
     }
 
+    // Check if Cloudinary is configured
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      console.error('Cloudinary not configured');
+      res.status(500).json({ message: 'Image upload service not configured' });
+      return;
+    }
+
     const agency = await Agency.findById(req.params.id);
 
     if (!agency) {
@@ -458,6 +489,8 @@ export const uploadAgencyCover = async (
       return;
     }
 
+    console.log('Uploading cover for agency:', agency._id);
+
     // Upload to Cloudinary
     const uploadStream = cloudinary.uploader.upload_stream(
       {
@@ -470,16 +503,29 @@ export const uploadAgencyCover = async (
       async (error, result) => {
         if (error) {
           console.error('Cloudinary upload error:', error);
-          res.status(500).json({ message: 'Error uploading cover image' });
+          if (!res.headersSent) {
+            res.status(500).json({ message: 'Error uploading cover image', error: error.message });
+          }
           return;
         }
 
         if (result) {
-          // Update agency with new cover URL
-          agency.coverImage = result.secure_url;
-          await agency.save();
+          try {
+            // Update agency with new cover URL
+            agency.coverImage = result.secure_url;
+            await agency.save();
 
-          res.json({ coverImage: result.secure_url, agency });
+            console.log('Cover uploaded successfully:', result.secure_url);
+
+            if (!res.headersSent) {
+              res.json({ coverImage: result.secure_url, agency });
+            }
+          } catch (saveError: any) {
+            console.error('Error saving agency:', saveError);
+            if (!res.headersSent) {
+              res.status(500).json({ message: 'Error saving cover URL', error: saveError.message });
+            }
+          }
         }
       }
     );
@@ -488,6 +534,8 @@ export const uploadAgencyCover = async (
     bufferStream.pipe(uploadStream);
   } catch (error: any) {
     console.error('Upload agency cover error:', error);
-    res.status(500).json({ message: 'Error uploading cover image', error: error.message });
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Error uploading cover image', error: error.message });
+    }
   }
 };
