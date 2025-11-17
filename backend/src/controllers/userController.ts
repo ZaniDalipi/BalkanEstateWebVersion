@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
-import mongoose from 'mongoose';
-import User, { IUser } from '../models/User';
+import { IUser } from '../models/User';
 import Property from '../models/Property';
 import Conversation from '../models/Conversation';
 
