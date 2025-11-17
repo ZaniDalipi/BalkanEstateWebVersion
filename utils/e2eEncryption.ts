@@ -207,7 +207,7 @@ export async function encryptMessage(
     return {
       encryptedMessage: arrayBufferToBase64(encryptedMessage),
       encryptedKey: arrayBufferToBase64(encryptedKey),
-      iv: arrayBufferToBase64(iv),
+      iv: arrayBufferToBase64(iv.buffer),
     };
   } catch (error) {
     console.error('Error encrypting message:', error);
@@ -310,7 +310,7 @@ export async function encryptMessageForMultipleRecipients(
 
     return {
       encryptedMessage: arrayBufferToBase64(encryptedMessage),
-      iv: arrayBufferToBase64(iv),
+      iv: arrayBufferToBase64(iv.buffer),
       encryptedKeys,
     };
   } catch (error) {
