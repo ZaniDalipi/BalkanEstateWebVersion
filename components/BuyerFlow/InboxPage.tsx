@@ -73,7 +73,7 @@ const InboxPage: React.FC = () => {
         );
     }
 
-    if (conversations.length === 0) {
+    if (conversations.length === 0 && !activeConversationId) {
         return (
             <div className="w-full flex flex-col items-center justify-center p-4 sm:p-8 text-center">
                 <EnvelopeIcon className="w-16 h-16 text-neutral-300 mb-4" />
@@ -88,6 +88,18 @@ const InboxPage: React.FC = () => {
                             <PropertyCard key={prop.id} property={prop} />
                         ))}
                     </div>
+                </div>
+            </div>
+        );
+    }
+
+    // If there are no conversations but activeConversationId is set, show loading (conversation being created)
+    if (conversations.length === 0 && activeConversationId) {
+        return (
+            <div className="h-full w-full flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    <p className="text-neutral-600">Creating conversation...</p>
                 </div>
             </div>
         );
@@ -111,10 +123,17 @@ const InboxPage: React.FC = () => {
                     flex-grow h-full
                 `}>
                     {selectedConversation ? (
-                        <ConversationView 
+                        <ConversationView
                             conversation={selectedConversation}
                             onBack={() => isMobile && setSelectedConversationId(null)}
                         />
+                    ) : activeConversationId ? (
+                        <div className="h-full flex items-center justify-center text-center">
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                                <p className="text-neutral-600">Loading conversation...</p>
+                            </div>
+                        </div>
                     ) : (
                         <div className="h-full hidden md:flex items-center justify-center text-center text-neutral-500">
                             <p>Select a conversation to view messages.</p>
