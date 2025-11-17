@@ -12,6 +12,7 @@ import {
 } from '../controllers/propertyController';
 import { protect } from '../middleware/auth';
 import { upload } from '../utils/upload';
+import { checkUsageLimit } from '../middleware/checkUsageLimit';
 
 const router = express.Router();
 
@@ -23,7 +24,8 @@ router.get('/:id', getProperty);
 router.post('/', protect, createProperty);
 router.put('/:id', protect, updateProperty);
 router.delete('/:id', protect, deleteProperty);
-router.get('/my/listings', protect, getMyListings);
+// Property insights viewing (views, saves, inquiries) - limited for free users
+router.get('/my/listings', protect, checkUsageLimit('propertyInsights'), getMyListings);
 router.post('/upload-images', protect, upload.array('images', 10), uploadImages);
 router.patch('/:id/mark-sold', protect, markAsSold);
 router.patch('/:id/renew', protect, renewProperty);

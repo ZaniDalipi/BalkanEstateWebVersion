@@ -111,3 +111,100 @@ export async function fetchBuyerProducts(): Promise<Product[]> {
   const products = await fetchProducts('buyer');
   return products;
 }
+
+// AI Usage Tracking Types
+export interface AIUsageInfo {
+  isPremium: boolean;
+  limits: {
+    aiSearch: number;
+    aiDescription: number;
+    neighborhoodInsights: number;
+  };
+  currentUsage: {
+    aiSearch: number;
+    aiDescription: number;
+    neighborhoodInsights: number;
+  };
+  remaining: {
+    aiSearch: number;
+    aiDescription: number;
+    neighborhoodInsights: number;
+  } | null;
+  canUse: {
+    aiSearch: boolean;
+    aiDescription: boolean;
+    neighborhoodInsights: boolean;
+  };
+}
+
+export interface UsageLimitError {
+  message: string;
+  error: 'USAGE_LIMIT_EXCEEDED';
+  featureType: string;
+  currentUsage: number;
+  limit: number;
+  isPremium: boolean;
+  upgradeMessage: string;
+  upgradeCta: string;
+}
+
+/**
+ * Check AI feature usage limits and get current usage info
+ * Requires authentication token
+ */
+export async function checkAIUsage(token: string): Promise<AIUsageInfo> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai-features/check-usage`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to check AI usage: ${response.statusText}`);
+    }
+
+    const data: AIUsageInfo = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error checking AI usage:', error);
+    throw error;
+  }
+}
+
+/**
+ * Track AI feature usage after successful use
+ * Requires authentication token
+ */
+export async function trackAIUsage(
+  token: string,
+  featureType: 'aiSearch' | 'aiDescription' | 'neighborhoodInsights'
+): Promise<{ success: boolean; usage: AIUsageInfo }> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai-features/track-usage`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ featureType }),
+    });
+
+    if (response.status === 429) {
+      // Usage limit exceeded
+      const errorData: UsageLimitError = await response.json();
+      throw errorData;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to track AI usage: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error tracking AI usage:', error);
+    throw error;
+  }
+}

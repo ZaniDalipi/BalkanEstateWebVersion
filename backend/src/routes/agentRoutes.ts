@@ -10,7 +10,7 @@ import { protect } from '../middleware/auth';
 
 const router = express.Router();
 
-// Public routes
+// Public routes - agent profiles are public information
 router.get('/', getAgents);
 router.get('/:id', getAgent);
 router.get('/user/:userId', getAgentByUserId);

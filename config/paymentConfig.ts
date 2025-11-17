@@ -296,13 +296,21 @@ export interface PaymentPlan {
 }
 
 export const PAYMENT_PLANS: Record<string, PaymentPlan> = {
+  buyer_pro_yearly: {
+    id: 'buyer_pro_yearly',
+    name: 'Buyer Premium',
+    price: 1.50,
+    currency: 'EUR',
+    interval: 'year',
+    // Add your Stripe Price ID here when created
+    stripePriceId: process.env.STRIPE_PRICE_BUYER_PRO_YEARLY,
+  },
   buyer_pro_monthly: {
     id: 'buyer_pro_monthly',
     name: 'Buyer Pro Monthly',
     price: 1.50,
     currency: 'EUR',
     interval: 'month',
-    // Add your Stripe Price ID here when created
     stripePriceId: process.env.STRIPE_PRICE_BUYER_PRO_MONTHLY,
   },
   pro_monthly: {
