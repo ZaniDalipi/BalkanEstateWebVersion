@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import path from 'path';
 import Agency from '../models/Agency';
 
 // ANSI color codes
@@ -12,8 +13,8 @@ const colors = {
   gray: '\x1b[90m',
 };
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from backend root
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/balkan-estate';
 
@@ -50,7 +51,13 @@ const testAgencyAccess = async () => {
 
     // Connect to MongoDB
     console.log(`${colors.yellow}Connecting to MongoDB...${colors.reset}`);
-    await mongoose.connect(MONGODB_URI);
+    console.log(`${colors.gray}MongoDB URI: ${MONGODB_URI}${colors.reset}`);
+
+    await mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+      connectTimeoutMS: 5000,
+    });
+
     console.log(`${colors.green}✓ Connected to MongoDB\n${colors.reset}`);
 
     // ===== TEST 1: Get all agencies from database =====
@@ -123,9 +130,12 @@ const testAgencyAccess = async () => {
           const fetchedByNamePart = await Agency.findOne({
             slug: { $regex: `,${namePart}$`, $options: 'i' }
           });
+          const idsMatch = fetchedByNamePart
+            ? String(fetchedByNamePart._id) === String(agency._id)
+            : false;
           logTest(
             `Access agency by name part only: ${namePart}`,
-            !!fetchedByNamePart && fetchedByNamePart._id.toString() === agency._id.toString(),
+            !!fetchedByNamePart && idsMatch,
             undefined,
             { id: fetchedByNamePart?._id, name: fetchedByNamePart?.name }
           );
