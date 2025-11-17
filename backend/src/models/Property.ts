@@ -8,6 +8,7 @@ export interface IPropertyImage {
 export interface IProperty extends Document {
   sellerId: mongoose.Types.ObjectId;
   status: 'active' | 'pending' | 'sold' | 'draft';
+  soldAt?: Date;
   price: number;
   address: string;
   city: string;
@@ -54,6 +55,10 @@ const PropertySchema: Schema = new Schema(
       type: String,
       enum: ['active', 'pending', 'sold', 'draft'],
       default: 'active',
+      index: true,
+    },
+    soldAt: {
+      type: Date,
       index: true,
     },
     price: {

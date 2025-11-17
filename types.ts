@@ -67,6 +67,7 @@ export interface Property {
     id: string;
     sellerId: string;
     status: PropertyStatus;
+    soldAt?: number;
     price: number;
     address: string;
     city: string;

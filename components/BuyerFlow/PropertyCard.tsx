@@ -16,6 +16,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
   const isFavorited = state.savedHomes.some(p => p.id === property.id);
   const isInComparison = state.comparisonList.includes(property.id);
   const isNew = property.createdAt && (Date.now() - property.createdAt < 3 * 24 * 60 * 60 * 1000);
+  const isSold = property.status === 'sold';
 
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -48,7 +49,9 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
 
   return (
     <div
-      className="bg-white rounded-lg overflow-hidden shadow-md border border-neutral-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-left w-full flex flex-col"
+      className={`bg-white rounded-lg overflow-hidden shadow-md border border-neutral-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-left w-full flex flex-col ${
+        isSold ? 'opacity-75 grayscale-[50%]' : ''
+      }`}
     >
       <div className="block w-full relative">
         <button onClick={handleCardClick} className="block w-full">
@@ -60,7 +63,12 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
                 <img src={property.imageUrl} alt={property.address} className="w-full h-40 object-cover" onError={() => setImageError(true)} />
             )}
         </button>
-        {isNew && (
+        {isSold && (
+            <div className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-md shadow-lg z-10">
+                SOLD
+            </div>
+        )}
+        {!isSold && isNew && (
             <div className="absolute top-2 left-2 bg-secondary text-white text-xs font-bold px-2 py-1 rounded-md shadow-md z-10">
                 NEW
             </div>

@@ -553,6 +553,7 @@ function transformBackendProperty(backendProp: any): Property {
     id: backendProp._id,
     sellerId: seller._id || seller,
     status: backendProp.status,
+    soldAt: backendProp.soldAt ? new Date(backendProp.soldAt).getTime() : undefined,
     price: backendProp.price,
     address: backendProp.address,
     city: backendProp.city,

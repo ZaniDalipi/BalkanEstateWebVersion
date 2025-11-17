@@ -36,8 +36,20 @@ export const getProperties = async (
     // Build filter object
     const filter: any = {};
 
-    // Default to active properties only
-    filter.status = status || 'active';
+    // Default to active properties + recently sold (within 24 hours)
+    // Recently sold properties will be shown at the top with a "SOLD" label
+    if (!status || status === 'active') {
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      filter.$or = [
+        { status: 'active' },
+        {
+          status: 'sold',
+          soldAt: { $gte: twentyFourHoursAgo }
+        }
+      ];
+    } else {
+      filter.status = status;
+    }
 
     if (minPrice || maxPrice) {
       filter.price = {};
@@ -76,16 +88,28 @@ export const getProperties = async (
     }
 
     // Build sort object
-    let sort: any = { lastRenewed: -1 }; // Default: newest first
+    // Always show sold properties at the top, then apply user-selected sorting
+    let sort: any = {};
 
+    // First, sort by status to show sold properties at top
+    // We use a trick: create a computed field that gives sold=1, active=0
+    // So sold properties sort first
+    const sortPipeline: any[] = [];
+
+    // Add status sorting (sold first)
+    sort.status = -1; // 'sold' > 'active' alphabetically (reversed)
+
+    // Then apply user's preferred sorting
     if (sortBy === 'price-low') {
-      sort = { price: 1 };
+      sort.price = 1;
     } else if (sortBy === 'price-high') {
-      sort = { price: -1 };
+      sort.price = -1;
     } else if (sortBy === 'sqft-low') {
-      sort = { sqft: 1 };
+      sort.sqft = 1;
     } else if (sortBy === 'sqft-high') {
-      sort = { sqft: -1 };
+      sort.sqft = -1;
+    } else {
+      sort.lastRenewed = -1; // Default: newest first
     }
 
     // Pagination
@@ -489,6 +513,7 @@ export const markAsSold = async (
     }
 
     property.status = 'sold';
+    property.soldAt = new Date();
     await property.save();
 
     // Update seller's sold statistics in real-time
