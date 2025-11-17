@@ -212,11 +212,24 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
 
             <div className="p-2 border-t border-neutral-200 flex-shrink-0">
                 <div className="flex items-center justify-center gap-2 flex-wrap">
-                    <button className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-primary-dark bg-primary-light rounded-full hover:bg-primary/20 transition-colors">
+                    <button
+                        onClick={() => handleSendMessage("Hi! I'm interested in scheduling a tour of this property. When would be a good time?")}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-primary-dark bg-primary-light rounded-full hover:bg-primary/20 transition-colors"
+                    >
                        <CalendarIcon className="w-4 h-4"/> Schedule a Tour
                    </button>
-                    <button className="px-3 py-1.5 text-xs font-semibold text-primary-dark bg-primary-light rounded-full hover:bg-primary/20 transition-colors">Request More Info</button>
-                    <button className="px-3 py-1.5 text-xs font-semibold text-primary-dark bg-primary-light rounded-full hover:bg-primary/20 transition-colors">Make an Offer</button>
+                    <button
+                        onClick={() => handleSendMessage("I'd like to request more information about this property. Could you provide additional details?")}
+                        className="px-3 py-1.5 text-xs font-semibold text-primary-dark bg-primary-light rounded-full hover:bg-primary/20 transition-colors"
+                    >
+                        Request More Info
+                    </button>
+                    <button
+                        onClick={() => handleSendMessage("I'm interested in making an offer on this property. What's the process?")}
+                        className="px-3 py-1.5 text-xs font-semibold text-primary-dark bg-primary-light rounded-full hover:bg-primary/20 transition-colors"
+                    >
+                        Make an Offer
+                    </button>
                 </div>
             </div>
 

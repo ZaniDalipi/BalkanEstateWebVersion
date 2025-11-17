@@ -20,22 +20,31 @@ const InboxPage: React.FC = () => {
 
     const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
 
-    // Use activeConversationId from global state if available
+    // Use activeConversationId from global state if available (highest priority)
     useEffect(() => {
-        if (activeConversationId && conversations.some(c => c.id === activeConversationId)) {
-            // Set to the active conversation if it exists in the conversations list
-            setSelectedConversationId(activeConversationId);
-            // Clear the active conversation from global state after using it
-            dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: null });
+        if (activeConversationId) {
+            console.log('Active conversation ID detected:', activeConversationId);
+            console.log('Conversations:', conversations.map(c => c.id));
+            const conversation = conversations.find(c => c.id === activeConversationId);
+            if (conversation) {
+                console.log('Found conversation, selecting it');
+                setSelectedConversationId(activeConversationId);
+                // Clear the active conversation from global state after using it
+                setTimeout(() => {
+                    dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: null });
+                }, 100);
+            } else {
+                console.log('Conversation not found in list yet, waiting...');
+            }
         }
     }, [activeConversationId, conversations, dispatch]);
 
     // Auto-select first conversation on desktop when no conversation is selected
     useEffect(() => {
-        if (!isMobile && !selectedConversationId && conversations.length > 0) {
+        if (!isMobile && !selectedConversationId && conversations.length > 0 && !activeConversationId) {
             setSelectedConversationId(conversations[0].id);
         }
-    }, [isMobile, selectedConversationId, conversations]);
+    }, [isMobile, selectedConversationId, conversations, activeConversationId]);
 
 
     const selectedConversation = conversations.find(c => c.id === selectedConversationId) || null;

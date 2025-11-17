@@ -146,11 +146,14 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         // Check if conversation already exists
         const exists = state.conversations.some(c => c.id === action.payload.id);
         if (exists) {
+            console.log('Conversation already exists, not adding again');
             return state;
         }
+        console.log('Adding new conversation to state:', action.payload.id);
         return { ...state, conversations: [action.payload, ...state.conversations] };
     }
     case 'SET_ACTIVE_CONVERSATION':
+        console.log('Setting active conversation in reducer:', action.payload);
         return { ...state, activeConversationId: action.payload };
     case 'ADD_MESSAGE':
         return { ...state, conversations: state.conversations.map(c => c.id === action.payload.conversationId ? { ...c, messages: [...c.messages, action.payload.message] } : c ) };
