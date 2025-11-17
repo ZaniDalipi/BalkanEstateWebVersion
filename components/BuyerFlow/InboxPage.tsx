@@ -18,26 +18,24 @@ const InboxPage: React.FC = () => {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    const [selectedConversationId, setSelectedConversationId] = useState<string | null>(
-        isMobile ? null : (conversations.length > 0 ? conversations[0].id : null)
-    );
+    const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
 
     // Use activeConversationId from global state if available
     useEffect(() => {
-        if (activeConversationId) {
+        if (activeConversationId && conversations.some(c => c.id === activeConversationId)) {
+            // Set to the active conversation if it exists in the conversations list
             setSelectedConversationId(activeConversationId);
+            // Clear the active conversation from global state after using it
+            dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: null });
         }
-    }, [activeConversationId]);
+    }, [activeConversationId, conversations, dispatch]);
 
-    // Update selected ID if window is resized from mobile to desktop
+    // Auto-select first conversation on desktop when no conversation is selected
     useEffect(() => {
         if (!isMobile && !selectedConversationId && conversations.length > 0) {
             setSelectedConversationId(conversations[0].id);
         }
-        if (isMobile) {
-            // No default selection on mobile to show the list first
-        }
-    }, [isMobile, conversations, selectedConversationId]);
+    }, [isMobile, selectedConversationId, conversations]);
 
 
     const selectedConversation = conversations.find(c => c.id === selectedConversationId) || null;
