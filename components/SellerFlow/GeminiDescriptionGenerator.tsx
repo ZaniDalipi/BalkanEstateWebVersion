@@ -335,6 +335,28 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         setIsLocationInputFocused(false);
     };
 
+    // Determine zoom level based on location specificity
+    const getZoomLevel = useMemo(() => {
+        if (!selectedLocation) return 15;
+
+        const { type, address } = selectedLocation;
+
+        // Street-level addresses get highest zoom
+        if (address?.road || address?.house_number || type === 'house' || type === 'building') {
+            return 18;
+        }
+        // Neighborhoods, suburbs get medium-high zoom
+        if (address?.neighbourhood || address?.suburb || type === 'suburb' || type === 'neighbourhood') {
+            return 16;
+        }
+        // City/town level gets medium zoom
+        if (address?.city || address?.town || type === 'city' || type === 'town') {
+            return 14;
+        }
+        // Default to medium zoom
+        return 15;
+    }, [selectedLocation]);
+
     const handleLocationSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setLocationSearchText(e.target.value);
         // Deselect location if user types again
@@ -749,6 +771,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                                     lat={listingData.lat}
                                     lng={listingData.lng}
                                     address={selectedLocation.display_name}
+                                    zoom={getZoomLevel}
                                     onLocationChange={handleMapLocationChange}
                                 />
                             </div>

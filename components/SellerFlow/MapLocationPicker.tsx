@@ -14,10 +14,11 @@ interface MapLocationPickerProps {
   lat: number;
   lng: number;
   address: string;
+  zoom?: number;
   onLocationChange: (lat: number, lng: number) => void;
 }
 
-const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address, onLocationChange }) => {
+const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address, zoom = 17, onLocationChange }) => {
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -26,8 +27,8 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    // Initialize map
-    const map = L.map(mapContainerRef.current).setView([lat, lng], 15);
+    // Initialize map with higher zoom for street-level view
+    const map = L.map(mapContainerRef.current).setView([lat, lng], zoom);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
@@ -73,16 +74,28 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
     };
   }, []); // Only run once on mount
 
-  // Update marker position when lat/lng changes externally
+  // Update marker position when lat/lng changes externally with smooth animation
   useEffect(() => {
     if (markerRef.current && mapRef.current && !isDragging) {
       const newLatLng = L.latLng(lat, lng);
       markerRef.current.setLatLng(newLatLng);
-      mapRef.current.setView(newLatLng, 15);
+
+      // Use flyTo for smooth animated zoom and pan to the location
+      mapRef.current.flyTo(newLatLng, zoom, {
+        duration: 1.5, // 1.5 second animation
+        easeLinearity: 0.25
+      });
+
       markerRef.current.setPopupContent(`<b>Drag me to adjust location</b><br>${address}`);
-      markerRef.current.openPopup();
+
+      // Open popup after animation completes
+      setTimeout(() => {
+        if (markerRef.current) {
+          markerRef.current.openPopup();
+        }
+      }, 1600);
     }
-  }, [lat, lng, address, isDragging]);
+  }, [lat, lng, address, zoom, isDragging]);
 
   return (
     <div className="space-y-2">
