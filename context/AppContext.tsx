@@ -100,6 +100,8 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         return { ...state, ...action.payload, isLoadingUserData: false };
     case 'ADD_SAVED_SEARCH':
       return { ...state, savedSearches: [action.payload, ...state.savedSearches] };
+    case 'REMOVE_SAVED_SEARCH':
+      return { ...state, savedSearches: state.savedSearches.filter(s => s.id !== action.payload) };
     case 'TOGGLE_SAVED_HOME':
         const isSaved = state.savedHomes.some(p => p.id === action.payload.id);
         return { ...state, savedHomes: isSaved ? state.savedHomes.filter(p => p.id !== action.payload.id) : [action.payload, ...state.savedHomes] };

@@ -6,6 +6,7 @@ import cloudinary from '../config/cloudinary';
 import { Readable } from 'stream';
 import { geocodeProperty } from '../services/geocodingService';
 import { incrementViewCount, updateSoldStats } from '../utils/statsUpdater';
+import sharp from 'sharp';
 
 // @desc    Get all properties with filters
 // @route   GET /api/properties
@@ -428,8 +429,23 @@ export const uploadImages = async (
     const files = req.files as Express.Multer.File[];
     const uploadedImages: { url: string; tag: string }[] = [];
 
-    // Upload each file to Cloudinary
+    // Compress and upload each file to Cloudinary
     for (const file of files) {
+      // Compress image using sharp
+      // - Resize to max 1920x1080 (maintaining aspect ratio)
+      // - Convert to JPEG with 85% quality (good balance between quality and size)
+      // - Remove metadata to reduce file size
+      const compressedBuffer = await sharp(file.buffer)
+        .resize(1920, 1080, {
+          fit: 'inside',
+          withoutEnlargement: true, // Don't upscale smaller images
+        })
+        .jpeg({
+          quality: 85, // 85% quality - high quality but good compression
+          progressive: true, // Progressive JPEG for better web loading
+        })
+        .toBuffer();
+
       const result = await new Promise<any>((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           {
@@ -443,7 +459,7 @@ export const uploadImages = async (
         );
 
         const readableStream = new Readable();
-        readableStream.push(file.buffer);
+        readableStream.push(compressedBuffer);
         readableStream.push(null);
         readableStream.pipe(uploadStream);
       });

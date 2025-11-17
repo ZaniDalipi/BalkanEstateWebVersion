@@ -340,11 +340,29 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 file,
                 previewUrl: URL.createObjectURL(file)
             }));
+
             if(propertyToEdit || mode === 'manual') {
-                setImages(newImages);
-                setListingData(prev => ({...prev, image_tags: newImages.map((_, i) => ({index: i, tag: 'other'}))}));
+                // Limit to 30 images
+                const limitedImages = newImages.slice(0, 30);
+                if (newImages.length > 30) {
+                    alert('Maximum 30 images allowed. Only the first 30 images will be uploaded.');
+                }
+                setImages(limitedImages);
+                setListingData(prev => ({...prev, image_tags: limitedImages.map((_, i) => ({index: i, tag: 'other'}))}));
             } else {
-                setImages(prev => [...prev, ...newImages]);
+                // When adding to existing images, ensure total doesn't exceed 30
+                const totalImages = [...images, ...newImages];
+                if (totalImages.length > 30) {
+                    const availableSlots = 30 - images.length;
+                    if (availableSlots <= 0) {
+                        alert('Maximum 30 images allowed. Please remove some images before adding more.');
+                        return;
+                    }
+                    alert(`Maximum 30 images allowed. Only ${availableSlots} more image(s) can be added.`);
+                    setImages(prev => [...prev, ...newImages.slice(0, availableSlots)]);
+                } else {
+                    setImages(prev => [...prev, ...newImages]);
+                }
             }
         }
     };

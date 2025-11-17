@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { SavedSearch } from '../../types';
 import PropertyCard from './PropertyCard';
-import { ChevronUpIcon, ChevronDownIcon } from '../../constants';
+import { ChevronUpIcon, ChevronDownIcon, TrashIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { filterProperties } from '../../utils/propertyUtils';
 import PropertyCardSkeleton from './PropertyCardSkeleton';
 import L from 'leaflet';
+import * as api from '../../services/apiService';
 
 interface SavedSearchAccordionProps {
   search: SavedSearch;
@@ -14,7 +15,8 @@ interface SavedSearchAccordionProps {
 
 const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onOpen }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const { state } = useAppContext();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { state, dispatch } = useAppContext();
   const { isLoadingProperties, allMunicipalities, properties } = state;
 
   const matchingProperties = useMemo(() => {
@@ -46,23 +48,52 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onO
     setIsOpen(nextIsOpen);
   };
 
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent accordion from toggling
+
+    if (!confirm(`Are you sure you want to delete "${search.name}"?`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await api.deleteSavedSearch(search.id);
+      dispatch({ type: 'REMOVE_SAVED_SEARCH', payload: search.id });
+    } catch (error) {
+      console.error('Failed to delete saved search:', error);
+      alert('Failed to delete saved search. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-md border border-neutral-200 overflow-hidden">
       {/* Header */}
-      <button
-        onClick={handleToggle}
-        className="w-full p-4 flex justify-between items-center text-left"
-      >
-        <h3 className="text-lg font-bold text-neutral-800">{search.name}</h3>
-        <div className="flex items-center bg-indigo-600 text-white rounded-full transition-colors hover:bg-indigo-700">
-          <span className="text-sm font-bold px-3 py-1.5 text-center">
-            {propertyCount}
-          </span>
-          <div className="border-l border-indigo-400 p-1.5">
-            {isOpen ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
+      <div className="w-full p-4 flex justify-between items-center">
+        <button
+          onClick={handleToggle}
+          className="flex-1 flex justify-between items-center text-left"
+        >
+          <h3 className="text-lg font-bold text-neutral-800">{search.name}</h3>
+          <div className="flex items-center bg-indigo-600 text-white rounded-full transition-colors hover:bg-indigo-700">
+            <span className="text-sm font-bold px-3 py-1.5 text-center">
+              {propertyCount}
+            </span>
+            <div className="border-l border-indigo-400 p-1.5">
+              {isOpen ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
+            </div>
           </div>
-        </div>
-      </button>
+        </button>
+        <button
+          onClick={handleDelete}
+          disabled={isDeleting}
+          className="ml-3 p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
+          title="Delete search"
+        >
+          <TrashIcon className="w-5 h-5" />
+        </button>
+      </div>
 
       {/* Expanded Content */}
       {isOpen && (
