@@ -307,6 +307,15 @@ export const deleteProperty = async (propertyId: string): Promise<void> => {
   });
 };
 
+export const markPropertyAsSold = async (propertyId: string): Promise<Property> => {
+  const response = await apiRequest<{ property: any }>(`/properties/${propertyId}/mark-sold`, {
+    method: 'PATCH',
+    requiresAuth: true,
+  });
+
+  return transformBackendProperty(response.property);
+};
+
 export const getMyListings = async (): Promise<Property[]> => {
   const response = await apiRequest<{ properties: any[] }>('/properties/my/listings', {
     requiresAuth: true,

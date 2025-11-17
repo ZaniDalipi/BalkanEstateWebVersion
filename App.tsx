@@ -121,6 +121,16 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
         setIsLoadingAgency(true);
         try {
           const response = await fetch(`/api/agencies/${state.selectedAgencyId}`);
+
+          // Check content type before parsing
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            console.error('Backend API not responding correctly. Is the server running?');
+            setSelectedAgency(null);
+            setIsLoadingAgency(false);
+            return;
+          }
+
           if (!response.ok) {
             console.error('Failed to fetch agency:', response.status, response.statusText);
             setSelectedAgency(null);

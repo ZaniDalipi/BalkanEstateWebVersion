@@ -162,9 +162,14 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
         setShowSoldConfirm(true);
     };
 
-    const confirmMarkAsSold = () => {
+    const confirmMarkAsSold = async () => {
         if (propertyToMarkSold) {
-            dispatch({ type: 'MARK_PROPERTY_SOLD', payload: propertyToMarkSold });
+            try {
+                await api.markPropertyAsSold(propertyToMarkSold);
+                dispatch({ type: 'MARK_PROPERTY_SOLD', payload: propertyToMarkSold });
+            } catch (error) {
+                console.error('Failed to mark property as sold:', error);
+            }
         }
         setShowSoldConfirm(false);
         setPropertyToMarkSold(null);

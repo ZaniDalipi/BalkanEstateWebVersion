@@ -2,9 +2,9 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { Property, PropertyImageTag, Message } from '../../types';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
-import { 
-    ArrowLeftIcon, MapPinIcon, BedIcon, BathIcon, SqftIcon, CalendarIcon, 
-    ParkingIcon, PhoneIcon, StarIcon, CubeIcon, VideoCameraIcon, UserCircleIcon, 
+import {
+    ArrowLeftIcon, MapPinIcon, BedIcon, BathIcon, SqftIcon, CalendarIcon,
+    ParkingIcon, PhoneIcon, StarIcon, CubeIcon, VideoCameraIcon, UserCircleIcon,
     SparklesIcon, ChevronLeftIcon, ChevronRightIcon,
     MagnifyingGlassPlusIcon, PencilIcon, ShareIcon, ArrowDownTrayIcon, XMarkIcon,
     ArrowUturnLeftIcon,
@@ -16,6 +16,7 @@ import {
     EnvelopeIcon,
     FacebookIcon,
     StreetViewIcon,
+    CheckCircleIcon,
 } from '../../constants';
 import { getNeighborhoodInsights } from '../../services/geminiService';
 import { createConversation } from '../../services/apiService';
@@ -586,8 +587,8 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                 <ArrowLeftIcon className="w-5 h-5" />
                 Back
             </button>
-            <div onClick={handleFavoriteClick} className="bg-white p-2 rounded-full cursor-pointer border border-neutral-200 hover:shadow-md">
-                 <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 transition-colors duration-300 ${isFavorited ? 'text-red-500 fill-current' : 'text-neutral-500 hover:text-red-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div onClick={property.status === 'sold' ? undefined : handleFavoriteClick} className={`bg-white p-2 rounded-full border border-neutral-200 ${property.status === 'sold' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-md'}`}>
+                 <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 transition-colors duration-300 ${property.status === 'sold' ? 'text-neutral-300' : isFavorited ? 'text-red-500 fill-current' : 'text-neutral-500 hover:text-red-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5
  0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
@@ -697,6 +698,15 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                     </div>
                 </div>
                 <div className="p-6">
+                    {property.status === 'sold' && (
+                        <div className="mb-4 p-4 bg-gradient-to-r from-neutral-100 to-neutral-200 border-l-4 border-neutral-600 rounded-lg">
+                            <div className="flex items-center gap-2">
+                                <CheckCircleIcon className="w-6 h-6 text-neutral-700" />
+                                <span className="font-bold text-lg text-neutral-800">Property Sold</span>
+                            </div>
+                            <p className="text-sm text-neutral-600 mt-1">This property has been sold and is no longer available.</p>
+                        </div>
+                    )}
                     <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900">{formatPrice(property.price, property.country)}</p>
                     <a
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${property.address}, ${property.city}, ${property.country}`)}`}
@@ -820,16 +830,23 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                       </div>
                   </div>
                   <div className="space-y-2">
-                      <a href={`tel:${property.seller?.phone}`} className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark">
-                          <PhoneIcon className="w-4 h-4" />
-                          Call Seller
-                      </a>
+                      {property.status === 'sold' ? (
+                          <div className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-neutral-300 rounded-lg shadow-sm text-sm font-medium text-neutral-400 bg-neutral-100 cursor-not-allowed">
+                              <PhoneIcon className="w-4 h-4" />
+                              Property Sold
+                          </div>
+                      ) : (
+                          <a href={`tel:${property.seller?.phone}`} className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark">
+                              <PhoneIcon className="w-4 h-4" />
+                              Call Seller
+                          </a>
+                      )}
                        <button
                           onClick={handleContactSeller}
-                          disabled={isCreatingConversation}
+                          disabled={isCreatingConversation || property.status === 'sold'}
                           className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-primary text-primary rounded-lg shadow-sm text-sm font-medium bg-white hover:bg-primary-light disabled:opacity-50 disabled:cursor-not-allowed"
                        >
-                          {isCreatingConversation ? 'Starting Chat...' : 'Message Seller'}
+                          {isCreatingConversation ? 'Starting Chat...' : property.status === 'sold' ? 'Property Sold' : 'Message Seller'}
                       </button>
                   </div>
               </div>
