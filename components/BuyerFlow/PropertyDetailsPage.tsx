@@ -552,8 +552,9 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
 
       setIsCreatingConversation(true);
       try {
-          await createConversation(property.id);
-          // Navigate to inbox - the new conversation will be automatically selected
+          const conversation = await createConversation(property.id);
+          // Set this conversation as active and navigate to inbox
+          dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: conversation.id });
           dispatch({ type: 'SET_CURRENT_VIEW', payload: 'inbox' });
       } catch (error) {
           console.error('Error creating conversation:', error);

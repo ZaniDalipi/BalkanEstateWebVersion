@@ -268,6 +268,7 @@ export interface AppState {
     savedHomes: Property[];
     comparisonList: string[]; // array of property IDs
     conversations: Conversation[];
+    activeConversationId: string | null;
     selectedAgentId: string | null;
     selectedAgencyId: string | null;
     pendingProperty: Property | null;
@@ -311,6 +312,7 @@ export type AppAction =
     | { type: 'MARK_PROPERTY_SOLD', payload: string }
     | { type: 'UPDATE_USER', payload: Partial<User> }
     | { type: 'CREATE_CONVERSATION', payload: Conversation }
+    | { type: 'SET_ACTIVE_CONVERSATION', payload: string | null }
     | { type: 'ADD_MESSAGE', payload: { conversationId: string, message: Message } }
     | { type: 'CREATE_OR_ADD_MESSAGE', payload: { propertyId: string, message: Message } }
     | { type: 'MARK_CONVERSATION_AS_READ', payload: string }

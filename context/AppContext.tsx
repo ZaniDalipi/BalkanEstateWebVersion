@@ -36,6 +36,7 @@ const initialState: AppState = {
   savedHomes: [],
   comparisonList: [],
   conversations: [],
+  activeConversationId: null,
   selectedAgentId: null,
   selectedAgencyId: null,
   pendingProperty: null,
@@ -149,6 +150,8 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         }
         return { ...state, conversations: [action.payload, ...state.conversations] };
     }
+    case 'SET_ACTIVE_CONVERSATION':
+        return { ...state, activeConversationId: action.payload };
     case 'ADD_MESSAGE':
         return { ...state, conversations: state.conversations.map(c => c.id === action.payload.conversationId ? { ...c, messages: [...c.messages, action.payload.message] } : c ) };
     // FIX: Add missing reducer case for creating a new conversation or adding a message to an existing one.

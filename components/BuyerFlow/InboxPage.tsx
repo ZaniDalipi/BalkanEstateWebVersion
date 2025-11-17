@@ -7,11 +7,11 @@ import PropertyCard from './PropertyCard';
 
 const InboxPage: React.FC = () => {
     const { state, dispatch } = useAppContext();
-    const { conversations, properties, isAuthenticated } = state;
+    const { conversations, properties, isAuthenticated, activeConversationId } = state;
 
     // A check to determine if we are on a mobile device based on window width.
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-    
+
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
         window.addEventListener('resize', checkMobile);
@@ -21,7 +21,14 @@ const InboxPage: React.FC = () => {
     const [selectedConversationId, setSelectedConversationId] = useState<string | null>(
         isMobile ? null : (conversations.length > 0 ? conversations[0].id : null)
     );
-    
+
+    // Use activeConversationId from global state if available
+    useEffect(() => {
+        if (activeConversationId) {
+            setSelectedConversationId(activeConversationId);
+        }
+    }, [activeConversationId]);
+
     // Update selected ID if window is resized from mobile to desktop
     useEffect(() => {
         if (!isMobile && !selectedConversationId && conversations.length > 0) {
