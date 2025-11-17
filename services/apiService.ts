@@ -399,9 +399,20 @@ export const createConversation = async (propertyId: string): Promise<Conversati
 };
 
 export const sendMessage = async (conversationId: string, message: Message): Promise<{ message: Message; securityWarnings?: string[] }> => {
+  const body: any = {};
+
+  // Include text and imageUrl
+  if (message.text) body.text = message.text;
+  if (message.imageUrl) body.imageUrl = message.imageUrl;
+
+  // Include E2E encryption fields if present
+  if (message.encryptedMessage) body.encryptedMessage = message.encryptedMessage;
+  if (message.encryptedKeys) body.encryptedKeys = message.encryptedKeys;
+  if (message.iv) body.iv = message.iv;
+
   const response = await apiRequest<{ message: any; securityWarnings?: string[] }>(`/conversations/${conversationId}/messages`, {
     method: 'POST',
-    body: { text: message.text, imageUrl: message.imageUrl },
+    body,
     requiresAuth: true,
   });
 
@@ -435,6 +446,21 @@ export const uploadMessageImage = async (conversationId: string, imageFile: File
 export const getSecurityWarning = async (): Promise<string> => {
   const response = await apiRequest<{ warning: string }>('/conversations/security-warning');
   return response.warning;
+};
+
+export const setPublicKey = async (publicKey: string): Promise<void> => {
+  await apiRequest('/auth/set-public-key', {
+    method: 'POST',
+    body: { publicKey },
+    requiresAuth: true,
+  });
+};
+
+export const getConversationPublicKeys = async (conversationId: string): Promise<Record<string, string | null>> => {
+  const response = await apiRequest<{ publicKeys: Record<string, string | null> }>(`/conversations/${conversationId}/public-keys`, {
+    requiresAuth: true,
+  });
+  return response.publicKeys;
 };
 
 export const markConversationAsRead = async (conversationId: string): Promise<void> => {
@@ -594,6 +620,9 @@ function transformBackendMessage(backendMsg: any): Message {
     senderId: backendMsg.senderId._id || backendMsg.senderId,
     text: backendMsg.text,
     imageUrl: backendMsg.imageUrl,
+    encryptedMessage: backendMsg.encryptedMessage,
+    encryptedKeys: backendMsg.encryptedKeys,
+    iv: backendMsg.iv,
     timestamp: new Date(backendMsg.createdAt).getTime(),
     isRead: backendMsg.isRead,
   };

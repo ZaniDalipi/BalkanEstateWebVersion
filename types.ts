@@ -48,6 +48,7 @@ export interface User {
     totalListingsCreated?: number;
     testimonials?: Testimonial[];
     isSubscribed: boolean;
+    publicKey?: string; // E2E encryption public key (JWK format)
 }
 
 export interface Agent extends User {
@@ -101,6 +102,10 @@ export interface Message {
     senderId: string; // 'user' or seller's user ID
     text?: string;
     imageUrl?: string;
+    // E2E Encryption fields
+    encryptedMessage?: string;
+    encryptedKeys?: Record<string, string>; // userId -> encrypted AES key
+    iv?: string;
     timestamp: number;
     isRead: boolean;
 }

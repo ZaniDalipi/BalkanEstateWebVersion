@@ -345,8 +345,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const sendMessage = useCallback(async (conversationId: string, message: Message) => {
-      const sentMessage = await api.sendMessage(conversationId, message);
-      dispatch({ type: 'ADD_MESSAGE', payload: { conversationId, message: sentMessage }});
+      const result = await api.sendMessage(conversationId, message);
+      dispatch({ type: 'ADD_MESSAGE', payload: { conversationId, message: result.message }});
+      // Handle security warnings if any
+      if (result.securityWarnings && result.securityWarnings.length > 0) {
+          console.warn('Security warnings:', result.securityWarnings);
+      }
   }, []);
 
   const createListing = useCallback(async (property: Property) => {
