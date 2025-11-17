@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
-import { IUser } from '../models/User';
+import User, { IUser } from '../models/User';
 import Property from '../models/Property';
-import Conversation from '../models/Conversation';
 
-// Get user statistics
+// Get user statistics (uses cached stats from database)
 export const getUserStats = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
@@ -13,24 +12,29 @@ export const getUserStats = async (req: Request, res: Response): Promise<void> =
 
     const userId = String((req.user as IUser)._id);
 
-    // Fetch user's properties and calculate stats
-    const properties = await Property.find({ sellerId: userId });
+    // Get user with stats
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
 
+    // Get current active listings count
+    const activeListings = await Property.countDocuments({
+      sellerId: userId,
+      status: 'active'
+    });
+
+    // Return stats from database (real-time updated)
     const stats = {
-      activeListings: properties.filter(p => p.status === 'active').length,
-      totalListings: properties.length,
-      totalViews: properties.reduce((sum, p) => sum + (p.views || 0), 0),
-      totalSaves: properties.reduce((sum, p) => sum + (p.saves || 0), 0),
-      totalInquiries: 0, // Will calculate from conversations
-      propertiesSold: properties.filter(p => p.status === 'sold').length,
-      totalSalesValue: properties
-        .filter(p => p.status === 'sold')
-        .reduce((sum, p) => sum + p.price, 0),
+      activeListings,
+      totalListings: user.totalListingsCreated || 0,
+      totalViews: user.stats?.totalViews || 0,
+      totalSaves: user.stats?.totalSaves || 0,
+      totalInquiries: user.stats?.totalInquiries || 0,
+      propertiesSold: user.stats?.propertiesSold || 0,
+      totalSalesValue: user.stats?.totalSalesValue || 0,
     };
-
-    // Calculate total inquiries from conversations
-    const conversations = await Conversation.find({ sellerId: userId });
-    stats.totalInquiries = conversations.length;
 
     res.json({ stats });
   } catch (error) {

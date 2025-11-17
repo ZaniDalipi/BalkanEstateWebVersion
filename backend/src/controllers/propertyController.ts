@@ -5,6 +5,7 @@ import Agent from '../models/Agent';
 import cloudinary from '../config/cloudinary';
 import { Readable } from 'stream';
 import { geocodeProperty } from '../services/geocodingService';
+import { incrementViewCount, updateSoldStats } from '../utils/statsUpdater';
 
 // @desc    Get all properties with filters
 // @route   GET /api/properties
@@ -135,9 +136,12 @@ export const getProperty = async (
       return;
     }
 
-    // Increment views
+    // Increment views on property
     property.views += 1;
     await property.save();
+
+    // Update seller's stats in real-time
+    await incrementViewCount(String(property.sellerId._id || property.sellerId));
 
     res.json({ property });
   } catch (error: any) {
@@ -486,6 +490,9 @@ export const markAsSold = async (
 
     property.status = 'sold';
     await property.save();
+
+    // Update seller's sold statistics in real-time
+    await updateSoldStats(String(currentUser._id), property.price || 0);
 
     res.json({ property });
   } catch (error: any) {

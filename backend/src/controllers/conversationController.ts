@@ -7,6 +7,7 @@ import { SECURITY_WARNING } from '../utils/messageFilter';
 import cloudinary from '../config/cloudinary';
 import { sendNewMessageNotification } from '../services/emailService';
 import { getSocketInstance } from '../utils/socketInstance';
+import { incrementInquiryCount } from '../utils/statsUpdater';
 
 // @desc    Get user's conversations
 // @route   GET /api/conversations
@@ -174,9 +175,12 @@ export const createConversation = async (
         sellerId: property.sellerId,
       });
 
-      // Increment inquiries count
+      // Increment inquiries count on property
       property.inquiries += 1;
       await property.save();
+
+      // Update seller's inquiry stats in real-time
+      await incrementInquiryCount(String(property.sellerId));
 
       await conversation.populate('propertyId');
       await conversation.populate('buyerId', 'name email phone avatarUrl');

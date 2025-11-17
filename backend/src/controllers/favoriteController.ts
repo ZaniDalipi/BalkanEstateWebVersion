@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Favorite from '../models/Favorite';
 import Property from '../models/Property';
 import { IUser } from '../models/User';
+import { incrementSaveCount, decrementSaveCount } from '../utils/statsUpdater';
 
 // @desc    Get user's favorites
 // @route   GET /api/favorites
@@ -75,9 +76,12 @@ export const toggleFavorite = async (
       // Remove favorite
       await existingFavorite.deleteOne();
 
-      // Decrement saves count
+      // Decrement saves count on property
       property.saves = Math.max(0, property.saves - 1);
       await property.save();
+
+      // Update seller's stats in real-time
+      await decrementSaveCount(String(property.sellerId));
 
       res.json({ message: 'Favorite removed', isSaved: false });
     } else {
@@ -87,9 +91,12 @@ export const toggleFavorite = async (
         propertyId,
       });
 
-      // Increment saves count
+      // Increment saves count on property
       property.saves += 1;
       await property.save();
+
+      // Update seller's stats in real-time
+      await incrementSaveCount(String(property.sellerId));
 
       res.json({ message: 'Favorite added', isSaved: true });
     }

@@ -23,6 +23,16 @@ export interface IUser extends Document {
   listingsCount: number,
   totalListingsCreated: number
 
+  // Real-time Statistics (auto-updated)
+  stats?: {
+    totalViews: number;        // Total views across all properties
+    totalSaves: number;        // Total saves/favorites
+    totalInquiries: number;    // Total conversation inquiries
+    propertiesSold: number;    // Count of sold properties
+    totalSalesValue: number;   // Sum of sold property prices
+    lastUpdated: Date;         // Last stats update timestamp
+  };
+
   // Tier-specific features
   promotedAdsCount?: number;
   lastPromotionReset?: Date;
@@ -128,6 +138,32 @@ const UserSchema: Schema = new Schema(
     totalListingsCreated: {
       type: Number,
       default: 0,
+    },
+    stats: {
+      totalViews: {
+        type: Number,
+        default: 0,
+      },
+      totalSaves: {
+        type: Number,
+        default: 0,
+      },
+      totalInquiries: {
+        type: Number,
+        default: 0,
+      },
+      propertiesSold: {
+        type: Number,
+        default: 0,
+      },
+      totalSalesValue: {
+        type: Number,
+        default: 0,
+      },
+      lastUpdated: {
+        type: Date,
+        default: Date.now,
+      },
     },
     isSubscribed: {
       type: Boolean,
