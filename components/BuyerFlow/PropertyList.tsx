@@ -258,7 +258,7 @@ const ITEMS_PER_PAGE = 20;
 
 const PropertyList: React.FC<PropertyListProps> = (props) => {
     const { state } = useAppContext();
-    const { isLoadingProperties } = state;
+    const { isLoadingProperties, isAuthenticated } = state;
 
     const { properties, filters, onSortChange, isMobile, showFilters, showList, searchMode, onSearchModeChange, onApplyAiFilters, aiChatHistory, onAiChatHistoryChange } = props;
 
@@ -306,10 +306,16 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                 {/* TOP CONTROLS SECTION */}
                 <div className="flex-shrink-0 border-b border-neutral-200">
                     <div className="p-4">
-                        <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm mx-auto">
-                            <button onClick={() => onSearchModeChange('manual')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Manual Search</button>
-                            <button onClick={() => onSearchModeChange('ai')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><SparklesIcon className="w-4 h-4" /> AI Search</button>
-                        </div>
+                        {isAuthenticated ? (
+                            <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm mx-auto">
+                                <button onClick={() => onSearchModeChange('manual')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Manual Search</button>
+                                <button onClick={() => onSearchModeChange('ai')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchMode === 'ai' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}><SparklesIcon className="w-4 h-4" /> AI Search</button>
+                            </div>
+                        ) : (
+                            <div className="text-center p-2 text-sm text-neutral-600">
+                                <p>Sign in to access AI-powered search</p>
+                            </div>
+                        )}
                     </div>
                     
                     <div className="p-4 pt-0" style={{ height: '280px' }}>

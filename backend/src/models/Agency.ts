@@ -4,6 +4,7 @@ export interface IAgency extends Document {
   ownerId: mongoose.Types.ObjectId; // User who owns the agency (enterprise tier)
   name: string;
   slug: string; // URL-friendly identifier: "{country},{name}"
+  invitationCode: string; // Unique code for agents to join: format "AGY-{agencyId}-{randomString}"
   description?: string;
   logo?: string;
   coverImage?: string;
@@ -70,6 +71,12 @@ const AgencySchema: Schema = new Schema(
       unique: true,
       trim: true,
       lowercase: true,
+      index: true,
+    },
+    invitationCode: {
+      type: String,
+      required: true,
+      unique: true,
       index: true,
     },
     description: {
@@ -196,5 +203,16 @@ const AgencySchema: Schema = new Schema(
 // Compound indexes for efficient queries
 AgencySchema.index({ city: 1, isFeatured: 1 });
 AgencySchema.index({ isFeatured: 1, adRotationOrder: 1 });
+
+// Generate invitation code before saving
+AgencySchema.pre('save', async function (next) {
+  if (!this.invitationCode) {
+    // Generate a unique invitation code: AGY-{first4chars of ID}-{agencyName}-{random6digits}
+    const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const nameCode = this.name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 6).toUpperCase();
+    this.invitationCode = `AGY-${nameCode}-${randomCode}`;
+  }
+  next();
+});
 
 export default mongoose.model<IAgency>('Agency', AgencySchema);

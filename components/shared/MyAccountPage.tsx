@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import MyListings from './MyListings';
 import SubscriptionManagement from './SubscriptionManagement';
+import ProfileStatistics from './ProfileStatistics';
 import { User, UserRole } from '../../types';
 import { BuildingOfficeIcon, ChartBarIcon, UserCircleIcon, ArrowLeftOnRectangleIcon } from '../../constants';
 import AgentLicenseModal from './AgentLicenseModal';
@@ -83,6 +84,8 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const [agencies, setAgencies] = useState<any[]>([]);
     const [agencySearch, setAgencySearch] = useState('');
     const [showAgencyDropdown, setShowAgencyDropdown] = useState(false);
+    const [invitationCode, setInvitationCode] = useState('');
+    const [isJoiningAgency, setIsJoiningAgency] = useState(false);
 
     useEffect(() => {
         setFormData(user);
@@ -178,11 +181,47 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
         }
     };
 
+    const handleJoinByInvitationCode = async () => {
+        if (!invitationCode.trim()) {
+            setError('Please enter an invitation code');
+            return;
+        }
+
+        setIsJoiningAgency(true);
+        setError('');
+        try {
+            const response = await fetch('/api/agency-join-requests/join-by-code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
+                },
+                body: JSON.stringify({ invitationCode }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to join agency');
+            }
+
+            setIsSaved(true);
+            setInvitationCode('');
+            setError('');
+            alert(`Join request sent to ${data.agency.name}! Please wait for approval from the agency owner.`);
+            setTimeout(() => setIsSaved(false), 2000);
+        } catch (err: any) {
+            setError(err.message || 'Failed to join agency');
+        } finally {
+            setIsJoiningAgency(false);
+        }
+    };
+
     const floatingInputClasses = "block px-2.5 pb-2.5 pt-4 w-full text-base text-neutral-900 bg-white rounded-lg border border-neutral-300 appearance-none focus:outline-none focus:ring-0 focus:border-primary peer";
     const floatingLabelClasses = "absolute text-base text-neutral-700 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1";
 
     return (
-        <form>
+        <form onSubmit={handleSaveChanges}>
             <AgentLicenseModal
                 isOpen={isLicenseModalOpen}
                 onClose={() => {
@@ -235,6 +274,33 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                             </span>
                         )}
                      </div>
+
+                     {!user.agencyName && (
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h4 className="text-sm font-semibold text-blue-900 mb-2">Join an Agency</h4>
+                            <p className="text-xs text-blue-700 mb-3">
+                                Enter the invitation code provided by your agency to send a join request.
+                            </p>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={invitationCode}
+                                    onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
+                                    placeholder="AGY-AGENCY-XXXXXX"
+                                    className="flex-1 px-3 py-2 border border-blue-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleJoinByInvitationCode}
+                                    disabled={isJoiningAgency || !invitationCode.trim()}
+                                    className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isJoiningAgency ? 'Joining...' : 'Join'}
+                                </button>
+                            </div>
+                            {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+                        </div>
+                     )}
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="relative">
                             <input
@@ -335,7 +401,7 @@ const MyAccountPage: React.FC = () => {
             case 'profile':
                 return <ProfileSettings user={state.currentUser!} />;
             case 'performance':
-                 return <div className="text-center p-8"><h3 className="text-xl font-bold">Performance Analytics Coming Soon!</h3></div>;
+                 return <ProfileStatistics user={state.currentUser!} />;
             case 'subscription':
                  return <SubscriptionManagement userId={state.currentUser!.id} />;
             default:

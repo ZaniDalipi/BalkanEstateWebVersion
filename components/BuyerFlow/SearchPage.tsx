@@ -196,11 +196,10 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     }, [drawnBoundsJSON]);
 
 
+    // Load properties immediately on mount, not conditionally
     useEffect(() => {
-        if (properties.length === 0) {
-            fetchProperties();
-        }
-    }, [fetchProperties, properties.length]);
+        fetchProperties();
+    }, []);
 
     useEffect(() => {
         let timeoutId: number;
@@ -596,7 +595,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                                     <div className="bg-white/80 text-neutral-800 p-2 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
                                         <button onClick={handleRecenterOnUser} className="p-2.5 rounded-full hover:bg-black/10 transition-colors" title="My Location"><CrosshairsIcon className="w-5 h-5" /></button>
                                         {isAuthenticated && !drawnBoundsJSON && (<button onClick={() => handleSaveSearch(false)} disabled={isSaving} className="p-2.5 rounded-full hover:bg-black/10 transition-colors disabled:opacity-50" title="Save Search"><BellIcon className="w-5 h-5" /></button>)}
-                                        <button onClick={() => updateSearchPageState({ isAiChatModalOpen: true })} className="p-2.5 rounded-full hover:bg-black/10 transition-colors" title="AI Search"><SparklesIcon className="w-5 h-5 text-primary" /></button>
+                                        {isAuthenticated && <button onClick={() => updateSearchPageState({ isAiChatModalOpen: true })} className="p-2.5 rounded-full hover:bg-black/10 transition-colors" title="AI Search"><SparklesIcon className="w-5 h-5 text-primary" /></button>}
                                     </div>
                                 </div>
                             </div>

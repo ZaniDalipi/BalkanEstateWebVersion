@@ -11,6 +11,7 @@ import {
   requestPasswordReset,
   resetPassword
 } from '../controllers/authController';
+import { getUserStats } from '../controllers/userController';
 import { protect } from '../middleware/auth';
 import passport, { oauthStrategies } from '../config/passport';
 
@@ -25,6 +26,7 @@ router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
 router.post('/set-public-key', protect, setPublicKey);
 router.post('/switch-role', protect, switchRole);
+router.get('/my-stats', protect, getUserStats);
 
 // Password reset routes
 router.post('/forgot-password', requestPasswordReset);

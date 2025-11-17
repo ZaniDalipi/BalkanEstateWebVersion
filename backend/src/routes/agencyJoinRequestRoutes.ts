@@ -6,6 +6,7 @@ import {
   approveJoinRequest,
   rejectJoinRequest,
   cancelJoinRequest,
+  joinByInvitationCode,
 } from '../controllers/agencyJoinRequestController';
 import { protect } from '../middleware/auth';
 
@@ -13,6 +14,9 @@ const router = express.Router();
 
 // Create a join request
 router.post('/', protect, createJoinRequest);
+
+// Join agency using invitation code
+router.post('/join-by-code', protect, joinByInvitationCode);
 
 // Get all join requests for the current agent
 router.get('/my-requests', protect, getAgentJoinRequests);

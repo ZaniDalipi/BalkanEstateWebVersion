@@ -7,7 +7,7 @@ import User, { IUser } from '../models/User';
 // Create a join request
 export const createJoinRequest = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { agencyId, message } = req.body;
+    const { agencyId, message, invitationCode } = req.body;
 
     if (!req.user) {
       res.status(401).json({ message: 'Unauthorized' });
@@ -36,6 +36,14 @@ export const createJoinRequest = async (req: Request, res: Response): Promise<vo
       return;
     }
 
+    // If invitation code is provided, validate it
+    if (invitationCode) {
+      if (agency.invitationCode !== invitationCode) {
+        res.status(400).json({ message: 'Invalid invitation code' });
+        return;
+      }
+    }
+
     // Check for existing pending request
     const existingRequest = await AgencyJoinRequest.findOne({
       agentId,
@@ -48,12 +56,17 @@ export const createJoinRequest = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    // Create join request
+    // Create join request with requester and agency details
     const joinRequest = new AgencyJoinRequest({
       agentId,
       agencyId,
       message,
+      invitationCode,
       status: 'pending',
+      requesterEmail: user.email,
+      requesterName: user.name,
+      agencyEmail: agency.email,
+      agencyName: agency.name,
     });
 
     await joinRequest.save();
@@ -285,6 +298,82 @@ export const cancelJoinRequest = async (req: Request, res: Response): Promise<vo
     res.json({ message: 'Join request cancelled successfully' });
   } catch (error) {
     console.error('Error cancelling join request:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Join agency using invitation code
+export const joinByInvitationCode = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { invitationCode, message } = req.body;
+
+    if (!req.user) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+
+    const agentId = String((req.user as IUser)._id);
+
+    // Check if user is an agent
+    const user = await User.findById(agentId);
+    if (!user || user.role !== 'agent') {
+      res.status(403).json({ message: 'Only agents can join agencies' });
+      return;
+    }
+
+    // Check if agent already belongs to an agency
+    if (user.agencyId) {
+      res.status(400).json({ message: 'You already belong to an agency' });
+      return;
+    }
+
+    // Find agency by invitation code
+    const agency = await Agency.findOne({ invitationCode });
+    if (!agency) {
+      res.status(404).json({ message: 'Invalid invitation code' });
+      return;
+    }
+
+    // Check for existing pending request
+    const existingRequest = await AgencyJoinRequest.findOne({
+      agentId,
+      agencyId: agency._id,
+      status: 'pending',
+    });
+
+    if (existingRequest) {
+      res.status(400).json({ message: 'You already have a pending request to this agency' });
+      return;
+    }
+
+    // Create join request with invitation code
+    const joinRequest = new AgencyJoinRequest({
+      agentId,
+      agencyId: agency._id,
+      message,
+      invitationCode,
+      status: 'pending',
+      requesterEmail: user.email,
+      requesterName: user.name,
+      agencyEmail: agency.email,
+      agencyName: agency.name,
+    });
+
+    await joinRequest.save();
+
+    res.status(201).json({
+      message: 'Join request sent successfully',
+      joinRequest,
+      agency: {
+        id: agency._id,
+        name: agency.name,
+        logo: agency.logo,
+        city: agency.city,
+        country: agency.country,
+      },
+    });
+  } catch (error) {
+    console.error('Error joining by invitation code:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { XMarkIcon } from '../../constants';
 
 interface ModalProps {
@@ -10,6 +10,16 @@ interface ModalProps {
 }
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'lg' }) => {
+  // Lock body scroll when modal is open to prevent map jumping
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   let sizeClass = 'max-w-lg';

@@ -3,8 +3,13 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IAgencyJoinRequest extends Document {
   agentId: mongoose.Types.ObjectId;
   agencyId: mongoose.Types.ObjectId;
+  invitationCode?: string; // Invitation code used to join (if any)
   status: 'pending' | 'approved' | 'rejected';
   message?: string; // Optional message from agent
+  requesterEmail?: string; // Email of the agent requesting to join
+  requesterName?: string; // Name of the agent requesting to join
+  agencyEmail?: string; // Email of the agency
+  agencyName?: string; // Name of the agency
   requestedAt: Date;
   respondedAt?: Date;
   respondedBy?: mongoose.Types.ObjectId; // Agency owner who responded
@@ -23,6 +28,9 @@ const AgencyJoinRequestSchema = new Schema<IAgencyJoinRequest>({
     required: true,
     index: true,
   },
+  invitationCode: {
+    type: String,
+  },
   status: {
     type: String,
     enum: ['pending', 'approved', 'rejected'],
@@ -33,6 +41,18 @@ const AgencyJoinRequestSchema = new Schema<IAgencyJoinRequest>({
   message: {
     type: String,
     maxlength: 500,
+  },
+  requesterEmail: {
+    type: String,
+  },
+  requesterName: {
+    type: String,
+  },
+  agencyEmail: {
+    type: String,
+  },
+  agencyName: {
+    type: String,
   },
   requestedAt: {
     type: Date,
