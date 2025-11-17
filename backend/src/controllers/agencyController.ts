@@ -4,6 +4,8 @@ import Agency from '../models/Agency';
 import User, { IUser } from '../models/User';
 import Property from '../models/Property';
 import { geocodeAgency } from '../services/geocodingService';
+import cloudinary from '../config/cloudinary';
+import { Readable } from 'stream';
 
 // @desc    Create agency profile (Enterprise tier only)
 // @route   POST /api/agencies
@@ -357,5 +359,135 @@ export const getFeaturedAgencies = async (
   } catch (error: any) {
     console.error('Get featured agencies error:', error);
     res.status(500).json({ message: 'Error fetching featured agencies', error: error.message });
+  }
+};
+
+// @desc    Upload agency logo
+// @route   POST /api/agencies/:id/upload-logo
+// @access  Private
+export const uploadAgencyLogo = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    if (!req.file) {
+      res.status(400).json({ message: 'No file uploaded' });
+      return;
+    }
+
+    const agency = await Agency.findById(req.params.id);
+
+    if (!agency) {
+      res.status(404).json({ message: 'Agency not found' });
+      return;
+    }
+
+    // Check ownership
+    if (agency.ownerId.toString() !== String((req.user as IUser)._id)) {
+      res.status(403).json({ message: 'Not authorized to update this agency' });
+      return;
+    }
+
+    // Upload to Cloudinary
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'balkan-estate/agencies/logos',
+        transformation: [
+          { width: 400, height: 400, crop: 'fill', gravity: 'center' },
+          { quality: 'auto', fetch_format: 'auto' }
+        ]
+      },
+      async (error, result) => {
+        if (error) {
+          console.error('Cloudinary upload error:', error);
+          res.status(500).json({ message: 'Error uploading logo' });
+          return;
+        }
+
+        if (result) {
+          // Update agency with new logo URL
+          agency.logo = result.secure_url;
+          await agency.save();
+
+          res.json({ logo: result.secure_url, agency });
+        }
+      }
+    );
+
+    const bufferStream = Readable.from(req.file.buffer);
+    bufferStream.pipe(uploadStream);
+  } catch (error: any) {
+    console.error('Upload agency logo error:', error);
+    res.status(500).json({ message: 'Error uploading logo', error: error.message });
+  }
+};
+
+// @desc    Upload agency cover image
+// @route   POST /api/agencies/:id/upload-cover
+// @access  Private
+export const uploadAgencyCover = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    if (!req.file) {
+      res.status(400).json({ message: 'No file uploaded' });
+      return;
+    }
+
+    const agency = await Agency.findById(req.params.id);
+
+    if (!agency) {
+      res.status(404).json({ message: 'Agency not found' });
+      return;
+    }
+
+    // Check ownership
+    if (agency.ownerId.toString() !== String((req.user as IUser)._id)) {
+      res.status(403).json({ message: 'Not authorized to update this agency' });
+      return;
+    }
+
+    // Upload to Cloudinary
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'balkan-estate/agencies/covers',
+        transformation: [
+          { width: 1200, height: 400, crop: 'fill', gravity: 'center' },
+          { quality: 'auto', fetch_format: 'auto' }
+        ]
+      },
+      async (error, result) => {
+        if (error) {
+          console.error('Cloudinary upload error:', error);
+          res.status(500).json({ message: 'Error uploading cover image' });
+          return;
+        }
+
+        if (result) {
+          // Update agency with new cover URL
+          agency.coverImage = result.secure_url;
+          await agency.save();
+
+          res.json({ coverImage: result.secure_url, agency });
+        }
+      }
+    );
+
+    const bufferStream = Readable.from(req.file.buffer);
+    bufferStream.pipe(uploadStream);
+  } catch (error: any) {
+    console.error('Upload agency cover error:', error);
+    res.status(500).json({ message: 'Error uploading cover image', error: error.message });
   }
 };

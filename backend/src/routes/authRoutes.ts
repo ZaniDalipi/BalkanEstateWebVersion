@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import {
   signup,
   login,
@@ -9,11 +10,28 @@ import {
   oauthCallback,
   switchRole,
   requestPasswordReset,
-  resetPassword
+  resetPassword,
+  uploadAvatar
 } from '../controllers/authController';
 import { getUserStats } from '../controllers/userController';
 import { protect } from '../middleware/auth';
 import passport, { oauthStrategies } from '../config/passport';
+
+// Configure multer for avatar uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept images only
+    if (!file.mimetype.startsWith('image/')) {
+      cb(new Error('Only image files are allowed'));
+      return;
+    }
+    cb(null, true);
+  },
+});
 
 
 const router = express.Router();
@@ -27,6 +45,7 @@ router.put('/profile', protect, updateProfile);
 router.post('/set-public-key', protect, setPublicKey);
 router.post('/switch-role', protect, switchRole);
 router.get('/my-stats', protect, getUserStats);
+router.post('/upload-avatar', protect, upload.single('avatar'), uploadAvatar);
 
 // Password reset routes
 router.post('/forgot-password', requestPasswordReset);

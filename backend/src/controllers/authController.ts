@@ -4,6 +4,8 @@ import Agent from '../models/Agent';
 import { generateToken } from '../utils/jwt';
 import { IUser } from '../models/User';
 import crypto from 'crypto';
+import cloudinary from '../config/cloudinary';
+import { Readable } from 'stream';
 
 // @desc    Register new user
 // @route   POST /api/auth/signup
@@ -564,5 +566,81 @@ export const resetPassword = async (
   } catch (error: any) {
     console.error('Password reset error:', error);
     res.status(500).json({ message: 'Error resetting password', error: error.message });
+  }
+};
+
+// @desc    Upload user avatar
+// @route   POST /api/auth/upload-avatar
+// @access  Private
+export const uploadAvatar = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    if (!req.file) {
+      res.status(400).json({ message: 'No file uploaded' });
+      return;
+    }
+
+    const userId = String((req.user as IUser)._id);
+    const user = await User.findById(userId);
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Upload to Cloudinary
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'balkan-estate/avatars',
+        transformation: [
+          { width: 200, height: 200, crop: 'fill', gravity: 'face' },
+          { quality: 'auto', fetch_format: 'auto' }
+        ]
+      },
+      async (error, result) => {
+        if (error) {
+          console.error('Cloudinary upload error:', error);
+          res.status(500).json({ message: 'Error uploading avatar' });
+          return;
+        }
+
+        if (result) {
+          // Update user with new avatar URL
+          user.avatarUrl = result.secure_url;
+          await user.save();
+
+          res.json({
+            avatarUrl: result.secure_url,
+            user: {
+              id: String(user._id),
+              email: user.email,
+              name: user.name,
+              phone: user.phone,
+              role: user.role,
+              avatarUrl: user.avatarUrl,
+              city: user.city,
+              country: user.country,
+              agencyName: user.agencyName,
+              agentId: user.agentId,
+              licenseNumber: user.licenseNumber,
+              isSubscribed: user.isSubscribed,
+            }
+          });
+        }
+      }
+    );
+
+    const bufferStream = Readable.from(req.file.buffer);
+    bufferStream.pipe(uploadStream);
+  } catch (error: any) {
+    console.error('Upload avatar error:', error);
+    res.status(500).json({ message: 'Error uploading avatar', error: error.message });
   }
 };
