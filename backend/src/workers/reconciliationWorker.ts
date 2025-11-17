@@ -90,18 +90,8 @@ export async function runReconciliation(): Promise<ReconciliationResult> {
       errors: result.errors,
     });
 
-    // Log reconciliation event
-    await SubscriptionEvent.create({
-      eventType: 'reconciliation_completed',
-      store: 'system',
-      metadata: {
-        totalProcessed: result.totalProcessed,
-        updated: result.updated,
-        expired: result.expired,
-        errors: result.errors,
-      },
-      createdAt: new Date(),
-    });
+    // Reconciliation summary is logged above - individual subscription updates
+    // are already tracked as separate events with proper userId and subscriptionId
 
     return result;
   } catch (error: any) {
@@ -204,8 +194,14 @@ async function reconcileGooglePlaySubscription(
       await SubscriptionEvent.create({
         subscriptionId: subscription._id,
         userId: subscription.userId,
-        eventType: 'reconciliation_update',
+        eventType: 'subscription_reconciled',
         store: 'google',
+        eventDate: new Date(),
+        hasFinancialImpact: false,
+        isReconciliationEvent: true,
+        reconciliationDate: new Date(),
+        previousStatus: oldStatus,
+        newStatus: subscription.status,
         metadata: {
           oldStatus,
           newStatus: subscription.status,
@@ -304,8 +300,14 @@ async function reconcileAppStoreSubscription(
       await SubscriptionEvent.create({
         subscriptionId: subscription._id,
         userId: subscription.userId,
-        eventType: 'reconciliation_update',
+        eventType: 'subscription_reconciled',
         store: 'apple',
+        eventDate: new Date(),
+        hasFinancialImpact: false,
+        isReconciliationEvent: true,
+        reconciliationDate: new Date(),
+        previousStatus: oldStatus,
+        newStatus: subscription.status,
         metadata: {
           oldStatus,
           newStatus: subscription.status,
