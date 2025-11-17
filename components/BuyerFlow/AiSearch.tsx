@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ChatMessage, AiSearchQuery, Property } from '../../types';
 import { getAiChatResponse } from '../../services/geminiService';
 import { PaperAirplaneIcon, SparklesIcon } from '../../constants';
+import UpgradePrompt from '../shared/UpgradePrompt';
 
 interface AiSearchProps {
     properties: Property[];
@@ -22,6 +23,8 @@ const AiSearch: React.FC<AiSearchProps> = ({ properties, onApplyFilters, isMobil
     const [isSearching, setIsSearching] = useState(false);
     const [finalQuery, setFinalQuery] = useState<AiSearchQuery | null>(null);
     const chatEndRef = useRef<HTMLDivElement>(null);
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+    const [upgradePromptData, setUpgradePromptData] = useState<any>(null);
 
     const scrollToBottom = () => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -46,10 +49,31 @@ const AiSearch: React.FC<AiSearchProps> = ({ properties, onApplyFilters, isMobil
             if (result.isFinalQuery && result.searchQuery) {
                 setFinalQuery(result.searchQuery);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("AI chat error:", error);
-            const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I'm having trouble connecting right now. Please try again in a moment." };
-            onHistoryChange([...newHistory, errorMessage]);
+
+            // Check if it's a limit error
+            if (error.code === 'FEATURE_LIMIT_REACHED') {
+                setUpgradePromptData({
+                    title: 'AI Search Limit Reached',
+                    message: error.message || `You've reached your daily limit of AI searches.`,
+                    current: error.current,
+                    limit: error.limit,
+                    featureType: 'AI searches',
+                    recommendedProducts: error.recommendedProducts || [],
+                    upgradeMessage: error.upgradeMessage,
+                });
+                setShowUpgradePrompt(true);
+
+                const errorMessage: ChatMessage = {
+                    sender: 'ai',
+                    text: `${error.message || "You've reached your daily AI search limit."} Upgrade to get unlimited AI searches!`
+                };
+                onHistoryChange([...newHistory, errorMessage]);
+            } else {
+                const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I'm having trouble connecting right now. Please try again in a moment." };
+                onHistoryChange([...newHistory, errorMessage]);
+            }
         } finally {
             setIsSearching(false);
         }
@@ -86,6 +110,7 @@ const AiSearch: React.FC<AiSearchProps> = ({ properties, onApplyFilters, isMobil
     };
 
     return (
+        <>
         <div className={`flex flex-col h-full bg-white border border-neutral-200 rounded-lg`}>
             <div className="flex-grow min-h-0 p-4 space-y-4 overflow-y-auto">
                 {history.map((msg, index) => (
@@ -151,6 +176,26 @@ const AiSearch: React.FC<AiSearchProps> = ({ properties, onApplyFilters, isMobil
                 </div>
             </form>
         </div>
+
+        {/* Upgrade Prompt Modal */}
+        {showUpgradePrompt && upgradePromptData && (
+            <UpgradePrompt
+                isOpen={showUpgradePrompt}
+                onClose={() => setShowUpgradePrompt(false)}
+                title={upgradePromptData.title}
+                message={upgradePromptData.message}
+                featureType={upgradePromptData.featureType}
+                current={upgradePromptData.current}
+                limit={upgradePromptData.limit}
+                recommendedProducts={upgradePromptData.recommendedProducts}
+                onSelectPlan={(productId) => {
+                    console.log('Selected plan:', productId);
+                    // TODO: Implement navigation to subscription/payment page
+                    setShowUpgradePrompt(false);
+                }}
+            />
+        )}
+        </>
     );
 };
 

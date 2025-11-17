@@ -19,6 +19,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@types/nodemailer": "^7.0.3",
     "@types/passport": "^1.0.17",
     "@types/passport-facebook": "^3.0.4",

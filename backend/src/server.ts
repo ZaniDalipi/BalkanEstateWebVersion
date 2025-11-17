@@ -26,6 +26,7 @@ import bankExportRoutes from './routes/bankExportRoutes';
 import promotionRoutes from './routes/promotionRoutes';
 import agencyRoutes from './routes/agencyRoutes';
 import agencyJoinRequestRoutes from './routes/agencyJoinRequestRoutes';
+import aiRoutes from './routes/aiRoutes';
 
 // Import services
 import { initializeGooglePlayService } from './services/googlePlayService';
@@ -157,6 +158,7 @@ app.use('/api/bank-exports', bankExportRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/agencies', agencyRoutes);
 app.use('/api/agency-join-requests', agencyJoinRequestRoutes);
+app.use('/api/ai', aiRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

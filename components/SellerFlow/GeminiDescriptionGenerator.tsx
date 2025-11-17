@@ -7,6 +7,7 @@ import { getCurrencySymbol } from '../../utils/currency';
 import { useAppContext } from '../../context/AppContext';
 import WhackAnIconAnimation from './WhackAnIconAnimation';
 import NumberInputWithSteppers from '../shared/NumberInputWithSteppers';
+import UpgradePrompt from '../shared/UpgradePrompt';
 
 type Step = 'init' | 'loading' | 'form' | 'floorplan' | 'success';
 type Mode = 'ai' | 'manual';
@@ -206,6 +207,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const [language, setLanguage] = useState('English');
     const [aiPropertyType, setAiPropertyType] = useState<'house' | 'apartment' | 'villa' | 'other'>('house');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+    const [upgradePromptData, setUpgradePromptData] = useState<any>(null);
     
     // Drag & Drop State
     const dragItem = useRef<number | null>(null);
@@ -466,8 +469,21 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 totalFloors: result.total_floors || 0,
             }));
             setStep('form');
-        } catch (e) {
-            if (e instanceof Error) {
+        } catch (e: any) {
+            // Check if it's a limit error
+            if (e.code === 'FEATURE_LIMIT_REACHED') {
+                setUpgradePromptData({
+                    title: 'AI Property Insights Limit Reached',
+                    message: e.message || `You've reached your daily limit for AI property analysis.`,
+                    current: e.current,
+                    limit: e.limit,
+                    featureType: 'AI property insights',
+                    recommendedProducts: e.recommendedProducts || [],
+                    upgradeMessage: e.upgradeMessage,
+                });
+                setShowUpgradePrompt(true);
+                setError(e.message);
+            } else if (e instanceof Error) {
                 setError(e.message);
             } else {
                 setError('An unexpected error occurred during AI generation.');
@@ -665,6 +681,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     }
 
     return (
+        <>
         <form onSubmit={handleSubmit}>
             <div className="bg-primary-light text-primary-dark/90 text-sm p-4 rounded-lg mb-6 border border-primary/20">
                 <p><strong>Photo Tips:</strong> For best results, include well-lit, high-resolution photos of the exterior, kitchen, living rooms, bedrooms, and bathrooms. The more details you show, the better your AI-generated listing will be!</p>
@@ -805,6 +822,26 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                  </div>
             )}
         </form>
+
+        {/* Upgrade Prompt Modal */}
+        {showUpgradePrompt && upgradePromptData && (
+            <UpgradePrompt
+                isOpen={showUpgradePrompt}
+                onClose={() => setShowUpgradePrompt(false)}
+                title={upgradePromptData.title}
+                message={upgradePromptData.message}
+                featureType={upgradePromptData.featureType}
+                current={upgradePromptData.current}
+                limit={upgradePromptData.limit}
+                recommendedProducts={upgradePromptData.recommendedProducts}
+                onSelectPlan={(productId) => {
+                    console.log('Selected plan:', productId);
+                    // TODO: Implement navigation to subscription/payment page
+                    setShowUpgradePrompt(false);
+                }}
+            />
+        )}
+    </>
     );
 };
 
