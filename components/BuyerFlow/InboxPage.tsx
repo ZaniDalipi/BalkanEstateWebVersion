@@ -7,30 +7,48 @@ import PropertyCard from './PropertyCard';
 
 const InboxPage: React.FC = () => {
     const { state, dispatch } = useAppContext();
-    const { conversations, properties, isAuthenticated } = state;
+    const { conversations, properties, isAuthenticated, activeConversationId } = state;
+
+    console.log('InboxPage mounted/rendered');
+    console.log('Current activeConversationId:', activeConversationId);
+    console.log('Conversations count:', conversations.length);
 
     // A check to determine if we are on a mobile device based on window width.
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-    
+
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    const [selectedConversationId, setSelectedConversationId] = useState<string | null>(
-        isMobile ? null : (conversations.length > 0 ? conversations[0].id : null)
-    );
-    
-    // Update selected ID if window is resized from mobile to desktop
+    const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+
+    // Use activeConversationId from global state if available (highest priority)
     useEffect(() => {
-        if (!isMobile && !selectedConversationId && conversations.length > 0) {
+        if (activeConversationId) {
+            console.log('Active conversation ID detected:', activeConversationId);
+            console.log('Conversations:', conversations.map(c => c.id));
+            const conversation = conversations.find(c => c.id === activeConversationId);
+            if (conversation) {
+                console.log('Found conversation, selecting it');
+                setSelectedConversationId(activeConversationId);
+                // Clear the active conversation from global state after using it
+                setTimeout(() => {
+                    dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: null });
+                }, 100);
+            } else {
+                console.log('Conversation not found in list yet, waiting...');
+            }
+        }
+    }, [activeConversationId, conversations, dispatch]);
+
+    // Auto-select first conversation on desktop when no conversation is selected
+    useEffect(() => {
+        if (!isMobile && !selectedConversationId && conversations.length > 0 && !activeConversationId) {
             setSelectedConversationId(conversations[0].id);
         }
-        if (isMobile) {
-            // No default selection on mobile to show the list first
-        }
-    }, [isMobile, conversations, selectedConversationId]);
+    }, [isMobile, selectedConversationId, conversations, activeConversationId]);
 
 
     const selectedConversation = conversations.find(c => c.id === selectedConversationId) || null;
@@ -55,7 +73,7 @@ const InboxPage: React.FC = () => {
         );
     }
 
-    if (conversations.length === 0) {
+    if (conversations.length === 0 && !activeConversationId) {
         return (
             <div className="w-full flex flex-col items-center justify-center p-4 sm:p-8 text-center">
                 <EnvelopeIcon className="w-16 h-16 text-neutral-300 mb-4" />
@@ -70,6 +88,18 @@ const InboxPage: React.FC = () => {
                             <PropertyCard key={prop.id} property={prop} />
                         ))}
                     </div>
+                </div>
+            </div>
+        );
+    }
+
+    // If there are no conversations but activeConversationId is set, show loading (conversation being created)
+    if (conversations.length === 0 && activeConversationId) {
+        return (
+            <div className="h-full w-full flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    <p className="text-neutral-600">Creating conversation...</p>
                 </div>
             </div>
         );
@@ -93,10 +123,17 @@ const InboxPage: React.FC = () => {
                     flex-grow h-full
                 `}>
                     {selectedConversation ? (
-                        <ConversationView 
+                        <ConversationView
                             conversation={selectedConversation}
                             onBack={() => isMobile && setSelectedConversationId(null)}
                         />
+                    ) : activeConversationId ? (
+                        <div className="h-full flex items-center justify-center text-center">
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                                <p className="text-neutral-600">Loading conversation...</p>
+                            </div>
+                        </div>
                     ) : (
                         <div className="h-full hidden md:flex items-center justify-center text-center text-neutral-500">
                             <p>Select a conversation to view messages.</p>

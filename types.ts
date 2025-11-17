@@ -48,6 +48,7 @@ export interface User {
     totalListingsCreated?: number;
     testimonials?: Testimonial[];
     isSubscribed: boolean;
+    publicKey?: string; // E2E encryption public key (JWK format)
 }
 
 export interface Agent extends User {
@@ -101,6 +102,10 @@ export interface Message {
     senderId: string; // 'user' or seller's user ID
     text?: string;
     imageUrl?: string;
+    // E2E Encryption fields
+    encryptedMessage?: string;
+    encryptedKeys?: Record<string, string>; // userId -> encrypted AES key
+    iv?: string;
     timestamp: number;
     isRead: boolean;
 }
@@ -263,6 +268,7 @@ export interface AppState {
     savedHomes: Property[];
     comparisonList: string[]; // array of property IDs
     conversations: Conversation[];
+    activeConversationId: string | null;
     selectedAgentId: string | null;
     selectedAgencyId: string | null;
     pendingProperty: Property | null;
@@ -305,6 +311,9 @@ export type AppAction =
     | { type: 'RENEW_PROPERTY', payload: string }
     | { type: 'MARK_PROPERTY_SOLD', payload: string }
     | { type: 'UPDATE_USER', payload: Partial<User> }
+    | { type: 'CREATE_CONVERSATION', payload: Conversation }
+    | { type: 'DELETE_CONVERSATION', payload: string }
+    | { type: 'SET_ACTIVE_CONVERSATION', payload: string | null }
     | { type: 'ADD_MESSAGE', payload: { conversationId: string, message: Message } }
     | { type: 'CREATE_OR_ADD_MESSAGE', payload: { propertyId: string, message: Message } }
     | { type: 'MARK_CONVERSATION_AS_READ', payload: string }

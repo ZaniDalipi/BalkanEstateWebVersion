@@ -2,6 +2,8 @@ import React, { createContext, useReducer, useContext, Dispatch, useCallback } f
 import { User, Property, SavedSearch, Conversation, AppState, AppAction, Filters, Message, AuthModalView, initialFilters, SearchPageState } from '../types';
 import * as api from '../services/apiService';
 import { MUNICIPALITY_DATA } from '../services/propertyService';
+import { socketService } from '../services/socketService';
+import { notificationService } from '../services/notificationService';
 
 const initialSearchPageState: SearchPageState = {
     filters: initialFilters,
@@ -36,6 +38,7 @@ const initialState: AppState = {
   savedHomes: [],
   comparisonList: [],
   conversations: [],
+  activeConversationId: null,
   selectedAgentId: null,
   selectedAgencyId: null,
   pendingProperty: null,
@@ -141,6 +144,24 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         };
     case 'UPDATE_USER':
       return { ...state, currentUser: state.currentUser ? { ...state.currentUser, ...action.payload } : null };
+    case 'CREATE_CONVERSATION': {
+        // Check if conversation already exists
+        const exists = state.conversations.some(c => c.id === action.payload.id);
+        if (exists) {
+            console.log('Conversation already exists, not adding again');
+            return state;
+        }
+        console.log('Adding new conversation to state:', action.payload.id);
+        return { ...state, conversations: [action.payload, ...state.conversations] };
+    }
+    case 'DELETE_CONVERSATION': {
+        const newConversations = state.conversations.filter(c => c.id !== action.payload);
+        const newActiveId = state.activeConversationId === action.payload ? null : state.activeConversationId;
+        return { ...state, conversations: newConversations, activeConversationId: newActiveId };
+    }
+    case 'SET_ACTIVE_CONVERSATION':
+        console.log('Setting active conversation in reducer:', action.payload);
+        return { ...state, activeConversationId: action.payload };
     case 'ADD_MESSAGE':
         return { ...state, conversations: state.conversations.map(c => c.id === action.payload.conversationId ? { ...c, messages: [...c.messages, action.payload.message] } : c ) };
     // FIX: Add missing reducer case for creating a new conversation or adding a message to an existing one.
@@ -229,6 +250,8 @@ interface AppContextType {
     fetchProperties: (filters?: Filters) => Promise<void>;
     toggleSavedHome: (property: Property) => Promise<void>;
     addSavedSearch: (search: SavedSearch) => Promise<void>;
+    createConversation: (propertyId: string) => Promise<Conversation>;
+    deleteConversation: (conversationId: string) => Promise<void>;
     sendMessage: (conversationId: string, message: Message) => Promise<void>;
     createListing: (property: Property) => Promise<Property>;
     updateListing: (property: Property) => Promise<Property>;
@@ -261,6 +284,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const userData = await api.getMyData();
     dispatch({ type: 'USER_DATA_SUCCESS', payload: userData });
 
+    // Connect to WebSocket for real-time chat
+    const token = localStorage.getItem('balkan_estate_token');
+    if (token) {
+      socketService.connect(token);
+    }
+
+    // Initialize browser notifications
+    notificationService.initialize();
+
     // Check if there's a pending subscription and reopen the modal
     if (state.pendingSubscription) {
       setTimeout(() => {
@@ -290,6 +322,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user } });
     dispatch({ type: 'USER_DATA_SUCCESS', payload: { savedHomes: [], savedSearches: [], conversations: [] } });
 
+    // Connect to WebSocket for real-time chat
+    const token = localStorage.getItem('balkan_estate_token');
+    if (token) {
+      socketService.connect(token);
+    }
+
+    // Initialize browser notifications
+    notificationService.initialize();
+
     // Check if there's a pending subscription and reopen the modal
     if (state.pendingSubscription) {
       setTimeout(() => {
@@ -307,6 +348,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const logout = useCallback(async () => {
     await api.logout();
+    // Disconnect from WebSocket
+    socketService.disconnect();
     dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null } });
   }, []);
   
@@ -334,6 +377,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user } });
     dispatch({ type: 'USER_DATA_LOADING' });
+
+    // Connect to WebSocket for real-time chat
+    socketService.connect(token);
 
     try {
       const userData = await api.getMyData();
@@ -388,9 +434,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'ADD_SAVED_SEARCH', payload: newSearch });
   }, []);
 
+  const createConversation = useCallback(async (propertyId: string) => {
+      console.log('createConversation called for property:', propertyId);
+      const conversation = await api.createConversation(propertyId);
+      console.log('API returned conversation:', conversation.id);
+      console.log('Dispatching CREATE_CONVERSATION');
+      dispatch({ type: 'CREATE_CONVERSATION', payload: conversation });
+      console.log('CREATE_CONVERSATION dispatched');
+      return conversation;
+  }, []);
+
+  const deleteConversation = useCallback(async (conversationId: string) => {
+      await api.deleteConversation(conversationId);
+      dispatch({ type: 'DELETE_CONVERSATION', payload: conversationId });
+  }, []);
+
   const sendMessage = useCallback(async (conversationId: string, message: Message) => {
-      const sentMessage = await api.sendMessage(conversationId, message);
-      dispatch({ type: 'ADD_MESSAGE', payload: { conversationId, message: sentMessage }});
+      const result = await api.sendMessage(conversationId, message);
+      dispatch({ type: 'ADD_MESSAGE', payload: { conversationId, message: result.message }});
+      // Handle security warnings if any
+      if (result.securityWarnings && result.securityWarnings.length > 0) {
+          console.warn('Security warnings:', result.securityWarnings);
+      }
   }, []);
 
   const createListing = useCallback(async (property: Property) => {
@@ -421,7 +486,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'UPDATE_SAVED_SEARCH_ACCESS_TIME', payload: searchId });
   }, []);
 
-  const value = { state, dispatch, checkAuthStatus, login, signup, logout, requestPasswordReset, resetPassword, loginWithSocial, handleOAuthCallback, sendPhoneCode, verifyPhoneCode, completePhoneSignup, fetchProperties, toggleSavedHome, addSavedSearch, sendMessage, createListing, updateListing, updateUser, updateSearchPageState, updateSavedSearchAccessTime };
+  const value = { state, dispatch, checkAuthStatus, login, signup, logout, requestPasswordReset, resetPassword, loginWithSocial, handleOAuthCallback, sendPhoneCode, verifyPhoneCode, completePhoneSignup, fetchProperties, toggleSavedHome, addSavedSearch, createConversation, deleteConversation, sendMessage, createListing, updateListing, updateUser, updateSearchPageState, updateSavedSearchAccessTime };
 
   return (
     <AppContext.Provider value={value}>

@@ -97,7 +97,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isFloating }) => {
             >
                 Subscribe
             </button>
-            <button 
+            <button
               onClick={handleNewListingClick}
               className="bg-secondary text-white px-3 py-2 sm:px-5 sm:py-2.5 rounded-full text-sm sm:text-base font-semibold hover:bg-opacity-90 transition-all shadow-sm hover:shadow-md whitespace-nowrap"
             >
