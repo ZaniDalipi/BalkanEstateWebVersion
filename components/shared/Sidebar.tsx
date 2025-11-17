@@ -9,18 +9,26 @@ const NavItem: React.FC<{
   icon: React.ReactNode;
   activeView: AppView;
   onClick: (view: AppView) => void;
-}> = ({ view, label, icon, activeView, onClick }) => {
+  badge?: number;
+}> = ({ view, label, icon, activeView, onClick, badge }) => {
   const isActive = view === activeView;
   return (
     <button
       onClick={() => onClick(view)}
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-left md:justify-center group-hover:md:justify-start ${
+      className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-left md:justify-center group-hover:md:justify-start relative ${
         isActive
           ? 'bg-primary-light text-primary-dark'
           : 'text-neutral-700 hover:bg-neutral-100'
       }`}
     >
-      <div className={`w-6 h-6 flex-shrink-0 ${isActive ? 'text-primary' : 'text-neutral-700'}`}>{icon}</div>
+      <div className={`w-6 h-6 flex-shrink-0 ${isActive ? 'text-primary' : 'text-neutral-700'} relative`}>
+        {icon}
+        {badge && badge > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+            {badge > 99 ? '99+' : badge}
+          </span>
+        )}
+      </div>
       <span className="md:hidden group-hover:md:inline whitespace-nowrap">{label}</span>
     </button>
   );
@@ -33,7 +41,13 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const { state, dispatch, logout } = useAppContext();
-    const { activeView, isAuthenticated, currentUser } = state;
+    const { activeView, isAuthenticated, currentUser, conversations } = state;
+
+    // Calculate total unread messages
+    const totalUnreadCount = conversations.reduce((total, conversation) => {
+        const unreadCount = conversation.messages?.filter(m => !m.isRead && m.senderId !== currentUser?.id).length || 0;
+        return total + unreadCount;
+    }, 0);
 
     const handleNavClick = (view: AppView) => {
         const needsAuth = ['inbox', 'account', 'saved-searches', 'saved-properties'].includes(view);
@@ -120,6 +134,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                             icon={item.icon}
                             activeView={activeView}
                             onClick={handleNavClick}
+                            badge={item.view === 'inbox' ? totalUnreadCount : undefined}
                         />
                     ))}
                      <div className="px-2 pt-2 mt-2 border-t border-neutral-100 space-y-1">
