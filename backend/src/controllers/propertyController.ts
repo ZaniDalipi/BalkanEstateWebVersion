@@ -94,7 +94,6 @@ export const getProperties = async (
     // First, sort by status to show sold properties at top
     // We use a trick: create a computed field that gives sold=1, active=0
     // So sold properties sort first
-    const sortPipeline: any[] = [];
 
     // Add status sorting (sold first)
     sort.status = -1; // 'sold' > 'active' alphabetically (reversed)
