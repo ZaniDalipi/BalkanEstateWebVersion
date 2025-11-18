@@ -628,14 +628,30 @@ export const uploadAvatar = async (
     console.log('File size:', req.file.size, 'bytes');
     console.log('File type:', req.file.mimetype);
 
-    // Upload to Cloudinary
+    // Delete old avatar from Cloudinary if exists
+    if (user.avatarPublicId) {
+      try {
+        await cloudinary.uploader.destroy(user.avatarPublicId);
+      } catch (deleteError) {
+        console.log('Could not delete old avatar:', deleteError);
+        // Continue with upload even if deletion fails
+      }
+    }
+
+    // Upload to Cloudinary with better organization
     const uploadStream = cloudinary.uploader.upload_stream(
       {
-        folder: 'balkan-estate/avatars',
+        // Organized folder structure: balkan-estate/avatars/users/{userId}
+        folder: `balkan-estate/avatars/users/${userId}`,
         transformation: [
           { width: 200, height: 200, crop: 'fill', gravity: 'face' },
-          { quality: 'auto', fetch_format: 'auto' }
-        ]
+          { quality: 'auto:good', fetch_format: 'auto' } // Cost-optimized
+        ],
+        // Add context for better organization
+        context: {
+          type: 'user_avatar',
+          user_id: userId,
+        },
       },
       async (error, result) => {
         if (error) {
@@ -648,8 +664,9 @@ export const uploadAvatar = async (
 
         if (result) {
           try {
-            // Update user with new avatar URL
+            // Update user with new avatar URL and publicId
             user.avatarUrl = result.secure_url;
+            user.avatarPublicId = result.public_id;
             await user.save();
 
             console.log('Avatar uploaded successfully:', result.secure_url);

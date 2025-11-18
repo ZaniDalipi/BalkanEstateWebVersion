@@ -8,6 +8,7 @@ export interface IUser extends Document {
   name: string;
   phone?: string;
   avatarUrl?: string;
+  avatarPublicId?: string;
   role: 'buyer' | 'private_seller' | 'agent';
   provider: 'local' | 'google' | 'facebook' | 'apple';
   providerId?: string;
@@ -102,6 +103,9 @@ const UserSchema: Schema = new Schema(
       default: false,
     },
     avatarUrl: {
+      type: String,
+    },
+    avatarPublicId: {
       type: String,
     },
     role: {

@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IPropertyImage {
   url: string;
+  publicId: string; // Cloudinary public_id for image management and deletion
   tag: 'exterior' | 'living_room' | 'kitchen' | 'bedroom' | 'bathroom' | 'other';
 }
 
@@ -24,6 +25,7 @@ export interface IProperty extends Document {
   materials: string[];
   tourUrl?: string;
   imageUrl: string;
+  imagePublicId?: string; // Cloudinary public_id for main image
   images: IPropertyImage[];
   lat: number;
   lng: number;
@@ -31,6 +33,7 @@ export interface IProperty extends Document {
   floorNumber?: number;
   totalFloors?: number;
   floorplanUrl?: string;
+  floorplanPublicId?: string; // Cloudinary public_id for floorplan
   lastRenewed: Date;
   views: number;
   saves: number;
@@ -129,9 +132,13 @@ const PropertySchema: Schema = new Schema(
       type: String,
       required: true,
     },
+    imagePublicId: {
+      type: String,
+    },
     images: [
       {
         url: { type: String, required: true },
+        publicId: { type: String, required: true },
         tag: {
           type: String,
           enum: ['exterior', 'living_room', 'kitchen', 'bedroom', 'bathroom', 'other'],
@@ -162,6 +169,9 @@ const PropertySchema: Schema = new Schema(
       type: Number,
     },
     floorplanUrl: {
+      type: String,
+    },
+    floorplanPublicId: {
       type: String,
     },
     lastRenewed: {

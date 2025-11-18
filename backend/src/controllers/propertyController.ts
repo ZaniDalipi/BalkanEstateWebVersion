@@ -356,6 +356,39 @@ export const deleteProperty = async (
       return;
     }
 
+    // Delete images from Cloudinary before deleting property
+    try {
+      // Delete all property images
+      if (property.images && property.images.length > 0) {
+        const publicIds = property.images
+          .map((img: any) => img.publicId)
+          .filter((id: string) => id); // Filter out any undefined/null publicIds
+
+        if (publicIds.length > 0) {
+          await cloudinary.api.delete_resources(publicIds, {
+            resource_type: 'image',
+          });
+        }
+      }
+
+      // Delete main image if it has a publicId
+      if (property.imagePublicId) {
+        await cloudinary.uploader.destroy(property.imagePublicId, {
+          resource_type: 'image',
+        });
+      }
+
+      // Delete floorplan image if exists
+      if (property.floorplanPublicId) {
+        await cloudinary.uploader.destroy(property.floorplanPublicId, {
+          resource_type: 'image',
+        });
+      }
+    } catch (cloudinaryError: any) {
+      console.error('Error deleting images from Cloudinary:', cloudinaryError);
+      // Continue with property deletion even if Cloudinary cleanup fails
+    }
+
     // Decrement listing count if property is active or pending
     if (property.status === 'active' || property.status === 'pending' || property.status === 'draft') {
       const user = await User.findById(String(currentUser._id));
@@ -426,14 +459,16 @@ export const uploadImages = async (
     }
 
     const files = req.files as Express.Multer.File[];
-    const uploadedImages: { url: string; tag: string }[] = [];
+    const uploadedImages: { url: string; publicId: string; tag: string }[] = [];
+    const userId = req.user.id;
 
-    // Compress and upload each file to Cloudinary
+    // Compress and upload each file to Cloudinary with organized folder structure
     for (const file of files) {
       // Compress image using sharp
       // - Resize to max 1920x1080 (maintaining aspect ratio)
       // - Convert to JPEG with 85% quality (good balance between quality and size)
       // - Remove metadata to reduce file size
+      // - Progressive JPEG for better web loading
       const compressedBuffer = await sharp(file.buffer)
         .resize(1920, 1080, {
           fit: 'inside',
@@ -448,8 +483,19 @@ export const uploadImages = async (
       const result = await new Promise<any>((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           {
-            folder: 'balkan-estate/properties',
+            // Organized folder structure: balkan-estate/properties/users/{userId}
+            folder: `balkan-estate/properties/users/${userId}`,
             resource_type: 'image',
+            // Add auto optimization transformations
+            transformation: [
+              { quality: 'auto:good' }, // Auto quality (reduces costs)
+              { fetch_format: 'auto' }, // Auto format (WebP when supported)
+            ],
+            // Add context for better organization
+            context: {
+              type: 'property_image',
+              user_id: userId,
+            },
           },
           (error, result) => {
             if (error) reject(error);
@@ -465,6 +511,7 @@ export const uploadImages = async (
 
       uploadedImages.push({
         url: result.secure_url,
+        publicId: result.public_id,
         tag: 'other',
       });
     }
