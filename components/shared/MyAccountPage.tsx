@@ -6,6 +6,7 @@ import ProfileStatistics from './ProfileStatistics';
 import { User, UserRole } from '../../types';
 import { BuildingOfficeIcon, ChartBarIcon, UserCircleIcon, ArrowLeftOnRectangleIcon } from '../../constants';
 import AgentLicenseModal from './AgentLicenseModal';
+import AgencyManagementSection from './AgencyManagementSection';
 import { switchRole, joinAgencyByInvitationCode } from '../../services/apiService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
@@ -416,27 +417,10 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                      </div>
 
                      {user.licenseVerified && (
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <h4 className="text-sm font-semibold text-blue-900 mb-2">
-                                {user.agencyName && user.agencyName !== 'Independent Agent' ? 'Change Agency' : 'Join an Agency'}
-                            </h4>
-                            <p className="text-xs text-blue-700 mb-3">
-                                {user.agencyName && user.agencyName !== 'Independent Agent'
-                                    ? `You are currently with ${user.agencyName}. You can switch to a different agency using an invitation code.`
-                                    : 'Click below to join an agency using an invitation code. Your license and agent ID will be verified automatically.'
-                                }
-                            </p>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    console.log('🔄 Opening agency switch modal for:', user.agencyName);
-                                    setIsLicenseModalOpen(true);
-                                }}
-                                className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
-                            >
-                                {user.agencyName && user.agencyName !== 'Independent Agent' ? 'Switch Agency' : 'Join Agency with Code'}
-                            </button>
-                        </div>
+                        <AgencyManagementSection
+                            currentUser={user}
+                            onAgencyChange={() => window.location.reload()}
+                        />
                      )}
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="relative">
