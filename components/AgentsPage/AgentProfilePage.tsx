@@ -66,8 +66,11 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     const [propertyView, setPropertyView] = useState<'active' | 'sold'>('active');
     const [showReviewForm, setShowReviewForm] = useState(false);
 
+    // Match against userId since properties are linked to user, not agent document
+    const agentUserId = agent.userId || agent.id;
+
     const agentProperties = state.properties.filter(p => {
-        if (p.sellerId !== agent.id) return false;
+        if (p.sellerId !== agentUserId) return false;
         return propertyView === 'active' ? p.status === 'active' : p.status === 'sold';
     });
 
@@ -82,7 +85,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     };
 
     // Check if user can write a review (logged in and not viewing own profile)
-    const canWriteReview = currentUser && currentUser.id !== agent.id;
+    const canWriteReview = currentUser && currentUser.id !== agentUserId;
 
     return (
     <div className="bg-neutral-50 min-h-full animate-fade-in">

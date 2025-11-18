@@ -836,8 +836,10 @@ export const getFeaturedProperties = async (filters?: { city?: string; limit?: n
 // Transform backend agent to frontend Agent type
 function transformBackendAgent(backendAgent: any): any {
   const user = backendAgent.userId || {};
+  const userId = typeof user === 'object' && user._id ? user._id : user;
   return {
     id: backendAgent._id || backendAgent.id,
+    userId: String(userId), // The actual user ID for matching properties
     name: user.name || '',
     email: user.email || '',
     phone: user.phone || '',

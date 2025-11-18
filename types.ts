@@ -59,10 +59,23 @@ export interface User {
 }
 
 export interface Agent extends User {
+    userId?: string; // The user ID that properties are linked to (different from agent document id)
     totalSalesValue: number;
     propertiesSold: number;
     activeListings: number;
     rating: number;
+    totalReviews?: number;
+    bio?: string;
+    specializations?: string[];
+    yearsOfExperience?: number;
+    languages?: string[];
+    serviceAreas?: string[];
+    websiteUrl?: string;
+    facebookUrl?: string;
+    instagramUrl?: string;
+    linkedinUrl?: string;
+    officeAddress?: string;
+    officePhone?: string;
 }
 
 export interface PropertyImage {
