@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IPropertyImage {
   url: string;
-  publicId: string; // Cloudinary public_id for image management and deletion
+  publicId?: string; // Cloudinary public_id for image management and deletion (optional for backwards compatibility)
   tag: 'exterior' | 'living_room' | 'kitchen' | 'bedroom' | 'bathroom' | 'other';
 }
 
@@ -138,7 +138,7 @@ const PropertySchema: Schema = new Schema(
     images: [
       {
         url: { type: String, required: true },
-        publicId: { type: String, required: true },
+        publicId: { type: String }, // Optional for backwards compatibility
         tag: {
           type: String,
           enum: ['exterior', 'living_room', 'kitchen', 'bedroom', 'bathroom', 'other'],
