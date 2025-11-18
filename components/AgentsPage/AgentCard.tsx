@@ -4,6 +4,7 @@ import StarRating from '../shared/StarRating';
 import { TrophyIcon, UserCircleIcon, CheckCircleIcon, BuildingOfficeIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
+import { slugify } from '../../utils/slug';
 
 interface AgentCardProps {
   agent: Agent;
@@ -42,6 +43,14 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
     dispatch({ type: 'SET_SELECTED_AGENT', payload: agent.id });
   };
 
+  const handleAgencyClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering agent selection
+    if (agent.agencyName) {
+      const agencySlug = slugify(agent.agencyName);
+      dispatch({ type: 'SET_SELECTED_AGENCY', payload: agencySlug });
+    }
+  };
+
   return (
     <div 
       className={`bg-white rounded-xl shadow-md border hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer ${rank <= 3 ? rankColor.border : 'border-neutral-200'}`}
@@ -54,9 +63,13 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
             <div>
               <h3 className="text-lg font-bold text-neutral-900">{agent.name}</h3>
               {agent.agencyName && (
-                <div className="flex items-center gap-1 mt-1 mb-1">
-                  <BuildingOfficeIcon className="w-4 h-4 text-gray-600" />
-                  <span className="text-xs font-semibold text-gray-700">{agent.agencyName}</span>
+                <div
+                  className="flex items-center gap-1 mt-1 mb-1 cursor-pointer hover:text-primary transition-colors"
+                  onClick={handleAgencyClick}
+                  title="View agency profile"
+                >
+                  <BuildingOfficeIcon className="w-4 h-4" />
+                  <span className="text-xs font-semibold underline decoration-dotted">{agent.agencyName}</span>
                 </div>
               )}
               {agent.city && agent.country && (

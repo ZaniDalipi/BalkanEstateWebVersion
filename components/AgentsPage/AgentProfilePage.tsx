@@ -7,6 +7,7 @@ import { formatPrice } from '../../utils/currency';
 import PropertyCard from '../BuyerFlow/PropertyCard';
 import PropertyCardSkeleton from '../BuyerFlow/PropertyCardSkeleton';
 import AgentReviewForm from '../shared/AgentReviewForm';
+import { slugify } from '../../utils/slug';
 
 interface AgentProfilePageProps {
   agent: Agent;
@@ -84,6 +85,13 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
         window.location.reload();
     };
 
+    const handleAgencyClick = () => {
+        if (agent.agencyName) {
+            const agencySlug = slugify(agent.agencyName);
+            dispatch({ type: 'SET_SELECTED_AGENCY', payload: agencySlug });
+        }
+    };
+
     // Check if user can write a review (logged in and not viewing own profile)
     const canWriteReview = currentUser && currentUser.id !== agentUserId;
 
@@ -111,7 +119,11 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                 </div>
 
                 {agent.agencyName && (
-                    <div className="mb-3 inline-flex items-center gap-2 bg-gradient-to-r from-gray-800 to-gray-900 text-white px-4 py-2 rounded-full shadow-md">
+                    <div
+                        className="mb-3 inline-flex items-center gap-2 bg-gradient-to-r from-gray-800 to-gray-900 text-white px-4 py-2 rounded-full shadow-md cursor-pointer hover:from-gray-700 hover:to-gray-800 transition-all"
+                        onClick={handleAgencyClick}
+                        title="View agency profile"
+                    >
                         <BuildingOfficeIcon className="w-5 h-5" />
                         <span className="font-semibold">{agent.agencyName}</span>
                     </div>
