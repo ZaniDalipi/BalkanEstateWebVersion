@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { getNeighborhoodInsights as getNeighborhoodInsightsFromGemini } from '../services/geminiService';
-import { IUser } from '../models/User';
+import User, { IUser } from '../models/User';
 
 // Usage limits
 const FREE_USER_MONTHLY_LIMIT = 3; // Free users get 3 insights per month
@@ -34,11 +34,19 @@ export const getNeighborhoodInsights = async (req: Request, res: Response) => {
       });
     }
 
-    // Get current user
-    const user = req.user as IUser;
-    if (!user) {
+    // Get current user ID from JWT
+    const currentUserId = (req.user as any)?._id;
+    if (!currentUserId) {
       return res.status(401).json({
         message: 'Authentication required to access neighborhood insights',
+      });
+    }
+
+    // Fetch full user document from database
+    const user = await User.findById(currentUserId);
+    if (!user) {
+      return res.status(401).json({
+        message: 'User not found',
       });
     }
 
@@ -114,10 +122,19 @@ export const getNeighborhoodInsights = async (req: Request, res: Response) => {
  */
 export const getUsageStats = async (req: Request, res: Response) => {
   try {
-    const user = req.user as IUser;
-    if (!user) {
+    // Get current user ID from JWT
+    const currentUserId = (req.user as any)?._id;
+    if (!currentUserId) {
       return res.status(401).json({
         message: 'Authentication required',
+      });
+    }
+
+    // Fetch full user document from database
+    const user = await User.findById(currentUserId);
+    if (!user) {
+      return res.status(401).json({
+        message: 'User not found',
       });
     }
 
