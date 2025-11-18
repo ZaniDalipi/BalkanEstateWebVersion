@@ -6,10 +6,8 @@ import { geocodeProperty } from '../services/geocodingService';
 import { incrementViewCount, updateSoldStats } from '../utils/statsUpdater';
 import {
   uploadPropertyImages,
-  uploadImage,
   deleteImages,
   deleteFolder,
-  moveImagesToProperty,
 } from '../services/cloudinaryService';
 
 // @desc    Get all properties with filters
@@ -363,7 +361,7 @@ export const deleteProperty = async (
     // Delete images from Cloudinary before deleting property
     try {
       const userId = currentUser._id.toString();
-      const propertyId = property._id.toString();
+      const propertyId = String(property._id);
 
       // Option 1: Delete entire property folder (most efficient)
       // This deletes all images in balkan-estate/properties/user-{userId}/listing-{propertyId}/
