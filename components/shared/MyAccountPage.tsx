@@ -428,7 +428,10 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                             </p>
                             <button
                                 type="button"
-                                onClick={() => setIsLicenseModalOpen(true)}
+                                onClick={() => {
+                                    console.log('🔄 Opening agency switch modal for:', user.agencyName);
+                                    setIsLicenseModalOpen(true);
+                                }}
                                 className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
                             >
                                 {user.agencyName && user.agencyName !== 'Independent Agent' ? 'Switch Agency' : 'Join Agency with Code'}

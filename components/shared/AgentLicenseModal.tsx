@@ -44,11 +44,13 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
 
   const fetchAgencies = async () => {
     try {
+      console.log('🏢 Fetching agencies for selection...');
       setLoadingAgencies(true);
       const response = await getAgencies({ limit: 100 }); // Get all agencies
+      console.log(`✅ Fetched ${response.agencies?.length || 0} agencies`);
       setAgencies(response.agencies || []);
     } catch (err) {
-      console.error('Failed to fetch agencies:', err);
+      console.error('❌ Failed to fetch agencies:', err);
       setAgencies([]);
     } finally {
       setLoadingAgencies(false);
@@ -82,6 +84,12 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
     setIsSubmitting(true);
 
     try {
+      console.log('📤 Submitting agency join/switch:', {
+        selectedAgencyId: selectedAgency,
+        hasInvitationCode: !!agencyInvitationCode,
+        isJoiningAgency
+      });
+
       await onSubmit({
         licenseNumber: licenseNumber.trim(),
         agencyInvitationCode: agencyInvitationCode.trim() || undefined,
