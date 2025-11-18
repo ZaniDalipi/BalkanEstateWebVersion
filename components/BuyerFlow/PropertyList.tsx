@@ -360,7 +360,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                 </div>
                             </div>
                         </div>
-                        <div className="p-4">
+                        <div className="p-4 pb-8">
                             {isLoadingProperties ? (
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     {Array.from({ length: 6 }).map((_, index) => (
@@ -443,7 +443,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                 </div>
                             </div>
 
-                            <div className="p-4">
+                            <div className="p-4 pb-24">
                                 {isLoadingProperties ? (
                                     <div className="grid grid-cols-1 gap-4">
                                         {Array.from({ length: 4 }).map((_, index) => (

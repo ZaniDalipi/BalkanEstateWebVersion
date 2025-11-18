@@ -184,7 +184,7 @@ export const getAgency = async (
       console.log(`🔑 Attempting lookup by ObjectId: ${idOrSlug}`);
       agency = await Agency.findById(idOrSlug)
         .populate('ownerId', 'name email phone avatarUrl')
-        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber');
+        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating');
     }
 
     if (!agency) {
@@ -193,7 +193,7 @@ export const getAgency = async (
       console.log(`🏷️  Attempting lookup by slug: ${slugLower}`);
       agency = await Agency.findOne({ slug: slugLower })
         .populate('ownerId', 'name email phone avatarUrl')
-        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber');
+        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating');
     }
 
     if (!agency) {
