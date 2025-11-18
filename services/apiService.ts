@@ -810,3 +810,11 @@ export const getFeaturedProperties = async (filters?: { city?: string; limit?: n
 export const getAllAgents = async (): Promise<any> => {
   return await apiRequest("/auth/agents");
 };
+
+export const addAgentReview = async (agentId: string, review: { quote: string; rating: number; propertyId?: string }): Promise<any> => {
+  return await apiRequest(`/agents/${agentId}/reviews`, {
+    method: 'POST',
+    body: review,
+    requiresAuth: true,
+  });
+};

@@ -124,7 +124,75 @@ export const updateAgentProfile = async (req: Request, res: Response): Promise<v
   }
 };
 
-// @desc    Add testimonial to agent
+// @desc    Add review/rating to agent
+// @route   POST /api/agents/:id/reviews
+// @access  Private (authenticated users only)
+export const addReview = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const currentUser = req.user as IUser;
+    const { quote, rating, propertyId } = req.body;
+
+    if (!quote || !rating) {
+      res.status(400).json({ message: 'Review text and rating are required' });
+      return;
+    }
+
+    if (rating < 1 || rating > 5) {
+      res.status(400).json({ message: 'Rating must be between 1 and 5' });
+      return;
+    }
+
+    const agent = await Agent.findById(req.params.id);
+
+    if (!agent) {
+      res.status(404).json({ message: 'Agent not found' });
+      return;
+    }
+
+    // Prevent agents from reviewing themselves
+    if (agent.userId.toString() === String(currentUser._id)) {
+      res.status(400).json({ message: 'You cannot review yourself' });
+      return;
+    }
+
+    // Check if user already reviewed this agent
+    const existingReview = agent.testimonials.find(
+      (t: any) => t.userId && t.userId.toString() === String(currentUser._id)
+    );
+
+    if (existingReview) {
+      res.status(400).json({ message: 'You have already reviewed this agent' });
+      return;
+    }
+
+    // Add review with user information
+    agent.testimonials.push({
+      clientName: currentUser.name,
+      userId: currentUser._id as any,
+      quote,
+      rating,
+      propertyId: propertyId || undefined,
+      createdAt: new Date(),
+    });
+
+    await agent.save();
+
+    res.json({
+      message: 'Review added successfully',
+      agent,
+    });
+  } catch (error: any) {
+    console.error('Add review error:', error);
+    res.status(500).json({ message: 'Error adding review', error: error.message });
+  }
+};
+
+// @desc    Add testimonial to agent (DEPRECATED - Use addReview instead)
 // @route   POST /api/agents/:id/testimonials
 // @access  Private
 export const addTestimonial = async (req: Request, res: Response): Promise<void> => {

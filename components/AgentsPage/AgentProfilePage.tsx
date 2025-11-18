@@ -6,6 +6,7 @@ import StarRating from '../shared/StarRating';
 import { formatPrice } from '../../utils/currency';
 import PropertyCard from '../BuyerFlow/PropertyCard';
 import PropertyCardSkeleton from '../BuyerFlow/PropertyCardSkeleton';
+import AgentReviewForm from '../shared/AgentReviewForm';
 
 interface AgentProfilePageProps {
   agent: Agent;
@@ -42,12 +43,22 @@ const ProfileAvatar: React.FC<{ agent: Agent }> = ({ agent }) => {
 
 const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     const { state, dispatch } = useAppContext();
-    const { isLoadingProperties } = state;
+    const { isLoadingProperties, user } = state;
     const agentProperties = state.properties.filter(p => p.sellerId === agent.id && p.status === 'active');
-    
+    const [showReviewForm, setShowReviewForm] = useState(false);
+
     const handleBack = () => {
         dispatch({ type: 'SET_SELECTED_AGENT', payload: null });
     };
+
+    const handleReviewSubmitted = () => {
+        setShowReviewForm(false);
+        // Refresh agent data to show new review
+        window.location.reload();
+    };
+
+    // Check if user can write a review (logged in and not viewing own profile)
+    const canWriteReview = user && user.id !== agent.id;
 
     return (
     <div className="bg-neutral-50 min-h-full animate-fade-in">
@@ -115,13 +126,46 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                 )}
             </div>
             <div>
-                 <h2 className="text-xl sm:text-2xl font-bold text-neutral-800 mb-4">Client Testimonials</h2>
+                 <div className="flex items-center justify-between mb-4">
+                     <h2 className="text-xl sm:text-2xl font-bold text-neutral-800">Client Testimonials</h2>
+                     {canWriteReview && !showReviewForm && (
+                         <button
+                             onClick={() => setShowReviewForm(true)}
+                             className="bg-primary text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-dark transition-colors text-sm"
+                         >
+                             Write Review
+                         </button>
+                     )}
+                 </div>
+
+                 {/* Review Form */}
+                 {showReviewForm && canWriteReview && (
+                     <div className="mb-6">
+                         <AgentReviewForm
+                             agentId={agent.id}
+                             agentName={agent.name}
+                             onReviewSubmitted={handleReviewSubmitted}
+                         />
+                     </div>
+                 )}
+
+                 {/* Login Prompt */}
+                 {!user && (
+                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-center">
+                         <p className="text-blue-800 text-sm">
+                             Please <span className="font-semibold">log in</span> to write a review for this agent.
+                         </p>
+                     </div>
+                 )}
+
+                 {/* Testimonials List */}
                  {agent.testimonials && agent.testimonials.length > 0 ? (
                      <div className="space-y-6">
                         {agent.testimonials.map((t, index) => (
                              <div key={index} className="bg-white p-6 rounded-xl shadow-md border">
                                 <div className="flex items-center gap-2 mb-2">
                                     <ChatBubbleBottomCenterTextIcon className="w-6 h-6 text-primary" />
+                                    <StarRating rating={t.rating} />
                                 </div>
                                 <p className="text-neutral-700 italic">"{t.quote}"</p>
                                 <p className="text-right font-semibold text-neutral-800 mt-3">- {t.clientName}</p>
@@ -131,6 +175,9 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                  ) : (
                     <div className="text-center p-8 bg-white rounded-lg border">
                         <p className="text-neutral-600">No testimonials yet.</p>
+                        {canWriteReview && !showReviewForm && (
+                            <p className="text-neutral-500 text-sm mt-2">Be the first to write a review!</p>
+                        )}
                     </div>
                  )}
             </div>

@@ -112,6 +112,7 @@ const AgencySchema: Schema = new Schema(
     country: {
       type: String,
       trim: true,
+      index: true,
     },
     zipCode: {
       type: String,
@@ -169,6 +170,7 @@ const AgencySchema: Schema = new Schema(
     agents: [{
       type: Schema.Types.ObjectId,
       ref: 'User',
+      index: true,
     }],
     isFeatured: {
       type: Boolean,
@@ -202,7 +204,9 @@ const AgencySchema: Schema = new Schema(
 
 // Compound indexes for efficient queries
 AgencySchema.index({ city: 1, isFeatured: 1 });
+AgencySchema.index({ country: 1, city: 1 }); // For location-based queries
 AgencySchema.index({ isFeatured: 1, adRotationOrder: 1 });
+AgencySchema.index({ agents: 1 }); // For agent lookup queries
 
 // Generate invitation code before saving
 AgencySchema.pre<IAgency>('save', async function (next) {

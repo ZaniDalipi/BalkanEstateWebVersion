@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ITestimonial {
   clientName: string;
+  userId?: mongoose.Types.ObjectId; // User who wrote the review
   quote: string;
   rating: number; // 1-5
   propertyId?: mongoose.Types.ObjectId;
@@ -43,6 +44,11 @@ const TestimonialSchema: Schema = new Schema(
     clientName: {
       type: String,
       required: true,
+    },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      index: true, // For quick lookups to prevent duplicate reviews
     },
     quote: {
       type: String,

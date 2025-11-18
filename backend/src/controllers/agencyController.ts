@@ -87,21 +87,42 @@ export const getAgencies = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { city, featured, page = 1, limit = 12 } = req.query;
+    const { city, country, featured, page = 1, limit = 12 } = req.query;
 
     const filter: any = {};
 
     if (city) {
       filter.city = new RegExp(city as string, 'i');
+      console.log(`🔍 Filtering agencies by city: ${city}`);
+    }
+
+    if (country) {
+      filter.country = new RegExp(country as string, 'i');
+      console.log(`🔍 Filtering agencies by country: ${country}`);
     }
 
     if (featured === 'true') {
       filter.isFeatured = true;
+      console.log(`⭐ Filtering for featured agencies only`);
     }
 
     const pageNum = Number(page);
     const limitNum = Number(limit);
+
+    // Validate pagination parameters
+    if (isNaN(pageNum) || pageNum < 1) {
+      res.status(400).json({ message: 'Invalid page number' });
+      return;
+    }
+
+    if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+      res.status(400).json({ message: 'Invalid limit (must be 1-100)' });
+      return;
+    }
+
     const skip = (pageNum - 1) * limitNum;
+
+    console.log(`📄 Fetching agencies: page ${pageNum}, limit ${limitNum}, skip ${skip}`);
 
     // Get agencies sorted by rotation order for featured ones
     const agencies = await Agency.find(filter)
@@ -109,9 +130,12 @@ export const getAgencies = async (
       .populate('agents', 'name email phone avatarUrl role agencyName')
       .sort({ isFeatured: -1, adRotationOrder: 1, createdAt: -1 })
       .skip(skip)
-      .limit(limitNum);
+      .limit(limitNum)
+      .lean(); // Use lean() for better performance when we don't need document methods
 
     const total = await Agency.countDocuments(filter);
+
+    console.log(`✅ Found ${agencies.length} agencies out of ${total} total`);
 
     res.json({
       agencies,
@@ -123,8 +147,13 @@ export const getAgencies = async (
       },
     });
   } catch (error: any) {
-    console.error('Get agencies error:', error);
-    res.status(500).json({ message: 'Error fetching agencies', error: error.message });
+    console.error('❌ Get agencies error:', error);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({
+      message: 'Error fetching agencies',
+      error: error.message,
+      filters: req.query
+    });
   }
 };
 
@@ -138,35 +167,79 @@ export const getAgency = async (
   try {
     const { idOrSlug } = req.params;
 
+    if (!idOrSlug) {
+      console.error('❌ getAgency: No idOrSlug parameter provided');
+      res.status(400).json({ message: 'Agency ID or slug is required' });
+      return;
+    }
+
+    console.log(`🔍 Looking up agency by: ${idOrSlug}`);
+
     // Try to find by ID first, then by slug
     let agency;
+    let lookupMethod = '';
+
     if (mongoose.Types.ObjectId.isValid(idOrSlug)) {
+      lookupMethod = 'ID';
+      console.log(`🔑 Attempting lookup by ObjectId: ${idOrSlug}`);
       agency = await Agency.findById(idOrSlug)
         .populate('ownerId', 'name email phone avatarUrl')
         .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber');
     }
 
     if (!agency) {
-      agency = await Agency.findOne({ slug: idOrSlug.toLowerCase() })
+      lookupMethod = 'slug';
+      const slugLower = idOrSlug.toLowerCase();
+      console.log(`🏷️  Attempting lookup by slug: ${slugLower}`);
+      agency = await Agency.findOne({ slug: slugLower })
         .populate('ownerId', 'name email phone avatarUrl')
         .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber');
     }
 
     if (!agency) {
-      res.status(404).json({ message: 'Agency not found' });
+      console.error(`❌ Agency not found for identifier: ${idOrSlug}`);
+      res.status(404).json({
+        message: 'Agency not found',
+        searchedFor: idOrSlug,
+        attemptedMethods: ['ObjectId', 'slug']
+      });
       return;
     }
 
-    // Get agency's properties
-    const properties = await Property.find({
-      sellerId: { $in: [agency.ownerId, ...agency.agents] },
-      status: 'active',
-    }).sort({ createdAt: -1 });
+    console.log(`✅ Agency found via ${lookupMethod}: ${agency.name} (ID: ${agency._id})`);
+
+    // Validate that populated fields were successful
+    if (!agency.ownerId) {
+      console.warn(`⚠️  Agency owner not found or failed to populate for agency: ${agency._id}`);
+    }
+
+    // Get agency's properties with error handling
+    let properties = [];
+    try {
+      const sellerIds = [agency.ownerId, ...agency.agents].filter(Boolean);
+      console.log(`🏠 Fetching properties for ${sellerIds.length} sellers (owner + ${agency.agents.length} agents)`);
+
+      properties = await Property.find({
+        sellerId: { $in: sellerIds },
+        status: 'active',
+      }).sort({ createdAt: -1 });
+
+      console.log(`✅ Found ${properties.length} properties for agency`);
+    } catch (propertyError: any) {
+      console.error(`⚠️  Error fetching properties for agency ${agency._id}:`, propertyError.message);
+      // Continue anyway, return agency without properties
+      properties = [];
+    }
 
     res.json({ agency, properties });
   } catch (error: any) {
-    console.error('Get agency error:', error);
-    res.status(500).json({ message: 'Error fetching agency', error: error.message });
+    console.error('❌ Get agency error:', error);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({
+      message: 'Error fetching agency',
+      error: error.message,
+      identifier: req.params.idOrSlug
+    });
   }
 };
 

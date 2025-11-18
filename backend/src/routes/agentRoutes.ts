@@ -5,6 +5,7 @@ import {
   getAgentByUserId,
   updateAgentProfile,
   addTestimonial,
+  addReview,
 } from '../controllers/agentController';
 import { protect } from '../middleware/auth';
 
@@ -17,6 +18,7 @@ router.get('/user/:userId', getAgentByUserId);
 
 // Protected routes
 router.put('/profile', protect, updateAgentProfile);
-router.post('/:id/testimonials', protect, addTestimonial);
+router.post('/:id/reviews', protect, addReview);
+router.post('/:id/testimonials', protect, addTestimonial); // Deprecated - use /reviews instead
 
 export default router;
