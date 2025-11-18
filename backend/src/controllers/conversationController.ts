@@ -210,7 +210,7 @@ export const sendMessage = async (
       return;
     }
 
-    const { text, imageUrl, encryptedMessage, encryptedKeys, iv } = req.body;
+    const { text, imageUrl, imagePublicId, encryptedMessage, encryptedKeys, iv } = req.body;
 
     // Either have E2E encrypted data or plain text/image
     if (!encryptedMessage && !text && !imageUrl) {
@@ -240,6 +240,7 @@ export const sendMessage = async (
       conversationId: conversation._id,
       senderId: String((req.user as IUser)._id),
       imageUrl,
+      imagePublicId, // Store Cloudinary public ID for cleanup
     };
 
     // E2E encrypted message
@@ -360,16 +361,39 @@ export const uploadMessageImage = async (
       return;
     }
 
-    // Upload to Cloudinary
+    // Upload to Cloudinary with organized folder structure
+    // Store images by both user IDs for tracking who is in the conversation
     const b64 = Buffer.from(req.file.buffer).toString('base64');
     const dataURI = `data:${req.file.mimetype};base64,${b64}`;
 
+    // Create folder path that includes both users
+    // Format: balkan-estate/messages/user-{userId1}-user-{userId2}/conv-{conversationId}
+    const buyerId = String(conversation.buyerId);
+    const sellerId = String(conversation.sellerId);
+    const conversationId = String(conversation._id);
+
+    // Sort user IDs alphabetically for consistent folder naming
+    const [user1, user2] = [buyerId, sellerId].sort();
+    const folderPath = `balkan-estate/messages/user-${user1}-user-${user2}/conv-${conversationId}`;
+
     const result = await cloudinary.uploader.upload(dataURI, {
-      folder: 'balkan-estate/messages',
+      folder: folderPath,
       resource_type: 'image',
+      // Add context for tracking
+      context: {
+        conversation_id: conversationId,
+        buyer_id: buyerId,
+        seller_id: sellerId,
+        uploaded_by: String((req.user as IUser)._id),
+      },
     });
 
-    res.json({ imageUrl: result.secure_url });
+    console.log(`📸 Message image uploaded: ${result.public_id}`);
+
+    res.json({
+      imageUrl: result.secure_url,
+      publicId: result.public_id, // Return public ID for message storage
+    });
   } catch (error: any) {
     console.error('Upload message image error:', error);
     res.status(500).json({ message: 'Error uploading image', error: error.message });
@@ -522,11 +546,36 @@ export const deleteConversation = async (
       return;
     }
 
+    // Get all messages with images to delete from Cloudinary
+    const messagesWithImages = await Message.find({
+      conversationId: conversation._id,
+      imagePublicId: { $exists: true, $ne: null },
+    }).select('imagePublicId');
+
+    // Delete images from Cloudinary
+    if (messagesWithImages.length > 0) {
+      console.log(`🗑️  Deleting ${messagesWithImages.length} images from Cloudinary...`);
+
+      const deletePromises = messagesWithImages.map(async (message) => {
+        try {
+          await cloudinary.uploader.destroy(message.imagePublicId!);
+          console.log(`✅ Deleted image: ${message.imagePublicId}`);
+        } catch (error) {
+          console.error(`❌ Failed to delete image ${message.imagePublicId}:`, error);
+          // Continue even if some images fail to delete
+        }
+      });
+
+      await Promise.all(deletePromises);
+    }
+
     // Delete all messages in the conversation
     await Message.deleteMany({ conversationId: conversation._id });
 
     // Delete the conversation
     await Conversation.findByIdAndDelete(req.params.id);
+
+    console.log(`🗑️  Deleted conversation ${req.params.id} and ${messagesWithImages.length} images`);
 
     res.json({ message: 'Conversation deleted' });
   } catch (error: any) {
