@@ -2,11 +2,15 @@ import { Request, Response } from 'express';
 import Property from '../models/Property';
 import User, { IUser } from '../models/User';
 import Agent from '../models/Agent';
-import cloudinary from '../config/cloudinary';
-import { Readable } from 'stream';
 import { geocodeProperty } from '../services/geocodingService';
 import { incrementViewCount, updateSoldStats } from '../utils/statsUpdater';
-import sharp from 'sharp';
+import {
+  uploadPropertyImages,
+  uploadImage,
+  deleteImages,
+  deleteFolder,
+  moveImagesToProperty,
+} from '../services/cloudinaryService';
 
 // @desc    Get all properties with filters
 // @route   GET /api/properties
@@ -358,34 +362,40 @@ export const deleteProperty = async (
 
     // Delete images from Cloudinary before deleting property
     try {
-      // Delete all property images
-      if (property.images && property.images.length > 0) {
-        const publicIds = property.images
-          .map((img: any) => img.publicId)
-          .filter((id: string) => id); // Filter out any undefined/null publicIds
+      const userId = currentUser._id.toString();
+      const propertyId = property._id.toString();
 
-        if (publicIds.length > 0) {
-          await cloudinary.api.delete_resources(publicIds, {
-            resource_type: 'image',
-          });
-        }
-      }
+      // Option 1: Delete entire property folder (most efficient)
+      // This deletes all images in balkan-estate/properties/user-{userId}/listing-{propertyId}/
+      await deleteFolder(`balkan-estate/properties/user-${userId}/listing-${propertyId}`);
 
-      // Delete main image if it has a publicId
+      // Option 2 (fallback): Delete individual images if they exist
+      const publicIdsToDelete: string[] = [];
+
+      // Collect all public IDs
       if (property.imagePublicId) {
-        await cloudinary.uploader.destroy(property.imagePublicId, {
-          resource_type: 'image',
-        });
+        publicIdsToDelete.push(property.imagePublicId);
       }
 
-      // Delete floorplan image if exists
       if (property.floorplanPublicId) {
-        await cloudinary.uploader.destroy(property.floorplanPublicId, {
-          resource_type: 'image',
-        });
+        publicIdsToDelete.push(property.floorplanPublicId);
       }
+
+      if (property.images && property.images.length > 0) {
+        const imagePublicIds = property.images
+          .map((img: any) => img.publicId)
+          .filter((id: string) => id);
+        publicIdsToDelete.push(...imagePublicIds);
+      }
+
+      // Delete any remaining images that weren't in the folder
+      if (publicIdsToDelete.length > 0) {
+        await deleteImages(publicIdsToDelete);
+      }
+
+      console.log(`✅ Cleaned up all images for property ${propertyId}`);
     } catch (cloudinaryError: any) {
-      console.error('Error deleting images from Cloudinary:', cloudinaryError);
+      console.error('⚠️  Error deleting images from Cloudinary:', cloudinaryError);
       // Continue with property deletion even if Cloudinary cleanup fails
     }
 
@@ -442,6 +452,7 @@ export const getMyListings = async (
 
 // @desc    Upload property images
 // @route   POST /api/properties/upload-images
+// @route   POST /api/properties/:propertyId/upload-images (with property ID for organized folders)
 // @access  Private
 export const uploadImages = async (
   req: Request,
@@ -459,66 +470,33 @@ export const uploadImages = async (
     }
 
     const files = req.files as Express.Multer.File[];
-    const uploadedImages: { url: string; publicId: string; tag: string }[] = [];
     const userId = req.user.id;
+    const propertyId = req.params.propertyId || req.body.propertyId;
 
-    // Compress and upload each file to Cloudinary with organized folder structure
-    for (const file of files) {
-      // Compress image using sharp
-      // - Resize to max 1920x1080 (maintaining aspect ratio)
-      // - Convert to JPEG with 85% quality (good balance between quality and size)
-      // - Remove metadata to reduce file size
-      // - Progressive JPEG for better web loading
-      const compressedBuffer = await sharp(file.buffer)
-        .resize(1920, 1080, {
-          fit: 'inside',
-          withoutEnlargement: true, // Don't upscale smaller images
-        })
-        .jpeg({
-          quality: 85, // 85% quality - high quality but good compression
-          progressive: true, // Progressive JPEG for better web loading
-        })
-        .toBuffer();
+    // If propertyId is provided, verify ownership
+    if (propertyId) {
+      const property = await Property.findById(propertyId);
+      if (!property) {
+        res.status(404).json({ message: 'Property not found' });
+        return;
+      }
 
-      const result = await new Promise<any>((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          {
-            // Organized folder structure: balkan-estate/properties/users/{userId}
-            folder: `balkan-estate/properties/users/${userId}`,
-            resource_type: 'image',
-            // Add auto optimization transformations
-            transformation: [
-              { quality: 'auto:good' }, // Auto quality (reduces costs)
-              { fetch_format: 'auto' }, // Auto format (WebP when supported)
-            ],
-            // Add context for better organization
-            context: {
-              type: 'property_image',
-              user_id: userId,
-            },
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        );
-
-        const readableStream = new Readable();
-        readableStream.push(compressedBuffer);
-        readableStream.push(null);
-        readableStream.pipe(uploadStream);
-      });
-
-      uploadedImages.push({
-        url: result.secure_url,
-        publicId: result.public_id,
-        tag: 'other',
-      });
+      if (property.sellerId.toString() !== userId.toString()) {
+        res.status(403).json({ message: 'Not authorized to upload images for this property' });
+        return;
+      }
     }
 
-    res.json({ images: uploadedImages });
+    // Upload images using the centralized service
+    // Images will be organized in: balkan-estate/properties/user-{userId}/listing-{propertyId}/
+    const uploadedImages = await uploadPropertyImages(files, userId, propertyId);
+
+    res.json({
+      images: uploadedImages,
+      message: `Successfully uploaded ${uploadedImages.length} images`,
+    });
   } catch (error: any) {
-    console.error('Upload images error:', error);
+    console.error('❌ Upload images error:', error);
     res.status(500).json({ message: 'Error uploading images', error: error.message });
   }
 };

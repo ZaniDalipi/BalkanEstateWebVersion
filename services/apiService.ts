@@ -324,14 +324,37 @@ export const getMyListings = async (): Promise<Property[]> => {
   return response.properties.map(transformBackendProperty);
 };
 
-export const uploadPropertyImages = async (images: File[]): Promise<{ url: string; tag: string }[]> => {
+/**
+ * Upload property images to Cloudinary
+ * @param images - Array of image files to upload
+ * @param propertyId - Optional property ID for organized folder structure
+ * @returns Array of uploaded images with URLs and public IDs
+ *
+ * If propertyId is provided, images will be stored in:
+ *   balkan-estate/properties/user-{userId}/listing-{propertyId}/
+ * Otherwise, they'll be stored in a temp folder:
+ *   balkan-estate/properties/user-{userId}/temp/
+ */
+export const uploadPropertyImages = async (
+  images: File[],
+  propertyId?: string
+): Promise<{ url: string; publicId: string; tag: string }[]> => {
   const formData = new FormData();
   images.forEach((image) => {
     formData.append('images', image);
   });
 
+  // Add propertyId if provided
+  if (propertyId) {
+    formData.append('propertyId', propertyId);
+  }
+
   const token = getToken();
-  const response = await fetch(`${API_URL}/properties/upload-images`, {
+  const endpoint = propertyId
+    ? `${API_URL}/properties/${propertyId}/upload-images`
+    : `${API_URL}/properties/upload-images`;
+
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -340,7 +363,8 @@ export const uploadPropertyImages = async (images: File[]): Promise<{ url: strin
   });
 
   if (!response.ok) {
-    throw new Error('Failed to upload images');
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to upload images');
   }
 
   const data = await response.json();
