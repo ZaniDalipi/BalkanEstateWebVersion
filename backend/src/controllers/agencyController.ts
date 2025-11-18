@@ -688,30 +688,48 @@ export const joinAgencyByInvitationCode = async (
     user.agencyId = agency._id as mongoose.Types.ObjectId;
     await user.save();
 
-    // Also update the Agent document
+    // Also update the Agent document with both agency name and ID
     const Agent = mongoose.model('Agent');
-    await Agent.findOneAndUpdate(
+    const updatedAgent = await Agent.findOneAndUpdate(
       { userId: user._id },
-      { agencyName: agency.name },
+      {
+        agencyName: agency.name,
+        agencyId: agency._id,
+      },
       { new: true }
     );
 
+    // Return complete user and agency data
     res.json({
       message: `Successfully joined ${agency.name}!`,
       agency: {
         id: agency._id,
         name: agency.name,
+        slug: agency.slug,
         city: agency.city,
         country: agency.country,
+        totalAgents: agency.totalAgents,
+        totalProperties: agency.totalProperties,
       },
       user: {
+        _id: user._id,
         id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         role: user.role,
+        avatarUrl: user.avatarUrl,
+        city: user.city,
+        country: user.country,
         agencyName: user.agencyName,
         agencyId: user.agencyId,
-      }
+        licenseNumber: user.licenseNumber,
+        agentId: user.agentId,
+        isSubscribed: user.isSubscribed,
+        subscriptionPlan: user.subscriptionPlan,
+        listingsCount: user.listingsCount,
+      },
+      agent: updatedAgent,
     });
   } catch (error: any) {
     console.error('Join agency by invitation code error:', error);

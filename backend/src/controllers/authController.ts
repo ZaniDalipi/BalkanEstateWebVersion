@@ -77,6 +77,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       await Agent.create({
         userId: user._id,
         agencyName: agencyName!,
+        agencyId: agencyId || undefined,
         agentId: generatedAgentId!,
         licenseNumber,
         licenseVerified: true,
@@ -479,6 +480,7 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
       if (existingAgentRecord) {
         // Update existing agent record
         existingAgentRecord.agencyName = agencyName;
+        existingAgentRecord.agencyId = agency ? (agency._id as mongoose.Types.ObjectId) : undefined;
         existingAgentRecord.agentId = generatedAgentId;
         existingAgentRecord.licenseNumber = licenseNumber;
         existingAgentRecord.licenseVerified = true;
@@ -490,6 +492,7 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
         await Agent.create({
           userId: user._id,
           agencyName: agencyName,
+          agencyId: agency ? agency._id : undefined,
           agentId: generatedAgentId,
           licenseNumber,
           licenseVerified: true,

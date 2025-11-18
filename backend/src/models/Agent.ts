@@ -12,6 +12,7 @@ export interface ITestimonial {
 export interface IAgent extends Document {
   userId: mongoose.Types.ObjectId;
   agencyName: string;
+  agencyId?: mongoose.Types.ObjectId;
   agentId: string;
   licenseNumber: string;
   licenseVerified: boolean;
@@ -82,6 +83,11 @@ const AgentSchema: Schema = new Schema(
     agencyName: {
       type: String,
       required: true,
+    },
+    agencyId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Agency',
+      index: true,
     },
     agentId: {
       type: String,

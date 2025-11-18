@@ -144,18 +144,22 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                     licenseData.selectedAgencyId
                 );
 
-                // Update user with new agency info
+                // Update user with complete agency info from backend
                 const updatedUser = response.user;
+
+                // Update context immediately
                 dispatch({ type: 'UPDATE_USER', payload: updatedUser });
                 setFormData(updatedUser);
                 setIsLicenseModalOpen(false);
                 setIsSaved(true);
 
                 // Show success message
-                alert(`✅ Successfully joined ${updatedUser.agencyName}!\n\n🏢 You are now affiliated with this agency.\n\n👉 Your profile has been updated in the Agents page.`);
+                alert(`✅ Successfully joined ${updatedUser.agencyName}!\n\n🏢 You are now affiliated with ${response.agency.name}.\n🎯 Total Agents: ${response.agency.totalAgents}\n\n👉 Refreshing to show latest data...`);
 
-                // Refresh the page to show updated data
-                window.location.reload();
+                // Force complete page refresh to sync all data (profile, DB, agents list, agency pages)
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
             } else {
                 // New agent registration
                 const roleToSwitch = pendingRole || formData.role;
