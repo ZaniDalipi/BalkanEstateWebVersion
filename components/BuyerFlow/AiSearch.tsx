@@ -22,9 +22,14 @@ const AiSearch: React.FC<AiSearchProps> = ({ properties, onApplyFilters, isMobil
     const [isSearching, setIsSearching] = useState(false);
     const [finalQuery, setFinalQuery] = useState<AiSearchQuery | null>(null);
     const chatEndRef = useRef<HTMLDivElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        // Only scroll if there's content in the history
+        if (history.length > 0 && scrollContainerRef.current) {
+            // Scroll the container directly to avoid page-level scrolling
+            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+        }
     };
 
     useEffect(scrollToBottom, [history, isSearching]);
@@ -87,7 +92,7 @@ const AiSearch: React.FC<AiSearchProps> = ({ properties, onApplyFilters, isMobil
 
     return (
         <div className={`flex flex-col h-full bg-white border border-neutral-200 rounded-lg`}>
-            <div className="flex-grow min-h-0 p-4 space-y-4 overflow-y-auto">
+            <div ref={scrollContainerRef} className="flex-grow min-h-0 p-4 space-y-4 overflow-y-auto">
                 {history.map((msg, index) => (
                     <div key={index} className={`flex items-end gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                          {msg.sender === 'ai' && (
