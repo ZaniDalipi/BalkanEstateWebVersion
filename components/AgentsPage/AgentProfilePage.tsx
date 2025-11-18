@@ -12,17 +12,36 @@ interface AgentProfilePageProps {
   agent: Agent;
 }
 
-const StatCard: React.FC<{ label: string; value: string | number; icon: React.ReactNode }> = ({ label, value, icon }) => (
-    <div className="bg-primary-light p-4 rounded-lg flex items-center gap-4">
-        <div className="bg-white p-3 rounded-full text-primary">
-            {icon}
+const StatCard: React.FC<{
+    label: string;
+    value: string | number;
+    icon: React.ReactNode;
+    onClick?: () => void;
+    isActive?: boolean;
+}> = ({ label, value, icon, onClick, isActive }) => {
+    const baseClasses = "p-4 rounded-lg flex items-center gap-4 transition-all";
+    const interactiveClasses = onClick ? "cursor-pointer hover:shadow-lg hover:scale-105" : "";
+    const bgClasses = isActive ? "bg-primary text-white shadow-lg" : "bg-primary-light";
+    const iconBgClasses = isActive ? "bg-white/20" : "bg-white";
+    const iconColorClasses = isActive ? "text-white" : "text-primary";
+    const textColorClasses = isActive ? "text-white" : "text-primary-dark";
+    const labelColorClasses = isActive ? "text-white/90" : "text-primary-dark/80";
+
+    return (
+        <div
+            className={`${baseClasses} ${interactiveClasses} ${bgClasses}`}
+            onClick={onClick}
+        >
+            <div className={`${iconBgClasses} p-3 rounded-full ${iconColorClasses}`}>
+                {icon}
+            </div>
+            <div>
+                <p className={`text-sm font-semibold ${labelColorClasses}`}>{label}</p>
+                <p className={`text-xl sm:text-2xl font-bold ${textColorClasses}`}>{value}</p>
+            </div>
         </div>
-        <div>
-            <p className="text-sm font-semibold text-primary-dark/80">{label}</p>
-            <p className="text-xl sm:text-2xl font-bold text-primary-dark">{value}</p>
-        </div>
-    </div>
-);
+    );
+};
 
 const ProfileAvatar: React.FC<{ agent: Agent }> = ({ agent }) => {
     const [error, setError] = useState(false);
@@ -44,8 +63,13 @@ const ProfileAvatar: React.FC<{ agent: Agent }> = ({ agent }) => {
 const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     const { state, dispatch } = useAppContext();
     const { isLoadingProperties, currentUser } = state;
-    const agentProperties = state.properties.filter(p => p.sellerId === agent.id && p.status === 'active');
+    const [propertyView, setPropertyView] = useState<'active' | 'sold'>('active');
     const [showReviewForm, setShowReviewForm] = useState(false);
+
+    const agentProperties = state.properties.filter(p => {
+        if (p.sellerId !== agent.id) return false;
+        return propertyView === 'active' ? p.status === 'active' : p.status === 'sold';
+    });
 
     const handleBack = () => {
         dispatch({ type: 'SET_SELECTED_AGENT', payload: null });
@@ -109,13 +133,27 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <StatCard label="Total Sales Value" value={formatPrice(agent.totalSalesValue, 'Serbia')} icon={<ChartBarIcon className="w-6 h-6"/>} />
-            <StatCard label="Properties Sold" value={agent.propertiesSold} icon={<BuildingOfficeIcon className="w-6 h-6"/>} />
-            <StatCard label="Active Listings" value={agent.activeListings} icon={<BuildingOfficeIcon className="w-6 h-6"/>} />
+            <StatCard
+                label="Properties Sold"
+                value={agent.propertiesSold}
+                icon={<BuildingOfficeIcon className="w-6 h-6"/>}
+                onClick={() => setPropertyView('sold')}
+                isActive={propertyView === 'sold'}
+            />
+            <StatCard
+                label="Active Listings"
+                value={agent.activeListings}
+                icon={<BuildingOfficeIcon className="w-6 h-6"/>}
+                onClick={() => setPropertyView('active')}
+                isActive={propertyView === 'active'}
+            />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-                <h2 className="text-xl sm:text-2xl font-bold text-neutral-800 mb-4">Active Listings</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-neutral-800 mb-4">
+                    {propertyView === 'active' ? 'Active Listings' : 'Sold Properties'}
+                </h2>
                 {isLoadingProperties ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <PropertyCardSkeleton />
@@ -127,7 +165,12 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                     </div>
                 ) : (
                     <div className="text-center p-8 bg-white rounded-lg border">
-                        <p className="text-neutral-600">{agent.name} has no active listings at the moment.</p>
+                        <p className="text-neutral-600">
+                            {propertyView === 'active'
+                                ? `${agent.name} has no active listings at the moment.`
+                                : `${agent.name} has no sold properties yet.`
+                            }
+                        </p>
                     </div>
                 )}
             </div>
