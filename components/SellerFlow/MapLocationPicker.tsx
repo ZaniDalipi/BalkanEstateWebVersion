@@ -18,9 +18,10 @@ interface MapLocationPickerProps {
   address: string;
   zoom?: number;
   onLocationChange: (lat: number, lng: number) => void;
+  onAddressChange?: (address: string) => void;
 }
 
-const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address, zoom = 15, onLocationChange }) => {
+const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address, zoom = 15, onLocationChange, onAddressChange }) => {
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -206,6 +207,15 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
 
     // Update marker and map
     onLocationChange(newLat, newLng);
+
+    // Extract location name (first part of display_name, usually the most specific location)
+    // For example: "Dragash, Gjakova, Kosovo" -> "Dragash"
+    const locationName = result.name || result.display_name.split(',')[0].trim();
+
+    // Update address if callback is provided
+    if (onAddressChange) {
+      onAddressChange(locationName);
+    }
 
     // Fly to the location with appropriate zoom
     if (mapRef.current) {

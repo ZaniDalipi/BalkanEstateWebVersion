@@ -345,6 +345,14 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         }));
     };
 
+    const handleMapAddressChange = (searchedLocation: string) => {
+        // Update the street address field with the searched location
+        setListingData(prev => ({
+            ...prev,
+            streetAddress: searchedLocation,
+        }));
+    };
+
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const files = Array.from(e.target.files);
@@ -790,6 +798,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                                     address={`${selectedCity}, ${selectedCountry}`}
                                     zoom={getZoomLevel}
                                     onLocationChange={handleMapLocationChange}
+                                    onAddressChange={handleMapAddressChange}
                                 />
                             </div>
                         )}
@@ -797,7 +806,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('streetAddress')?.focus()}>
                             <input type="text" id="streetAddress" name="streetAddress" value={listingData.streetAddress} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " />
                             <label htmlFor="streetAddress" className={floatingLabelClasses}>Street Address (Optional)</label>
-                            <p className="mt-1 text-xs text-neutral-500">Example: Rruga Ilir Konushevci 28 • If left empty, defaults to city center</p>
+                            <p className="mt-1 text-xs text-neutral-500">Search on the map above to auto-fill, or type manually • Example: Rruga Ilir Konushevci 28, Dragash</p>
                         </div>
 
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('price')?.focus()}>
