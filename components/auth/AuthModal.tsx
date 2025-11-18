@@ -47,6 +47,8 @@ const AuthPage: React.FC = () => {
     const [isAgent, setIsAgent] = useState(false);
     const [selectedAgencyId, setSelectedAgencyId] = useState<string>('');
     const [agencies, setAgencies] = useState<Agency[]>([]);
+    const [licenseNumber, setLicenseNumber] = useState('');
+    const [agencyInvitationCode, setAgencyInvitationCode] = useState('');
 
     useEffect(() => {
         // Fetch available OAuth providers

@@ -7,7 +7,7 @@ import { User, UserRole, Agency } from '../../types';
 import { BuildingOfficeIcon, ChartBarIcon, UserCircleIcon, ArrowLeftOnRectangleIcon } from '../../constants';
 import AgentLicenseModal from './AgentLicenseModal';
 import AgencyManagementSection from './AgencyManagementSection';
-import { switchRole, joinAgencyByInvitationCode } from '../../services/apiService';
+import { switchRole, joinAgencyByInvitationCode, getAgencies } from '../../services/apiService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
@@ -84,6 +84,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
     const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
     const [error, setError] = useState('');
+    const [agencies, setAgencies] = useState<Agency[]>([]);
     const [invitationCode, setInvitationCode] = useState('');
     const [isJoiningAgency, setIsJoiningAgency] = useState(false);
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
