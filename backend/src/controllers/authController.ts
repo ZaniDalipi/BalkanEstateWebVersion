@@ -14,7 +14,7 @@ import { Readable } from 'stream';
 // @access  Public
 export const signup = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, name, phone, role } = req.body;
+    const { email, password, name, phone, role, licenseNumber, agencyInvitationCode } = req.body;
 
     // Check if user already exists
     const userExists = await User.findOne({ email });
@@ -24,6 +24,41 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    let agencyName = undefined;
+    let agencyId = undefined;
+    let generatedAgentId = undefined;
+
+    // If signing up as agent, validate and set up agent data
+    if (role === 'agent' && licenseNumber) {
+      // Validate license number format (adjust regex as needed)
+      const licenseRegex = /^[A-Z0-9-]+$/i;
+      if (!licenseRegex.test(licenseNumber)) {
+        res.status(400).json({ message: 'Invalid license number format' });
+        return;
+      }
+
+      let agency = null;
+      agencyName = 'Independent Agent'; // Default for independent agents
+
+      // If agency invitation code is provided, verify it
+      if (agencyInvitationCode) {
+        agency = await Agency.findOne({ invitationCode: agencyInvitationCode.toUpperCase() });
+
+        if (!agency) {
+          res.status(404).json({
+            message: 'Invalid agency invitation code. Please check the code and try again.'
+          });
+          return;
+        }
+
+        agencyName = agency.name; // Use verified agency name
+        agencyId = agency._id as unknown as mongoose.Types.ObjectId;
+      }
+
+      // Generate agent ID
+      generatedAgentId = `AG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    }
+
     // Create user
     const user = await User.create({
       email,
@@ -31,7 +66,37 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       name,
       phone,
       role: role || 'buyer',
+      licenseNumber: generatedAgentId ? licenseNumber : undefined,
+      agencyName: agencyName,
+      agencyId: agencyId,
+      agentId: generatedAgentId,
     });
+
+    // If agent, create Agent record and add to agency
+    if (role === 'agent' && licenseNumber) {
+      await Agent.create({
+        userId: user._id,
+        agencyName: agencyName!,
+        agentId: generatedAgentId!,
+        licenseNumber,
+        licenseVerified: true,
+        licenseVerificationDate: new Date(),
+        isActive: true,
+      });
+
+      // Add agent to agency's agents array if agency was provided
+      if (agencyId) {
+        const agency = await Agency.findById(agencyId);
+        if (agency) {
+          const userObjectId = user._id as unknown as mongoose.Types.ObjectId;
+          if (!agency.agents.some(agentId => agentId.toString() === userObjectId.toString())) {
+            agency.agents.push(userObjectId);
+            agency.totalAgents = agency.agents.length;
+            await agency.save();
+          }
+        }
+      }
+    }
 
     // Generate token
     const token = generateToken(String(user._id));

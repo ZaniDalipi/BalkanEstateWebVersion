@@ -45,8 +45,8 @@ const AuthPage: React.FC = () => {
     const [code, setCode] = useState('');
     const [name, setName] = useState('');
     const [isAgent, setIsAgent] = useState(false);
-    const [selectedAgencyId, setSelectedAgencyId] = useState<string>('');
-    const [agencies, setAgencies] = useState<any[]>([]);
+    const [agencyInvitationCode, setAgencyInvitationCode] = useState<string>('');
+    const [licenseNumber, setLicenseNumber] = useState<string>('');
 
     useEffect(() => {
         // Fetch available OAuth providers
@@ -61,22 +61,6 @@ const AuthPage: React.FC = () => {
         };
         fetchProviders();
     }, []);
-
-    useEffect(() => {
-        // Fetch agencies when user selects "I'm an agent"
-        const fetchAgencies = async () => {
-            if (isAgent && state.authModalView === 'signup') {
-                try {
-                    const { getAgencies } = await import('../../services/apiService');
-                    const response = await getAgencies({});
-                    setAgencies(response.agencies || []);
-                } catch (error) {
-                    console.error('Error fetching agencies:', error);
-                }
-            }
-        };
-        fetchAgencies();
-    }, [isAgent, state.authModalView]);
 
     useEffect(() => {
         // Reset state when modal opens or view changes
@@ -124,10 +108,24 @@ const AuthPage: React.FC = () => {
             if (state.authModalView === 'login') {
                 await login(email, password);
             } else {
-                await signup(email, password, {
+                const signupData: any = {
                     role: isAgent ? 'agent' : 'buyer',
-                    requestAgencyId: isAgent && selectedAgencyId ? selectedAgencyId : undefined,
-                });
+                };
+
+                // If signing up as agent, include license and optional agency code
+                if (isAgent) {
+                    if (!licenseNumber.trim()) {
+                        setError('License number is required for agents');
+                        setIsLoading(false);
+                        return;
+                    }
+                    signupData.licenseNumber = licenseNumber.trim();
+                    if (agencyInvitationCode.trim()) {
+                        signupData.agencyInvitationCode = agencyInvitationCode.trim().toUpperCase();
+                    }
+                }
+
+                await signup(email, password, signupData);
             }
             handleClose();
         } catch (err: any) {
@@ -254,26 +252,41 @@ const AuthPage: React.FC = () => {
                                             </label>
                                         </div>
 
-                                        {/* Agency dropdown - shown only if isAgent is true */}
+                                        {/* License and agency code fields - shown only if isAgent is true */}
                                         {isAgent && (
-                                            <div className="relative">
-                                                <select
-                                                    id="agency"
-                                                    value={selectedAgencyId}
-                                                    onChange={(e) => setSelectedAgencyId(e.target.value)}
-                                                    className="block px-2.5 pb-2.5 pt-4 w-full text-base text-neutral-900 bg-white rounded-lg border border-neutral-300 appearance-none focus:outline-none focus:ring-0 focus:border-primary peer"
-                                                >
-                                                    <option value="">No agency (independent agent)</option>
-                                                    {agencies.map((agency) => (
-                                                        <option key={agency._id} value={agency._id}>
-                                                            {agency.name} - {agency.city}, {agency.country}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                <label htmlFor="agency" className="absolute text-sm text-neutral-700 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary start-1">
-                                                    Request to join an agency (optional)
-                                                </label>
-                                            </div>
+                                            <>
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        id="licenseNumber"
+                                                        value={licenseNumber}
+                                                        onChange={(e) => setLicenseNumber(e.target.value)}
+                                                        className={floatingInputClasses}
+                                                        placeholder=" "
+                                                        required
+                                                    />
+                                                    <label htmlFor="licenseNumber" className={floatingLabelClasses}>
+                                                        License Number
+                                                    </label>
+                                                </div>
+
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        id="agencyInvitationCode"
+                                                        value={agencyInvitationCode}
+                                                        onChange={(e) => setAgencyInvitationCode(e.target.value.toUpperCase())}
+                                                        className={floatingInputClasses}
+                                                        placeholder=" "
+                                                    />
+                                                    <label htmlFor="agencyInvitationCode" className={floatingLabelClasses}>
+                                                        Agency Invitation Code (Optional)
+                                                    </label>
+                                                    <p className="text-xs text-gray-500 mt-1 ml-1">
+                                                        Leave empty to register as an independent agent
+                                                    </p>
+                                                </div>
+                                            </>
                                         )}
                                     </>
                                 )}
