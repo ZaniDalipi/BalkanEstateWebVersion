@@ -31,8 +31,14 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
 
   // Fetch agencies when modal opens (for joining agency scenario)
   useEffect(() => {
-    if (isOpen && isJoiningAgency) {
+    // Only fetch if modal is open, user is joining agency, and we haven't fetched yet
+    if (isOpen && isJoiningAgency && agencies.length === 0 && !loadingAgencies) {
       fetchAgencies();
+    }
+    // Cleanup when modal closes
+    if (!isOpen && agencies.length > 0) {
+      setAgencies([]);
+      setSelectedAgency('');
     }
   }, [isOpen, isJoiningAgency]);
 

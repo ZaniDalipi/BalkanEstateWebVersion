@@ -95,9 +95,13 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                     const data = await response.json();
                     dispatch({ type: 'SET_SELECTED_AGENCY', payload: data.agency });
                     dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
+                } else {
+                    console.error('Agency not found:', agent.agencyName);
+                    alert(`Agency "${agent.agencyName}" not found. It may have been removed or renamed.`);
                 }
             } catch (error) {
                 console.error('Error fetching agency:', error);
+                alert('Failed to load agency details. Please try again.');
             }
         }
     };
