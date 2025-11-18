@@ -57,6 +57,14 @@ export interface IUser extends Document {
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   publicKey?: string; // E2E encryption public key (JWK format)
+
+  // Neighborhood Insights Usage Tracking
+  neighborhoodInsights?: {
+    monthlyCount: number;        // Number of insights generated this month
+    lastUsed?: Date;             // Last time insights were requested
+    monthResetDate: Date;        // When the monthly counter resets
+  };
+
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -240,6 +248,25 @@ const UserSchema: Schema = new Schema(
     publicKey: {
       type: String,
       required: false,
+    },
+    neighborhoodInsights: {
+      monthlyCount: {
+        type: Number,
+        default: 0,
+      },
+      lastUsed: {
+        type: Date,
+      },
+      monthResetDate: {
+        type: Date,
+        default: () => {
+          const nextMonth = new Date();
+          nextMonth.setMonth(nextMonth.getMonth() + 1);
+          nextMonth.setDate(1);
+          nextMonth.setHours(0, 0, 0, 0);
+          return nextMonth;
+        },
+      },
     },
   },
   {

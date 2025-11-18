@@ -18,7 +18,6 @@ import {
     StreetViewIcon,
     CheckCircleIcon,
 } from '../../constants';
-import { getNeighborhoodInsights } from '../../services/geminiService';
 import { createConversation, sendMessage, uploadMessageImage } from '../../services/apiService';
 import ImageViewerModal from './ImageViewerModal';
 import FloorPlanViewerModal from './FloorPlanViewerModal';
@@ -304,18 +303,51 @@ const parseMarkdown = (text: string) => {
 };
 
 const NeighborhoodInsights: React.FC<{ lat: number; lng: number; city: string; country: string; }> = ({ lat, lng, city, country }) => {
+    const { state, dispatch } = useAppContext();
     const [insights, setInsights] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isRequested, setIsRequested] = useState(false);
+    const [usage, setUsage] = useState<{ used: number; limit: number; remaining: number } | null>(null);
 
     const fetchInsights = async () => {
+        // Check if user is authenticated
+        if (!state.isAuthenticated || !state.currentUser) {
+            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
+            return;
+        }
+
         setIsRequested(true);
-        setLoading(true); 
+        setLoading(true);
         setError(null);
         try {
-            const result = await getNeighborhoodInsights(lat, lng, city, country);
-            setInsights(result);
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+            const token = localStorage.getItem('balkan_estate_token');
+
+            const response = await fetch(`${API_URL}/neighborhood-insights`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({ lat, lng, city, country }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                if (response.status === 429) {
+                    // Rate limit exceeded
+                    setError(data.message);
+                    setUsage({ used: data.used, limit: data.limit, remaining: 0 });
+                } else {
+                    setError(data.message || 'Failed to fetch neighborhood insights');
+                }
+                return;
+            }
+
+            setInsights(data.insights);
+            setUsage(data.usage);
         } catch (err) {
             if (err instanceof Error) setError(err.message);
             else setError('An unknown error occurred.');
@@ -326,15 +358,23 @@ const NeighborhoodInsights: React.FC<{ lat: number; lng: number; city: string; c
 
     const renderContent = () => {
         if (!isRequested) {
+            const isAuthenticated = state.isAuthenticated && state.currentUser;
             return (
                 <div className="text-center">
-                    <p className="text-neutral-600 mb-4">Discover what's around this property. Our AI can provide details on nearby schools, parks, and transport.</p>
-                    <button 
+                    <p className="text-neutral-600 mb-4">
+                        Discover what's around this property. Our AI can provide details on nearby schools, parks, and transport.
+                    </p>
+                    {!isAuthenticated && (
+                        <p className="text-sm text-amber-600 mb-4 font-semibold">
+                            🔒 Login required - Free users get 3 insights/month, premium users get 20/month
+                        </p>
+                    )}
+                    <button
                         onClick={fetchInsights}
                         className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
                     >
                         <SparklesIcon className="w-5 h-5"/>
-                        Generate Insights
+                        {isAuthenticated ? 'Generate Insights' : 'Login & Generate Insights'}
                     </button>
                 </div>
             );
@@ -352,17 +392,36 @@ const NeighborhoodInsights: React.FC<{ lat: number; lng: number; city: string; c
         }
         if (error) {
             return (
-                <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-200 text-center">
-                    <p><strong>Could not load neighborhood insights.</strong></p>
-                    <button onClick={fetchInsights} className="mt-2 text-sm font-semibold underline">Try again</button>
+                <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
+                    <p className="text-center"><strong>{error}</strong></p>
+                    {usage && (
+                        <p className="text-sm text-center mt-2">
+                            Usage: {usage.used}/{usage.limit} insights used this month
+                        </p>
+                    )}
+                    <div className="text-center">
+                        <button onClick={fetchInsights} className="mt-3 text-sm font-semibold underline">Try again</button>
+                    </div>
                 </div>
             );
         }
         if (insights) {
             return (
-                <div className="prose prose-sm max-w-none text-neutral-700 space-y-3 animate-fade-in">
-                    {parseMarkdown(insights)}
-                </div>
+                <>
+                    <div className="prose prose-sm max-w-none text-neutral-700 space-y-3 animate-fade-in">
+                        {parseMarkdown(insights)}
+                    </div>
+                    {usage && usage.remaining !== undefined && (
+                        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <p className="text-sm text-blue-800 text-center">
+                                <strong>{usage.remaining}</strong> of {usage.limit} insights remaining this month
+                                {usage.remaining === 0 && !state.currentUser?.isSubscribed && (
+                                    <span className="block mt-1 text-xs">Upgrade to premium for more insights!</span>
+                                )}
+                            </p>
+                        </div>
+                    )}
+                </>
             );
         }
         return null;
@@ -501,7 +560,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
   const [isFloorPlanOpen, setIsFloorPlanOpen] = useState(false);
   const [mainImageError, setMainImageError] = useState(false);
   const [isSharePopoverOpen, setIsSharePopoverOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'photos' | 'streetview'>('streetview'); // Default to street view
+  const [viewMode, setViewMode] = useState<'photos' | 'streetview'>('photos'); // Default to photos
   const [isStreetViewAvailable, setIsStreetViewAvailable] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
@@ -884,12 +943,21 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
-                <h3 className="text-lg sm:text-xl font-bold text-neutral-800 mb-4">Location on Map</h3>
-                <div className="h-80 rounded-lg overflow-hidden border">
-                    <PropertyLocationMap lat={property.lat} lng={property.lng} address={property.address} />
-                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-neutral-800 mb-4">View on Map</h3>
+                <p className="text-neutral-600 mb-4">Want to explore the area around this property?</p>
+                <button
+                    onClick={() => {
+                        dispatch({ type: 'SET_SELECTED_PROPERTY', payload: null });
+                        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
+                        // TODO: Center map on property location
+                    }}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
+                >
+                    <MapPinIcon className="w-5 h-5" />
+                    View on Search Map
+                </button>
             </div>
-            
+
             <NeighborhoodInsights 
                 lat={property.lat} 
                 lng={property.lng} 
