@@ -749,6 +749,14 @@ export const removeAgentFromAgency = async (agencyId: string, agentId: string): 
   });
 };
 
+export const joinAgencyByInvitationCode = async (invitationCode: string, agencyId?: string): Promise<any> => {
+  return await apiRequest('/agencies/join-by-code', {
+    method: 'POST',
+    body: { invitationCode, agencyId },
+    requiresAuth: true,
+  });
+};
+
 // --- AGENCY JOIN REQUEST API ---
 
 export const createJoinRequest = async (agencyId: string, message?: string): Promise<any> => {

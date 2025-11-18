@@ -626,7 +626,7 @@ export const joinAgencyByInvitationCode = async (
       return;
     }
 
-    const { invitationCode } = req.body;
+    const { invitationCode, agencyId } = req.body;
 
     if (!invitationCode) {
       res.status(400).json({ message: 'Invitation code is required' });
@@ -652,6 +652,14 @@ export const joinAgencyByInvitationCode = async (
 
     if (!agency) {
       res.status(404).json({ message: 'Invalid invitation code' });
+      return;
+    }
+
+    // If agencyId is provided, validate that the invitation code matches the selected agency
+    if (agencyId && String(agency._id) !== String(agencyId)) {
+      res.status(400).json({
+        message: `This invitation code does not belong to the selected agency. Please verify the code and try again.`
+      });
       return;
     }
 

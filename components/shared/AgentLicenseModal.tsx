@@ -5,7 +5,7 @@ import { getAgencies } from '../../services/apiService';
 interface AgentLicenseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (licenseData: { licenseNumber: string; agencyInvitationCode?: string; agentId?: string }) => Promise<void>;
+  onSubmit: (licenseData: { licenseNumber: string; agencyInvitationCode?: string; agentId?: string; selectedAgencyId?: string }) => Promise<void>;
   currentLicenseNumber?: string;
   currentAgentId?: string;
 }
@@ -86,6 +86,7 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
         licenseNumber: licenseNumber.trim(),
         agencyInvitationCode: agencyInvitationCode.trim() || undefined,
         agentId: agentId.trim() || undefined,
+        selectedAgencyId: selectedAgency || undefined,
       });
 
       // Only reset form and close on success

@@ -6,7 +6,7 @@ import ProfileStatistics from './ProfileStatistics';
 import { User, UserRole } from '../../types';
 import { BuildingOfficeIcon, ChartBarIcon, UserCircleIcon, ArrowLeftOnRectangleIcon } from '../../constants';
 import AgentLicenseModal from './AgentLicenseModal';
-import { switchRole } from '../../services/apiService';
+import { switchRole, joinAgencyByInvitationCode } from '../../services/apiService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
@@ -131,26 +131,50 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
         }
     };
 
-    const handleLicenseSubmit = async (licenseData: { licenseNumber: string; agencyInvitationCode?: string; agentId?: string }) => {
+    const handleLicenseSubmit = async (licenseData: { licenseNumber: string; agencyInvitationCode?: string; agentId?: string; selectedAgencyId?: string }) => {
         setIsSaving(true);
         try {
-            // Use current role or pending role (for verification)
-            const roleToSwitch = pendingRole || formData.role;
-            const updatedUser = await switchRole(roleToSwitch, licenseData);
-            dispatch({ type: 'UPDATE_USER', payload: updatedUser });
-            setFormData(updatedUser);
-            setIsLicenseModalOpen(false);
-            setPendingRole(null);
-            setIsSaved(true);
+            // Check if user is already an agent (joining an existing agency)
+            const isJoiningAgency = Boolean(user.licenseNumber && user.agentId);
 
-            // Show success message with agency info
-            const agencyInfo = updatedUser.agencyName || 'Independent Agent';
-            alert(`✅ Successfully registered as an agent!\n\n📋 License: ${updatedUser.licenseNumber}\n🏢 Agency: ${agencyInfo}\n\n👉 You can now view your profile in the Agents page.`);
+            if (isJoiningAgency && licenseData.agencyInvitationCode) {
+                // Existing agent joining an agency
+                const response = await joinAgencyByInvitationCode(
+                    licenseData.agencyInvitationCode,
+                    licenseData.selectedAgencyId
+                );
 
-            // Navigate to agents page
-            dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agents' });
+                // Update user with new agency info
+                const updatedUser = response.user;
+                dispatch({ type: 'UPDATE_USER', payload: updatedUser });
+                setFormData(updatedUser);
+                setIsLicenseModalOpen(false);
+                setIsSaved(true);
 
-            setTimeout(() => setIsSaved(false), 2000);
+                // Show success message
+                alert(`✅ Successfully joined ${updatedUser.agencyName}!\n\n🏢 You are now affiliated with this agency.\n\n👉 Your profile has been updated in the Agents page.`);
+
+                // Refresh the page to show updated data
+                window.location.reload();
+            } else {
+                // New agent registration
+                const roleToSwitch = pendingRole || formData.role;
+                const updatedUser = await switchRole(roleToSwitch, licenseData);
+                dispatch({ type: 'UPDATE_USER', payload: updatedUser });
+                setFormData(updatedUser);
+                setIsLicenseModalOpen(false);
+                setPendingRole(null);
+                setIsSaved(true);
+
+                // Show success message with agency info
+                const agencyInfo = updatedUser.agencyName || 'Independent Agent';
+                alert(`✅ Successfully registered as an agent!\n\n📋 License: ${updatedUser.licenseNumber}\n🏢 Agency: ${agencyInfo}\n\n👉 You can now view your profile in the Agents page.`);
+
+                // Navigate to agents page
+                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agents' });
+
+                setTimeout(() => setIsSaved(false), 2000);
+            }
         } catch (err: any) {
             throw err; // Let the modal handle the error
         } finally {
