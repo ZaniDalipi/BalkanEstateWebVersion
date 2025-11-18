@@ -124,7 +124,8 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
       if (state.selectedAgencyId) {
         setIsLoadingAgency(true);
         try {
-          const response = await fetch(`/api/agencies/${state.selectedAgencyId}`);
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+          const response = await fetch(`${API_URL}/agencies/${state.selectedAgencyId}`);
 
           // Check content type before parsing
           const contentType = response.headers.get('content-type');
