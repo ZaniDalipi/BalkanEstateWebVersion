@@ -26,6 +26,7 @@ import bankExportRoutes from './routes/bankExportRoutes';
 import promotionRoutes from './routes/promotionRoutes';
 import agencyRoutes from './routes/agencyRoutes';
 import agencyJoinRequestRoutes from './routes/agencyJoinRequestRoutes';
+import agentRoutes from './routes/agentRoutes';
 import geocodingRoutes from './routes/geocodingRoutes';
 import neighborhoodInsightsRoutes from './routes/neighborhoodInsightsRoutes';
 
@@ -159,6 +160,7 @@ app.use('/api/bank-exports', bankExportRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/agencies', agencyRoutes);
 app.use('/api/agency-join-requests', agencyJoinRequestRoutes);
+app.use('/api/agents', agentRoutes);
 app.use('/api/geocoding', geocodingRoutes);
 app.use('/api/neighborhood-insights', neighborhoodInsightsRoutes);
 
