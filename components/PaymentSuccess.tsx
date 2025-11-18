@@ -2,12 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { CheckCircleIcon, ArrowLeftIcon } from '../constants';
 
+interface PaymentDetails {
+  paymentStatus?: string;
+  amountTotal?: number;
+  customerEmail?: string;
+}
+
 const PaymentSuccess: React.FC = () => {
   const { dispatch } = useAppContext();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [paymentDetails, setPaymentDetails] = useState<any>(null);
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
 
   useEffect(() => {
     // Get session ID from URL
@@ -46,15 +52,13 @@ const PaymentSuccess: React.FC = () => {
 
       setPaymentDetails(data);
 
-      // Get pending payment info from session storage
       const pendingPayment = sessionStorage.getItem('pending_payment');
       if (pendingPayment) {
         sessionStorage.removeItem('pending_payment');
       }
 
-    } catch (error: any) {
-      console.error('Payment verification error:', error);
-      setError(error.message || 'Failed to verify payment');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to verify payment');
     } finally {
       setIsVerifying(false);
     }
@@ -89,6 +93,7 @@ const PaymentSuccess: React.FC = () => {
           <button
             onClick={handleReturnHome}
             className="bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-dark transition-colors flex items-center gap-2 mx-auto"
+            aria-label="Return to my account"
           >
             <ArrowLeftIcon className="w-5 h-5" />
             Return to Account

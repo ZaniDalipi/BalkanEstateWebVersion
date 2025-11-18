@@ -118,7 +118,6 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                     const response = await getAgencies();
                     setAgencies(response.agencies || []);
                 } catch (error) {
-                    console.error('Failed to fetch agencies:', error);
                     setAgencies([]);
                 }
             }
@@ -159,9 +158,8 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
             setFormData(updatedUser);
             setIsSaved(true);
             setTimeout(() => setIsSaved(false), 2000);
-        } catch (err: any) {
-            setError(err.message || 'Failed to switch role');
-            console.error('Failed to switch role:', err);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to switch role');
         } finally {
             setIsSaving(false);
         }
@@ -170,7 +168,6 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const handleLicenseSubmit = async (licenseData: { licenseNumber: string; agencyName: string; agentId?: string }) => {
         setIsSaving(true);
         try {
-            // Use current role or pending role (for verification)
             const roleToSwitch = pendingRole || formData.role;
             const updatedUser = await switchRole(roleToSwitch, licenseData);
             dispatch({ type: 'UPDATE_USER', payload: updatedUser });
@@ -179,8 +176,8 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
             setPendingRole(null);
             setIsSaved(true);
             setTimeout(() => setIsSaved(false), 2000);
-        } catch (err: any) {
-            throw err; // Let the modal handle the error
+        } catch (err) {
+            throw err;
         } finally {
             setIsSaving(false);
         }
@@ -194,7 +191,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
             setIsSaved(true);
             setTimeout(() => setIsSaved(false), 2000);
         } catch (error) {
-            console.error("Failed to update user", error);
+            // Silent error handling
         } finally {
             setIsSaving(false);
         }
@@ -229,8 +226,8 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
             setError('');
             alert(`Join request sent to ${data.agency.name}! Please wait for approval from the agency owner.`);
             setTimeout(() => setIsSaved(false), 2000);
-        } catch (err: any) {
-            setError(err.message || 'Failed to join agency');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to join agency');
         } finally {
             setIsJoiningAgency(false);
         }
@@ -240,13 +237,11 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Validate file type
         if (!file.type.startsWith('image/')) {
             setError('Please select an image file');
             return;
         }
 
-        // Validate file size (5MB)
         if (file.size > 5 * 1024 * 1024) {
             setError('Image size must be less than 5MB');
             return;
@@ -256,14 +251,12 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
         setError('');
 
         try {
-            // Create preview
             const reader = new FileReader();
             reader.onloadend = () => {
                 setAvatarPreview(reader.result as string);
             };
             reader.readAsDataURL(file);
 
-            // Upload to server
             const formData = new FormData();
             formData.append('avatar', file);
 
@@ -281,7 +274,6 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 throw new Error(data.message || 'Failed to upload avatar');
             }
 
-            // Update user in context
             dispatch({ type: 'UPDATE_USER', payload: data.user });
             setFormData(data.user);
             setIsSaved(true);
@@ -289,8 +281,8 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 setIsSaved(false);
                 setAvatarPreview(null);
             }, 2000);
-        } catch (err: any) {
-            setError(err.message || 'Failed to upload avatar');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to upload avatar');
             setAvatarPreview(null);
         } finally {
             setIsUploadingAvatar(false);
@@ -545,7 +537,7 @@ const MyAccountPage: React.FC = () => {
                     dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
                 }
             } catch (error) {
-                console.error('Error fetching agency:', error);
+                // Silent error handling
             }
         }
     };

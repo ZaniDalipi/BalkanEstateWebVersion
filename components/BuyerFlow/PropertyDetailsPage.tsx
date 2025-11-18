@@ -249,7 +249,7 @@ const ImageEditorModal: React.FC<{
                 <div className="flex items-center gap-4">
                      <button onClick={handleDownload} className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-colors"><ArrowDownTrayIcon className="w-5 h-5"/> Download</button>
                      <button onClick={handleShare} className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition-colors"><ShareIcon className="w-5 h-5"/> Share to Chat</button>
-                     <button onClick={onClose} className="p-2 bg-neutral-800/50 rounded-full text-white hover:bg-neutral-700/50"><XMarkIcon className="w-6 h-6"/></button>
+                     <button onClick={onClose} className="p-2 bg-neutral-800/50 rounded-full text-white hover:bg-neutral-700/50" aria-label="Close image editor"><XMarkIcon className="w-6 h-6"/></button>
                 </div>
             </div>
             <div className="flex-grow relative overflow-hidden">
@@ -615,22 +615,13 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
           return;
       }
 
-      // Navigate to inbox IMMEDIATELY for instant feedback
-      console.log('Navigating to inbox immediately');
       dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'inbox' });
 
-      // Create conversation in the background
       setIsCreatingConversation(true);
       try {
-          console.log('Creating conversation for property:', property.id);
           const conversation = await createConversation(property.id);
-          console.log('Conversation created:', conversation);
-
-          // Set this conversation as active after it's created
-          console.log('Setting active conversation:', conversation.id);
           dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: conversation.id });
       } catch (error) {
-          console.error('Error creating conversation:', error);
           alert('Failed to start conversation. Please try again.');
       } finally {
           setIsCreatingConversation(false);
@@ -647,7 +638,7 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
             <FloorPlanViewerModal imageUrl={property.floorplanUrl} onClose={() => setIsFloorPlanOpen(false)} />
         )}
         <div className="p-4 bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 z-10 flex items-center justify-between">
-            <button onClick={handleBack} className="flex items-center gap-2 text-primary font-semibold hover:underline">
+            <button onClick={handleBack} className="flex items-center gap-2 text-primary font-semibold hover:underline" aria-label="Go back to search results">
                 <ArrowLeftIcon className="w-5 h-5" />
                 Back
             </button>

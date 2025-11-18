@@ -50,7 +50,7 @@ const AgencyJoinRequestsModal: React.FC<AgencyJoinRequestsModalProps> = ({
       const response = await getAgencyJoinRequests(agencyId);
       setRequests(response.joinRequests || []);
     } catch (error) {
-      console.error('Failed to fetch join requests:', error);
+      // Silent error handling
     } finally {
       setLoading(false);
     }
@@ -59,20 +59,18 @@ const AgencyJoinRequestsModal: React.FC<AgencyJoinRequestsModalProps> = ({
   const handleApprove = async (requestId: string) => {
     try {
       await approveJoinRequest(requestId);
-      // Refresh the list
       await fetchRequests();
-    } catch (error: any) {
-      alert(error.message || 'Failed to approve request');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to approve request');
     }
   };
 
   const handleReject = async (requestId: string) => {
     try {
       await rejectJoinRequest(requestId);
-      // Refresh the list
       await fetchRequests();
-    } catch (error: any) {
-      alert(error.message || 'Failed to reject request');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to reject request');
     }
   };
 
@@ -97,6 +95,7 @@ const AgencyJoinRequestsModal: React.FC<AgencyJoinRequestsModalProps> = ({
           <button
             onClick={onClose}
             className="p-2 hover:bg-white/20 rounded-full transition-colors"
+            aria-label="Close join requests modal"
           >
             <XMarkIcon className="w-6 h-6" />
           </button>

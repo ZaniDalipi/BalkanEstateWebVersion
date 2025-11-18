@@ -34,9 +34,8 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
       setAgentId('');
       setError('');
       onClose();
-    } catch (err: any) {
-      // Keep form open with user data on error
-      setError(err.message || 'Failed to verify license. Please check your information and try again.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to verify license. Please check your information and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -62,6 +61,7 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
             onClick={handleClose}
             disabled={isSubmitting}
             className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+            aria-label="Close license verification modal"
           >
             <X className="w-5 h-5" />
           </button>

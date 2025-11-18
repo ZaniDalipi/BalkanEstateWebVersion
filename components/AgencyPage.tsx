@@ -2,14 +2,41 @@ import React, { useState, useEffect } from 'react';
 import { getAgency } from '../services/apiService';
 import PropertyCard from './shared/PropertyCard';
 import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, GlobeAltIcon } from '../constants';
+import { Property } from '../types';
+
+interface Agency {
+  _id: string;
+  name: string;
+  slug?: string;
+  description?: string;
+  logo?: string;
+  coverImage?: string;
+  email: string;
+  phone: string;
+  city?: string;
+  country?: string;
+  address?: string;
+  website?: string;
+  totalProperties: number;
+  totalAgents: number;
+  yearsInBusiness?: number;
+  isFeatured: boolean;
+  agents?: Array<{
+    _id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    avatarUrl?: string;
+  }>;
+}
 
 interface AgencyPageProps {
   agencyId: string;
 }
 
 const AgencyPage: React.FC<AgencyPageProps> = ({ agencyId }) => {
-  const [agency, setAgency] = useState<any>(null);
-  const [properties, setProperties] = useState<any[]>([]);
+  const [agency, setAgency] = useState<Agency | null>(null);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,8 +47,8 @@ const AgencyPage: React.FC<AgencyPageProps> = ({ agencyId }) => {
         const response = await getAgency(agencyId);
         setAgency(response.agency);
         setProperties(response.properties || []);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load agency');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load agency');
       } finally {
         setLoading(false);
       }
@@ -127,11 +154,11 @@ const AgencyPage: React.FC<AgencyPageProps> = ({ agencyId }) => {
           <div className="mt-8">
             <h2 className="text-2xl font-bold text-neutral-800 mb-4">Our Agents</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {agency.agents.map((agent: any) => (
+              {agency.agents.map((agent) => (
                 <div key={agent._id} className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
                   <div className="flex items-center gap-4">
                     {agent.avatarUrl && (
-                      <img src={agent.avatarUrl} alt={agent.name} className="w-16 h-16 rounded-full" />
+                      <img src={agent.avatarUrl} alt={`${agent.name}'s avatar`} className="w-16 h-16 rounded-full" />
                     )}
                     <div>
                       <h3 className="font-bold text-neutral-800">{agent.name}</h3>
@@ -150,8 +177,8 @@ const AgencyPage: React.FC<AgencyPageProps> = ({ agencyId }) => {
           <h2 className="text-2xl font-bold text-neutral-800 mb-4">Our Properties</h2>
           {properties.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {properties.map((property: any) => (
-                <PropertyCard key={property._id} property={property} />
+              {properties.map((property) => (
+                <PropertyCard key={property.id} property={property} />
               ))}
             </div>
           ) : (

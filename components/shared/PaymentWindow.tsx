@@ -127,9 +127,8 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
         throw new Error('No payment URL received');
       }
 
-    } catch (error: any) {
-      console.error('Payment error:', error);
-      onError(error.message || 'Failed to initialize payment');
+    } catch (error) {
+      onError(error instanceof Error ? error.message : 'Failed to initialize payment');
       setIsProcessing(false);
     }
   };

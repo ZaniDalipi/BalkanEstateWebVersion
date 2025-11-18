@@ -3,14 +3,25 @@ import { getFeaturedAgencies } from '../services/apiService';
 import { XMarkIcon, BuildingOfficeIcon } from '../constants';
 import { useAppContext } from '../context/AppContext';
 
+interface FeaturedAgency {
+  _id: string;
+  slug?: string;
+  name: string;
+  description?: string;
+  logo?: string;
+  totalProperties: number;
+  totalAgents: number;
+  city?: string;
+}
+
 interface AdvertisementBannerProps {
   position?: 'top' | 'bottom' | 'sidebar';
 }
 
 const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 'top' }) => {
   const { dispatch } = useAppContext();
-  const [currentAd, setCurrentAd] = useState<any>(null);
-  const [ads, setAds] = useState<any[]>([]);
+  const [currentAd, setCurrentAd] = useState<FeaturedAgency | null>(null);
+  const [ads, setAds] = useState<FeaturedAgency[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDismissed, setIsDismissed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,7 +52,6 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
       setIsLoading(true);
       setError(null);
       const response = await getFeaturedAgencies(5);
-      console.log('Featured agencies response:', response);
 
       if (response.agencies && response.agencies.length > 0) {
         setAds(response.agencies);
@@ -49,9 +59,8 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
       } else {
         setError('No featured agencies available. Please run: npm run seed:agencies');
       }
-    } catch (error: any) {
-      console.error('Failed to fetch advertisements:', error);
-      setError(error.message || 'Failed to load agencies');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to load agencies');
     } finally {
       setIsLoading(false);
     }
@@ -119,6 +128,7 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
         <button
           onClick={() => setIsDismissed(true)}
           className="absolute top-2 right-2 text-white/80 hover:text-white z-10"
+          aria-label="Dismiss advertisement"
         >
           <XMarkIcon className="w-4 h-4" />
         </button>
@@ -170,6 +180,7 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
       <button
         onClick={() => setIsDismissed(true)}
         className="absolute top-2 right-2 md:top-3 md:right-4 text-white/80 hover:text-white z-10"
+        aria-label="Dismiss advertisement"
       >
         <XMarkIcon className="w-5 h-5" />
       </button>

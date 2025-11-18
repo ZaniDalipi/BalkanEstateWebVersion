@@ -43,8 +43,8 @@ const AgentReviewForm: React.FC<AgentReviewFormProps> = ({ agentId, agentName, o
         onReviewSubmitted();
         setSuccess(false);
       }, 2000);
-    } catch (err: any) {
-      setError(err.message || 'Failed to submit review. Please try again.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to submit review. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

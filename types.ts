@@ -58,6 +58,26 @@ export interface Agent extends User {
     rating: number;
 }
 
+export interface Agency {
+    _id: string;
+    slug?: string;
+    name: string;
+    description?: string;
+    logo?: string;
+    coverImage?: string;
+    email: string;
+    phone: string;
+    city?: string;
+    country?: string;
+    address?: string;
+    lat?: number;
+    lng?: number;
+    totalProperties: number;
+    totalAgents: number;
+    yearsInBusiness?: number;
+    isFeatured: boolean;
+}
+
 export interface PropertyImage {
     url: string;
     tag: PropertyImageTag;

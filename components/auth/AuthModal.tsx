@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { AppleIcon, DevicePhoneMobileIcon, EnvelopeIcon, FacebookIcon, GoogleIcon, LogoIcon, XMarkIcon } from '../../constants';
-import { User, UserRole, AuthModalView } from '../../types';
+import { User, UserRole, AuthModalView, Agency } from '../../types';
 import SocialLoginPopup from './SocialLoginPopup';
 
 type Method = 'email' | 'phone';
@@ -46,7 +46,7 @@ const AuthPage: React.FC = () => {
     const [name, setName] = useState('');
     const [isAgent, setIsAgent] = useState(false);
     const [selectedAgencyId, setSelectedAgencyId] = useState<string>('');
-    const [agencies, setAgencies] = useState<any[]>([]);
+    const [agencies, setAgencies] = useState<Agency[]>([]);
 
     useEffect(() => {
         // Fetch available OAuth providers
@@ -56,7 +56,7 @@ const AuthPage: React.FC = () => {
                 const providers = await getAvailableOAuthProviders();
                 setAvailableProviders(providers);
             } catch (error) {
-                console.error('Error fetching OAuth providers:', error);
+                // Failed to fetch OAuth providers - continue with email/phone only
             }
         };
         fetchProviders();
@@ -71,7 +71,7 @@ const AuthPage: React.FC = () => {
                     const response = await getAgencies({});
                     setAgencies(response.agencies || []);
                 } catch (error) {
-                    console.error('Error fetching agencies:', error);
+                    // Failed to fetch agencies - user can still sign up without one
                 }
             }
         };
@@ -130,8 +130,8 @@ const AuthPage: React.FC = () => {
                 });
             }
             handleClose();
-        } catch (err: any) {
-            setError(err.message || "An error occurred. Please try again.");
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "An error occurred. Please try again.");
         } finally {
             setIsLoading(false);
         }
@@ -145,9 +145,9 @@ const AuthPage: React.FC = () => {
         try {
             await login(phone, password);
             handleClose();
-        } catch (err: any) {
-            setError(err.message || "An error occurred. Please try again.");
-        } finally {
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "An error occurred. Please try again.");
+        } finally{
             setIsLoading(false);
         }
     };
@@ -159,8 +159,8 @@ const AuthPage: React.FC = () => {
         try {
             await requestPasswordReset(email);
             dispatch({ type: 'SET_AUTH_MODAL_VIEW', payload: 'forgotPasswordSuccess' });
-        } catch(err: any) {
-            setError(err.message);
+        } catch(err) {
+            setError(err instanceof Error ? err.message : "An error occurred. Please try again.");
         } finally {
             setIsLoading(false);
         }
@@ -173,8 +173,8 @@ const AuthPage: React.FC = () => {
         try {
             await sendPhoneCode(phone);
             dispatch({ type: 'SET_AUTH_MODAL_VIEW', payload: 'phoneCode' });
-        } catch(err: any) {
-            setError(err.message);
+        } catch(err) {
+            setError(err instanceof Error ? err.message : "An error occurred. Please try again.");
         } finally {
             setIsLoading(false);
         }
@@ -191,8 +191,8 @@ const AuthPage: React.FC = () => {
             } else {
                 handleClose();
             }
-        } catch(err: any) {
-            setError(err.message);
+        } catch(err) {
+            setError(err instanceof Error ? err.message : "An error occurred. Please try again.");
         } finally {
             setIsLoading(false);
         }
@@ -205,8 +205,8 @@ const AuthPage: React.FC = () => {
         try {
             await completePhoneSignup(phone, name, email);
             handleClose();
-        } catch(err: any) {
-            setError(err.message);
+        } catch(err) {
+            setError(err instanceof Error ? err.message : "An error occurred. Please try again.");
         } finally {
             setIsLoading(false);
         }
@@ -371,7 +371,7 @@ const AuthPage: React.FC = () => {
             )}
             <div className="fixed inset-0 z-[5000] flex justify-center items-center bg-black/50 p-4" onClick={handleClose}>
                 <div className="bg-white w-full h-full md:h-auto md:max-w-md md:rounded-2xl md:shadow-2xl flex flex-col relative overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={handleClose} className="absolute top-4 right-4 text-neutral-500 hover:text-neutral-800 z-10"><XMarkIcon className="w-6 h-6" /></button>
+                    <button onClick={handleClose} className="absolute top-4 right-4 text-neutral-500 hover:text-neutral-800 z-10" aria-label="Close authentication modal"><XMarkIcon className="w-6 h-6" /></button>
                     <div className="p-6 sm:p-8 w-full max-w-md mx-auto mt-8 md:mt-0">
                         <div className="flex justify-center items-center space-x-2 mb-4"><LogoIcon className="w-8 h-8 text-primary" /></div>
                         <h2 className="text-xl sm:text-2xl font-bold text-neutral-800 text-center mb-4 sm:mb-6">

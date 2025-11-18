@@ -79,30 +79,21 @@ const EnterpriseCreationForm: React.FC<EnterpriseCreationFormProps> = ({ isOpen,
   };
 
   const handlePaymentSuccess = async (paymentIntentId: string) => {
-    console.log('Enterprise payment successful:', paymentIntentId);
     setShowPaymentWindow(false);
 
     try {
       setLoading(true);
 
-      // Create the agency profile
       const agencyData = {
         ...formData,
         yearsInBusiness: formData.yearsInBusiness ? parseInt(formData.yearsInBusiness) : undefined,
       };
 
       await createAgency(agencyData);
-
-      // Close the modal
       onClose();
-
-      // Show success message
       alert('Congratulations! Your Enterprise Agency has been created successfully. You now have a dedicated agency page with featured advertising.');
-
-      // Optionally navigate to the agencies page or agency dashboard
       dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
-    } catch (error: any) {
-      console.error('Error creating agency:', error);
+    } catch (error) {
       setError('Payment successful but failed to create agency. Please contact support.');
     } finally {
       setLoading(false);
@@ -110,7 +101,6 @@ const EnterpriseCreationForm: React.FC<EnterpriseCreationFormProps> = ({ isOpen,
   };
 
   const handlePaymentError = (error: string) => {
-    console.error('Enterprise payment error:', error);
     setShowPaymentWindow(false);
     setError('Payment failed: ' + error);
   };

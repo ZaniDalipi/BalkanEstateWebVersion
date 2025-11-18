@@ -61,7 +61,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const [agencyData, setAgencyData] = useState<Agency>(agency);
   const [uploadError, setUploadError] = useState('');
 
-  const isOwner = currentUser && (agency as any).ownerId === currentUser.id;
+  const isOwner = currentUser && (agency as Agency & { ownerId?: string }).ownerId === currentUser.id;
   const canRequestToJoin = isAuthenticated && currentUser?.role === 'agent' && !currentUser?.agencyId;
 
   useEffect(() => {
@@ -74,7 +74,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     try {
       setAgents(agency.agents || []);
     } catch (error) {
-      console.error('Failed to fetch agency data:', error);
+      // Silent error handling
     } finally {
       setLoading(false);
     }
@@ -109,8 +109,8 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     try {
       await createJoinRequest(agency._id, 'I would like to join your agency');
       alert('Join request sent successfully! The agency owner will review your request.');
-    } catch (error: any) {
-      alert(error.message || 'Failed to send join request');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to send join request');
     } finally {
       setIsRequesting(false);
     }
@@ -120,13 +120,11 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     const file = e.target.files?.[0];
     if (!file || !isOwner) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       setUploadError('Please select an image file');
       return;
     }
 
-    // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
       setUploadError('Image size must be less than 5MB');
       return;
@@ -155,8 +153,8 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
 
       setAgencyData(data.agency);
       alert('Logo updated successfully!');
-    } catch (err: any) {
-      setUploadError(err.message || 'Failed to upload logo');
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Failed to upload logo');
     } finally {
       setIsUploadingLogo(false);
     }
@@ -166,13 +164,11 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     const file = e.target.files?.[0];
     if (!file || !isOwner) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       setUploadError('Please select an image file');
       return;
     }
 
-    // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
       setUploadError('Image size must be less than 5MB');
       return;
@@ -201,8 +197,8 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
 
       setAgencyData(data.agency);
       alert('Cover image updated successfully!');
-    } catch (err: any) {
-      setUploadError(err.message || 'Failed to upload cover image');
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Failed to upload cover image');
     } finally {
       setIsUploadingCover(false);
     }
@@ -265,6 +261,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
         <button
           onClick={handleBack}
           className="absolute top-6 left-6 md:left-24 flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-lg bg-black/30 backdrop-blur-sm hover:bg-black/50 transition-colors z-10"
+          aria-label="Go back to agencies list"
         >
           <ArrowLeftIcon className="w-5 h-5" />
           Back
