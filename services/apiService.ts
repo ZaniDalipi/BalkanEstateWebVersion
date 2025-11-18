@@ -833,14 +833,61 @@ export const getFeaturedProperties = async (filters?: { city?: string; limit?: n
 
 // --- AGENTS API ---
 
+// Transform backend agent to frontend Agent type
+function transformBackendAgent(backendAgent: any): any {
+  const user = backendAgent.userId || {};
+  return {
+    id: backendAgent._id || backendAgent.id,
+    name: user.name || '',
+    email: user.email || '',
+    phone: user.phone || '',
+    avatarUrl: user.avatarUrl,
+    city: user.city,
+    country: user.country,
+    role: 'agent',
+    agencyName: backendAgent.agencyName,
+    agentId: backendAgent.agentId,
+    licenseNumber: backendAgent.licenseNumber,
+    licenseVerified: backendAgent.licenseVerified,
+    licenseVerificationDate: backendAgent.licenseVerificationDate,
+    testimonials: backendAgent.testimonials || [],
+    rating: backendAgent.rating || 0,
+    totalSalesValue: backendAgent.totalSalesValue || 0,
+    propertiesSold: backendAgent.totalSales || 0,
+    activeListings: backendAgent.activeListings || 0,
+    totalReviews: backendAgent.totalReviews || 0,
+    isSubscribed: false,
+    // Additional agent fields
+    bio: backendAgent.bio,
+    specializations: backendAgent.specializations || [],
+    yearsOfExperience: backendAgent.yearsOfExperience,
+    languages: backendAgent.languages || [],
+    serviceAreas: backendAgent.serviceAreas || [],
+    websiteUrl: backendAgent.websiteUrl,
+    facebookUrl: backendAgent.facebookUrl,
+    instagramUrl: backendAgent.instagramUrl,
+    linkedinUrl: backendAgent.linkedinUrl,
+    officeAddress: backendAgent.officeAddress,
+    officePhone: backendAgent.officePhone,
+  };
+}
+
 export const getAllAgents = async (): Promise<any> => {
-  return await apiRequest("/auth/agents");
+  const response = await apiRequest("/agents");
+  if (response.agents) {
+    response.agents = response.agents.map(transformBackendAgent);
+  }
+  return response;
 };
 
 export const addAgentReview = async (agentId: string, review: { quote: string; rating: number; propertyId?: string }): Promise<any> => {
-  return await apiRequest(`/agents/${agentId}/reviews`, {
+  const response = await apiRequest(`/agents/${agentId}/reviews`, {
     method: 'POST',
     body: review,
     requiresAuth: true,
   });
+  if (response.agent) {
+    response.agent = transformBackendAgent(response.agent);
+  }
+  return response;
 };
