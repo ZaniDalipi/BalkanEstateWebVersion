@@ -792,10 +792,11 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                     )}
                     <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900">{formatPrice(property.price, property.country)}</p>
                     <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${property.address}, ${property.city}, ${property.country}`)}`}
+                    href={`https://www.google.com/maps/search/?api=1&query=${property.lat},${property.lng}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center text-neutral-600 mt-2 group"
+                    title="Open in Google Maps"
                     >
                         <MapPinIcon className="w-5 h-5 mr-2 text-neutral-400 group-hover:text-primary transition-colors" />
                         <span className="text-sm sm:text-base lg:text-lg group-hover:underline group-hover:text-primary transition-colors">{property.address}, {property.city}, {property.country}</span>
