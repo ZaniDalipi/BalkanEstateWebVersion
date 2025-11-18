@@ -40,7 +40,7 @@ const ConversationSchema: Schema = new Schema(
     expiresAt: {
       type: Date,
       index: true, // Index for efficient cleanup queries
-      required: true,
+      // Not marked as required because pre-save hook will set it
     },
     buyerUnreadCount: {
       type: Number,
@@ -68,10 +68,14 @@ ConversationSchema.pre('save', function(next) {
   // 30 days = 30 * 24 * 60 * 60 * 1000 milliseconds
   const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 
-  if (conversation.isNew || conversation.isModified('lastMessageAt')) {
+  // Always set expiresAt for new conversations or when lastMessageAt changes
+  if (conversation.isNew || conversation.isModified('lastMessageAt') || !conversation.expiresAt) {
     const expirationDate = new Date(conversation.lastMessageAt.getTime() + THIRTY_DAYS);
     conversation.expiresAt = expirationDate;
-    console.log(`📅 Conversation ${conversation._id} will expire on ${expirationDate.toISOString()}`);
+
+    if (conversation.isNew) {
+      console.log(`📅 New conversation will expire on ${expirationDate.toISOString()}`);
+    }
   }
 
   next();
