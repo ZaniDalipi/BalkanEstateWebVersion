@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Agent } from '../../types';
 import { useAppContext } from '../../context/AppContext';
-import { ArrowLeftIcon, BuildingOfficeIcon, ChartBarIcon, ChatBubbleBottomCenterTextIcon, EnvelopeIcon, PhoneIcon, CheckCircleIcon, UserCircleIcon } from '../../constants';
+import { ArrowLeftIcon, BuildingOfficeIcon, ChartBarIcon, ChatBubbleBottomCenterTextIcon, EnvelopeIcon, PhoneIcon, UserCircleIcon } from '../../constants';
 import StarRating from '../shared/StarRating';
 import { formatPrice } from '../../utils/currency';
 import PropertyCard from '../BuyerFlow/PropertyCard';
@@ -110,12 +110,6 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
             <div className="text-center md:text-left">
                 <div className="flex items-center justify-center md:justify-start gap-3 mb-2 flex-wrap">
                     <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900">{agent.name}</h1>
-                    {agent.licenseNumber && (
-                        <div className="flex items-center gap-1.5 bg-green-100 text-green-800 px-3 py-1.5 rounded-full text-sm font-semibold">
-                            <CheckCircleIcon className="w-5 h-5"/>
-                            <span>Trusted Agent</span>
-                        </div>
-                    )}
                 </div>
 
                 {agent.agencyName && (

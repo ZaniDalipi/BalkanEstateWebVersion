@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Agent } from '../../types';
 import StarRating from '../shared/StarRating';
-import { TrophyIcon, UserCircleIcon, CheckCircleIcon, BuildingOfficeIcon } from '../../constants';
+import { TrophyIcon, UserCircleIcon, BuildingOfficeIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
 import { slugify } from '../../utils/slug';
@@ -74,12 +74,6 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
               )}
               {agent.city && agent.country && (
                   <p className="text-sm text-neutral-500 font-medium">{agent.city}, {agent.country}</p>
-              )}
-              {agent.licenseNumber && (
-                  <div className="flex items-center gap-1 mt-1 text-green-700">
-                      <CheckCircleIcon className="w-4 h-4" />
-                      <span className="text-xs font-bold">Trusted Agent</span>
-                  </div>
               )}
               <div className="flex items-center gap-1.5 mt-1">
                 {agent.rating > 0 ? (

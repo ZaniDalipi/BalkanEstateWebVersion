@@ -379,7 +379,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                                     }}
                                     className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                                 >
-                                    Verify License
+                                    Join an Existing Agency
                                 </button>
                             )}
                         </div>
