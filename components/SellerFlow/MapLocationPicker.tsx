@@ -82,22 +82,35 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
   useEffect(() => {
     if (markerRef.current && mapRef.current && !isDragging) {
       const newLatLng = L.latLng(lat, lng);
+      const currentLatLng = markerRef.current.getLatLng();
+
+      // Calculate distance between current and new position (in meters)
+      const distance = currentLatLng.distanceTo(newLatLng);
+
+      // Update marker position
       markerRef.current.setLatLng(newLatLng);
 
-      // Use flyTo for smooth animated zoom and pan to the location
-      mapRef.current.flyTo(newLatLng, zoom, {
-        duration: 1.5, // 1.5 second animation
-        easeLinearity: 0.25
-      });
+      // Only use flyTo animation for significant changes (> 100 meters)
+      // For small adjustments, just pan without animation to prevent lag
+      if (distance > 100) {
+        mapRef.current.flyTo(newLatLng, zoom, {
+          duration: 1.0, // Reduced from 1.5s to 1.0s for better responsiveness
+          easeLinearity: 0.25
+        });
+      } else {
+        // For small changes, just pan without animation
+        mapRef.current.setView(newLatLng, zoom, { animate: false });
+      }
 
       markerRef.current.setPopupContent(`<b>Drag me to adjust location</b><br>${address}`);
 
-      // Open popup after animation completes
+      // Open popup after potential animation completes
+      const popupDelay = distance > 100 ? 1100 : 0;
       setTimeout(() => {
         if (markerRef.current) {
           markerRef.current.openPopup();
         }
-      }, 1600);
+      }, popupDelay);
     }
   }, [lat, lng, address, zoom, isDragging]);
 
