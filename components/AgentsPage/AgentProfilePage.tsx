@@ -86,11 +86,13 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     };
 
     const handleAgencyClick = async () => {
-        if (agent.agencyName) {
+        // Use agencyId if available for direct lookup, otherwise fallback to slug
+        const agencyIdentifier = agent.agencyId || slugify(agent.agencyName || '');
+
+        if (agencyIdentifier) {
             try {
-                const agencySlug = slugify(agent.agencyName);
                 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-                const response = await fetch(`${API_URL}/agencies/${agencySlug}`);
+                const response = await fetch(`${API_URL}/agencies/${agencyIdentifier}`);
                 if (response.ok) {
                     const data = await response.json();
                     dispatch({ type: 'SET_SELECTED_AGENCY', payload: data.agency });

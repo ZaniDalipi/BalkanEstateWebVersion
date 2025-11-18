@@ -94,8 +94,13 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
 
   const handleBack = () => {
     dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
-    dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
-    window.history.pushState({}, '', '/agencies');
+    // Go back to the previous view (could be agencies or agents)
+    // Check if we have a selected agent, if so go back to agents view
+    if (state.selectedAgentId) {
+      dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agents' });
+    } else {
+      dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
+    }
   };
 
   const handleAgentClick = (agentId: string) => {
