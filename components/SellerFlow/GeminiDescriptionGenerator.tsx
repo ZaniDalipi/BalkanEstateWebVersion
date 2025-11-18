@@ -60,7 +60,36 @@ const initialListingData: ListingData = {
     lng: 0,
 };
 
-const LANGUAGES = ['English', 'Albanian', 'Macedonian', 'Serbian', 'Bosnian', 'Croatian', 'Montenegrin', 'Bulgarian', 'Greek'];
+const LANGUAGES = [
+    'English',
+    'Albanian',
+    'Macedonian',
+    'Serbian',
+    'Bosnian',
+    'Croatian',
+    'Montenegrin',
+    'Bulgarian',
+    'Greek',
+    'Turkish',
+    'Romanian',
+    'Hungarian',
+    'Slovenian',
+    'Slovak',
+    'Czech',
+    'Italian',
+    'German',
+    'French',
+    'Spanish',
+    'Portuguese',
+    'Polish',
+    'Russian',
+    'Ukrainian',
+    'Dutch',
+    'Swedish',
+    'Danish',
+    'Norwegian',
+    'Finnish'
+];
 const ALL_VALID_TAGS: PropertyImageTag[] = ['exterior', 'living_room', 'kitchen', 'bedroom', 'bathroom', 'other'];
 const FREE_LISTING_LIMIT = 3;
 

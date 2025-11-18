@@ -3,6 +3,44 @@ import { Property, PropertyImageTag, ChatMessage, AiSearchQuery, Filters } from 
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+// Retry configuration for handling 503 and other transient errors
+const MAX_RETRIES = 4;
+const INITIAL_DELAY = 2000; // 2 seconds
+
+/**
+ * Retry wrapper for Gemini API calls with exponential backoff
+ * Handles 503 errors and other transient failures
+ */
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  retries = MAX_RETRIES,
+  delay = INITIAL_DELAY
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: any) {
+    // Check if error is retryable (503, network errors, rate limits)
+    const isRetryable =
+      error?.status === 503 ||
+      error?.status === 429 ||
+      error?.code === 'ECONNRESET' ||
+      error?.code === 'ETIMEDOUT' ||
+      error?.message?.includes('503') ||
+      error?.message?.includes('Service Unavailable') ||
+      error?.message?.includes('timeout');
+
+    if (!isRetryable || retries <= 0) {
+      throw error;
+    }
+
+    console.warn(`Gemini API call failed, retrying in ${delay}ms... (${MAX_RETRIES - retries + 1}/${MAX_RETRIES})`);
+    await new Promise(resolve => setTimeout(resolve, delay));
+
+    // Exponential backoff: double the delay for next retry
+    return retryWithBackoff(fn, retries - 1, delay * 2);
+  }
+}
+
 const fileToGenerativePart = async (file: File) => {
   const base64EncodedDataPromise = new Promise<string>((resolve) => {
     const reader = new FileReader();
@@ -47,22 +85,45 @@ export interface PropertyAnalysisResult {
 export const generateDescriptionFromImages = async (images: File[], language: string, propertyType: 'house' | 'apartment' | 'villa' | 'other'): Promise<PropertyAnalysisResult> => {
     const imageParts = await Promise.all(images.map(fileToGenerativePart));
 
-    const prompt = `Analyze the following images for a property that is a(n) "${propertyType}". Based on the images and knowing its type, provide a detailed analysis. The property is in the Balkans. The description should be written in ${language} and be tailored specifically for a(n) "${propertyType}". Provide the following details in a JSON object:
-    
-    1.  **description**: A compelling and detailed property description, starting with a short intro paragraph and then a bulleted list of "Key Features" and "Materials & Construction". Make sure the tone and focus of the description are appropriate for a(n) "${propertyType}".
-    2.  **bedrooms**: The number of bedrooms visible.
-    3.  **bathrooms**: The number of bathrooms visible.
-    4.  **living_rooms**: The number of living rooms visible.
-    5.  **sq_meters**: An estimation of the total square meters.
-    6.  **year_built**: An estimation of the year the property was built.
-    7.  **parking_spots**: The number of parking spots available (e.g., garage, driveway).
-    8.  **amenities**: A list of amenities observed (e.g., "swimming pool", "balcony", "garden"). These will become "Special Features".
-    9.  **key_features**: A list of key selling points (e.g., "modern kitchen", "hardwood floors", "city view"). These will also become "Special Features".
-    10. **materials**: A list of prominent building materials seen (e.g., "brick", "wood", "marble"). These will become "Materials".
-    11. **image_tags**: For each image provided, assign a tag from the following list: 'exterior', 'living_room', 'kitchen', 'bedroom', 'bathroom', 'other'. The output should be an array of objects, where each object has an 'index' (corresponding to the image order, starting from 0) and a 'tag'.
-    12. **property_type**: Confirm the property type based on my input. It must be "${propertyType}".
-    13. **floor_number**: If the property is an 'apartment', estimate what floor it is on. Provide a single integer. If it's not an apartment or you cannot tell, omit this field.
-    14. **total_floors**: If the property is a 'house' or 'villa', estimate the total number of floors (e.g., 1, 2, 3). If it is not a house or villa or you cannot tell, omit this field.
+    const prompt = `You are a professional real estate analyst specializing in Balkan properties. Analyze the following images for a property that is a(n) "${propertyType}". Based on the images and knowing its type, provide a detailed, accurate analysis. The property is located in the Balkans. The description should be written in ${language} and be tailored specifically for a(n) "${propertyType}". Provide the following details in a JSON object:
+
+    1.  **description**: A compelling and detailed property description in ${language}, starting with a short intro paragraph and then a bulleted list of "Key Features" and "Materials & Construction". Make sure the tone and focus of the description are appropriate for a(n) "${propertyType}". The description should highlight what makes this property unique and desirable.
+
+    2.  **bedrooms**: Count the number of bedrooms visible in the images. Look for rooms with beds, closets, or typical bedroom furniture. Be precise.
+
+    3.  **bathrooms**: Count the number of bathrooms visible. Look for rooms with toilets, sinks, showers, or bathtubs. Include both full bathrooms and half-baths.
+
+    4.  **living_rooms**: Count the number of living rooms or common areas visible. Look for rooms with sofas, TVs, or social seating arrangements.
+
+    5.  **sq_meters**: Provide a realistic estimation of the total square meters based on room sizes, layout, and property type. For apartments, typical range is 40-150m². For houses, 80-300m². For villas, 150-500m².
+
+    6.  **year_built**: Estimate the construction year based on architectural style, materials, fixtures, and overall condition. Consider: modern (2010+), contemporary (2000-2010), established (1980-2000), older (pre-1980).
+
+    7.  **parking_spots**: Count visible parking spaces including garages, driveways, or designated parking areas. If none are visible, use 0.
+
+    8.  **amenities**: List observable amenities such as "swimming pool", "balcony", "garden", "terrace", "fireplace", "walk-in closet", "laundry room", "basement", "attic". Only include amenities clearly visible in the images.
+
+    9.  **key_features**: List distinctive selling points like "modern kitchen with granite countertops", "hardwood floors throughout", "panoramic city view", "high ceilings", "open floor plan", "renovated bathroom", "built-in wardrobes". Be specific and descriptive.
+
+    10. **materials**: Identify prominent building and finishing materials visible in the images (e.g., "brick exterior", "marble floors", "wood beams", "stainless steel appliances", "ceramic tiles", "stone facade", "parquet flooring").
+
+    11. **image_tags**: CAREFULLY analyze each image and assign the MOST APPROPRIATE tag. Guidelines:
+        - 'exterior': Outside views of the building, facade, entrance, yard, or outdoor areas
+        - 'living_room': Main living areas with sofas, TV, or social seating
+        - 'kitchen': Kitchen areas with appliances, counters, or dining tables
+        - 'bedroom': Bedrooms with beds or sleeping areas
+        - 'bathroom': Bathrooms with toilet, sink, shower, or bathtub
+        - 'other': Hallways, storage, laundry, balconies, or unclear rooms
+
+        The output must be an array where EVERY image gets a tag. Array length must equal number of images. Each object has 'index' (0-based) and 'tag'.
+
+    12. **property_type**: Confirm the property type. It must be "${propertyType}".
+
+    13. **floor_number**: If the property is an 'apartment', estimate which floor it's on (1-20). Look for views, elevator buttons, or stairwell clues. If not an apartment or unclear, omit this field.
+
+    14. **total_floors**: If the property is a 'house' or 'villa', count the number of floors visible (typically 1-4). If not a house/villa or unclear, omit this field.
+
+    IMPORTANT: Ensure image_tags array has exactly ${images.length} entries, one for each image provided. Be accurate and thorough in your analysis.
 
     Please provide only the JSON object as a response.
     `;
@@ -126,14 +187,17 @@ export const generateDescriptionFromImages = async (images: File[], language: st
         required: ['description', 'bedrooms', 'bathrooms', 'living_rooms', 'sq_meters', 'year_built', 'parking_spots', 'amenities', 'key_features', 'materials', 'image_tags', 'property_type'],
     };
 
-    const result = await ai.models.generateContent({
-        model: 'gemini-2.5-pro',
-        contents: { parts: [{ text: prompt }, ...imageParts] },
-        config: {
-            responseMimeType: 'application/json',
-            responseSchema: responseSchema,
-        },
-    });
+    const result = await retryWithBackoff(() =>
+        ai.models.generateContent({
+            model: 'gemini-2.5-pro',
+            contents: { parts: [{ text: prompt }, ...imageParts] },
+            config: {
+                responseMimeType: 'application/json',
+                responseSchema: responseSchema,
+                timeout: 60000, // 60 second timeout
+            },
+        })
+    );
 
     try {
         const jsonText = result.text.trim();
@@ -254,14 +318,17 @@ export const getAiChatResponse = async (history: ChatMessage[], properties: Prop
         required: ['responseMessage', 'searchQuery', 'isFinalQuery'],
     };
 
-    const result = await ai.models.generateContent({
-        model: 'gemini-2.5-pro',
-        contents: systemPrompt,
-        config: {
-            responseMimeType: 'application/json',
-            responseSchema: responseSchema,
-        },
-    });
+    const result = await retryWithBackoff(() =>
+        ai.models.generateContent({
+            model: 'gemini-2.5-pro',
+            contents: systemPrompt,
+            config: {
+                responseMimeType: 'application/json',
+                responseSchema: responseSchema,
+                timeout: 30000, // 30 second timeout
+            },
+        })
+    );
 
     try {
         const jsonText = result.text.trim();
@@ -327,10 +394,15 @@ export const generateSearchName = async (filters: Filters): Promise<string> => {
         Return only the generated name string, without any markdown or extra text.
     `;
 
-    const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-    });
+    const result = await retryWithBackoff(() =>
+        ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                timeout: 15000, // 15 second timeout
+            },
+        })
+    );
 
     return result.text.trim();
 };
@@ -350,10 +422,15 @@ export const generateSearchNameFromCoords = async (lat: number, lng: number): Pr
         Return only the generated name string, without any markdown or extra text.
     `;
 
-    const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-    });
+    const result = await retryWithBackoff(() =>
+        ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                timeout: 15000, // 15 second timeout
+            },
+        })
+    );
 
     return result.text.trim();
 };
@@ -383,10 +460,15 @@ export const getNeighborhoodInsights = async (lat: number, lng: number, city: st
     `;
 
     try {
-        const result = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-        });
+        const result = await retryWithBackoff(() =>
+            ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+                config: {
+                    timeout: 20000, // 20 second timeout
+                },
+            })
+        );
         return result.text.trim();
     } catch (e) {
         console.error("Error fetching neighborhood insights:", e instanceof Error ? e.message : String(e));
