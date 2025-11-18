@@ -178,6 +178,14 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
             setIsLicenseModalOpen(false);
             setPendingRole(null);
             setIsSaved(true);
+
+            // Show success message with agency info
+            const agencyInfo = updatedUser.agencyName || 'Independent Agent';
+            alert(`✅ Successfully registered as an agent!\n\n📋 License: ${updatedUser.licenseNumber}\n🏢 Agency: ${agencyInfo}\n\n👉 You can now view your profile in the Agents page.`);
+
+            // Navigate to agents page
+            dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agents' });
+
             setTimeout(() => setIsSaved(false), 2000);
         } catch (err: any) {
             throw err; // Let the modal handle the error

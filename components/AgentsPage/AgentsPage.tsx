@@ -14,7 +14,7 @@ type ViewMode = 'grid' | 'list';
 
 const AgentsPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
-  const { properties, selectedAgentId } = state;
+  const { properties, selectedAgentId, activeView } = state;
 
   const [sortBy, setSortBy] = useState<SortKey>('sales');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -22,9 +22,12 @@ const AgentsPage: React.FC = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Refetch agents whenever the agents page becomes active
   useEffect(() => {
-    fetchAgents();
-  }, []);
+    if (activeView === 'agents') {
+      fetchAgents();
+    }
+  }, [activeView]);
 
   const fetchAgents = async () => {
     try {
