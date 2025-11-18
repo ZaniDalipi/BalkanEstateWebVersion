@@ -612,3 +612,101 @@ export const uploadAgencyCover = async (
     }
   }
 };
+
+// @desc    Join agency by invitation code
+// @route   POST /api/agencies/join-by-code
+// @access  Private
+export const joinAgencyByInvitationCode = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const { invitationCode } = req.body;
+
+    if (!invitationCode) {
+      res.status(400).json({ message: 'Invitation code is required' });
+      return;
+    }
+
+    const currentUser = req.user as IUser;
+    const user = await User.findById(String(currentUser._id));
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Check if user is an agent
+    if (user.role !== 'agent') {
+      res.status(403).json({ message: 'Only agents can join agencies' });
+      return;
+    }
+
+    // Find agency by invitation code
+    const agency = await Agency.findOne({ invitationCode: invitationCode.toUpperCase() });
+
+    if (!agency) {
+      res.status(404).json({ message: 'Invalid invitation code' });
+      return;
+    }
+
+    // Check if agent is already in the agency
+    if (agency.agents.some(id => id.toString() === String(user._id))) {
+      res.status(400).json({ message: 'You are already a member of this agency' });
+      return;
+    }
+
+    // Check if agent is already in another agency
+    if (user.agencyId) {
+      res.status(400).json({
+        message: 'You are already affiliated with another agency. Please leave your current agency first.'
+      });
+      return;
+    }
+
+    // Add agent to agency
+    const userObjectId = user._id as unknown as mongoose.Types.ObjectId;
+    agency.agents.push(userObjectId);
+    agency.totalAgents = agency.agents.length;
+    await agency.save();
+
+    // Update agent's agency info
+    user.agencyName = agency.name;
+    user.agencyId = agency._id as mongoose.Types.ObjectId;
+    await user.save();
+
+    // Also update the Agent document
+    const Agent = mongoose.model('Agent');
+    await Agent.findOneAndUpdate(
+      { userId: user._id },
+      { agencyName: agency.name },
+      { new: true }
+    );
+
+    res.json({
+      message: `Successfully joined ${agency.name}!`,
+      agency: {
+        id: agency._id,
+        name: agency.name,
+        city: agency.city,
+        country: agency.country,
+      },
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        agencyName: user.agencyName,
+        agencyId: user.agencyId,
+      }
+    });
+  } catch (error: any) {
+    console.error('Join agency by invitation code error:', error);
+    res.status(500).json({ message: 'Error joining agency', error: error.message });
+  }
+};

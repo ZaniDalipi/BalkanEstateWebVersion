@@ -217,7 +217,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
         setIsJoiningAgency(true);
         setError('');
         try {
-            const response = await fetch('/api/agency-join-requests/join-by-code', {
+            const response = await fetch(`${API_URL}/agencies/join-by-code`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -232,10 +232,20 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 throw new Error(data.message || 'Failed to join agency');
             }
 
+            // Update user in context with new agency info
+            if (data.user) {
+                dispatch({ type: 'UPDATE_USER', payload: data.user });
+                setFormData(prev => ({
+                    ...prev,
+                    agencyName: data.user.agencyName,
+                    agencyId: data.user.agencyId,
+                }));
+            }
+
             setIsSaved(true);
             setInvitationCode('');
             setError('');
-            alert(`Join request sent to ${data.agency.name}! Please wait for approval from the agency owner.`);
+            alert(`✅ Successfully joined ${data.agency.name}!`);
             setTimeout(() => setIsSaved(false), 2000);
         } catch (err: any) {
             setError(err.message || 'Failed to join agency');
