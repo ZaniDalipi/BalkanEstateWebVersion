@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 interface AgentLicenseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (licenseData: { licenseNumber: string; agencyInvitationCode: string; agentId?: string }) => Promise<void>;
+  onSubmit: (licenseData: { licenseNumber: string; agencyInvitationCode?: string; agentId?: string }) => Promise<void>;
 }
 
 const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, onSubmit }) => {
@@ -18,13 +18,20 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate license number is provided
+    if (!licenseNumber.trim()) {
+      setError('License number is required');
+      return;
+    }
+
     setError('');
     setIsSubmitting(true);
 
     try {
       await onSubmit({
         licenseNumber: licenseNumber.trim(),
-        agencyInvitationCode: agencyInvitationCode.trim().toUpperCase(),
+        agencyInvitationCode: agencyInvitationCode.trim() || undefined,
         agentId: agentId.trim() || undefined,
       });
 
@@ -70,7 +77,7 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
         {/* Content */}
         <form onSubmit={handleSubmit} className="p-6">
           <p className="text-sm text-gray-600 mb-6">
-            To become an agent, you need to provide your valid real estate license information. This helps maintain trust and credibility in our platform.
+            To become an agent, you need to provide your valid real estate license information. You can join an existing agency by entering their invitation code, or register as an independent agent.
           </p>
 
           {error && (
@@ -93,6 +100,7 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
                 disabled={isSubmitting}
                 placeholder="e.g., RS-LIC-12345"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                required
               />
               <p className="text-xs text-gray-500 mt-1">
                 Your official real estate license number
@@ -102,7 +110,7 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
             {/* Agency Invitation Code */}
             <div>
               <label htmlFor="agencyInvitationCode" className="block text-sm font-medium text-gray-700 mb-1">
-                Agency Invitation Code <span className="text-red-500">*</span>
+                Agency Invitation Code <span className="text-gray-400">(Optional)</span>
               </label>
               <input
                 type="text"
@@ -114,7 +122,7 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed font-mono"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Enter the invitation code provided by your agency
+                Leave empty to register as an independent agent
               </p>
             </div>
 

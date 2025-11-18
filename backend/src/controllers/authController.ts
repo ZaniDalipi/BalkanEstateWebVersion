@@ -353,22 +353,12 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // If switching to agent and license info is provided, validate and save it
-    if (role === 'agent' && licenseNumber && agencyInvitationCode) {
+    // If switching to agent, validate license and optionally verify agency
+    if (role === 'agent' && licenseNumber) {
       // Validate license format (basic validation - you can enhance this)
       if (licenseNumber.length < 5) {
         res.status(400).json({
           message: 'License number must be at least 5 characters'
-        });
-        return;
-      }
-
-      // Verify agency invitation code
-      const agency = await Agency.findOne({ invitationCode: agencyInvitationCode.toUpperCase() });
-
-      if (!agency) {
-        res.status(404).json({
-          message: 'Invalid agency invitation code. Please check the code and try again.'
         });
         return;
       }
@@ -386,23 +376,44 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
         return;
       }
 
+      let agency = null;
+      let agencyName = 'Independent Agent'; // Default for independent agents
+
+      // If agency invitation code is provided, verify it
+      if (agencyInvitationCode) {
+        agency = await Agency.findOne({ invitationCode: agencyInvitationCode.toUpperCase() });
+
+        if (!agency) {
+          res.status(404).json({
+            message: 'Invalid agency invitation code. Please check the code and try again.'
+          });
+          return;
+        }
+
+        agencyName = agency.name; // Use verified agency name
+      }
+
       // Generate agent ID if not provided
       const generatedAgentId = agentId || `AG-${Date.now()}`;
 
       // Update agent-specific fields in User model
       user.licenseNumber = licenseNumber;
-      user.agencyName = agency.name; // Use agency name from the verified agency
+      user.agencyName = agencyName;
       user.agentId = generatedAgentId;
       user.licenseVerified = true;
       user.licenseVerificationDate = new Date();
-      user.agencyId = agency._id as unknown as mongoose.Types.ObjectId; // Link to agency
+
+      // Link to agency if one was provided
+      if (agency) {
+        user.agencyId = agency._id as unknown as mongoose.Types.ObjectId;
+      }
 
       // Create or update Agent record in separate table
       const existingAgentRecord = await Agent.findOne({ userId: user._id });
 
       if (existingAgentRecord) {
         // Update existing agent record
-        existingAgentRecord.agencyName = agency.name;
+        existingAgentRecord.agencyName = agencyName;
         existingAgentRecord.agentId = generatedAgentId;
         existingAgentRecord.licenseNumber = licenseNumber;
         existingAgentRecord.licenseVerified = true;
@@ -413,7 +424,7 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
         // Create new agent record
         await Agent.create({
           userId: user._id,
-          agencyName: agency.name,
+          agencyName: agencyName,
           agentId: generatedAgentId,
           licenseNumber,
           licenseVerified: true,
@@ -422,12 +433,14 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
         });
       }
 
-      // Add agent to agency's agents array if not already there
-      const userObjectId = user._id as unknown as mongoose.Types.ObjectId;
-      if (!agency.agents.some(agentId => agentId.toString() === userObjectId.toString())) {
-        agency.agents.push(userObjectId);
-        agency.totalAgents = agency.agents.length;
-        await agency.save();
+      // Add agent to agency's agents array if agency was provided
+      if (agency) {
+        const userObjectId = user._id as unknown as mongoose.Types.ObjectId;
+        if (!agency.agents.some(agentId => agentId.toString() === userObjectId.toString())) {
+          agency.agents.push(userObjectId);
+          agency.totalAgents = agency.agents.length;
+          await agency.save();
+        }
       }
     }
 
