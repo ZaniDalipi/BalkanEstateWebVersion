@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Agent from '../models/Agent';
 import { IUser } from '../models/User';
+import Conversation from '../models/Conversation';
 
 
 
@@ -167,6 +168,21 @@ export const addReview = async (req: Request, res: Response): Promise<void> => {
 
     if (existingReview) {
       res.status(400).json({ message: 'You have already reviewed this agent' });
+      return;
+    }
+
+    // Check if user has had a conversation with this agent
+    const hasWorkedTogether = await Conversation.findOne({
+      $or: [
+        { buyerId: currentUser._id, sellerId: agent.userId },
+        { buyerId: agent.userId, sellerId: currentUser._id }
+      ]
+    });
+
+    if (!hasWorkedTogether) {
+      res.status(403).json({
+        message: 'You can only review agents you have worked with. Start a conversation about a property first.'
+      });
       return;
     }
 

@@ -43,7 +43,7 @@ const ProfileAvatar: React.FC<{ agent: Agent }> = ({ agent }) => {
 
 const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     const { state, dispatch } = useAppContext();
-    const { isLoadingProperties, user } = state;
+    const { isLoadingProperties, currentUser } = state;
     const agentProperties = state.properties.filter(p => p.sellerId === agent.id && p.status === 'active');
     const [showReviewForm, setShowReviewForm] = useState(false);
 
@@ -58,7 +58,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     };
 
     // Check if user can write a review (logged in and not viewing own profile)
-    const canWriteReview = user && user.id !== agent.id;
+    const canWriteReview = currentUser && currentUser.id !== agent.id;
 
     return (
     <div className="bg-neutral-50 min-h-full animate-fade-in">
@@ -91,8 +91,14 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                 )}
 
                 <div className="flex items-center justify-center md:justify-start gap-2">
-                    <StarRating rating={agent.rating} />
-                    <span className="text-lg font-bold text-neutral-700">{agent.rating.toFixed(1)}</span>
+                    {agent.rating > 0 ? (
+                        <>
+                            <StarRating rating={agent.rating} />
+                            <span className="text-lg font-bold text-neutral-700">{agent.rating.toFixed(1)}</span>
+                        </>
+                    ) : (
+                        <span className="text-sm text-neutral-500 italic">No reviews yet</span>
+                    )}
                 </div>
                 <div className="mt-4 flex items-center justify-center md:justify-start flex-wrap gap-x-6 gap-y-2 text-neutral-600">
                     <a href={`tel:${agent.phone}`} className="flex items-center gap-2 hover:text-primary"><PhoneIcon className="w-5 h-5"/>{agent.phone}</a>
@@ -150,10 +156,15 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                  )}
 
                  {/* Login Prompt */}
-                 {!user && (
+                 {!currentUser && (
                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-center">
                          <p className="text-blue-800 text-sm">
-                             Please <span className="font-semibold">log in</span> to write a review for this agent.
+                             Please <button
+                                 onClick={() => dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } })}
+                                 className="font-semibold underline hover:text-blue-900"
+                             >
+                                 log in
+                             </button> to write a review for this agent.
                          </p>
                      </div>
                  )}

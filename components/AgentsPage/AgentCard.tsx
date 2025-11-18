@@ -69,8 +69,14 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
                   </div>
               )}
               <div className="flex items-center gap-1.5 mt-1">
-                <StarRating rating={agent.rating} className="w-4 h-4" />
-                <span className="text-sm font-semibold text-neutral-600">{agent.rating.toFixed(1)}</span>
+                {agent.rating > 0 ? (
+                  <>
+                    <StarRating rating={agent.rating} className="w-4 h-4" />
+                    <span className="text-sm font-semibold text-neutral-600">{agent.rating.toFixed(1)}</span>
+                  </>
+                ) : (
+                  <span className="text-xs text-neutral-500 italic">No reviews yet</span>
+                )}
               </div>
             </div>
           </div>
