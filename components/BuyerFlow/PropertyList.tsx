@@ -318,19 +318,21 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                         )}
                     </div>
                     
-                    <div className="p-4 pt-0" style={{ height: '280px' }}>
+                    <div className="px-4 pb-4" style={{ height: '280px' }}>
                         {searchMode === 'manual' ? (
                             <div className="h-full overflow-y-auto pr-2">
                                 <FilterControls {...props} />
                             </div>
                         ) : (
-                            <AiSearch 
-                                properties={properties} 
-                                onApplyFilters={onApplyAiFilters} 
-                                isMobile={isMobile}
-                                history={aiChatHistory}
-                                onHistoryChange={onAiChatHistoryChange}
-                            />
+                            <div className="h-full">
+                                <AiSearch
+                                    properties={properties}
+                                    onApplyFilters={onApplyAiFilters}
+                                    isMobile={isMobile}
+                                    history={aiChatHistory}
+                                    onHistoryChange={onAiChatHistoryChange}
+                                />
+                            </div>
                         )}
                     </div>
                 </div>
