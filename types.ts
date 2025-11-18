@@ -28,6 +28,13 @@ export interface Seller {
 export interface Testimonial {
     quote: string;
     clientName: string;
+    rating: number;
+    createdAt?: string;
+    userId?: {
+        _id: string;
+        name: string;
+        avatarUrl?: string;
+    };
 }
 
 export interface User {

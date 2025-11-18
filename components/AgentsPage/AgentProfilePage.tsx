@@ -172,16 +172,43 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                  {/* Testimonials List */}
                  {agent.testimonials && agent.testimonials.length > 0 ? (
                      <div className="space-y-6">
-                        {agent.testimonials.map((t, index) => (
-                             <div key={index} className="bg-white p-6 rounded-xl shadow-md border">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <ChatBubbleBottomCenterTextIcon className="w-6 h-6 text-primary" />
-                                    <StarRating rating={t.rating} />
+                        {agent.testimonials.map((t, index) => {
+                            const reviewDate = t.createdAt ? new Date(t.createdAt) : null;
+                            const formattedDate = reviewDate ? reviewDate.toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                            }) : null;
+
+                            return (
+                                <div key={index} className="bg-white p-6 rounded-xl shadow-md border">
+                                    {/* Reviewer Info */}
+                                    <div className="flex items-start gap-3 mb-4">
+                                        {t.userId?.avatarUrl ? (
+                                            <img
+                                                src={t.userId.avatarUrl}
+                                                alt={t.userId.name || t.clientName}
+                                                className="w-12 h-12 rounded-full object-cover border-2 border-neutral-200"
+                                            />
+                                        ) : (
+                                            <UserCircleIcon className="w-12 h-12 text-neutral-400" />
+                                        )}
+                                        <div className="flex-1">
+                                            <div className="flex items-center justify-between flex-wrap gap-2">
+                                                <h4 className="font-bold text-neutral-900">{t.userId?.name || t.clientName}</h4>
+                                                {formattedDate && (
+                                                    <span className="text-xs text-neutral-500">{formattedDate}</span>
+                                                )}
+                                            </div>
+                                            <StarRating rating={t.rating} className="w-4 h-4" />
+                                        </div>
+                                    </div>
+
+                                    {/* Review Text */}
+                                    <p className="text-neutral-700 leading-relaxed">"{t.quote}"</p>
                                 </div>
-                                <p className="text-neutral-700 italic">"{t.quote}"</p>
-                                <p className="text-right font-semibold text-neutral-800 mt-3">- {t.clientName}</p>
-                             </div>
-                        ))}
+                            );
+                        })}
                      </div>
                  ) : (
                     <div className="text-center p-8 bg-white rounded-lg border">

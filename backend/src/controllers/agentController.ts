@@ -12,6 +12,7 @@ export const getAgents = async (req: Request, res: Response): Promise<void> => {
   try {
     const agents = await Agent.find({ isActive: true })
       .populate('userId', 'name email phone avatarUrl city country')
+      .populate('testimonials.userId', 'name avatarUrl')
       .sort({ rating: -1, totalSales: -1 });
 
     res.json({ agents });
@@ -27,7 +28,8 @@ export const getAgents = async (req: Request, res: Response): Promise<void> => {
 export const getAgent = async (req: Request, res: Response): Promise<void> => {
   try {
     const agent = await Agent.findById(req.params.id)
-      .populate('userId', 'name email phone avatarUrl city country');
+      .populate('userId', 'name email phone avatarUrl city country')
+      .populate('testimonials.userId', 'name avatarUrl');
 
     if (!agent) {
       res.status(404).json({ message: 'Agent not found' });
@@ -47,7 +49,8 @@ export const getAgent = async (req: Request, res: Response): Promise<void> => {
 export const getAgentByUserId = async (req: Request, res: Response): Promise<void> => {
   try {
     const agent = await Agent.findOne({ userId: req.params.userId })
-      .populate('userId', 'name email phone avatarUrl city country');
+      .populate('userId', 'name email phone avatarUrl city country')
+      .populate('testimonials.userId', 'name avatarUrl');
 
     if (!agent) {
       res.status(404).json({ message: 'Agent not found' });
@@ -197,6 +200,9 @@ export const addReview = async (req: Request, res: Response): Promise<void> => {
     });
 
     await agent.save();
+
+    // Populate testimonials with user data before sending response
+    await agent.populate('testimonials.userId', 'name avatarUrl');
 
     res.json({
       message: 'Review added successfully',
