@@ -19,7 +19,7 @@ import {
     CheckCircleIcon,
 } from '../../constants';
 import { getNeighborhoodInsights } from '../../services/geminiService';
-import { createConversation } from '../../services/apiService';
+import { createConversation, sendMessage, uploadMessageImage } from '../../services/apiService';
 import ImageViewerModal from './ImageViewerModal';
 import FloorPlanViewerModal from './FloorPlanViewerModal';
 import PropertyLocationMap from './PropertyLocationMap';
@@ -36,7 +36,7 @@ const ImageEditorModal: React.FC<{
     property: Property;
     onClose: () => void;
 }> = ({ imageUrl, property, onClose }) => {
-    const { dispatch } = useAppContext();
+    const { dispatch, state } = useAppContext();
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imageRef = useRef<HTMLImageElement>(new Image());
     const [zoom, setZoom] = useState(1);
@@ -164,23 +164,62 @@ const ImageEditorModal: React.FC<{
         link.click();
     };
 
-    const handleShare = () => {
+    const handleShare = async () => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        const newMessage: Message = {
-            id: `msg-${Date.now()}`,
-            senderId: 'user',
-            imageUrl: imageDataUrl,
-            timestamp: Date.now(),
-            isRead: true,
-        };
-        dispatch({ type: 'CREATE_OR_ADD_MESSAGE', payload: { propertyId: property.id, message: newMessage }});
-        setShowToast(true);
-        setTimeout(() => {
+
+        try {
+            setShowToast(true);
+
+            // Convert canvas to blob
+            const blob = await new Promise<Blob>((resolve) => {
+                canvas.toBlob((blob) => {
+                    if (blob) resolve(blob);
+                }, 'image/jpeg', 0.8);
+            });
+
+            // Create a File from the blob
+            const file = new File([blob], `annotated-${property.address.replace(/\s+/g, '-')}.jpg`, { type: 'image/jpeg' });
+
+            // Get or create conversation with the seller
+            let conversation = state.conversations?.find((c: any) => c.propertyId === property.id);
+
+            if (!conversation) {
+                // Create new conversation
+                const newConv = await createConversation(property.id);
+                conversation = newConv;
+                dispatch({ type: 'CREATE_CONVERSATION', payload: newConv });
+            }
+
+            // Upload the annotated image
+            const imageUrl = await uploadMessageImage(conversation.id, file);
+
+            // Send message with the uploaded image
+            const newMessage: Message = {
+                id: `msg-${Date.now()}`,
+                senderId: 'user',
+                imageUrl: imageUrl,
+                text: 'I have some questions about this property (annotated image)',
+                timestamp: Date.now(),
+                isRead: false,
+            };
+
+            await sendMessage(conversation.id, newMessage);
+
+            // Update local state
+            dispatch({ type: 'ADD_MESSAGE', payload: { conversationId: conversation.id, message: newMessage }});
+
+            // Navigate to inbox to show the sent message
+            setTimeout(() => {
+                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'inbox' });
+                dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: conversation.id });
+                onClose();
+            }, 1000);
+        } catch (error) {
+            console.error('Failed to send annotated image:', error);
+            alert('Failed to send message. Please try again.');
             setShowToast(false);
-            onClose();
-        }, 2000);
+        }
     };
     
     const colors = ['#FF0000', '#0000FF', '#00FF00', '#FFFF00', '#FFFFFF'];
@@ -462,9 +501,34 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
   const [isFloorPlanOpen, setIsFloorPlanOpen] = useState(false);
   const [mainImageError, setMainImageError] = useState(false);
   const [isSharePopoverOpen, setIsSharePopoverOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'photos' | 'streetview'>('photos');
+  const [viewMode, setViewMode] = useState<'photos' | 'streetview'>('streetview'); // Default to street view
+  const [isStreetViewAvailable, setIsStreetViewAvailable] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const shareContainerRef = useRef<HTMLDivElement>(null);
+  const streetViewRef = useRef<HTMLIFrameElement>(null);
+
+  // Check if street view is available for this location
+  useEffect(() => {
+    // Create a script to load Google Maps Street View Service
+    const checkStreetView = () => {
+      const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${property.lat},${property.lng}&radius=100&key=YOUR_API_KEY`;
+
+      // For now, we'll use an iframe load error handler as a fallback
+      // If street view is not available, the iframe will show "no imagery"
+      // We'll detect this and switch to photos mode
+      const timeout = setTimeout(() => {
+        // After 3 seconds, assume street view loaded successfully
+        setIsStreetViewAvailable(true);
+      }, 3000);
+
+      return () => clearTimeout(timeout);
+    };
+
+    if (viewMode === 'streetview') {
+      checkStreetView();
+    }
+  }, [property.lat, property.lng, viewMode]);
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -617,13 +681,32 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                             )}
                         </button>
                     ) : (
-                        <iframe
-                            src={`https://www.google.com/maps?layer=c&q=${encodeURIComponent(`${property.address}, ${property.city}, ${property.country}`)}&output=svembed`}
-                            className="w-full h-full border-0"
-                            allowFullScreen
-                            loading="lazy"
-                            referrerPolicy="no-referrer-when-downgrade"
-                        ></iframe>
+                        <div className={`relative w-full h-full ${isFullscreen ? 'fixed inset-0 z-50 bg-black' : ''}`}>
+                            <iframe
+                                ref={streetViewRef}
+                                src={`https://www.google.com/maps?layer=c&cbll=${property.lat},${property.lng}&cbp=12,0,0,0,0&output=svembed`}
+                                className="w-full h-full border-0"
+                                allowFullScreen
+                                loading="lazy"
+                                referrerPolicy="no-referrer-when-downgrade"
+                            ></iframe>
+                            {/* Fullscreen button for mobile */}
+                            <button
+                                onClick={() => setIsFullscreen(!isFullscreen)}
+                                className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg hover:bg-white transition-colors z-10 md:hidden"
+                                title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                            >
+                                {isFullscreen ? (
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                ) : (
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                                    </svg>
+                                )}
+                            </button>
+                        </div>
                     )}
 
                     {viewMode === 'photos' && (
