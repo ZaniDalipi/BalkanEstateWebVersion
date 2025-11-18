@@ -4,12 +4,12 @@ import { X } from 'lucide-react';
 interface AgentLicenseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (licenseData: { licenseNumber: string; agencyName: string; agentId?: string }) => Promise<void>;
+  onSubmit: (licenseData: { licenseNumber: string; agencyInvitationCode: string; agentId?: string }) => Promise<void>;
 }
 
 const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, onSubmit }) => {
   const [licenseNumber, setLicenseNumber] = useState('');
-  const [agencyName, setAgencyName] = useState('');
+  const [agencyInvitationCode, setAgencyInvitationCode] = useState('');
   const [agentId, setAgentId] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,13 +24,13 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
     try {
       await onSubmit({
         licenseNumber: licenseNumber.trim(),
-        agencyName: agencyName.trim(),
+        agencyInvitationCode: agencyInvitationCode.trim().toUpperCase(),
         agentId: agentId.trim() || undefined,
       });
 
       // Only reset form and close on success
       setLicenseNumber('');
-      setAgencyName('');
+      setAgencyInvitationCode('');
       setAgentId('');
       setError('');
       onClose();
@@ -45,7 +45,7 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
   const handleClose = () => {
     if (!isSubmitting) {
       setLicenseNumber('');
-      setAgencyName('');
+      setAgencyInvitationCode('');
       setAgentId('');
       setError('');
       onClose();
@@ -99,22 +99,22 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({ isOpen, onClose, 
               </p>
             </div>
 
-            {/* Agency Name */}
+            {/* Agency Invitation Code */}
             <div>
-              <label htmlFor="agencyName" className="block text-sm font-medium text-gray-700 mb-1">
-                Agency Name <span className="text-red-500">*</span>
+              <label htmlFor="agencyInvitationCode" className="block text-sm font-medium text-gray-700 mb-1">
+                Agency Invitation Code <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                id="agencyName"
-                value={agencyName}
-                onChange={(e) => setAgencyName(e.target.value)}
+                id="agencyInvitationCode"
+                value={agencyInvitationCode}
+                onChange={(e) => setAgencyInvitationCode(e.target.value.toUpperCase())}
                 disabled={isSubmitting}
-                placeholder="e.g., Balkan Premier Estates"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                placeholder="e.g., AGY-BELGRAD-A1B2C3"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed font-mono"
               />
               <p className="text-xs text-gray-500 mt-1">
-                The name of your real estate agency
+                Enter the invitation code provided by your agency
               </p>
             </div>
 

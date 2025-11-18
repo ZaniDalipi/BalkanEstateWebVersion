@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
 import Agent from '../models/Agent';
+import Agency from '../models/Agency';
 import { generateToken } from '../utils/jwt';
 import { IUser } from '../models/User';
 import crypto from 'crypto';
@@ -334,7 +335,7 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const { role, licenseNumber, agencyName, agentId } = req.body;
+    const { role, licenseNumber, agencyInvitationCode, agentId } = req.body;
 
     // Validate role
     const validRoles = ['buyer', 'private_seller', 'agent'];
@@ -352,11 +353,21 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
     }
 
     // If switching to agent and license info is provided, validate and save it
-    if (role === 'agent' && licenseNumber && agencyName) {
+    if (role === 'agent' && licenseNumber && agencyInvitationCode) {
       // Validate license format (basic validation - you can enhance this)
       if (licenseNumber.length < 5) {
         res.status(400).json({
           message: 'License number must be at least 5 characters'
+        });
+        return;
+      }
+
+      // Verify agency invitation code
+      const agency = await Agency.findOne({ invitationCode: agencyInvitationCode.toUpperCase() });
+
+      if (!agency) {
+        res.status(404).json({
+          message: 'Invalid agency invitation code. Please check the code and try again.'
         });
         return;
       }
@@ -379,17 +390,18 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
 
       // Update agent-specific fields in User model
       user.licenseNumber = licenseNumber;
-      user.agencyName = agencyName;
+      user.agencyName = agency.name; // Use agency name from the verified agency
       user.agentId = generatedAgentId;
       user.licenseVerified = true;
       user.licenseVerificationDate = new Date();
+      user.agencyId = agency._id; // Link to agency
 
       // Create or update Agent record in separate table
       const existingAgentRecord = await Agent.findOne({ userId: user._id });
 
       if (existingAgentRecord) {
         // Update existing agent record
-        existingAgentRecord.agencyName = agencyName;
+        existingAgentRecord.agencyName = agency.name;
         existingAgentRecord.agentId = generatedAgentId;
         existingAgentRecord.licenseNumber = licenseNumber;
         existingAgentRecord.licenseVerified = true;
@@ -400,13 +412,20 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
         // Create new agent record
         await Agent.create({
           userId: user._id,
-          agencyName,
+          agencyName: agency.name,
           agentId: generatedAgentId,
           licenseNumber,
           licenseVerified: true,
           licenseVerificationDate: new Date(),
           isActive: true,
         });
+      }
+
+      // Add agent to agency's agents array if not already there
+      if (!agency.agents.includes(user._id)) {
+        agency.agents.push(user._id);
+        agency.totalAgents = agency.agents.length;
+        await agency.save();
       }
     }
 

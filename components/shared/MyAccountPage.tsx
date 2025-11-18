@@ -167,7 +167,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
         }
     };
 
-    const handleLicenseSubmit = async (licenseData: { licenseNumber: string; agencyName: string; agentId?: string }) => {
+    const handleLicenseSubmit = async (licenseData: { licenseNumber: string; agencyInvitationCode: string; agentId?: string }) => {
         setIsSaving(true);
         try {
             // Use current role or pending role (for verification)
