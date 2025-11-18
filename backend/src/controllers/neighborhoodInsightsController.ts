@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { getNeighborhoodInsights as getNeighborhoodInsightsFromGemini } from '../services/geminiService';
-import User, { IUser } from '../models/User';
+import User from '../models/User';
 
 // Usage limits
 const FREE_USER_MONTHLY_LIMIT = 3; // Free users get 3 insights per month
