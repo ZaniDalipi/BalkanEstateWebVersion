@@ -302,6 +302,7 @@ export type AppAction =
     | { type: 'USER_DATA_LOADING' }
     | { type: 'USER_DATA_SUCCESS', payload: { savedHomes: Property[], savedSearches: SavedSearch[], conversations: Conversation[] } }
     | { type: 'ADD_SAVED_SEARCH', payload: SavedSearch }
+    | { type: 'REMOVE_SAVED_SEARCH', payload: string }
     | { type: 'TOGGLE_SAVED_HOME', payload: Property }
     | { type: 'ADD_TO_COMPARISON', payload: string }
     | { type: 'REMOVE_FROM_COMPARISON', payload: string }

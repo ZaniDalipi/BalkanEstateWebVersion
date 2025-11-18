@@ -24,7 +24,7 @@ router.post('/', protect, createProperty);
 router.put('/:id', protect, updateProperty);
 router.delete('/:id', protect, deleteProperty);
 router.get('/my/listings', protect, getMyListings);
-router.post('/upload-images', protect, upload.array('images', 10), uploadImages);
+router.post('/upload-images', protect, upload.array('images', 30), uploadImages);
 router.patch('/:id/mark-sold', protect, markAsSold);
 router.patch('/:id/renew', protect, renewProperty);
 
