@@ -86,25 +86,38 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     };
 
     const handleAgencyClick = async () => {
-        // Use agencyId if available for direct lookup, otherwise fallback to slug
-        const agencyIdentifier = agent.agencyId || slugify(agent.agencyName || '');
+        // Don't navigate if no agency name
+        if (!agent.agencyName || agent.agencyName === 'Independent Agent') {
+            return;
+        }
 
-        if (agencyIdentifier) {
-            try {
-                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-                const response = await fetch(`${API_URL}/agencies/${agencyIdentifier}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    dispatch({ type: 'SET_SELECTED_AGENCY', payload: data.agency });
-                    dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
-                } else {
-                    console.error('Agency not found:', agent.agencyName);
-                    alert(`Agency "${agent.agencyName}" not found. It may have been removed or renamed.`);
-                }
-            } catch (error) {
-                console.error('Error fetching agency:', error);
-                alert('Failed to load agency details. Please try again.');
+        // Use agencyId if available for direct lookup, otherwise fallback to slug
+        const agencyIdentifier = agent.agencyId || slugify(agent.agencyName);
+
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+            console.log('🔗 Fetching agency:', agencyIdentifier, 'for agent:', agent.name);
+
+            const response = await fetch(`${API_URL}/agencies/${agencyIdentifier}`);
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Agency found:', data.agency.name);
+                dispatch({ type: 'SET_SELECTED_AGENCY', payload: data.agency });
+                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
+            } else {
+                console.error('❌ Agency not found:', agent.agencyName, 'with identifier:', agencyIdentifier);
+                alert(
+                    `⚠️ Agency Not Found\n\n` +
+                    `The agency "${agent.agencyName}" is referenced in this agent's profile ` +
+                    `but doesn't exist in the database.\n\n` +
+                    `This agent's data may be outdated or the agency was deleted.\n\n` +
+                    `Identifier used: ${agencyIdentifier}`
+                );
             }
+        } catch (error) {
+            console.error('Error fetching agency:', error);
+            alert('Failed to load agency details. Please check your connection and try again.');
         }
     };
 
