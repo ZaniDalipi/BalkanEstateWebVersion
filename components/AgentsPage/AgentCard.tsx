@@ -43,11 +43,21 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
     dispatch({ type: 'SET_SELECTED_AGENT', payload: agent.id });
   };
 
-  const handleAgencyClick = (e: React.MouseEvent) => {
+  const handleAgencyClick = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering agent selection
     if (agent.agencyName) {
-      const agencySlug = slugify(agent.agencyName);
-      dispatch({ type: 'SET_SELECTED_AGENCY', payload: agencySlug });
+      try {
+        const agencySlug = slugify(agent.agencyName);
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+        const response = await fetch(`${API_URL}/agencies/${agencySlug}`);
+        if (response.ok) {
+          const data = await response.json();
+          dispatch({ type: 'SET_SELECTED_AGENCY', payload: data.agency });
+          dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
+        }
+      } catch (error) {
+        console.error('Error fetching agency:', error);
+      }
     }
   };
 
