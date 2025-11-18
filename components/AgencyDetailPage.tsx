@@ -104,7 +104,10 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   };
 
   const handleAgentClick = (agentId: string) => {
+    console.log('🔍 Viewing agent profile:', agentId);
     dispatch({ type: 'SET_SELECTED_AGENT', payload: agentId });
+    dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agentProfile' });
+    window.history.pushState({}, '', `/agents/${agentId}`);
   };
 
   const handleRequestToJoin = async () => {
@@ -352,7 +355,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 font-medium">Active Properties</p>
-                <p className="text-3xl font-bold text-primary mt-1">{agencyData.totalProperties}</p>
+                <p className="text-3xl font-bold text-primary mt-1">{agencyProperties.length}</p>
               </div>
               <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
                 <HomeIcon className="w-7 h-7 text-primary" />
