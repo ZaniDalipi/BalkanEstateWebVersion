@@ -76,8 +76,46 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
     mapRef.current = map;
     markerRef.current = marker;
 
+    // Ensure map tiles load correctly when map is ready
+    map.whenReady(() => {
+      setTimeout(() => {
+        if (map && map.getContainer()) {
+          map.invalidateSize();
+        }
+      }, 0);
+    });
+
+    // Set up ResizeObserver to handle container size changes
+    // This fixes the "gray tiles" issue when the map container is resized
+    const resizeObserver = new ResizeObserver(() => {
+      setTimeout(() => {
+        if (map && map.getContainer()) {
+          map.invalidateSize();
+        }
+      }, 0);
+    });
+
+    const mapContainer = map.getContainer();
+    if (mapContainer) {
+      resizeObserver.observe(mapContainer);
+    }
+
+    // Force initial resize after mount to ensure tiles load correctly
+    // This fixes issues where the map initializes before container has proper dimensions
+    const initialResizeTimer = setTimeout(() => {
+      if (map && map.getContainer()) {
+        map.invalidateSize();
+      }
+    }, 100);
+
     // Cleanup
     return () => {
+      if (initialResizeTimer) {
+        clearTimeout(initialResizeTimer);
+      }
+      if (mapContainer) {
+        resizeObserver.unobserve(mapContainer);
+      }
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -110,12 +148,23 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
 
       markerRef.current.setPopupContent(`<b>Drag me to adjust location</b><br>${address}`);
 
+      // Force map resize after location change to ensure tiles render correctly
+      const resizeTimer = setTimeout(() => {
+        if (mapRef.current && mapRef.current.getContainer()) {
+          mapRef.current.invalidateSize();
+        }
+      }, 0);
+
       const popupDelay = distance > 100 ? 1100 : 0;
       setTimeout(() => {
         if (markerRef.current) {
           markerRef.current.openPopup();
         }
       }, popupDelay);
+
+      return () => {
+        clearTimeout(resizeTimer);
+      };
     }
   }, [lat, lng, address, zoom, isDragging]);
 
@@ -164,6 +213,13 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
         duration: 1.5,
         easeLinearity: 0.25
       });
+
+      // Force resize after flyTo animation completes
+      setTimeout(() => {
+        if (mapRef.current && mapRef.current.getContainer()) {
+          mapRef.current.invalidateSize();
+        }
+      }, 1600); // Slightly after animation duration
     }
 
     setSearchQuery(result.display_name);
