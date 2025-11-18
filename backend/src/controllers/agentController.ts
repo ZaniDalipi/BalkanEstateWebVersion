@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Agent from '../models/Agent';
 import { IUser } from '../models/User';
+import Conversation from '../models/Conversation';
 
 
 
@@ -11,6 +12,7 @@ export const getAgents = async (req: Request, res: Response): Promise<void> => {
   try {
     const agents = await Agent.find({ isActive: true })
       .populate('userId', 'name email phone avatarUrl city country')
+      .populate('testimonials.userId', 'name avatarUrl')
       .sort({ rating: -1, totalSales: -1 });
 
     res.json({ agents });
@@ -26,7 +28,8 @@ export const getAgents = async (req: Request, res: Response): Promise<void> => {
 export const getAgent = async (req: Request, res: Response): Promise<void> => {
   try {
     const agent = await Agent.findById(req.params.id)
-      .populate('userId', 'name email phone avatarUrl city country');
+      .populate('userId', 'name email phone avatarUrl city country')
+      .populate('testimonials.userId', 'name avatarUrl');
 
     if (!agent) {
       res.status(404).json({ message: 'Agent not found' });
@@ -46,7 +49,8 @@ export const getAgent = async (req: Request, res: Response): Promise<void> => {
 export const getAgentByUserId = async (req: Request, res: Response): Promise<void> => {
   try {
     const agent = await Agent.findOne({ userId: req.params.userId })
-      .populate('userId', 'name email phone avatarUrl city country');
+      .populate('userId', 'name email phone avatarUrl city country')
+      .populate('testimonials.userId', 'name avatarUrl');
 
     if (!agent) {
       res.status(404).json({ message: 'Agent not found' });
@@ -170,6 +174,21 @@ export const addReview = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // Check if user has had a conversation with this agent
+    const hasWorkedTogether = await Conversation.findOne({
+      $or: [
+        { buyerId: currentUser._id, sellerId: agent.userId },
+        { buyerId: agent.userId, sellerId: currentUser._id }
+      ]
+    });
+
+    if (!hasWorkedTogether) {
+      res.status(403).json({
+        message: 'You can only review agents you have worked with. Start a conversation about a property first.'
+      });
+      return;
+    }
+
     // Add review with user information
     agent.testimonials.push({
       clientName: currentUser.name,
@@ -181,6 +200,9 @@ export const addReview = async (req: Request, res: Response): Promise<void> => {
     });
 
     await agent.save();
+
+    // Populate testimonials with user data before sending response
+    await agent.populate('testimonials.userId', 'name avatarUrl');
 
     res.json({
       message: 'Review added successfully',

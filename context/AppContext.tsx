@@ -15,6 +15,7 @@ const initialSearchPageState: SearchPageState = {
     aiChatHistory: [{ sender: 'ai', text: "Hello! Welcome to Balkan Estate. How can I help you find a property today?" }],
     isAiChatModalOpen: false,
     isFiltersOpen: false,
+    focusMapOnProperty: null,
 };
 
 const initialState: AppState = {
@@ -323,7 +324,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       name?: string;
       phone?: string;
       role?: 'buyer' | 'private_seller' | 'agent';
-      requestAgencyId?: string;
+      licenseNumber?: string;
+      agencyInvitationCode?: string;
     }
   ) => {
     const user = await api.signup(email, pass, options);

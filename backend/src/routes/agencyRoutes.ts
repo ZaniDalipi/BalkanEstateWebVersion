@@ -10,6 +10,7 @@ import {
   getFeaturedAgencies,
   uploadAgencyLogo,
   uploadAgencyCover,
+  joinAgencyByInvitationCode,
 } from '../controllers/agencyController';
 import { protect } from '../middleware/auth';
 
@@ -41,6 +42,7 @@ router.post('/', protect, createAgency);
 router.put('/:id', protect, updateAgency);
 router.post('/:id/agents', protect, addAgentToAgency);
 router.delete('/:id/agents/:agentId', protect, removeAgentFromAgency);
+router.post('/join-by-code', protect, joinAgencyByInvitationCode);
 
 // Image upload routes
 router.post('/:id/upload-logo', protect, upload.single('logo'), uploadAgencyLogo);

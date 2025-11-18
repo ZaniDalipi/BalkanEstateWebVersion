@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, StarIcon, ArrowLeftIcon, UserCircleIcon, BellIcon, TrophyIcon, ChartBarIcon, HomeIcon, UsersIcon } from '../constants';
+import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, StarIcon, ArrowLeftIcon, UserCircleIcon, BellIcon, TrophyIcon, ChartBarIcon, HomeIcon, UsersIcon, XMarkIcon } from '../constants';
 import PropertyCard from './BuyerFlow/PropertyCard';
 import PropertyCardSkeleton from './BuyerFlow/PropertyCardSkeleton';
 import AgencyJoinRequestsModal from './AgencyJoinRequestsModal';
 import { formatPrice } from '../utils/currency';
-import { createJoinRequest } from '../services/apiService';
+import { createJoinRequest, removeAgentFromAgency } from '../services/apiService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
@@ -60,8 +60,13 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [agencyData, setAgencyData] = useState<Agency>(agency);
   const [uploadError, setUploadError] = useState('');
+  const [removingAgentId, setRemovingAgentId] = useState<string | null>(null);
 
-  const isOwner = currentUser && (agency as Agency & { ownerId?: string }).ownerId === currentUser.id;
+  // Check if current user is owner - handle both populated and unpopulated ownerId
+  const agencyOwnerId = typeof agencyData.ownerId === 'object' && agencyData.ownerId !== null
+    ? (agencyData.ownerId as any)._id
+    : agencyData.ownerId;
+  const isOwner = currentUser && agencyOwnerId && (String(agencyOwnerId) === String(currentUser.id) || String(agencyOwnerId) === String(currentUser._id));
   const canRequestToJoin = isAuthenticated && currentUser?.role === 'agent' && !currentUser?.agencyId;
 
   useEffect(() => {
@@ -94,12 +99,20 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
 
   const handleBack = () => {
     dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
-    dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
-    window.history.pushState({}, '', '/agencies');
+    // Go back to the previous view (could be agencies or agents)
+    // Check if we have a selected agent, if so go back to agents view
+    if (state.selectedAgentId) {
+      dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agents' });
+    } else {
+      dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
+    }
   };
 
   const handleAgentClick = (agentId: string) => {
+    console.log('🔍 Viewing agent profile:', agentId);
     dispatch({ type: 'SET_SELECTED_AGENT', payload: agentId });
+    dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agentProfile' });
+    window.history.pushState({}, '', `/agents/${agentId}`);
   };
 
   const handleRequestToJoin = async () => {
@@ -113,6 +126,46 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
       alert(error instanceof Error ? error.message : 'Failed to send join request');
     } finally {
       setIsRequesting(false);
+    }
+  };
+
+  const handleRemoveAgent = async (agentId: string, agentName: string) => {
+    if (!isOwner) {
+      alert('Only the agency owner can remove agents');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to remove ${agentName} from ${agencyData.name}?\n\n` +
+      `This will:\n` +
+      `- Remove them from your agency\n` +
+      `- Clear their agency affiliation\n` +
+      `- Keep their properties and reviews intact`
+    );
+
+    if (!confirmed) return;
+
+    setRemovingAgentId(agentId);
+    try {
+      await removeAgentFromAgency(agencyData._id, agentId);
+
+      // Update local state to remove the agent
+      setAgents(prevAgents => prevAgents.filter(agent =>
+        (agent.id || agent._id) !== agentId
+      ));
+
+      // Update agency data
+      setAgencyData(prev => ({
+        ...prev,
+        totalAgents: prev.totalAgents - 1
+      }));
+
+      alert(`${agentName} has been removed from the agency successfully.`);
+    } catch (error: any) {
+      console.error('Error removing agent:', error);
+      alert(error.message || 'Failed to remove agent from agency');
+    } finally {
+      setRemovingAgentId(null);
     }
   };
 
@@ -344,7 +397,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 font-medium">Active Properties</p>
-                <p className="text-3xl font-bold text-primary mt-1">{agencyData.totalProperties}</p>
+                <p className="text-3xl font-bold text-primary mt-1">{agencyProperties.length}</p>
               </div>
               <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
                 <HomeIcon className="w-7 h-7 text-primary" />
@@ -546,16 +599,43 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
                         </div>
 
                         {/* Contact */}
-                        {agent.phone && (
-                          <a
-                            href={`tel:${agent.phone}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="mt-3 inline-flex items-center gap-2 text-sm text-primary hover:underline"
-                          >
-                            <PhoneIcon className="w-4 h-4" />
-                            {agent.phone}
-                          </a>
-                        )}
+                        <div className="mt-3 flex items-center justify-between gap-3">
+                          {agent.phone && (
+                            <a
+                              href={`tel:${agent.phone}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                            >
+                              <PhoneIcon className="w-4 h-4" />
+                              {agent.phone}
+                            </a>
+                          )}
+
+                          {/* Remove Agent Button - Only visible to owner */}
+                          {isOwner && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveAgent(agent.id || agent._id || '', agent.name);
+                              }}
+                              disabled={removingAgentId === (agent.id || agent._id)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-wait"
+                              title="Remove agent from agency"
+                            >
+                              {removingAgentId === (agent.id || agent._id) ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600"></div>
+                                  Removing...
+                                </>
+                              ) : (
+                                <>
+                                  <XMarkIcon className="w-4 h-4" />
+                                  Remove
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -131,7 +131,8 @@ export const signup = async (
     name?: string;
     phone?: string;
     role?: 'buyer' | 'private_seller' | 'agent';
-    requestAgencyId?: string;
+    licenseNumber?: string;
+    agencyInvitationCode?: string;
   }
 ): Promise<User> => {
   const response = await apiRequest<{ user: User; token: string }>('/auth/signup', {
@@ -142,20 +143,12 @@ export const signup = async (
       name: options?.name || email.split('@')[0],
       phone: options?.phone || '',
       role: options?.role || 'buyer',
+      licenseNumber: options?.licenseNumber,
+      agencyInvitationCode: options?.agencyInvitationCode,
     },
   });
 
   setToken(response.token);
-
-  // If user is an agent and wants to join an agency, create join request
-  if (options?.role === 'agent' && options?.requestAgencyId) {
-    try {
-      await createJoinRequest(options.requestAgencyId, 'Requested to join during registration');
-    } catch (error) {
-      console.error('Failed to create join request:', error);
-      // Don't fail signup if join request fails
-    }
-  }
 
   return response.user;
 };
@@ -232,7 +225,7 @@ export const updateUser = async (userData: Partial<User>): Promise<User> => {
 
 export const switchRole = async (
   role: UserRole,
-  licenseData?: { licenseNumber: string; agencyName: string; agentId?: string }
+  licenseData?: { licenseNumber: string; agencyInvitationCode?: string; agentId?: string }
 ): Promise<User> => {
   const response = await apiRequest<{ user: User; message: string }>('/auth/switch-role', {
     method: 'POST',
@@ -684,6 +677,8 @@ function transformBackendConversation(backendConv: any): Conversation {
     lastMessage: backendConv.lastMessage ? transformBackendMessage(backendConv.lastMessage) : undefined,
     createdAt: new Date(backendConv.createdAt).getTime(),
     isRead: backendConv.buyerUnreadCount === 0 && backendConv.sellerUnreadCount === 0,
+    buyerUnreadCount: backendConv.buyerUnreadCount || 0,
+    sellerUnreadCount: backendConv.sellerUnreadCount || 0,
   };
 }
 
@@ -750,6 +745,14 @@ export const addAgentToAgency = async (agencyId: string, agentUserId: string): P
 export const removeAgentFromAgency = async (agencyId: string, agentId: string): Promise<any> => {
   return await apiRequest(`/agencies/${agencyId}/agents/${agentId}`, {
     method: 'DELETE',
+    requiresAuth: true,
+  });
+};
+
+export const joinAgencyByInvitationCode = async (invitationCode: string, agencyId?: string): Promise<any> => {
+  return await apiRequest('/agencies/join-by-code', {
+    method: 'POST',
+    body: { invitationCode, agencyId },
     requiresAuth: true,
   });
 };
@@ -831,14 +834,63 @@ export const getFeaturedProperties = async (filters?: { city?: string; limit?: n
 
 // --- AGENTS API ---
 
+// Transform backend agent to frontend Agent type
+function transformBackendAgent(backendAgent: any): any {
+  const user = backendAgent.userId || {};
+  const userId = typeof user === 'object' && user._id ? user._id : user;
+  return {
+    id: backendAgent._id || backendAgent.id,
+    userId: String(userId), // The actual user ID for matching properties
+    name: user.name || '',
+    email: user.email || '',
+    phone: user.phone || '',
+    avatarUrl: user.avatarUrl,
+    city: user.city,
+    country: user.country,
+    role: 'agent',
+    agencyName: backendAgent.agencyName,
+    agentId: backendAgent.agentId,
+    licenseNumber: backendAgent.licenseNumber,
+    licenseVerified: backendAgent.licenseVerified,
+    licenseVerificationDate: backendAgent.licenseVerificationDate,
+    testimonials: backendAgent.testimonials || [],
+    rating: backendAgent.rating || 0,
+    totalSalesValue: backendAgent.totalSalesValue || 0,
+    propertiesSold: backendAgent.totalSales || 0,
+    activeListings: backendAgent.activeListings || 0,
+    totalReviews: backendAgent.totalReviews || 0,
+    isSubscribed: false,
+    // Additional agent fields
+    bio: backendAgent.bio,
+    specializations: backendAgent.specializations || [],
+    yearsOfExperience: backendAgent.yearsOfExperience,
+    languages: backendAgent.languages || [],
+    serviceAreas: backendAgent.serviceAreas || [],
+    websiteUrl: backendAgent.websiteUrl,
+    facebookUrl: backendAgent.facebookUrl,
+    instagramUrl: backendAgent.instagramUrl,
+    linkedinUrl: backendAgent.linkedinUrl,
+    officeAddress: backendAgent.officeAddress,
+    officePhone: backendAgent.officePhone,
+  };
+}
+
 export const getAllAgents = async (): Promise<any> => {
-  return await apiRequest("/auth/agents");
+  const response = await apiRequest("/agents");
+  if (response.agents) {
+    response.agents = response.agents.map(transformBackendAgent);
+  }
+  return response;
 };
 
 export const addAgentReview = async (agentId: string, review: { quote: string; rating: number; propertyId?: string }): Promise<any> => {
-  return await apiRequest(`/agents/${agentId}/reviews`, {
+  const response = await apiRequest(`/agents/${agentId}/reviews`, {
     method: 'POST',
     body: review,
     requiresAuth: true,
   });
+  if (response.agent) {
+    response.agent = transformBackendAgent(response.agent);
+  }
+  return response;
 };

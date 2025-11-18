@@ -28,6 +28,13 @@ export interface Seller {
 export interface Testimonial {
     quote: string;
     clientName: string;
+    rating: number;
+    createdAt?: string;
+    userId?: {
+        _id: string;
+        name: string;
+        avatarUrl?: string;
+    };
 }
 
 export interface User {
@@ -52,10 +59,23 @@ export interface User {
 }
 
 export interface Agent extends User {
+    userId?: string; // The user ID that properties are linked to (different from agent document id)
     totalSalesValue: number;
     propertiesSold: number;
     activeListings: number;
     rating: number;
+    totalReviews?: number;
+    bio?: string;
+    specializations?: string[];
+    yearsOfExperience?: number;
+    languages?: string[];
+    serviceAreas?: string[];
+    websiteUrl?: string;
+    facebookUrl?: string;
+    instagramUrl?: string;
+    linkedinUrl?: string;
+    officeAddress?: string;
+    officePhone?: string;
 }
 
 export interface Agency {
@@ -154,6 +174,8 @@ export interface Conversation {
     lastMessage?: Message;
     createdAt: number;
     isRead: boolean;
+    buyerUnreadCount: number;
+    sellerUnreadCount: number;
 }
 
 export interface Filters {
@@ -258,6 +280,7 @@ export interface SearchPageState {
     aiChatHistory: ChatMessage[];
     isAiChatModalOpen: boolean;
     isFiltersOpen: boolean;
+    focusMapOnProperty: { lat: number; lng: number; address: string } | null; // Property location to focus map on
 }
 
 export interface PendingSubscription {

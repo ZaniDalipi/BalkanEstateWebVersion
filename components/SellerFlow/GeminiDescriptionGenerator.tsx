@@ -9,6 +9,8 @@ import WhackAnIconAnimation from './WhackAnIconAnimation';
 import NumberInputWithSteppers from '../shared/NumberInputWithSteppers';
 import MapLocationPicker from './MapLocationPicker';
 import { BALKAN_LOCATIONS, CityData } from '../../utils/balkanLocations';
+import * as api from '../../services/apiService';
+import imageCompression from 'browser-image-compression';
 
 type Step = 'init' | 'loading' | 'form' | 'floorplan' | 'success';
 type Mode = 'ai' | 'manual';
@@ -220,7 +222,12 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const [language, setLanguage] = useState('English');
     const [aiPropertyType, setAiPropertyType] = useState<'house' | 'apartment' | 'villa' | 'other'>('house');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
+
+    // Upload Progress State
+    const [uploadProgress, setUploadProgress] = useState<number>(0);
+    const [isCompressing, setIsCompressing] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+
     // Drag & Drop State
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
@@ -353,44 +360,115 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         }));
     };
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const files = Array.from(e.target.files);
-            const newImages: ImageData[] = files.map((file: File) => ({
-                file,
-                previewUrl: URL.createObjectURL(file)
-            }));
 
-            if(propertyToEdit || mode === 'manual') {
+            // Check image count limits first
+            let filesToProcess = files;
+            if (propertyToEdit || mode === 'manual') {
                 // Limit to 30 images
-                const limitedImages = newImages.slice(0, 30);
-                if (newImages.length > 30) {
+                filesToProcess = files.slice(0, 30);
+                if (files.length > 30) {
                     alert('Maximum 30 images allowed. Only the first 30 images will be uploaded.');
                 }
-                setImages(limitedImages);
-                setListingData(prev => ({...prev, image_tags: limitedImages.map((_, i) => ({index: i, tag: 'other'}))}));
             } else {
                 // When adding to existing images, ensure total doesn't exceed 30
-                const totalImages = [...images, ...newImages];
-                if (totalImages.length > 30) {
+                const totalCount = images.length + files.length;
+                if (totalCount > 30) {
                     const availableSlots = 30 - images.length;
                     if (availableSlots <= 0) {
                         alert('Maximum 30 images allowed. Please remove some images before adding more.');
                         return;
                     }
                     alert(`Maximum 30 images allowed. Only ${availableSlots} more image(s) can be added.`);
-                    setImages(prev => [...prev, ...newImages.slice(0, availableSlots)]);
-                } else {
-                    setImages(prev => [...prev, ...newImages]);
+                    filesToProcess = files.slice(0, availableSlots);
                 }
+            }
+
+            // Compress images on the client side for faster uploads
+            setIsCompressing(true);
+            setError(null);
+
+            try {
+                const compressionOptions = {
+                    maxSizeMB: 1, // Maximum file size in MB
+                    maxWidthOrHeight: 1920, // Max dimension
+                    useWebWorker: true, // Use web worker for better performance
+                    fileType: 'image/jpeg', // Convert to JPEG for better compression
+                    initialQuality: 0.8, // Good quality while reducing size
+                };
+
+                const compressedImages: ImageData[] = [];
+
+                // Process images in batches for better performance
+                for (let i = 0; i < filesToProcess.length; i++) {
+                    const file = filesToProcess[i];
+                    try {
+                        console.log(`🗜️ Compressing image ${i + 1}/${filesToProcess.length}: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+
+                        const compressedFile = await imageCompression(file, compressionOptions);
+
+                        console.log(`✅ Compressed: ${compressedFile.name} (${(compressedFile.size / 1024 / 1024).toFixed(2)}MB) - ${((1 - compressedFile.size / file.size) * 100).toFixed(0)}% reduction`);
+
+                        compressedImages.push({
+                            file: compressedFile,
+                            previewUrl: URL.createObjectURL(compressedFile)
+                        });
+                    } catch (compressionError) {
+                        console.error(`Failed to compress ${file.name}, using original:`, compressionError);
+                        // Fallback to original file if compression fails
+                        compressedImages.push({
+                            file,
+                            previewUrl: URL.createObjectURL(file)
+                        });
+                    }
+                }
+
+                if (propertyToEdit || mode === 'manual') {
+                    setImages(compressedImages);
+                    setListingData(prev => ({...prev, image_tags: compressedImages.map((_, i) => ({index: i, tag: 'other'}))}));
+                } else {
+                    setImages(prev => [...prev, ...compressedImages]);
+                }
+
+                console.log(`🎉 Successfully processed ${compressedImages.length} images`);
+            } catch (error) {
+                console.error('Image compression error:', error);
+                setError('Failed to process images. Please try again.');
+            } finally {
+                setIsCompressing(false);
             }
         }
     };
 
-    const handleFloorplanImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFloorplanImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            setFloorplanImage({ file, previewUrl: URL.createObjectURL(file) });
+
+            // Compress floorplan image
+            setIsCompressing(true);
+            try {
+                const compressionOptions = {
+                    maxSizeMB: 0.5,
+                    maxWidthOrHeight: 1920,
+                    useWebWorker: true,
+                    fileType: 'image/jpeg',
+                    initialQuality: 0.8,
+                };
+
+                console.log(`🗜️ Compressing floorplan: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+                const compressedFile = await imageCompression(file, compressionOptions);
+                console.log(`✅ Compressed floorplan: ${compressedFile.name} (${(compressedFile.size / 1024 / 1024).toFixed(2)}MB)`);
+
+                setFloorplanImage({ file: compressedFile, previewUrl: URL.createObjectURL(compressedFile) });
+            } catch (error) {
+                console.error('Floorplan compression error:', error);
+                // Fallback to original
+                setFloorplanImage({ file, previewUrl: URL.createObjectURL(file) });
+            } finally {
+                setIsCompressing(false);
+            }
         }
     };
     
@@ -572,14 +650,74 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         }
 
         try {
-            const imageUrls: PropertyImage[] = images.map((img, index) => {
-                const tagInfo = listingData.image_tags.find(t => t.index === index);
-                return {
-                    url: img.previewUrl,
-                    tag: (tagInfo?.tag as PropertyImageTag) || 'other',
-                };
-            });
-            
+            // Step 1: Upload images to Cloudinary before creating the property
+            let imageUrls: PropertyImage[] = [];
+
+            // Get all image files that need to be uploaded (new images with file objects)
+            const imagesToUpload = images
+                .map((img, index) => ({ img, index }))
+                .filter(({ img }) => img.file !== null);
+
+            // Check if we have new images to upload
+            if (imagesToUpload.length > 0) {
+                try {
+                    setIsUploading(true);
+                    setUploadProgress(0);
+                    console.log(`📤 Uploading ${imagesToUpload.length} compressed images to Cloudinary...`);
+
+                    // Extract just the files (already compressed from handleImageChange)
+                    const imageFiles = imagesToUpload.map(({ img }) => img.file!);
+
+                    // Calculate total size for progress tracking
+                    const totalSize = imageFiles.reduce((sum, file) => sum + file.size, 0);
+                    console.log(`📊 Total upload size: ${(totalSize / 1024 / 1024).toFixed(2)}MB`);
+
+                    // Upload to Cloudinary (without propertyId first, we'll get temp URLs)
+                    const uploadedImages = await api.uploadPropertyImages(imageFiles);
+
+                    setUploadProgress(100);
+                    setIsUploading(false);
+                    console.log(`✅ Successfully uploaded ${uploadedImages.length} images to Cloudinary`);
+
+                    // Map the uploaded Cloudinary URLs back to our image array with proper tags
+                    let uploadIndex = 0;
+                    imageUrls = images.map((img, index) => {
+                        const tagInfo = listingData.image_tags.find(t => t.index === index);
+                        const tag = (tagInfo?.tag as PropertyImageTag) || 'other';
+
+                        if (img.file !== null) {
+                            // This is a new image that was just uploaded
+                            const cloudinaryData = uploadedImages[uploadIndex++];
+                            return {
+                                url: cloudinaryData.url,
+                                publicId: cloudinaryData.publicId,
+                                tag,
+                            };
+                        } else {
+                            // This is an existing image (when editing), keep the existing URL
+                            return {
+                                url: img.previewUrl,
+                                tag,
+                            };
+                        }
+                    });
+                } catch (uploadError: any) {
+                    console.error('❌ Failed to upload images to Cloudinary:', uploadError);
+                    setError(`Failed to upload images: ${uploadError.message || 'Unknown error'}. Please try again.`);
+                    setIsSubmitting(false);
+                    return;
+                }
+            } else if (images.length > 0) {
+                // All images are existing (editing mode), just use the preview URLs
+                imageUrls = images.map((img, index) => {
+                    const tagInfo = listingData.image_tags.find(t => t.index === index);
+                    return {
+                        url: img.previewUrl,
+                        tag: (tagInfo?.tag as PropertyImageTag) || 'other',
+                    };
+                });
+            }
+
             let { lat, lng } = listingData;
             
             const hashString = `${listingData.streetAddress}`;
@@ -806,7 +944,11 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('streetAddress')?.focus()}>
                             <input type="text" id="streetAddress" name="streetAddress" value={listingData.streetAddress} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " />
                             <label htmlFor="streetAddress" className={floatingLabelClasses}>Street Address (Optional)</label>
-                            <p className="mt-1 text-xs text-neutral-500">Search on the map above to auto-fill, or type manually • Example: Rruga Ilir Konushevci 28, Dragash</p>
+                            <p className="mt-1 text-xs text-neutral-500">
+                                Search on the map above to auto-fill, or type manually
+                                <br />
+                                <span className="text-neutral-400">Examples: Rr. Muharrem Fejza 23, Pristina • Bulevar Kralja Aleksandra 45, Belgrade • Ul. Makedonija 12, Skopje • Trg Krešimira Ćosića 7, Zagreb</span>
+                            </p>
                         </div>
 
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('price')?.focus()}>
@@ -876,8 +1018,38 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                             <div className="mt-2 relative inline-block"><img src={floorplanImage.previewUrl} alt="floorplan" className="w-32 h-32 object-cover rounded-md" /><button type="button" onClick={() => setFloorplanImage({file: null, previewUrl: ''})} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">&times;</button></div>
                         )}
                     </div>
-                    
-                    <div className="flex justify-end pt-4"><button type="submit" disabled={isSubmitting} className="px-8 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors w-full sm:w-auto">{isSubmitting ? 'Saving...' : (propertyToEdit ? 'Update Listing' : 'Publish Listing')}</button></div>
+
+                    {/* Progress Indicators */}
+                    {(isCompressing || isUploading || isSubmitting) && (
+                        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-center gap-3 mb-2">
+                                <SpinnerIcon className="w-5 h-5 text-blue-600 animate-spin" />
+                                <span className="text-sm font-semibold text-blue-800">
+                                    {isCompressing && 'Compressing images...'}
+                                    {isUploading && 'Uploading to cloud...'}
+                                    {isSubmitting && !isUploading && 'Creating listing...'}
+                                </span>
+                            </div>
+                            {isUploading && (
+                                <div className="w-full bg-blue-200 rounded-full h-2">
+                                    <div
+                                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                        style={{ width: `${uploadProgress}%` }}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="flex justify-end pt-4">
+                        <button
+                            type="submit"
+                            disabled={isSubmitting || isCompressing || isUploading}
+                            className="px-8 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSubmitting ? 'Saving...' : (propertyToEdit ? 'Update Listing' : 'Publish Listing')}
+                        </button>
+                    </div>
                  </div>
             )}
         </form>

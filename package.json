@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.27.0",
+    "browser-image-compression": "^2.0.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.553.0",
     "react": "^18.2.0",

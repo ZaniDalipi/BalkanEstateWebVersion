@@ -122,9 +122,21 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
   useEffect(() => {
     const fetchAgency = async () => {
       if (state.selectedAgencyId) {
+        // Check if selectedAgencyId is already an agency object
+        if (typeof state.selectedAgencyId === 'object' && state.selectedAgencyId._id) {
+          console.log('✅ Agency object already loaded:', state.selectedAgencyId.name);
+          setSelectedAgency(state.selectedAgencyId);
+          setIsLoadingAgency(false);
+          return;
+        }
+
         setIsLoadingAgency(true);
         try {
-          const response = await fetch(`/api/agencies/${state.selectedAgencyId}`);
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+          const agencyIdentifier = state.selectedAgencyId;
+
+          console.log('🔍 Fetching agency with identifier:', agencyIdentifier);
+          const response = await fetch(`${API_URL}/agencies/${agencyIdentifier}`);
 
           // Check content type before parsing
           const contentType = response.headers.get('content-type');
@@ -136,10 +148,11 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
           }
 
           if (!response.ok) {
-            console.error('Failed to fetch agency:', response.status, response.statusText);
+            console.error('Failed to fetch agency:', agencyIdentifier, '-', response.status, '-', response.statusText);
             setSelectedAgency(null);
           } else {
             const data = await response.json();
+            console.log('✅ Agency fetched successfully:', data.agency?.name);
             setSelectedAgency(data.agency);
           }
         } catch (error) {

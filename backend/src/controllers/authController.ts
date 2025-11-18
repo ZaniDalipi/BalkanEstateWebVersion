@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import User from '../models/User';
 import Agent from '../models/Agent';
+import Agency from '../models/Agency';
 import { generateToken } from '../utils/jwt';
 import { IUser } from '../models/User';
 import crypto from 'crypto';
@@ -12,7 +14,7 @@ import { Readable } from 'stream';
 // @access  Public
 export const signup = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, name, phone, role } = req.body;
+    const { email, password, name, phone, role, licenseNumber, agencyInvitationCode } = req.body;
 
     // Check if user already exists
     const userExists = await User.findOne({ email });
@@ -22,6 +24,41 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    let agencyName = undefined;
+    let agencyId = undefined;
+    let generatedAgentId = undefined;
+
+    // If signing up as agent, validate and set up agent data
+    if (role === 'agent' && licenseNumber) {
+      // Validate license number format (adjust regex as needed)
+      const licenseRegex = /^[A-Z0-9-]+$/i;
+      if (!licenseRegex.test(licenseNumber)) {
+        res.status(400).json({ message: 'Invalid license number format' });
+        return;
+      }
+
+      let agency = null;
+      agencyName = 'Independent Agent'; // Default for independent agents
+
+      // If agency invitation code is provided, verify it
+      if (agencyInvitationCode) {
+        agency = await Agency.findOne({ invitationCode: agencyInvitationCode.toUpperCase() });
+
+        if (!agency) {
+          res.status(404).json({
+            message: 'Invalid agency invitation code. Please check the code and try again.'
+          });
+          return;
+        }
+
+        agencyName = agency.name; // Use verified agency name
+        agencyId = agency._id as unknown as mongoose.Types.ObjectId;
+      }
+
+      // Generate agent ID
+      generatedAgentId = `AG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    }
+
     // Create user
     const user = await User.create({
       email,
@@ -29,7 +66,38 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       name,
       phone,
       role: role || 'buyer',
+      licenseNumber: generatedAgentId ? licenseNumber : undefined,
+      agencyName: agencyName,
+      agencyId: agencyId,
+      agentId: generatedAgentId,
     });
+
+    // If agent, create Agent record and add to agency
+    if (role === 'agent' && licenseNumber) {
+      await Agent.create({
+        userId: user._id,
+        agencyName: agencyName!,
+        agencyId: agencyId || undefined,
+        agentId: generatedAgentId!,
+        licenseNumber,
+        licenseVerified: true,
+        licenseVerificationDate: new Date(),
+        isActive: true,
+      });
+
+      // Add agent to agency's agents array if agency was provided
+      if (agencyId) {
+        const agency = await Agency.findById(agencyId);
+        if (agency) {
+          const userObjectId = user._id as unknown as mongoose.Types.ObjectId;
+          if (!agency.agents.some(agentId => agentId.toString() === userObjectId.toString())) {
+            agency.agents.push(userObjectId);
+            agency.totalAgents = agency.agents.length;
+            await agency.save();
+          }
+        }
+      }
+    }
 
     // Generate token
     const token = generateToken(String(user._id));
@@ -176,8 +244,7 @@ export const updateProfile = async (
       return;
     }
 
-    const { name, phone, city, country, agencyName, agentId, licenseNumber, avatarUrl } =
-      req.body;
+    const { name, phone, city, country, avatarUrl } = req.body;
 
     const currentUser = req.user as IUser;
     const user = await User.findById(String(currentUser._id));
@@ -187,20 +254,21 @@ export const updateProfile = async (
       return;
     }
 
-    // Update fields
+    // Update only allowed fields
+    // Note: agencyName, agencyId, agentId, and licenseNumber can only be set through:
+    // - Signup with invitation code
+    // - switchRole (becoming an agent)
+    // - joinAgencyByInvitationCode (joining an agency)
     if (name) user.name = name;
     if (phone) user.phone = phone;
     if (city) user.city = city;
     if (country) user.country = country;
-    if (agencyName) user.agencyName = agencyName;
-    if (agentId) user.agentId = agentId;
-    if (licenseNumber) user.licenseNumber = licenseNumber;
     if (avatarUrl) user.avatarUrl = avatarUrl;
 
     await user.save();
 
     console.log('Profile updated for user:', user._id);
-    console.log('Updated fields:', { name, phone, city, country, agencyName, agentId, licenseNumber });
+    console.log('Updated fields:', { name, phone, city, country });
 
     res.json({
       user: {
@@ -334,7 +402,7 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const { role, licenseNumber, agencyName, agentId } = req.body;
+    const { role, licenseNumber, agencyInvitationCode, agentId } = req.body;
 
     // Validate role
     const validRoles = ['buyer', 'private_seller', 'agent'];
@@ -351,8 +419,8 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // If switching to agent and license info is provided, validate and save it
-    if (role === 'agent' && licenseNumber && agencyName) {
+    // If switching to agent, validate license and optionally verify agency
+    if (role === 'agent' && licenseNumber) {
       // Validate license format (basic validation - you can enhance this)
       if (licenseNumber.length < 5) {
         res.status(400).json({
@@ -374,6 +442,23 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
         return;
       }
 
+      let agency = null;
+      let agencyName = 'Independent Agent'; // Default for independent agents
+
+      // If agency invitation code is provided, verify it
+      if (agencyInvitationCode) {
+        agency = await Agency.findOne({ invitationCode: agencyInvitationCode.toUpperCase() });
+
+        if (!agency) {
+          res.status(404).json({
+            message: 'Invalid agency invitation code. Please check the code and try again.'
+          });
+          return;
+        }
+
+        agencyName = agency.name; // Use verified agency name
+      }
+
       // Generate agent ID if not provided
       const generatedAgentId = agentId || `AG-${Date.now()}`;
 
@@ -384,12 +469,18 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
       user.licenseVerified = true;
       user.licenseVerificationDate = new Date();
 
+      // Link to agency if one was provided
+      if (agency) {
+        user.agencyId = agency._id as unknown as mongoose.Types.ObjectId;
+      }
+
       // Create or update Agent record in separate table
       const existingAgentRecord = await Agent.findOne({ userId: user._id });
 
       if (existingAgentRecord) {
         // Update existing agent record
         existingAgentRecord.agencyName = agencyName;
+        existingAgentRecord.agencyId = agency ? (agency._id as mongoose.Types.ObjectId) : undefined;
         existingAgentRecord.agentId = generatedAgentId;
         existingAgentRecord.licenseNumber = licenseNumber;
         existingAgentRecord.licenseVerified = true;
@@ -400,13 +491,24 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
         // Create new agent record
         await Agent.create({
           userId: user._id,
-          agencyName,
+          agencyName: agencyName,
+          agencyId: agency ? agency._id : undefined,
           agentId: generatedAgentId,
           licenseNumber,
           licenseVerified: true,
           licenseVerificationDate: new Date(),
           isActive: true,
         });
+      }
+
+      // Add agent to agency's agents array if agency was provided
+      if (agency) {
+        const userObjectId = user._id as unknown as mongoose.Types.ObjectId;
+        if (!agency.agents.some(agentId => agentId.toString() === userObjectId.toString())) {
+          agency.agents.push(userObjectId);
+          agency.totalAgents = agency.agents.length;
+          await agency.save();
+        }
       }
     }
 

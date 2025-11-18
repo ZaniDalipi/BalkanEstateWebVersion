@@ -4,7 +4,7 @@ import { Agent, Property } from '../../types';
 import { getAllAgents } from '../../services/apiService';
 import AgentCard from './AgentCard';
 import AgentProfilePage from './AgentProfilePage';
-import { Bars3Icon, Squares2x2Icon, TrophyIcon, CheckCircleIcon } from '../../constants';
+import { Bars3Icon, Squares2x2Icon, TrophyIcon } from '../../constants';
 import StarRating from '../shared/StarRating';
 import { formatPrice } from '../../utils/currency';
 import AdvertisementBanner from '../AdvertisementBanner';
@@ -14,7 +14,7 @@ type ViewMode = 'grid' | 'list';
 
 const AgentsPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
-  const { properties, selectedAgentId } = state;
+  const { properties, selectedAgentId, activeView } = state;
 
   const [sortBy, setSortBy] = useState<SortKey>('sales');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -22,9 +22,12 @@ const AgentsPage: React.FC = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Refetch agents whenever the agents page becomes active
   useEffect(() => {
-    fetchAgents();
-  }, []);
+    if (activeView === 'agents') {
+      fetchAgents();
+    }
+  }, [activeView]);
 
   const fetchAgents = async () => {
     try {
@@ -183,12 +186,6 @@ const AgentsPage: React.FC = () => {
                                 )}
                                 <div className="flex items-center gap-2 mt-1">
                                     <StarRating rating={agent.rating} className="w-4 h-4"/>
-                                    {agent.licenseNumber && (
-                                        <div className="flex items-center gap-1 bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-semibold">
-                                            <CheckCircleIcon className="w-3.5 h-3.5"/>
-                                            <span>Trusted</span>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                              <div className="text-right flex-shrink-0 w-32">

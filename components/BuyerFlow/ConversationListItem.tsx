@@ -22,7 +22,10 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({ conversatio
     const lastMessage = conversation.messages && conversation.messages.length > 0
         ? conversation.messages[conversation.messages.length - 1]
         : null;
-    const unreadCount = conversation.messages?.filter(m => !m.isRead && m.senderId !== currentUserId && m.senderId !== 'user').length || 0;
+
+    // Determine if current user is buyer or seller, and use appropriate unread count
+    const isBuyer = conversation.buyerId === currentUserId;
+    const unreadCount = isBuyer ? conversation.buyerUnreadCount : conversation.sellerUnreadCount;
 
     const handleClick = () => {
         onSelect();

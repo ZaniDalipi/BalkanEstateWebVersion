@@ -45,22 +45,44 @@ export const uploadImage = async (
     type,
     maxWidth = 1920,
     maxHeight = 1080,
-    quality = 85,
+    // Note: quality parameter not used - using optimized fixed values (90/95) based on compression strategy
   } = options;
 
   try {
-    // Step 1: Compress image using sharp before uploading to Cloudinary
-    // This significantly reduces upload time and storage costs
-    const compressedBuffer = await sharp(fileBuffer)
-      .resize(maxWidth, maxHeight, {
-        fit: 'inside',
-        withoutEnlargement: true, // Don't upscale smaller images
-      })
-      .jpeg({
-        quality, // Good balance between quality and size
-        progressive: true, // Progressive JPEG for better web loading
-      })
-      .toBuffer();
+    // Step 1: Light processing using sharp (frontend already compresses)
+    // Just ensure correct format and basic optimization
+    // Images are already compressed on frontend, so minimal processing needed
+    const imageMetadata = await sharp(fileBuffer).metadata();
+
+    let processedBuffer: Buffer;
+
+    // Only resize if image is significantly larger than max dimensions
+    // This reduces processing time since frontend already compresses
+    if (imageMetadata.width && imageMetadata.height &&
+        (imageMetadata.width > maxWidth * 1.5 || imageMetadata.height > maxHeight * 1.5)) {
+      console.log(`⚡ Image needs resizing: ${imageMetadata.width}x${imageMetadata.height} -> max ${maxWidth}x${maxHeight}`);
+      processedBuffer = await sharp(fileBuffer)
+        .resize(maxWidth, maxHeight, {
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .jpeg({
+          quality: 90, // Higher quality since frontend already compressed
+          progressive: true,
+        })
+        .toBuffer();
+    } else {
+      // Image is already good size, just ensure JPEG format
+      console.log(`✨ Image already optimized: ${imageMetadata.width}x${imageMetadata.height}, skipping resize`);
+      processedBuffer = await sharp(fileBuffer)
+        .jpeg({
+          quality: 95, // Minimal quality loss
+          progressive: true,
+        })
+        .toBuffer();
+    }
+
+    const compressedBuffer = processedBuffer;
 
     // Step 2: Build organized folder path
     let folder = `balkan-estate/${type}`;
