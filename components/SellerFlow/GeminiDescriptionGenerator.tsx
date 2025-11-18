@@ -9,6 +9,7 @@ import WhackAnIconAnimation from './WhackAnIconAnimation';
 import NumberInputWithSteppers from '../shared/NumberInputWithSteppers';
 import MapLocationPicker from './MapLocationPicker';
 import { BALKAN_LOCATIONS, CityData } from '../../utils/balkanLocations';
+import * as api from '../../services/apiService';
 
 type Step = 'init' | 'loading' | 'form' | 'floorplan' | 'success';
 type Mode = 'ai' | 'manual';
@@ -572,14 +573,66 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         }
 
         try {
-            const imageUrls: PropertyImage[] = images.map((img, index) => {
-                const tagInfo = listingData.image_tags.find(t => t.index === index);
-                return {
-                    url: img.previewUrl,
-                    tag: (tagInfo?.tag as PropertyImageTag) || 'other',
-                };
-            });
-            
+            // Step 1: Upload images to Cloudinary before creating the property
+            let imageUrls: PropertyImage[] = [];
+
+            // Get all image files that need to be uploaded (new images with file objects)
+            const imagesToUpload = images
+                .map((img, index) => ({ img, index }))
+                .filter(({ img }) => img.file !== null);
+
+            // Check if we have new images to upload
+            if (imagesToUpload.length > 0) {
+                try {
+                    console.log(`📤 Uploading ${imagesToUpload.length} images to Cloudinary...`);
+
+                    // Extract just the files
+                    const imageFiles = imagesToUpload.map(({ img }) => img.file!);
+
+                    // Upload to Cloudinary (without propertyId first, we'll get temp URLs)
+                    const uploadedImages = await api.uploadPropertyImages(imageFiles);
+
+                    console.log(`✅ Successfully uploaded ${uploadedImages.length} images to Cloudinary`);
+
+                    // Map the uploaded Cloudinary URLs back to our image array with proper tags
+                    let uploadIndex = 0;
+                    imageUrls = images.map((img, index) => {
+                        const tagInfo = listingData.image_tags.find(t => t.index === index);
+                        const tag = (tagInfo?.tag as PropertyImageTag) || 'other';
+
+                        if (img.file !== null) {
+                            // This is a new image that was just uploaded
+                            const cloudinaryData = uploadedImages[uploadIndex++];
+                            return {
+                                url: cloudinaryData.url,
+                                publicId: cloudinaryData.publicId,
+                                tag,
+                            };
+                        } else {
+                            // This is an existing image (when editing), keep the existing URL
+                            return {
+                                url: img.previewUrl,
+                                tag,
+                            };
+                        }
+                    });
+                } catch (uploadError: any) {
+                    console.error('❌ Failed to upload images to Cloudinary:', uploadError);
+                    setError(`Failed to upload images: ${uploadError.message || 'Unknown error'}. Please try again.`);
+                    setIsSubmitting(false);
+                    return;
+                }
+            } else if (images.length > 0) {
+                // All images are existing (editing mode), just use the preview URLs
+                imageUrls = images.map((img, index) => {
+                    const tagInfo = listingData.image_tags.find(t => t.index === index);
+                    return {
+                        url: img.previewUrl,
+                        tag: (tagInfo?.tag as PropertyImageTag) || 'other',
+                    };
+                });
+            }
+
             let { lat, lng } = listingData;
             
             const hashString = `${listingData.streetAddress}`;

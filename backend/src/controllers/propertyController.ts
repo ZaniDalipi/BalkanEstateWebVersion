@@ -256,6 +256,9 @@ export const createProperty = async (
     const propertyData = {
       ...req.body,
       sellerId: String(currentUser._id),
+      // Add user identification for 1:1 relationship tracking
+      createdByName: user.name,
+      createdByEmail: user.email,
       // Add geocoded coordinates (will be undefined if geocoding failed)
       ...(coordinates.lat && coordinates.lng && {
         lat: coordinates.lat,
@@ -264,6 +267,7 @@ export const createProperty = async (
     };
 
     console.log(`📍 Creating property with coordinates:`, coordinates.lat ? `${coordinates.lat}, ${coordinates.lng}` : 'No coordinates');
+    console.log(`👤 Property created by: ${user.name} (${user.email})`);
 
     const property = await Property.create(propertyData);
 

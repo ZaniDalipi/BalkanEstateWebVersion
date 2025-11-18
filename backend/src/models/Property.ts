@@ -8,6 +8,8 @@ export interface IPropertyImage {
 
 export interface IProperty extends Document {
   sellerId: mongoose.Types.ObjectId;
+  createdByName: string; // Name of the user who created this listing
+  createdByEmail: string; // Email of the user who created this listing
   status: 'active' | 'pending' | 'sold' | 'draft';
   soldAt?: Date;
   price: number;
@@ -51,6 +53,16 @@ const PropertySchema: Schema = new Schema(
     sellerId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
+      required: true,
+      index: true,
+    },
+    createdByName: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    createdByEmail: {
+      type: String,
       required: true,
       index: true,
     },
