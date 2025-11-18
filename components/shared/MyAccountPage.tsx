@@ -291,6 +291,8 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                     setPendingRole(null);
                 }}
                 onSubmit={handleLicenseSubmit}
+                currentLicenseNumber={user.licenseNumber}
+                currentAgentId={user.agentId}
             />
 
             <fieldset>
@@ -362,49 +364,40 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 <fieldset className="space-y-6 animate-fade-in border-t pt-8">
                      <div className="flex items-center justify-between -mt-2 mb-4">
                         <legend className="text-lg font-semibold text-neutral-700">Agent Information</legend>
-                        {!user.licenseVerified && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setPendingRole(UserRole.AGENT);
-                                    setIsLicenseModalOpen(true);
-                                }}
-                                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                            >
-                                Verify License
-                            </button>
-                        )}
-                        {user.licenseVerified && (
-                            <span className="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-full font-medium">
-                                ✓ License Verified
-                            </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                            {user.licenseVerified && (
+                                <span className="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-full font-medium">
+                                    ✓ License Verified
+                                </span>
+                            )}
+                            {!user.licenseVerified && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setPendingRole(UserRole.AGENT);
+                                        setIsLicenseModalOpen(true);
+                                    }}
+                                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                >
+                                    Verify License
+                                </button>
+                            )}
+                        </div>
                      </div>
 
-                     {!user.agencyName && (
+                     {!user.agencyName && user.licenseVerified && (
                         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                             <h4 className="text-sm font-semibold text-blue-900 mb-2">Join an Agency</h4>
                             <p className="text-xs text-blue-700 mb-3">
-                                Enter the invitation code provided by your agency to send a join request.
+                                Click below to join an agency using an invitation code. Your license and agent ID will be verified automatically.
                             </p>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={invitationCode}
-                                    onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
-                                    placeholder="AGY-AGENCY-XXXXXX"
-                                    className="flex-1 px-3 py-2 border border-blue-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleJoinByInvitationCode}
-                                    disabled={isJoiningAgency || !invitationCode.trim()}
-                                    className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {isJoiningAgency ? 'Joining...' : 'Join'}
-                                </button>
-                            </div>
-                            {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+                            <button
+                                type="button"
+                                onClick={() => setIsLicenseModalOpen(true)}
+                                className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                                Join Agency with Code
+                            </button>
                         </div>
                      )}
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
