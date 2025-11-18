@@ -243,8 +243,7 @@ export const updateProfile = async (
       return;
     }
 
-    const { name, phone, city, country, agencyName, agentId, licenseNumber, avatarUrl } =
-      req.body;
+    const { name, phone, city, country, avatarUrl } = req.body;
 
     const currentUser = req.user as IUser;
     const user = await User.findById(String(currentUser._id));
@@ -254,20 +253,21 @@ export const updateProfile = async (
       return;
     }
 
-    // Update fields
+    // Update only allowed fields
+    // Note: agencyName, agencyId, agentId, and licenseNumber can only be set through:
+    // - Signup with invitation code
+    // - switchRole (becoming an agent)
+    // - joinAgencyByInvitationCode (joining an agency)
     if (name) user.name = name;
     if (phone) user.phone = phone;
     if (city) user.city = city;
     if (country) user.country = country;
-    if (agencyName) user.agencyName = agencyName;
-    if (agentId) user.agentId = agentId;
-    if (licenseNumber) user.licenseNumber = licenseNumber;
     if (avatarUrl) user.avatarUrl = avatarUrl;
 
     await user.save();
 
     console.log('Profile updated for user:', user._id);
-    console.log('Updated fields:', { name, phone, city, country, agencyName, agentId, licenseNumber });
+    console.log('Updated fields:', { name, phone, city, country });
 
     res.json({
       user: {

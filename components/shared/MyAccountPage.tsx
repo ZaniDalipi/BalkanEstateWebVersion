@@ -6,7 +6,7 @@ import ProfileStatistics from './ProfileStatistics';
 import { User, UserRole } from '../../types';
 import { BuildingOfficeIcon, ChartBarIcon, UserCircleIcon, ArrowLeftOnRectangleIcon } from '../../constants';
 import AgentLicenseModal from './AgentLicenseModal';
-import { switchRole, getAgencies } from '../../services/apiService';
+import { switchRole } from '../../services/apiService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
@@ -83,9 +83,6 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
     const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
     const [error, setError] = useState('');
-    const [agencies, setAgencies] = useState<any[]>([]);
-    const [agencySearch, setAgencySearch] = useState('');
-    const [showAgencyDropdown, setShowAgencyDropdown] = useState(false);
     const [invitationCode, setInvitationCode] = useState('');
     const [isJoiningAgency, setIsJoiningAgency] = useState(false);
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -110,43 +107,10 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
         setFormData(user);
     }, [user]);
 
-    // Fetch agencies when component mounts or when user is an agent
-    useEffect(() => {
-        const fetchAgencies = async () => {
-            if (formData.role === UserRole.AGENT) {
-                try {
-                    const response = await getAgencies();
-                    setAgencies(response.agencies || []);
-                } catch (error) {
-                    console.error('Failed to fetch agencies:', error);
-                    setAgencies([]);
-                }
-            }
-        };
-        fetchAgencies();
-    }, [formData.role]);
-
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
         setFormData(prev => ({ ...prev, [id]: value }));
     };
-
-    const handleAgencySearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setAgencySearch(value);
-        setFormData(prev => ({ ...prev, agencyName: value }));
-        setShowAgencyDropdown(value.length > 0);
-    };
-
-    const handleAgencySelect = (agencyName: string) => {
-        setAgencySearch(agencyName);
-        setFormData(prev => ({ ...prev, agencyName }));
-        setShowAgencyDropdown(false);
-    };
-
-    const filteredAgencies = agencies.filter(agency =>
-        agency.name.toLowerCase().includes(agencySearch.toLowerCase())
-    ).slice(0, 10); // Limit to 10 results
 
     const handleRoleChange = async (role: UserRole) => {
         setError('');
@@ -449,14 +413,11 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                                 <input
                                     type="text"
                                     id="agencyName"
-                                    value={formData.agencyName || ''}
-                                    onChange={handleAgencySearchChange}
-                                    onFocus={() => setShowAgencyDropdown(true)}
-                                    onBlur={() => setTimeout(() => setShowAgencyDropdown(false), 200)}
+                                    value={formData.agencyName || 'Independent Agent'}
                                     className={floatingInputClasses}
                                     placeholder=" "
-                                    autoComplete="off"
-                                    disabled={!!user.agencyId}
+                                    disabled
+                                    title="Agency affiliation can only be changed using an invitation code"
                                 />
                                 <label htmlFor="agencyName" className={floatingLabelClasses}>Agency Name</label>
                             </div>
@@ -472,39 +433,29 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                                     View Agency Details →
                                 </button>
                             )}
-
-                            {/* Agency Autocomplete Dropdown */}
-                            {showAgencyDropdown && filteredAgencies.length > 0 && (
-                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                    {filteredAgencies.map((agency) => (
-                                        <button
-                                            key={agency._id}
-                                            type="button"
-                                            onClick={() => handleAgencySelect(agency.name)}
-                                            className="w-full text-left px-4 py-3 hover:bg-primary-light hover:text-primary-dark transition-colors flex items-start gap-3 border-b border-gray-100 last:border-b-0"
-                                        >
-                                            {agency.logo ? (
-                                                <img src={agency.logo} alt={agency.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                                            ) : (
-                                                <div className="w-10 h-10 rounded-lg bg-primary-light flex items-center justify-center flex-shrink-0">
-                                                    <BuildingOfficeIcon className="w-6 h-6 text-primary" />
-                                                </div>
-                                            )}
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-semibold text-sm text-gray-900">{agency.name}</div>
-                                                <div className="text-xs text-gray-500 truncate">{agency.city}, {agency.country}</div>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
                         </div>
                         <div className="relative">
-                            <input type="text" id="agentId" value={formData.agentId || ''} onChange={handleInputChange} className={floatingInputClasses} placeholder=" " />
+                            <input
+                                type="text"
+                                id="agentId"
+                                value={formData.agentId || ''}
+                                className={floatingInputClasses}
+                                placeholder=" "
+                                disabled
+                                title="Agent ID is automatically generated and cannot be changed"
+                            />
                             <label htmlFor="agentId" className={floatingLabelClasses}>Agent ID</label>
                         </div>
                         <div className="relative md:col-span-2">
-                            <input type="text" id="licenseNumber" value={formData.licenseNumber || ''} onChange={handleInputChange} className={floatingInputClasses} placeholder=" " disabled={user.licenseVerified} />
+                            <input
+                                type="text"
+                                id="licenseNumber"
+                                value={formData.licenseNumber || ''}
+                                className={floatingInputClasses}
+                                placeholder=" "
+                                disabled
+                                title="License number can only be set during agent verification"
+                            />
                             <label htmlFor="licenseNumber" className={floatingLabelClasses}>License Number</label>
                         </div>
                     </div>
