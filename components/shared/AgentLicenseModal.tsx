@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { getAgencies } from '../../services/apiService';
 
 interface AgentLicenseModalProps {
   isOpen: boolean;
@@ -21,9 +22,32 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
   const [agentId, setAgentId] = useState(currentAgentId || '');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [agencies, setAgencies] = useState<any[]>([]);
+  const [selectedAgency, setSelectedAgency] = useState<string>('');
+  const [loadingAgencies, setLoadingAgencies] = useState(false);
 
   // Check if user is already an agent (joining agency) vs becoming new agent
   const isJoiningAgency = Boolean(currentLicenseNumber && currentAgentId);
+
+  // Fetch agencies when modal opens (for joining agency scenario)
+  useEffect(() => {
+    if (isOpen && isJoiningAgency) {
+      fetchAgencies();
+    }
+  }, [isOpen, isJoiningAgency]);
+
+  const fetchAgencies = async () => {
+    try {
+      setLoadingAgencies(true);
+      const response = await getAgencies({ limit: 100 }); // Get all agencies
+      setAgencies(response.agencies || []);
+    } catch (err) {
+      console.error('Failed to fetch agencies:', err);
+      setAgencies([]);
+    } finally {
+      setLoadingAgencies(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -36,10 +60,16 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
       return;
     }
 
-    // If joining agency, agency code is mandatory
-    if (isJoiningAgency && !agencyInvitationCode.trim()) {
-      setError('Agency invitation code is required to join an agency');
-      return;
+    // If joining agency, agency selection and code are mandatory
+    if (isJoiningAgency) {
+      if (!selectedAgency) {
+        setError('Please select an agency to join');
+        return;
+      }
+      if (!agencyInvitationCode.trim()) {
+        setError('Agency invitation code is required to join an agency');
+        return;
+      }
     }
 
     setError('');
@@ -58,6 +88,7 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
         setAgentId('');
       }
       setAgencyInvitationCode('');
+      setSelectedAgency('');
       setError('');
       onClose();
     } catch (err: any) {
@@ -75,8 +106,18 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
         setAgentId('');
       }
       setAgencyInvitationCode('');
+      setSelectedAgency('');
       setError('');
       onClose();
+    }
+  };
+
+  const handleAgencySelect = (agencyId: string) => {
+    setSelectedAgency(agencyId);
+    const selected = agencies.find(a => a._id === agencyId);
+    if (selected && selected.invitationCode) {
+      // Show a hint about the invitation code format
+      setError('');
     }
   };
 
@@ -156,6 +197,39 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
                   : 'Your unique agent identifier (will be generated if not provided)'}
               </p>
             </div>
+
+            {/* Agency Selection - Only shown when joining agency */}
+            {isJoiningAgency && (
+              <div>
+                <label htmlFor="agencySelect" className="block text-sm font-medium text-gray-700 mb-1">
+                  Select Agency <span className="text-red-500">*</span>
+                </label>
+                {loadingAgencies ? (
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 text-sm">
+                    Loading agencies...
+                  </div>
+                ) : (
+                  <select
+                    id="agencySelect"
+                    value={selectedAgency}
+                    onChange={(e) => handleAgencySelect(e.target.value)}
+                    disabled={isSubmitting}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    required={isJoiningAgency}
+                  >
+                    <option value="">-- Select an agency --</option>
+                    {agencies.map((agency) => (
+                      <option key={agency._id} value={agency._id}>
+                        {agency.name} ({agency.city || 'Location N/A'})
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Choose the agency you want to join
+                </p>
+              </div>
+            )}
 
             {/* Agency Invitation Code */}
             <div>
