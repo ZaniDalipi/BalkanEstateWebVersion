@@ -15,6 +15,7 @@ const initialSearchPageState: SearchPageState = {
     aiChatHistory: [{ sender: 'ai', text: "Hello! Welcome to Balkan Estate. How can I help you find a property today?" }],
     isAiChatModalOpen: false,
     isFiltersOpen: false,
+    focusMapOnProperty: null,
 };
 
 const initialState: AppState = {

@@ -947,9 +947,20 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                 <p className="text-neutral-600 mb-4">Want to explore the area around this property?</p>
                 <button
                     onClick={() => {
+                        // Set the property location to focus on the map
+                        dispatch({
+                            type: 'UPDATE_SEARCH_PAGE_STATE',
+                            payload: {
+                                focusMapOnProperty: {
+                                    lat: property.lat,
+                                    lng: property.lng,
+                                    address: property.address,
+                                },
+                            },
+                        });
+                        // Navigate to search view
                         dispatch({ type: 'SET_SELECTED_PROPERTY', payload: null });
                         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
-                        // TODO: Center map on property location
                     }}
                     className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
                 >

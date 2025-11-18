@@ -240,6 +240,7 @@ export interface SearchPageState {
     aiChatHistory: ChatMessage[];
     isAiChatModalOpen: boolean;
     isFiltersOpen: boolean;
+    focusMapOnProperty: { lat: number; lng: number; address: string } | null; // Property location to focus map on
 }
 
 export interface PendingSubscription {

@@ -73,7 +73,7 @@ const MobileFilters: React.FC<{
 const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const { state, dispatch, fetchProperties, updateSearchPageState, addSavedSearch } = useAppContext();
     const { properties, isAuthenticated, currentUser, searchPageState } = state;
-    const { filters, activeFilters, mapBoundsJSON, drawnBoundsJSON, mobileView, searchMode, aiChatHistory, isAiChatModalOpen, isFiltersOpen } = searchPageState;
+    const { filters, activeFilters, mapBoundsJSON, drawnBoundsJSON, mobileView, searchMode, aiChatHistory, isAiChatModalOpen, isFiltersOpen, focusMapOnProperty } = searchPageState;
     
     // Local, non-persistent state
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -159,6 +159,20 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Handle focusing map on a specific property when navigating from property details
+    useEffect(() => {
+        if (focusMapOnProperty) {
+            // Set the map to fly to the property location
+            setFlyToTarget({
+                center: [focusMapOnProperty.lat, focusMapOnProperty.lng],
+                zoom: 15, // Zoom in closer for individual property
+            });
+
+            // Clear the focus state after triggering the map movement
+            updateSearchPageState({ focusMapOnProperty: null });
+        }
+    }, [focusMapOnProperty, updateSearchPageState]);
 
     const toggleDrawing = () => {
         setIsDrawing(prev => !prev);
