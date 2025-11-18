@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Agency from '../models/Agency';
 import User, { IUser } from '../models/User';
+import Agent from '../models/Agent';
 import Property, { IProperty } from '../models/Property';
 import { geocodeAgency } from '../services/geocodingService';
 import cloudinary from '../config/cloudinary';
@@ -380,12 +381,20 @@ export const removeAgentFromAgency = async (
     agency.totalAgents = agency.agents.length;
     await agency.save();
 
-    // Clear agent's agency info
+    // Clear agent's agency info in User model
     const agentUser = await User.findById(req.params.agentId);
     if (agentUser) {
       agentUser.agencyName = undefined;
       agentUser.agencyId = undefined;
       await agentUser.save();
+    }
+
+    // Clear agent's agency info in Agent model
+    const agentRecord = await Agent.findOne({ userId: req.params.agentId });
+    if (agentRecord) {
+      agentRecord.agencyName = 'Independent Agent';
+      agentRecord.agencyId = undefined;
+      await agentRecord.save();
     }
 
     res.json({ message: 'Agent removed from agency successfully' });
