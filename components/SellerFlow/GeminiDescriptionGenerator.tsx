@@ -944,7 +944,11 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('streetAddress')?.focus()}>
                             <input type="text" id="streetAddress" name="streetAddress" value={listingData.streetAddress} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " />
                             <label htmlFor="streetAddress" className={floatingLabelClasses}>Street Address (Optional)</label>
-                            <p className="mt-1 text-xs text-neutral-500">Search on the map above to auto-fill, or type manually • Example: Rruga Ilir Konushevci 28, Dragash</p>
+                            <p className="mt-1 text-xs text-neutral-500">
+                                Search on the map above to auto-fill, or type manually
+                                <br />
+                                <span className="text-neutral-400">Examples: Rr. Muharrem Fejza 23, Pristina • Bulevar Kralja Aleksandra 45, Belgrade • Ul. Makedonija 12, Skopje • Trg Krešimira Ćosića 7, Zagreb</span>
+                            </p>
                         </div>
 
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('price')?.focus()}>
