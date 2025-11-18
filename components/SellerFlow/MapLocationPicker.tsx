@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { searchLocation } from '../../services/osmService';
+import { NominatimResult } from '../../types';
 
 // Fix for default markers in Leaflet with webpack
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -18,25 +20,31 @@ interface MapLocationPickerProps {
   onLocationChange: (lat: number, lng: number) => void;
 }
 
-const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address, zoom = 17, onLocationChange }) => {
+const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address, zoom = 15, onLocationChange }) => {
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<NominatimResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    // Initialize map with higher zoom for street-level view
+    // Initialize map with broader zoom range for better navigation
     const map = L.map(mapContainerRef.current, {
-      minZoom: 14, // Prevent zooming out beyond city view
+      minZoom: 6,  // Allow zooming out to see entire region
       maxZoom: 19,
+      zoomControl: true, // Enable zoom controls
     }).setView([lat, lng], zoom);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
       maxZoom: 19,
-      minZoom: 14,
+      minZoom: 6,
     }).addTo(map);
 
     // Add draggable marker
@@ -56,7 +64,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
       const position = e.target.getLatLng();
       onLocationChange(position.lat, position.lng);
       setIsDragging(false);
-      marker.setPopupContent(`<b>Location adjusted</b><br>Lat: ${position.lat.toFixed(6)}, Lng: ${position.lng.toFixed(6)}`);
+      marker.setPopupContent(`<b>Location set</b><br>Lat: ${position.lat.toFixed(6)}, Lng: ${position.lng.toFixed(6)}`);
       marker.openPopup();
     });
 
@@ -91,20 +99,17 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
       markerRef.current.setLatLng(newLatLng);
 
       // Only use flyTo animation for significant changes (> 100 meters)
-      // For small adjustments, just pan without animation to prevent lag
       if (distance > 100) {
-        mapRef.current.flyTo(newLatLng, zoom, {
-          duration: 1.0, // Reduced from 1.5s to 1.0s for better responsiveness
+        mapRef.current.flyTo(newLatLng, Math.max(zoom, 15), {
+          duration: 1.0,
           easeLinearity: 0.25
         });
       } else {
-        // For small changes, just pan without animation
-        mapRef.current.setView(newLatLng, zoom, { animate: false });
+        mapRef.current.setView(newLatLng, mapRef.current.getZoom(), { animate: false });
       }
 
       markerRef.current.setPopupContent(`<b>Drag me to adjust location</b><br>${address}`);
 
-      // Open popup after potential animation completes
       const popupDelay = distance > 100 ? 1100 : 0;
       setTimeout(() => {
         if (markerRef.current) {
@@ -114,23 +119,122 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
     }
   }, [lat, lng, address, zoom, isDragging]);
 
+  // Handle location search
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    setShowResults(true);
+
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (query.trim().length < 3) {
+      setSearchResults([]);
+      return;
+    }
+
+    // Debounce search
+    searchTimeoutRef.current = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const results = await searchLocation(query);
+        setSearchResults(results.slice(0, 8)); // Show top 8 results
+      } catch (error) {
+        console.error('Search error:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 400);
+  };
+
+  // Handle result selection
+  const handleResultSelect = (result: NominatimResult) => {
+    const newLat = parseFloat(result.lat);
+    const newLng = parseFloat(result.lon);
+
+    // Update marker and map
+    onLocationChange(newLat, newLng);
+
+    // Fly to the location with appropriate zoom
+    if (mapRef.current) {
+      mapRef.current.flyTo([newLat, newLng], 16, {
+        duration: 1.5,
+        easeLinearity: 0.25
+      });
+    }
+
+    setSearchQuery(result.display_name);
+    setShowResults(false);
+    setSearchResults([]);
+  };
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-neutral-700">Adjust Property Location</p>
-        <p className="text-xs text-neutral-500">Drag the marker to fine-tune</p>
+        <p className="text-sm font-medium text-neutral-700">Property Location</p>
+        <p className="text-xs text-neutral-500">Search, navigate, and pin your location</p>
       </div>
+
+      {/* Search box */}
+      <div className="relative">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={handleSearchChange}
+          onFocus={() => searchResults.length > 0 && setShowResults(true)}
+          placeholder="Search for your village, town, or street..."
+          className="w-full px-4 py-2.5 pr-10 text-sm border-2 border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+          autoComplete="off"
+        />
+        {isSearching && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
+
+        {/* Search results dropdown */}
+        {showResults && searchResults.length > 0 && (
+          <div className="absolute z-50 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+            {searchResults.map((result) => (
+              <button
+                key={result.place_id}
+                onClick={() => handleResultSelect(result)}
+                className="w-full text-left px-4 py-3 hover:bg-neutral-100 border-b border-neutral-100 last:border-b-0 transition-colors"
+              >
+                <div className="flex items-start gap-2">
+                  <svg className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-neutral-900 truncate">{result.display_name}</p>
+                    <p className="text-xs text-neutral-500 mt-0.5">{result.type || 'Location'}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Map */}
       <div
         ref={mapContainerRef}
-        className="w-full h-80 rounded-lg border-2 border-neutral-300 shadow-sm"
+        className="w-full h-96 rounded-lg border-2 border-neutral-300 shadow-sm"
         style={{ zIndex: 0 }}
       />
+
+      {/* Instructions */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
         <p className="text-xs text-blue-800">
-          <span className="font-semibold">Tip:</span> Drag the red marker to the exact location of your property.
-          This helps buyers find your listing more accurately.
+          <span className="font-semibold">💡 Tips:</span> Use the search box to find your village/town, zoom with +/- buttons or scroll wheel, pan by dragging the map, and drag the red marker to your exact property location.
         </p>
       </div>
+
+      {/* Coordinates */}
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div className="bg-neutral-50 p-2 rounded border border-neutral-200">
           <span className="text-neutral-500">Latitude:</span> <span className="font-mono font-semibold text-neutral-800">{lat.toFixed(6)}</span>
