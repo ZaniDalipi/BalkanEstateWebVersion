@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Agency from '../models/Agency';
 import User, { IUser } from '../models/User';
-import Property from '../models/Property';
+import Property, { IProperty } from '../models/Property';
 import { geocodeAgency } from '../services/geocodingService';
 import cloudinary from '../config/cloudinary';
 import { Readable } from 'stream';
@@ -214,7 +214,7 @@ export const getAgency = async (
     }
 
     // Get agency's properties with error handling
-    let properties = [];
+    let properties: IProperty[] = [];
     try {
       const sellerIds = [agency.ownerId, ...agency.agents].filter(Boolean);
       console.log(`🏠 Fetching properties for ${sellerIds.length} sellers (owner + ${agency.agents.length} agents)`);
