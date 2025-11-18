@@ -62,7 +62,7 @@ ConversationSchema.index({ sellerId: 1, propertyId: 1 });
 
 // Pre-save hook to automatically set expiresAt based on lastMessageAt
 ConversationSchema.pre('save', function(next) {
-  const conversation = this as IConversation;
+  const conversation = this as any as IConversation;
 
   // Set expiration to 30 days from last message
   // 30 days = 30 * 24 * 60 * 60 * 1000 milliseconds
