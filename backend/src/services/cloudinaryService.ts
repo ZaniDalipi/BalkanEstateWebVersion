@@ -45,7 +45,7 @@ export const uploadImage = async (
     type,
     maxWidth = 1920,
     maxHeight = 1080,
-    quality = 85,
+    // Note: quality parameter not used - using optimized fixed values (90/95) based on compression strategy
   } = options;
 
   try {
