@@ -60,6 +60,7 @@ const initialListingData: ListingData = {
     lng: 0,
 };
 
+// Languages corresponding to supported countries: Kosovo, Albania, North Macedonia, Serbia, Bosnia and Herzegovina, Croatia, Montenegro, Greece, Bulgaria, Romania
 const LANGUAGES = [
     'English',
     'Albanian',
@@ -68,27 +69,9 @@ const LANGUAGES = [
     'Bosnian',
     'Croatian',
     'Montenegrin',
-    'Bulgarian',
     'Greek',
-    'Turkish',
-    'Romanian',
-    'Hungarian',
-    'Slovenian',
-    'Slovak',
-    'Czech',
-    'Italian',
-    'German',
-    'French',
-    'Spanish',
-    'Portuguese',
-    'Polish',
-    'Russian',
-    'Ukrainian',
-    'Dutch',
-    'Swedish',
-    'Danish',
-    'Norwegian',
-    'Finnish'
+    'Bulgarian',
+    'Romanian'
 ];
 const ALL_VALID_TAGS: PropertyImageTag[] = ['exterior', 'living_room', 'kitchen', 'bedroom', 'bathroom', 'other'];
 const FREE_LISTING_LIMIT = 3;
