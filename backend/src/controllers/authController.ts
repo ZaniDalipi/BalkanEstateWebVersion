@@ -395,7 +395,7 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
       user.agentId = generatedAgentId;
       user.licenseVerified = true;
       user.licenseVerificationDate = new Date();
-      user.agencyId = agency._id as mongoose.Types.ObjectId; // Link to agency
+      user.agencyId = agency._id as unknown as mongoose.Types.ObjectId; // Link to agency
 
       // Create or update Agent record in separate table
       const existingAgentRecord = await Agent.findOne({ userId: user._id });
@@ -423,7 +423,7 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
       }
 
       // Add agent to agency's agents array if not already there
-      const userObjectId = user._id as mongoose.Types.ObjectId;
+      const userObjectId = user._id as unknown as mongoose.Types.ObjectId;
       if (!agency.agents.some(agentId => agentId.toString() === userObjectId.toString())) {
         agency.agents.push(userObjectId);
         agency.totalAgents = agency.agents.length;
