@@ -229,12 +229,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const [selectedCountry, setSelectedCountry] = useState('');
     const [selectedCity, setSelectedCity] = useState('');
     const [availableCities, setAvailableCities] = useState<CityData[]>([]);
-    const [locationSearchQuery, setLocationSearchQuery] = useState('');
-    const [locationSuggestions, setLocationSuggestions] = useState<NominatimResult[]>([]);
-    const [isSearchingLocation, setIsSearchingLocation] = useState(false);
-    const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
-    const locationSearchRef = useRef<HTMLDivElement>(null);
-
+    
     // Track modal state to react to it closing
     const wasModalOpen = useRef(isPricingModalOpen);
     useEffect(() => {
@@ -290,7 +285,6 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             // Set country and city from property
             setSelectedCountry(propertyToEdit.country);
             setSelectedCity(propertyToEdit.city);
-            setLocationSearchQuery(`${propertyToEdit.city}, ${propertyToEdit.country}`);
 
             // Load cities for the country
             const country = BALKAN_LOCATIONS.find(c => c.name === propertyToEdit.country);
@@ -311,8 +305,6 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         const countryName = e.target.value;
         setSelectedCountry(countryName);
         setSelectedCity(''); // Reset city when country changes
-        setLocationSearchQuery(''); // Reset search query
-        setLocationSuggestions([]); // Clear suggestions
 
         const country = BALKAN_LOCATIONS.find(c => c.name === countryName);
         if (country) {
@@ -352,63 +344,6 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             lng: newLng,
         }));
     };
-
-    // Handle location search input
-    const handleLocationSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const query = e.target.value;
-        setLocationSearchQuery(query);
-        setShowLocationSuggestions(true);
-
-        if (query.trim().length < 3) {
-            setLocationSuggestions([]);
-            return;
-        }
-
-        setIsSearchingLocation(true);
-        try {
-            // Search within the selected country
-            const searchQuery = selectedCountry ? `${query}, ${selectedCountry}` : query;
-            const results = await searchLocation(searchQuery);
-
-            // Filter results to prioritize locations within the selected country
-            const filteredResults = selectedCountry
-                ? results.filter(r => r.display_name.includes(selectedCountry))
-                : results;
-
-            setLocationSuggestions(filteredResults.slice(0, 10)); // Limit to 10 results
-        } catch (error) {
-            console.error('Location search error:', error);
-            setLocationSuggestions([]);
-        } finally {
-            setIsSearchingLocation(false);
-        }
-    };
-
-    // Handle location suggestion selection
-    const handleLocationSelect = (suggestion: NominatimResult) => {
-        setSelectedCity(suggestion.name || suggestion.display_name.split(',')[0]);
-        setLocationSearchQuery(suggestion.display_name);
-        setShowLocationSuggestions(false);
-
-        // Update coordinates to the selected location
-        setListingData(prev => ({
-            ...prev,
-            lat: parseFloat(suggestion.lat),
-            lng: parseFloat(suggestion.lon),
-        }));
-    };
-
-    // Click outside to close suggestions
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (locationSearchRef.current && !locationSearchRef.current.contains(event.target as Node)) {
-                setShowLocationSuggestions(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -821,45 +756,29 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                             </div>
                         </div>
 
-                        {/* City/Location Search */}
-                        <div className="relative" ref={locationSearchRef}>
-                            <input
-                                type="text"
+                        {/* City Dropdown */}
+                        <div className="relative">
+                            <select
                                 id="city"
-                                value={locationSearchQuery}
-                                onChange={handleLocationSearchChange}
-                                onFocus={() => setShowLocationSuggestions(true)}
+                                value={selectedCity}
+                                onChange={handleCityChange}
                                 className={`${floatingInputClasses} border-neutral-300`}
-                                placeholder=" "
                                 required
                                 disabled={!selectedCountry}
-                                autoComplete="off"
-                            />
-                            <label htmlFor="city" className={floatingLabelClasses}>
-                                City, Town, or Village
-                            </label>
-                            {isSearchingLocation && (
-                                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                                    <SpinnerIcon className="h-5 w-5 text-primary animate-spin" />
-                                </div>
-                            )}
-                            {showLocationSuggestions && locationSuggestions.length > 0 && (
-                                <ul className="absolute z-20 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                    {locationSuggestions.map((suggestion) => (
-                                        <li
-                                            key={suggestion.place_id}
-                                            onMouseDown={() => handleLocationSelect(suggestion)}
-                                            className="px-4 py-3 text-sm text-neutral-700 hover:bg-neutral-100 cursor-pointer flex items-center gap-2"
-                                        >
-                                            <MapPinIcon className="w-4 h-4 text-neutral-400 flex-shrink-0" />
-                                            <span>{suggestion.display_name}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                            <p className="mt-1 text-xs text-neutral-500">
-                                Search for any city, town, or village in {selectedCountry || 'your country'}
-                            </p>
+                            >
+                                <option value="">Select City</option>
+                                {availableCities.map(city => (
+                                    <option key={city.name} value={city.name}>
+                                        {city.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <label htmlFor="city" className={floatingSelectLabelClasses}>City</label>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
+                                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                                </svg>
+                            </div>
                         </div>
 
                         {/* Show interactive map when city is selected */}
@@ -868,7 +787,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                                 <MapLocationPicker
                                     lat={listingData.lat}
                                     lng={listingData.lng}
-                                    address={locationSearchQuery || `${selectedCity}, ${selectedCountry}`}
+                                    address={`${selectedCity}, ${selectedCountry}`}
                                     zoom={getZoomLevel}
                                     onLocationChange={handleMapLocationChange}
                                 />
