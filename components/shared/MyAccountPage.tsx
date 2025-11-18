@@ -3,7 +3,7 @@ import { useAppContext } from '../../context/AppContext';
 import MyListings from './MyListings';
 import SubscriptionManagement from './SubscriptionManagement';
 import ProfileStatistics from './ProfileStatistics';
-import { User, UserRole } from '../../types';
+import { User, UserRole, Agency } from '../../types';
 import { BuildingOfficeIcon, ChartBarIcon, UserCircleIcon, ArrowLeftOnRectangleIcon } from '../../constants';
 import AgentLicenseModal from './AgentLicenseModal';
 import AgencyManagementSection from './AgencyManagementSection';
@@ -99,7 +99,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                     dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
                 }
             } catch (error) {
-                console.error('Error fetching agency:', error);
+                // Failed to fetch agency details
             }
         }
     };

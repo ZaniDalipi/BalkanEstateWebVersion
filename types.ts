@@ -9,7 +9,7 @@ export type PropertyStatus = 'active' | 'pending' | 'sold' | 'draft';
 
 export type PropertyImageTag = 'exterior' | 'living_room' | 'kitchen' | 'bedroom' | 'bathroom' | 'other';
 
-export type AppView = 'search' | 'saved-searches' | 'saved-properties' | 'inbox' | 'account' | 'create-listing' | 'agents' | 'agencies';
+export type AppView = 'search' | 'saved-searches' | 'saved-properties' | 'inbox' | 'account' | 'create-listing' | 'agents' | 'agencies' | 'agentProfile' | 'agencyDetail';
 
 export type AuthModalView = 'login' | 'signup' | 'forgotPassword' | 'forgotPasswordSuccess' | 'phoneCode' | 'phoneDetails';
 
@@ -39,6 +39,7 @@ export interface Testimonial {
 
 export interface User {
     id: string;
+    _id?: string; // MongoDB ID (for compatibility)
     name: string;
     email: string;
     avatarUrl?: string;
@@ -48,6 +49,7 @@ export interface User {
     country?: string;
     agencyName?: string;
     agentId?: string;
+    agencyId?: string; // Agency ID for agents
     licenseNumber?: string;
     licenseVerified?: boolean;
     licenseVerificationDate?: Date;
@@ -96,6 +98,7 @@ export interface Agency {
     totalAgents: number;
     yearsInBusiness?: number;
     isFeatured: boolean;
+    ownerId?: string; // Owner user ID
 }
 
 export interface PropertyImage {
