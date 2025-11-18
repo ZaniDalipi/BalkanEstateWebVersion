@@ -134,6 +134,8 @@ export interface Conversation {
     lastMessage?: Message;
     createdAt: number;
     isRead: boolean;
+    buyerUnreadCount: number;
+    sellerUnreadCount: number;
 }
 
 export interface Filters {
