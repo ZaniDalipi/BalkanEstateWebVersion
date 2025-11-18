@@ -153,8 +153,10 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 setIsLicenseModalOpen(false);
                 setIsSaved(true);
 
-                // Show success message
-                alert(`✅ Successfully joined ${updatedUser.agencyName}!\n\n🏢 You are now affiliated with ${response.agency.name}.\n🎯 Total Agents: ${response.agency.totalAgents}\n\n👉 Refreshing to show latest data...`);
+                // Show success message (join vs switch)
+                const wasIndependent = !user.agencyName || user.agencyName === 'Independent Agent';
+                const actionText = wasIndependent ? 'joined' : 'switched to';
+                alert(`✅ Successfully ${actionText} ${updatedUser.agencyName}!\n\n🏢 You are now affiliated with ${response.agency.name}.\n🎯 Total Agents: ${response.agency.totalAgents}\n\n👉 Refreshing to show latest data...`);
 
                 // Force complete page refresh to sync all data (profile, DB, agents list, agency pages)
                 setTimeout(() => {
@@ -413,18 +415,23 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                         </div>
                      </div>
 
-                     {!user.agencyName && user.licenseVerified && (
+                     {user.licenseVerified && (
                         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <h4 className="text-sm font-semibold text-blue-900 mb-2">Join an Agency</h4>
+                            <h4 className="text-sm font-semibold text-blue-900 mb-2">
+                                {user.agencyName && user.agencyName !== 'Independent Agent' ? 'Change Agency' : 'Join an Agency'}
+                            </h4>
                             <p className="text-xs text-blue-700 mb-3">
-                                Click below to join an agency using an invitation code. Your license and agent ID will be verified automatically.
+                                {user.agencyName && user.agencyName !== 'Independent Agent'
+                                    ? `You are currently with ${user.agencyName}. You can switch to a different agency using an invitation code.`
+                                    : 'Click below to join an agency using an invitation code. Your license and agent ID will be verified automatically.'
+                                }
                             </p>
                             <button
                                 type="button"
                                 onClick={() => setIsLicenseModalOpen(true)}
                                 className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
                             >
-                                Join Agency with Code
+                                {user.agencyName && user.agencyName !== 'Independent Agent' ? 'Switch Agency' : 'Join Agency with Code'}
                             </button>
                         </div>
                      )}

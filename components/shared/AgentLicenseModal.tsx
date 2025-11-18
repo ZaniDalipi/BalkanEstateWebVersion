@@ -134,7 +134,7 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900">
-            {isJoiningAgency ? 'Join Agency' : 'Agent License Verification'}
+            {isJoiningAgency ? 'Join/Change Agency' : 'Agent License Verification'}
           </h2>
           <button
             onClick={handleClose}

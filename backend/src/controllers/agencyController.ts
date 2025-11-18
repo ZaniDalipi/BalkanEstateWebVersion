@@ -669,15 +669,26 @@ export const joinAgencyByInvitationCode = async (
       return;
     }
 
-    // Check if agent is already in another agency
-    if (user.agencyId) {
-      res.status(400).json({
-        message: 'You are already affiliated with another agency. Please leave your current agency first.'
-      });
-      return;
+    // If agent is already in another agency, remove them from the old one first
+    if (user.agencyId && String(user.agencyId) !== String(agency._id)) {
+      try {
+        const oldAgency = await Agency.findById(user.agencyId);
+        if (oldAgency) {
+          // Remove agent from old agency's agents array
+          oldAgency.agents = oldAgency.agents.filter(
+            agentId => agentId.toString() !== String(user._id)
+          );
+          oldAgency.totalAgents = oldAgency.agents.length;
+          await oldAgency.save();
+          console.log(`✅ Removed agent from old agency: ${oldAgency.name}`);
+        }
+      } catch (error) {
+        console.error('Error removing agent from old agency:', error);
+        // Continue anyway - we still want to add them to the new agency
+      }
     }
 
-    // Add agent to agency
+    // Add agent to new agency
     const userObjectId = user._id as unknown as mongoose.Types.ObjectId;
     agency.agents.push(userObjectId);
     agency.totalAgents = agency.agents.length;
