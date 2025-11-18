@@ -63,8 +63,14 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Agency found:', data.agency.name);
+
+        // Pass the full agency object and navigate
         dispatch({ type: 'SET_SELECTED_AGENCY', payload: data.agency });
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
+
+        // Update URL
+        const urlSlug = data.agency.slug || data.agency._id;
+        window.history.pushState({}, '', `/agencies/${urlSlug}`);
       } else {
         console.error('❌ Agency not found:', agent.agencyName, 'with identifier:', agencyIdentifier);
         alert(

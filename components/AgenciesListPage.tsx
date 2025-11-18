@@ -199,20 +199,16 @@ const AgenciesListPage: React.FC = () => {
     dispatch({ type: 'TOGGLE_ENTERPRISE_MODAL', payload: true });
   };
 
-  const handleViewAgency = (agencyId: string, agencySlug?: string) => {
-    // Use slug if available, otherwise use ID
-    let identifier = agencySlug || agencyId;
+  const handleViewAgency = (agency: Agency) => {
+    console.log('🔍 Viewing agency:', agency.name, '(ID:', agency._id, ')');
 
-    // Normalize slug: remove country prefix with comma if present
-    // Handles old format: "serbia,belgrade-premium-properties" -> "belgrade-premium-properties"
-    if (identifier.includes(',')) {
-      identifier = identifier.split(',')[1];
-    }
+    // Pass the full agency object to avoid unnecessary API calls
+    dispatch({ type: 'SET_SELECTED_AGENCY', payload: agency });
+    dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
 
-    dispatch({ type: 'SET_SELECTED_AGENCY', payload: identifier });
-
-    // Update browser URL with normalized slug (consistent with /agencies route)
-    window.history.pushState({}, '', `/agencies/${identifier}`);
+    // Update browser URL
+    const urlSlug = agency.slug || agency._id;
+    window.history.pushState({}, '', `/agencies/${urlSlug}`);
   };
 
   const getRankBadge = (index: number) => {
@@ -358,7 +354,7 @@ const AgenciesListPage: React.FC = () => {
               return (
                 <div
                   key={agency._id}
-                  onClick={() => handleViewAgency(agency._id, agency.slug)}
+                  onClick={() => handleViewAgency(agency)}
                   className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer"
                 >
                   <div className="flex flex-col lg:flex-row">
