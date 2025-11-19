@@ -23,6 +23,7 @@ import PaymentCancel from './components/PaymentCancel';
 import { LogoIcon } from './constants';
 import ListingLimitWarningModal from './components/shared/ListingLimitWarningModal';
 import DiscountGameModal from './components/shared/DiscountGameModal';
+import AdminDashboard from './components/AdminPanel/AdminDashboard';
 
 const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar }) => {
   const { state, dispatch } = useAppContext();
@@ -87,6 +88,7 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
         '/agents': 'agents',
         '/agencies': 'agencies',
         '/create-listing': 'create-listing',
+        '/admin': 'admin',
       };
 
       const view = routeMap[path];
@@ -213,6 +215,8 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
       return <AgentsPage />;
     case 'agencies':
       return <AgenciesListPage />;
+    case 'admin':
+      return <AdminDashboard />;
     case 'search':
     default:
       return <SearchPage onToggleSidebar={onToggleSidebar} />;

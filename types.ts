@@ -9,7 +9,7 @@ export type PropertyStatus = 'active' | 'pending' | 'sold' | 'draft';
 
 export type PropertyImageTag = 'exterior' | 'living_room' | 'kitchen' | 'bedroom' | 'bathroom' | 'other';
 
-export type AppView = 'search' | 'saved-searches' | 'saved-properties' | 'inbox' | 'account' | 'create-listing' | 'agents' | 'agencies' | 'agentProfile' | 'agencyDetail';
+export type AppView = 'search' | 'saved-searches' | 'saved-properties' | 'inbox' | 'account' | 'create-listing' | 'agents' | 'agencies' | 'agentProfile' | 'agencyDetail' | 'admin';
 
 export type AuthModalView = 'login' | 'signup' | 'forgotPassword' | 'forgotPasswordSuccess' | 'phoneCode' | 'phoneDetails';
 
