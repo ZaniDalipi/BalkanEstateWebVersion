@@ -73,7 +73,7 @@ export const createAgency = async (
     await agency.save();
 
     // Update user with agency reference and role
-    user.agencyId = agency._id as mongoose.Types.ObjectId;
+    user.agencyId = new mongoose.Types.ObjectId(String(agency._id));
     user.isEnterpriseTier = true;
     user.agencyName = agency.name;
 
@@ -260,14 +260,14 @@ export const getAgency = async (
         console.log(`👤 Auto-adding admin ${currentUser.email} to agency members`);
 
         // Add user to agents array
-        agency.agents.push(currentUser._id as mongoose.Types.ObjectId);
+        agency.agents.push(new mongoose.Types.ObjectId(userId));
         agency.totalAgents = (agency.totalAgents || 0) + 1;
         await agency.save();
 
         // Update user's agency info if not already set
         const user = await User.findById(userId);
         if (user && !user.agencyId) {
-          user.agencyId = agency._id as mongoose.Types.ObjectId;
+          user.agencyId = new mongoose.Types.ObjectId(String(agency._id));
           user.agencyName = agency.name;
           if (user.role !== 'agent') {
             user.role = 'agent';
