@@ -71,10 +71,10 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
       // Use slug if available, otherwise fall back to _id
       let identifier = currentAd.slug || currentAd._id;
 
-      // Normalize slug: remove country prefix with comma if present
-      // Handles old format: "serbia,belgrade-premium-properties" -> "belgrade-premium-properties"
+      // Convert old comma format to new forward slash format for backward compatibility
+      // Handles old format: "serbia,belgrade-premium-properties" -> "serbia/belgrade-premium-properties"
       if (identifier.includes(',')) {
-        identifier = identifier.split(',')[1];
+        identifier = identifier.replace(',', '/');
       }
 
       dispatch({ type: 'SET_SELECTED_AGENCY', payload: identifier });

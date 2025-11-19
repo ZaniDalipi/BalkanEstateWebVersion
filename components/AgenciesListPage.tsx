@@ -206,8 +206,10 @@ const AgenciesListPage: React.FC = () => {
     dispatch({ type: 'SET_SELECTED_AGENCY', payload: agency });
     dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
 
-    // Update browser URL
-    const urlSlug = agency.slug || agency._id;
+    // Update browser URL - convert old comma format to new forward slash format
+    let urlSlug = agency.slug || agency._id;
+    // Replace comma with forward slash for backward compatibility with old slugs
+    urlSlug = urlSlug.replace(',', '/');
     window.history.pushState({}, '', `/agencies/${urlSlug}`);
   };
 

@@ -204,12 +204,22 @@ export const getAgency = async (
         .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating');
     }
 
+    // If not found and slug contains forward slash, try converting to comma format for backward compatibility
+    if (!agency && identifier.includes('/')) {
+      lookupMethod = 'slug (legacy format)';
+      const legacySlug = identifier.toLowerCase().replace('/', ',');
+      console.log(`🏷️  Attempting lookup by legacy slug format: ${legacySlug}`);
+      agency = await Agency.findOne({ slug: legacySlug })
+        .populate('ownerId', 'name email phone avatarUrl')
+        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating');
+    }
+
     if (!agency) {
       console.error(`❌ Agency not found for identifier: ${identifier}`);
       res.status(404).json({
         message: 'Agency not found',
         searchedFor: identifier,
-        attemptedMethods: ['ObjectId', 'slug']
+        attemptedMethods: ['ObjectId', 'slug', 'legacy slug format']
       });
       return;
     }
