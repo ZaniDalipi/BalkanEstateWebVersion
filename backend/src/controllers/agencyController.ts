@@ -55,7 +55,10 @@ export const createAgency = async (
     const agencyData = {
       ...req.body,
       ownerId: user._id,
+      agents: [user._id], // Add the owner as the first agent
+      admins: [user._id], // Add the owner as admin
       isFeatured: req.body.isFeatured || false, // Can be set manually or defaults to false
+      totalAgents: 1, // Initialize with 1 agent (the owner)
       // Add geocoded coordinates (will be undefined if geocoding failed)
       ...(coordinates.lat && coordinates.lng && {
         lat: coordinates.lat,
@@ -69,10 +72,19 @@ export const createAgency = async (
     const agency = new Agency(agencyData);
     await agency.save();
 
-    // Update user with agency reference
+    // Update user with agency reference and role
     user.agencyId = agency._id as mongoose.Types.ObjectId;
     user.isEnterpriseTier = true;
+    user.agencyName = agency.name;
+
+    // If user is not already an agent, change their role to agent
+    if (user.role !== 'agent') {
+      user.role = 'agent';
+    }
+
     await user.save();
+
+    console.log(`✅ Agency created successfully. User ${user.email} is now admin of agency ${agency.name}`);
 
     res.status(201).json({ agency });
   } catch (error: any) {
