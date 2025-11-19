@@ -159,38 +159,45 @@ export const getAgencies = async (
 };
 
 // @desc    Get single agency by ID or slug
-// @route   GET /api/agencies/:idOrSlug
+// @route   GET /api/agencies/:country/:name OR GET /api/agencies/:idOrSlug
 // @access  Public
 export const getAgency = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const { idOrSlug } = req.params;
+    const { country, name, idOrSlug } = req.params;
 
-    if (!idOrSlug) {
-      console.error('❌ getAgency: No idOrSlug parameter provided');
+    // Construct slug from country/name or use idOrSlug
+    let identifier = idOrSlug;
+    if (country && name) {
+      identifier = `${country}/${name}`;
+      console.log(`🔍 Looking up agency by country/name: ${identifier}`);
+    } else if (idOrSlug) {
+      console.log(`🔍 Looking up agency by idOrSlug: ${idOrSlug}`);
+    }
+
+    if (!identifier) {
+      console.error('❌ getAgency: No identifier provided');
       res.status(400).json({ message: 'Agency ID or slug is required' });
       return;
     }
-
-    console.log(`🔍 Looking up agency by: ${idOrSlug}`);
 
     // Try to find by ID first, then by slug
     let agency;
     let lookupMethod = '';
 
-    if (mongoose.Types.ObjectId.isValid(idOrSlug)) {
+    if (mongoose.Types.ObjectId.isValid(identifier)) {
       lookupMethod = 'ID';
-      console.log(`🔑 Attempting lookup by ObjectId: ${idOrSlug}`);
-      agency = await Agency.findById(idOrSlug)
+      console.log(`🔑 Attempting lookup by ObjectId: ${identifier}`);
+      agency = await Agency.findById(identifier)
         .populate('ownerId', 'name email phone avatarUrl')
         .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating');
     }
 
     if (!agency) {
       lookupMethod = 'slug';
-      const slugLower = idOrSlug.toLowerCase();
+      const slugLower = identifier.toLowerCase();
       console.log(`🏷️  Attempting lookup by slug: ${slugLower}`);
       agency = await Agency.findOne({ slug: slugLower })
         .populate('ownerId', 'name email phone avatarUrl')
@@ -198,10 +205,10 @@ export const getAgency = async (
     }
 
     if (!agency) {
-      console.error(`❌ Agency not found for identifier: ${idOrSlug}`);
+      console.error(`❌ Agency not found for identifier: ${identifier}`);
       res.status(404).json({
         message: 'Agency not found',
-        searchedFor: idOrSlug,
+        searchedFor: identifier,
         attemptedMethods: ['ObjectId', 'slug']
       });
       return;

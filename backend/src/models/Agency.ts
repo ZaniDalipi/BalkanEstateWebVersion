@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IAgency extends Document {
   ownerId: mongoose.Types.ObjectId; // User who owns the agency (enterprise tier)
   name: string;
-  slug: string; // URL-friendly identifier: "{country},{name}"
+  slug: string; // URL-friendly identifier: "{country}/{name}"
   invitationCode: string; // Unique code for agents to join: format "AGY-{agencyId}-{randomString}"
   description?: string;
   logo?: string;
@@ -210,13 +210,28 @@ AgencySchema.index({ agents: 1 }); // For agent lookup queries
 
 // Generate slug and invitation code before saving
 AgencySchema.pre<IAgency>('save', async function (next) {
-  // Generate slug from name if not provided
-  if (!this.slug) {
-    // Convert name to URL-friendly slug: replace spaces/special chars with dashes, lowercase
-    this.slug = this.name
+  // Generate slug from country and name if not provided
+  if (!this.slug && this.country) {
+    // Convert country to URL-friendly format
+    const countrySlug = this.country
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')  // Replace non-alphanumeric with dashes
       .replace(/^-+|-+$/g, '');     // Remove leading/trailing dashes
+
+    // Convert name to URL-friendly format
+    const nameSlug = this.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')  // Replace non-alphanumeric with dashes
+      .replace(/^-+|-+$/g, '');     // Remove leading/trailing dashes
+
+    // Combine with forward slash: country/name
+    this.slug = `${countrySlug}/${nameSlug}`;
+  } else if (!this.slug) {
+    // Fallback if no country: just use name
+    this.slug = this.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   }
 
   // Generate invitation code if not provided

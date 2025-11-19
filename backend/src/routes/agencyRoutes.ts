@@ -35,7 +35,8 @@ const upload = multer({
 // Public routes
 router.get('/', getAgencies);
 router.get('/featured/rotation', getFeaturedAgencies);
-router.get('/:idOrSlug', getAgency);
+router.get('/:country/:name', getAgency); // Format: /agencies/:country/:name (e.g., /agencies/albania/zano-real-estate)
+router.get('/:idOrSlug', getAgency); // Fallback for ID or single-segment slug lookups
 
 // Protected routes
 router.post('/', protect, createAgency);
