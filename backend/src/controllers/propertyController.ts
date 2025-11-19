@@ -579,7 +579,7 @@ export const markAsSold = async (
         propertyCountry: property.country,
         propertyType: property.propertyType,
         salePrice: property.price || 0,
-        currency: property.currency || 'EUR',
+        currency: 'EUR', // Default currency
         soldAt: soldDate,
         beds: property.beds,
         baths: property.baths,
