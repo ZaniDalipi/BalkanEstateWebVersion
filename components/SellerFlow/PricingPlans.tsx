@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../shared/Modal';
 import PaymentWindow from '../shared/PaymentWindow';
-import AgencyCreationModal from '../shared/AgencyCreationModal';
 import { BuildingOfficeIcon, ChartBarIcon, CurrencyDollarIcon, BoltIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { fetchSellerProducts, Product } from '../../utils/api';
@@ -23,7 +22,6 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
   const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes in seconds
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showPaymentWindow, setShowPaymentWindow] = useState(false);
-  const [showAgencyCreation, setShowAgencyCreation] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{
     name: string;
     price: number;
@@ -33,7 +31,6 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
   } | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [createdAgencyId, setCreatedAgencyId] = useState<string | null>(null);
 
   // Fetch products from backend
   useEffect(() => {
@@ -139,22 +136,50 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
   setShowPaymentWindow(true);
 };
 
-const handleAgencyCreated = (agencyId: string) => {
-  setCreatedAgencyId(agencyId);
-  setShowAgencyCreation(false);
-  onClose();
-  if (onSubscribe) {
-    onSubscribe();
-  }
-  alert('Congratulations! Your agency has been created successfully. You now have a dedicated agency page with Enterprise subscription!');
-};
-  const handlePaymentSuccess = (paymentIntentId: string) => {
+  const handlePaymentSuccess = async (paymentIntentId: string) => {
     console.log('Payment successful:', paymentIntentId);
     setShowPaymentWindow(false);
 
-    // If Enterprise plan, show agency creation modal after payment
-    if (selectedPlan && selectedPlan.name.toLowerCase().includes('enterprise')) {
-      setShowAgencyCreation(true);
+    // If Enterprise plan and there's pending agency data, create the agency
+    if (selectedPlan && selectedPlan.name.toLowerCase().includes('enterprise') && state.pendingAgencyData) {
+      try {
+        const token = localStorage.getItem('balkan_estate_token');
+        if (!token) {
+          throw new Error('Please log in to create an agency');
+        }
+
+        const response = await fetch('http://localhost:5001/api/agencies', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(state.pendingAgencyData),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to create agency');
+        }
+
+        // Clear pending agency data
+        dispatch({ type: 'SET_PENDING_AGENCY_DATA', payload: null });
+
+        // Close modal and show success
+        onClose();
+        if (onSubscribe) {
+          onSubscribe();
+        }
+        alert('Congratulations! Your Enterprise subscription is activated and your agency has been created successfully!');
+
+        // Redirect to agencies view
+        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
+      } catch (err) {
+        console.error('Failed to create agency:', err);
+        alert('Payment successful, but failed to create agency: ' + (err instanceof Error ? err.message : 'Unknown error'));
+        onClose();
+      }
     } else {
       // For other plans, close and show success
       onClose();
@@ -402,18 +427,6 @@ const handleAgencyCreated = (agencyId: string) => {
         </div>
       </Modal>
 
-      {/* Agency Creation Modal (for Enterprise plan) */}
-      {selectedPlan && showAgencyCreation && (
-        <AgencyCreationModal
-          isOpen={showAgencyCreation}
-          onClose={() => {
-            setShowAgencyCreation(false);
-            setSelectedPlan(null);
-          }}
-          onAgencyCreated={handleAgencyCreated}
-        />
-      )}
-
       {/* Payment Window */}
       {selectedPlan && (
         <PaymentWindow
@@ -421,7 +434,6 @@ const handleAgencyCreated = (agencyId: string) => {
           onClose={() => {
             setShowPaymentWindow(false);
             setSelectedPlan(null);
-            setCreatedAgencyId(null);
           }}
           planName={selectedPlan.name}
           planPrice={selectedPlan.price}

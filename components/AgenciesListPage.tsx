@@ -196,7 +196,7 @@ const AgenciesListPage: React.FC = () => {
   };
 
   const handleCreateEnterprise = () => {
-    dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: false } });
+    dispatch({ type: 'TOGGLE_ENTERPRISE_MODAL', payload: true });
   };
 
   const handleViewAgency = (agency: Agency) => {

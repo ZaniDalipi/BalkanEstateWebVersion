@@ -44,6 +44,7 @@ const initialState: AppState = {
   selectedAgencyId: null,
   pendingProperty: null,
   pendingSubscription: null,
+  pendingAgencyData: null,
   searchPageState: initialSearchPageState,
   activeDiscount: null,
   isListingLimitWarningOpen: false,
@@ -216,6 +217,8 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         return { ...state, pendingProperty: action.payload };
     case 'SET_PENDING_SUBSCRIPTION':
         return { ...state, pendingSubscription: action.payload };
+    case 'SET_PENDING_AGENCY_DATA':
+        return { ...state, pendingAgencyData: action.payload };
     case 'UPDATE_SEARCH_PAGE_STATE':
         return {
             ...state,

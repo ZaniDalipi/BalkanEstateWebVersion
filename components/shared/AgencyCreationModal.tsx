@@ -14,7 +14,7 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
   onClose,
   onAgencyCreated,
 }) => {
-  const { state } = useAppContext();
+  const { state, dispatch } = useAppContext();
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -88,41 +88,20 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
       return;
     }
 
-    setIsCreating(true);
+    // Prepare data with yearsInBusiness as a number
+    const agencyData = {
+      ...formData,
+      yearsInBusiness: formData.yearsInBusiness ? parseInt(formData.yearsInBusiness) : undefined,
+    };
 
-    try {
-      const token = localStorage.getItem('balkan_estate_token');
-      if (!token) {
-        throw new Error('Please log in to create an agency');
-      }
+    // Save agency data to context (will be created after payment)
+    dispatch({ type: 'SET_PENDING_AGENCY_DATA', payload: agencyData });
 
-      // Prepare data with yearsInBusiness as a number
-      const agencyData = {
-        ...formData,
-        yearsInBusiness: formData.yearsInBusiness ? parseInt(formData.yearsInBusiness) : undefined,
-      };
+    // Close this modal
+    onClose();
 
-      const response = await fetch('http://localhost:5001/api/agencies', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(agencyData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to create agency');
-      }
-
-      // Success - notify parent with agency ID
-      onAgencyCreated(data.agency._id || data.agency.id);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create agency');
-      setIsCreating(false);
-    }
+    // Open pricing modal for Enterprise plan
+    dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: false } });
   };
 
   const inputClasses = "w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm";
@@ -415,14 +394,7 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
               disabled={isCreating}
               className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg font-bold hover:from-amber-600 hover:to-amber-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isCreating ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                  <span>Creating Agency...</span>
-                </>
-              ) : (
-                <span>Create Agency</span>
-              )}
+              <span>Continue to Payment</span>
             </button>
           </div>
         </form>

@@ -326,6 +326,7 @@ export interface AppState {
     selectedAgencyId: string | null;
     pendingProperty: Property | null;
     pendingSubscription: PendingSubscription | null;
+    pendingAgencyData: any | null; // Agency form data to be created after payment
     searchPageState: SearchPageState;
     activeDiscount: { proYearly: number; proMonthly: number; enterprise: number; } | null;
     isListingLimitWarningOpen: boolean;
@@ -374,6 +375,7 @@ export type AppAction =
     | { type: 'MARK_CONVERSATION_AS_READ', payload: string }
     | { type: 'SET_PENDING_PROPERTY', payload: Property | null }
     | { type: 'SET_PENDING_SUBSCRIPTION', payload: PendingSubscription | null }
+    | { type: 'SET_PENDING_AGENCY_DATA', payload: any | null }
     | { type: 'UPDATE_SEARCH_PAGE_STATE', payload: Partial<SearchPageState> }
     | { type: 'SET_ACTIVE_DISCOUNT', payload: { proYearly: number; proMonthly: number; enterprise: number; } | null }
     | { type: 'TOGGLE_LISTING_LIMIT_WARNING', payload: boolean }
