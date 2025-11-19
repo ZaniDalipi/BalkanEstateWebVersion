@@ -26,6 +26,7 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
     phone: '',
     email: '',
     website: '',
+    licenseNumber: '', // Agent license number
     yearsInBusiness: '',
     facebookUrl: '',
     instagramUrl: '',
@@ -262,6 +263,23 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
               value={formData.website}
               onChange={handleInputChange}
               placeholder="https://yourwebsite.com"
+              className={inputClasses}
+              disabled={isCreating}
+            />
+          </div>
+
+          {/* License Number */}
+          <div>
+            <label htmlFor="licenseNumber" className={labelClasses}>
+              Agent License Number <span className="text-neutral-500 text-xs">(Required for agency registration)</span>
+            </label>
+            <input
+              type="text"
+              id="licenseNumber"
+              name="licenseNumber"
+              value={formData.licenseNumber}
+              onChange={handleInputChange}
+              placeholder="e.g., RE-123456"
               className={inputClasses}
               disabled={isCreating}
             />

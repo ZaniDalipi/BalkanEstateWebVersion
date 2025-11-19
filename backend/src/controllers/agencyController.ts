@@ -8,6 +8,13 @@ import { geocodeAgency } from '../services/geocodingService';
 import cloudinary from '../config/cloudinary';
 import { Readable } from 'stream';
 
+// Helper function to generate unique Agent ID
+function generateAgentId(): string {
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+  return `AGT-${timestamp}-${randomStr}`;
+}
+
 // @desc    Create agency profile (Enterprise tier only)
 // @route   POST /api/agencies
 // @access  Private
@@ -84,9 +91,38 @@ export const createAgency = async (
 
     await user.save();
 
+    // Create or update Agent profile for the agency owner
+    const licenseNumber = req.body.licenseNumber || `LIC-${Date.now()}`;
+    let agentProfile = await Agent.findOne({ userId: user._id });
+
+    if (agentProfile) {
+      // Update existing agent profile with new agency
+      agentProfile.agencyId = agency._id as mongoose.Types.ObjectId;
+      agentProfile.agencyName = agency.name;
+      agentProfile.licenseNumber = licenseNumber;
+      await agentProfile.save();
+      console.log(`✅ Updated existing agent profile for ${user.email}`);
+    } else {
+      // Create new agent profile
+      const agentId = generateAgentId();
+      agentProfile = await Agent.create({
+        userId: user._id,
+        agencyId: agency._id,
+        agencyName: agency.name,
+        agentId,
+        licenseNumber,
+        licenseVerified: false,
+      });
+      console.log(`✅ Created new agent profile for ${user.email} with ID: ${agentId}`);
+    }
+
+    // Update user with agent ID
+    user.agentId = agentProfile.agentId;
+    await user.save();
+
     console.log(`✅ Agency created successfully. User ${user.email} is now admin of agency ${agency.name}`);
 
-    res.status(201).json({ agency });
+    res.status(201).json({ agency, agent: agentProfile });
   } catch (error: any) {
     console.error('Create agency error:', error);
     res.status(500).json({ message: 'Error creating agency', error: error.message });
@@ -266,12 +302,41 @@ export const getAgency = async (
 
         // Update user's agency info if not already set
         const user = await User.findById(userId);
-        if (user && !user.agencyId) {
-          user.agencyId = new mongoose.Types.ObjectId(String(agency._id));
-          user.agencyName = agency.name;
-          if (user.role !== 'agent') {
-            user.role = 'agent';
+        if (user) {
+          if (!user.agencyId) {
+            user.agencyId = new mongoose.Types.ObjectId(String(agency._id));
+            user.agencyName = agency.name;
+            if (user.role !== 'agent') {
+              user.role = 'agent';
+            }
           }
+
+          // Create or update Agent profile when user joins agency
+          let agentProfile = await Agent.findOne({ userId: user._id });
+          const licenseNumber = agentProfile?.licenseNumber || `LIC-${Date.now()}`;
+
+          if (agentProfile) {
+            // Update existing agent profile with new agency
+            agentProfile.agencyId = agency._id as mongoose.Types.ObjectId;
+            agentProfile.agencyName = agency.name;
+            await agentProfile.save();
+            console.log(`✅ Updated existing agent profile for ${user.email}`);
+          } else {
+            // Create new agent profile
+            const agentId = generateAgentId();
+            agentProfile = await Agent.create({
+              userId: user._id,
+              agencyId: agency._id,
+              agencyName: agency.name,
+              agentId,
+              licenseNumber,
+              licenseVerified: false,
+            });
+            console.log(`✅ Created new agent profile for ${user.email} with ID: ${agentId}`);
+          }
+
+          // Update user with agent ID
+          user.agentId = agentProfile.agentId;
           await user.save();
           console.log(`✅ User ${currentUser.email} profile updated with agency info`);
         }
