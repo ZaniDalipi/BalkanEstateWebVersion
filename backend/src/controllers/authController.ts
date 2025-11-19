@@ -459,62 +459,81 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
         agencyName = agency.name; // Use verified agency name
       }
 
-      // Generate agent ID if not provided
-      const generatedAgentId = agentId || `AG-${Date.now()}`;
+      // Generate agent ID if not provided (improved format with random component)
+      const generatedAgentId = agentId || `AG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-      // Update agent-specific fields in User model
-      user.licenseNumber = licenseNumber;
-      user.agencyName = agencyName;
-      user.agentId = generatedAgentId;
-      user.licenseVerified = true;
-      user.licenseVerificationDate = new Date();
+      // Start a MongoDB session for atomic operations
+      const session = await mongoose.startSession();
+      session.startTransaction();
 
-      // Link to agency if one was provided
-      if (agency) {
-        user.agencyId = agency._id as unknown as mongoose.Types.ObjectId;
-      }
+      try {
+        // Update agent-specific fields in User model
+        user.licenseNumber = licenseNumber;
+        user.agencyName = agencyName;
+        user.agentId = generatedAgentId;
+        user.licenseVerified = true;
+        user.licenseVerificationDate = new Date();
 
-      // Create or update Agent record in separate table
-      const existingAgentRecord = await Agent.findOne({ userId: user._id });
-
-      if (existingAgentRecord) {
-        // Update existing agent record
-        existingAgentRecord.agencyName = agencyName;
-        existingAgentRecord.agencyId = agency ? (agency._id as mongoose.Types.ObjectId) : undefined;
-        existingAgentRecord.agentId = generatedAgentId;
-        existingAgentRecord.licenseNumber = licenseNumber;
-        existingAgentRecord.licenseVerified = true;
-        existingAgentRecord.licenseVerificationDate = new Date();
-        existingAgentRecord.isActive = true;
-        await existingAgentRecord.save();
-      } else {
-        // Create new agent record
-        await Agent.create({
-          userId: user._id,
-          agencyName: agencyName,
-          agencyId: agency ? agency._id : undefined,
-          agentId: generatedAgentId,
-          licenseNumber,
-          licenseVerified: true,
-          licenseVerificationDate: new Date(),
-          isActive: true,
-        });
-      }
-
-      // Add agent to agency's agents array if agency was provided
-      if (agency) {
-        const userObjectId = user._id as unknown as mongoose.Types.ObjectId;
-        if (!agency.agents.some(agentId => agentId.toString() === userObjectId.toString())) {
-          agency.agents.push(userObjectId);
-          agency.totalAgents = agency.agents.length;
-          await agency.save();
+        // Link to agency if one was provided
+        if (agency) {
+          user.agencyId = agency._id as unknown as mongoose.Types.ObjectId;
         }
-      }
-    }
 
-    // Update role
-    user.role = role;
-    await user.save();
+        // Update role
+        user.role = role;
+        await user.save({ session });
+
+        // Create or update Agent record in separate table
+        const existingAgentRecord = await Agent.findOne({ userId: user._id }).session(session);
+
+        if (existingAgentRecord) {
+          // Update existing agent record
+          existingAgentRecord.agencyName = agencyName;
+          existingAgentRecord.agencyId = agency ? (agency._id as mongoose.Types.ObjectId) : undefined;
+          existingAgentRecord.agentId = generatedAgentId;
+          existingAgentRecord.licenseNumber = licenseNumber;
+          existingAgentRecord.licenseVerified = true;
+          existingAgentRecord.licenseVerificationDate = new Date();
+          existingAgentRecord.isActive = true;
+          await existingAgentRecord.save({ session });
+        } else {
+          // Create new agent record
+          await Agent.create([{
+            userId: user._id,
+            agencyName: agencyName,
+            agencyId: agency ? agency._id : undefined,
+            agentId: generatedAgentId,
+            licenseNumber,
+            licenseVerified: true,
+            licenseVerificationDate: new Date(),
+            isActive: true,
+          }], { session });
+        }
+
+        // Add agent to agency's agents array if agency was provided
+        if (agency) {
+          const userObjectId = user._id as unknown as mongoose.Types.ObjectId;
+          if (!agency.agents.some(agentId => agentId.toString() === userObjectId.toString())) {
+            agency.agents.push(userObjectId);
+            agency.totalAgents = agency.agents.length;
+            await agency.save({ session });
+          }
+        }
+
+        // Commit the transaction
+        await session.commitTransaction();
+      } catch (txError) {
+        // Abort transaction on error
+        await session.abortTransaction();
+        throw txError;
+      } finally {
+        session.endSession();
+      }
+    } else {
+      // For non-agent role switches, just update the role
+      user.role = role;
+      await user.save();
+    }
 
     res.json({
       message: 'Role updated successfully',

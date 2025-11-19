@@ -132,7 +132,14 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const handleRoleChange = async (role: UserRole) => {
         setError('');
 
-        // Allow switching to any role freely without requiring license
+        // If switching to agent, require license verification
+        if (role === UserRole.AGENT && !user.licenseVerified) {
+            setPendingRole(role);
+            setIsLicenseModalOpen(true);
+            return;
+        }
+
+        // For other role switches, allow freely
         try {
             setIsSaving(true);
             const updatedUser = await switchRole(role);
@@ -366,25 +373,11 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 <fieldset className="space-y-6 animate-fade-in border-t pt-8">
                      <div className="flex items-center justify-between -mt-2 mb-4">
                         <legend className="text-lg font-semibold text-neutral-700">Agent Information</legend>
-                        <div className="flex items-center gap-2">
-                            {user.licenseVerified && (
-                                <span className="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-full font-medium">
-                                    ✓ License Verified
-                                </span>
-                            )}
-                            {!user.licenseVerified && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setPendingRole(UserRole.AGENT);
-                                        setIsLicenseModalOpen(true);
-                                    }}
-                                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                                >
-                                    Join an Existing Agency
-                                </button>
-                            )}
-                        </div>
+                        {user.licenseVerified && (
+                            <span className="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-full font-medium">
+                                ✓ License Verified
+                            </span>
+                        )}
                      </div>
 
                      {user.licenseVerified && (
