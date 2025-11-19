@@ -132,7 +132,7 @@ discountCodeSchema.methods.isValid = function(userId?: string, planId?: string, 
   }
 
   // Check if user has already used this code
-  if (userId && this.usedBy.some(id => id.toString() === userId)) {
+  if (userId && this.usedBy.some((id: mongoose.Types.ObjectId) => id.toString() === userId)) {
     return { valid: false, reason: 'You have already used this code' };
   }
 
