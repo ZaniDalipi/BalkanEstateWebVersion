@@ -421,8 +421,8 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                     )}
                     
                     {showList && (
-                        <div className="flex-grow overflow-y-auto">
-                            <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
+                        <div className="flex-grow min-h-0 overflow-y-auto">
+                            <div className="p-4 border-b border-neutral-200 flex items-center justify-between sticky top-0 bg-white z-10">
                                 <p className="text-xs text-neutral-500 font-semibold">{properties.length} results found</p>
                                 <div className="relative">
                                     <select
@@ -443,7 +443,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                 </div>
                             </div>
 
-                            <div className="p-4 pb-24">
+                            <div className="p-4 pb-32">
                                 {isLoadingProperties ? (
                                     <div className="grid grid-cols-1 gap-4">
                                         {Array.from({ length: 4 }).map((_, index) => (
