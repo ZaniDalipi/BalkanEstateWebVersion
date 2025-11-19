@@ -4,7 +4,7 @@ import Agent from '../models/Agent';
 import Agency from '../models/Agency';
 import Property from '../models/Property';
 import DiscountCode from '../models/DiscountCode';
-import { IUser } from '../models/User';
+
 
 // @desc    Get admin dashboard statistics
 // @route   GET /api/admin/stats
