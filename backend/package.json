@@ -13,6 +13,7 @@
     "cleanup:sold": "ts-node src/scripts/archiveSoldProperties.ts",
     "cleanup:conversations": "ts-node src/scripts/cleanupConversations.ts",
     "remove:agents": "ts-node src/scripts/removeAllAgents.ts",
+    "migrate:agency-owners": "ts-node src/scripts/addOwnersToAgencyMembers.ts",
     "test": "jest --detectOpenHandles --forceExit",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"

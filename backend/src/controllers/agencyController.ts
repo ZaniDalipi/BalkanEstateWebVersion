@@ -68,6 +68,11 @@ export const createAgency = async (
 
     const agency = await Agency.create(agencyData);
 
+    // Add owner to agents array
+    agency.agents.push(user._id as mongoose.Types.ObjectId);
+    agency.totalAgents = 1;
+    await agency.save();
+
     // Update user with agency reference
     user.agencyId = agency._id as mongoose.Types.ObjectId;
     user.isEnterpriseTier = true;
