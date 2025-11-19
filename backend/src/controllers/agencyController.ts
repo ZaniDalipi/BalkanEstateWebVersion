@@ -289,16 +289,18 @@ export const getAgency = async (
       console.warn(`⚠️  Agency owner not found or failed to populate for agency: ${agency._id}`);
     }
 
-    // Auto-add admin as member if they're viewing the agency and not already a member
+    // Auto-add owner/admin as member if they're viewing the agency and not already a member
     if (req.user) {
       const currentUser = req.user as IUser;
       const userId = String(currentUser._id);
+      const ownerId = String(agency.ownerId._id || agency.ownerId);
       const agencyAdmins = agency.admins?.map((id: any) => String(id)) || [];
       const agencyAgents = agency.agents.map((agent: any) => String(agent._id || agent));
 
-      // Check if user is an admin but not in the agents array
-      if (agencyAdmins.includes(userId) && !agencyAgents.includes(userId)) {
-        console.log(`👤 Auto-adding admin ${currentUser.email} to agency members`);
+      // Check if user is owner or admin but not in the agents array
+      const isOwnerOrAdmin = userId === ownerId || agencyAdmins.includes(userId);
+      if (isOwnerOrAdmin && !agencyAgents.includes(userId)) {
+        console.log(`👤 Auto-adding owner/admin ${currentUser.email} to agency members`);
 
         // Add user to agents array
         agency.agents.push(new mongoose.Types.ObjectId(userId));

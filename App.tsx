@@ -138,7 +138,17 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
           const agencyIdentifier = state.selectedAgencyId;
 
           console.log('🔍 Fetching agency with identifier:', agencyIdentifier);
-          const response = await fetch(`${API_URL}/agencies/${agencyIdentifier}`);
+
+          // Include auth token so backend can identify current user and auto-add owner as member
+          const token = localStorage.getItem('balkan_estate_token');
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+          };
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+
+          const response = await fetch(`${API_URL}/agencies/${agencyIdentifier}`, { headers });
 
           // Check content type before parsing
           const contentType = response.headers.get('content-type');

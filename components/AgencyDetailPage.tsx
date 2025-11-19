@@ -84,7 +84,16 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     setLoading(true);
     try {
       // Fetch fresh agency data from the backend to get updated agents list
-      const response = await fetch(`${API_URL}/agencies/${agency._id}`);
+      // Include auth token so backend can identify current user and auto-add owner as member
+      const token = localStorage.getItem('balkan_estate_token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_URL}/agencies/${agency._id}`, { headers });
       if (response.ok) {
         const data = await response.json();
         setAgencyData(data.agency);

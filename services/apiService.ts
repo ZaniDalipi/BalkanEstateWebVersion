@@ -710,7 +710,7 @@ export const getAgencies = async (filters?: { city?: string; featured?: boolean;
 };
 
 export const getAgency = async (agencyId: string): Promise<any> => {
-  return await apiRequest(`/agencies/${agencyId}`);
+  return await apiRequest(`/agencies/${agencyId}`, { requiresAuth: true });
 };
 
 export const getFeaturedAgencies = async (limit?: number): Promise<any> => {
