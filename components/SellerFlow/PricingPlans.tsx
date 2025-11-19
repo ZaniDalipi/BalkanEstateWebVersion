@@ -66,6 +66,36 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
     }
   }, [isOpen, isOffer, onClose]);
 
+  // Auto-select Enterprise and show payment when modal opens with pending agency data
+  useEffect(() => {
+    if (isOpen && state.pendingAgencyData && !selectedPlan && products.length > 0) {
+      const enterpriseProduct = products.find(p => p.productId === 'seller_enterprise_yearly');
+      const enterprisePrice = enterpriseProduct?.price || 1000;
+      const enterpriseDiscount = isOffer && activeDiscount ? activeDiscount.enterprise : 0;
+
+      // Auto-select Enterprise plan
+      setSelectedPlan({
+        name: 'Enterprise',
+        price: enterprisePrice,
+        interval: 'year',
+        discount: enterpriseDiscount,
+        productId: enterpriseProduct?.productId || 'seller_enterprise_yearly',
+      });
+
+      // Show payment window
+      setShowPaymentWindow(true);
+    }
+  }, [isOpen, state.pendingAgencyData, selectedPlan, products, isOffer, activeDiscount]);
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedPlan(null);
+      setShowPaymentWindow(false);
+      setShowConfirmation(false);
+    }
+  }, [isOpen]);
+
   const handleCloseAttempt = () => {
     if (isOffer) {
       setShowConfirmation(true);
@@ -132,8 +162,15 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
 
   setSelectedPlan({ name: planName, price, interval, discount, productId });
 
-  // Always show payment window first (agency creation comes after payment for Enterprise)
-  setShowPaymentWindow(true);
+  // If Enterprise plan and no pending agency data, show agency creation first
+  if (planName.toLowerCase().includes('enterprise') && !state.pendingAgencyData) {
+    // Close pricing modal and open agency creation modal
+    onClose();
+    dispatch({ type: 'TOGGLE_ENTERPRISE_MODAL', payload: true });
+  } else {
+    // For other plans, or Enterprise with pending data, show payment window
+    setShowPaymentWindow(true);
+  }
 };
 
   const handlePaymentSuccess = async (paymentIntentId: string) => {
