@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Property from '../models/Property';
 import User, { IUser } from '../models/User';
 import Agent from '../models/Agent';
+import SalesHistory from '../models/SalesHistory';
 import { geocodeProperty } from '../services/geocodingService';
 import { incrementViewCount, updateSoldStats } from '../utils/statsUpdater';
 import {
@@ -554,12 +555,42 @@ export const markAsSold = async (
       }
     }
 
+    const soldDate = new Date();
     property.status = 'sold';
-    property.soldAt = new Date();
+    property.soldAt = soldDate;
     await property.save();
 
     // Update seller's sold statistics in real-time
     await updateSoldStats(String(currentUser._id), property.price || 0);
+
+    // Create sales history record
+    const user = await User.findById(String(currentUser._id));
+    if (user) {
+      const daysOnMarket = Math.floor((soldDate.getTime() - property.createdAt.getTime()) / (1000 * 60 * 60 * 24));
+
+      await SalesHistory.create({
+        sellerId: user._id,
+        sellerName: user.name,
+        sellerEmail: user.email,
+        sellerRole: user.role,
+        propertyId: property._id,
+        propertyAddress: property.address,
+        propertyCity: property.city,
+        propertyCountry: property.country,
+        propertyType: property.propertyType,
+        salePrice: property.price || 0,
+        currency: property.currency || 'EUR',
+        soldAt: soldDate,
+        beds: property.beds,
+        baths: property.baths,
+        sqft: property.sqft,
+        totalViews: property.views || 0,
+        totalSaves: property.saves || 0,
+        daysOnMarket,
+      });
+
+      console.log(`📊 Sales history record created for property ${property._id}`);
+    }
 
     res.json({ property });
   } catch (error: any) {
