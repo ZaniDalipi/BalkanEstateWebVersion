@@ -31,6 +31,8 @@ export interface IAgency extends Document {
   yearsInBusiness?: number;
   // Agency agents (references to User model with role 'agent')
   agents: mongoose.Types.ObjectId[];
+  // Agency admins (users who can manage the agency)
+  admins?: mongoose.Types.ObjectId[];
   // Featured/advertising settings
   isFeatured: boolean;
   featuredStartDate?: Date;
@@ -171,6 +173,10 @@ const AgencySchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'User',
       index: true,
+    }],
+    admins: [{
+      type: Schema.Types.ObjectId,
+      ref: 'User',
     }],
     isFeatured: {
       type: Boolean,

@@ -763,3 +763,155 @@ export const joinAgencyByInvitationCode = async (
     res.status(500).json({ message: 'Error joining agency', error: error.message });
   }
 };
+
+// @desc    Verify invitation code for an agency
+// @route   POST /api/agencies/:id/verify-code
+// @access  Private
+export const verifyInvitationCode = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { code } = req.body;
+
+    if (!code) {
+      res.status(400).json({ valid: false, message: 'Invitation code is required' });
+      return;
+    }
+
+    // Find the agency by ID
+    const agency = await Agency.findById(id);
+
+    if (!agency) {
+      res.status(404).json({ valid: false, message: 'Agency not found' });
+      return;
+    }
+
+    // Compare the invitation codes (case-insensitive)
+    const isValid = agency.invitationCode &&
+                    agency.invitationCode.toUpperCase() === code.toUpperCase();
+
+    if (isValid) {
+      console.log(`✅ Valid invitation code for agency: ${agency.name}`);
+      res.json({ valid: true, message: 'Invitation code is valid' });
+    } else {
+      console.log(`❌ Invalid invitation code for agency: ${agency.name}`);
+      res.json({ valid: false, message: 'Invalid invitation code' });
+    }
+  } catch (error: any) {
+    console.error('Verify invitation code error:', error);
+    res.status(500).json({ valid: false, message: 'Error verifying invitation code', error: error.message });
+  }
+};
+
+// @desc    Add admin to agency
+// @route   POST /api/agencies/:id/admins
+// @access  Private (Owner only)
+export const addAgencyAdmin = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const { id } = req.params;
+    const { userId } = req.body;
+    const currentUser = req.user as IUser;
+
+    if (!userId) {
+      res.status(400).json({ message: 'User ID is required' });
+      return;
+    }
+
+    // Find the agency
+    const agency = await Agency.findById(id);
+
+    if (!agency) {
+      res.status(404).json({ message: 'Agency not found' });
+      return;
+    }
+
+    // Check if current user is the owner
+    if (String(agency.ownerId) !== String(currentUser._id)) {
+      res.status(403).json({ message: 'Only the agency owner can add admins' });
+      return;
+    }
+
+    // Check if user is already an admin
+    if (agency.admins && agency.admins.some(adminId => String(adminId) === String(userId))) {
+      res.status(400).json({ message: 'User is already an admin' });
+      return;
+    }
+
+    // Check if user is an agent in this agency
+    if (!agency.agents.some(agentId => String(agentId) === String(userId))) {
+      res.status(400).json({ message: 'User must be an agent in this agency to become an admin' });
+      return;
+    }
+
+    // Add user to admins array
+    if (!agency.admins) {
+      agency.admins = [];
+    }
+    agency.admins.push(userId as unknown as mongoose.Types.ObjectId);
+    await agency.save();
+
+    console.log(`✅ Added admin to agency: ${agency.name}`);
+    res.json({ message: 'Admin added successfully', agency });
+  } catch (error: any) {
+    console.error('Add agency admin error:', error);
+    res.status(500).json({ message: 'Error adding admin', error: error.message });
+  }
+};
+
+// @desc    Remove admin from agency
+// @route   DELETE /api/agencies/:id/admins/:userId
+// @access  Private (Owner only)
+export const removeAgencyAdmin = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const { id, userId } = req.params;
+    const currentUser = req.user as IUser;
+
+    // Find the agency
+    const agency = await Agency.findById(id);
+
+    if (!agency) {
+      res.status(404).json({ message: 'Agency not found' });
+      return;
+    }
+
+    // Check if current user is the owner
+    if (String(agency.ownerId) !== String(currentUser._id)) {
+      res.status(403).json({ message: 'Only the agency owner can remove admins' });
+      return;
+    }
+
+    // Check if user is an admin
+    if (!agency.admins || !agency.admins.some(adminId => String(adminId) === String(userId))) {
+      res.status(400).json({ message: 'User is not an admin' });
+      return;
+    }
+
+    // Remove user from admins array
+    agency.admins = agency.admins.filter(adminId => String(adminId) !== String(userId));
+    await agency.save();
+
+    console.log(`✅ Removed admin from agency: ${agency.name}`);
+    res.json({ message: 'Admin removed successfully', agency });
+  } catch (error: any) {
+    console.error('Remove agency admin error:', error);
+    res.status(500).json({ message: 'Error removing admin', error: error.message });
+  }
+};
