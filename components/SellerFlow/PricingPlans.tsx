@@ -203,12 +203,27 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
         // Clear pending agency data
         dispatch({ type: 'SET_PENDING_AGENCY_DATA', payload: null });
 
+        // Refresh user data to get updated role and agency info
+        try {
+          const userResponse = await fetch('http://localhost:5001/api/auth/me', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user: userData.user } });
+          }
+        } catch (error) {
+          console.error('Failed to refresh user data:', error);
+        }
+
         // Close modal and show success
         onClose();
         if (onSubscribe) {
           onSubscribe();
         }
-        alert('Congratulations! Your Enterprise subscription is activated and your agency has been created successfully!');
+        alert('Congratulations! Your Enterprise subscription is activated and your agency has been created successfully! You are now the admin of your agency.');
 
         // Redirect to agencies view
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
