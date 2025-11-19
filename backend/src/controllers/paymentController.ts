@@ -395,7 +395,7 @@ async function handleSubscriptionUpdated(stripeSubscription: Stripe.Subscription
 
     // Update subscription expiration date if changed
     const subscription = await Subscription.findById(user.activeSubscriptionId);
-    if (subscription && stripeSubscription.current_period_end) {
+    if (subscription && (stripeSubscription as any).current_period_end) {
       const newExpirationDate = new Date((stripeSubscription as any).current_period_end * 1000);
       subscription.expirationDate = newExpirationDate;
       subscription.renewalDate = newExpirationDate;
