@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import Modal from './shared/Modal';
-import PaymentWindow from './shared/PaymentWindow';
 import { BuildingOfficeIcon, PhotoIcon } from '../constants';
 import { createAgency } from '../services/apiService';
 import { useAppContext } from '../context/AppContext';
@@ -12,10 +11,8 @@ interface EnterpriseCreationFormProps {
 
 const EnterpriseCreationForm: React.FC<EnterpriseCreationFormProps> = ({ isOpen, onClose }) => {
   const { state, dispatch } = useAppContext();
-  const [step, setStep] = useState<'form' | 'pricing'>('form');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showPaymentWindow, setShowPaymentWindow] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -69,18 +66,7 @@ const EnterpriseCreationForm: React.FC<EnterpriseCreationFormProps> = ({ isOpen,
       return;
     }
 
-    // Show pricing modal for enterprise plan (€1000/year)
-    setStep('pricing');
-  };
-
-  const handleProceedToPayment = () => {
-    // Open payment window directly for Enterprise plan
-    setShowPaymentWindow(true);
-  };
-
-  const handlePaymentSuccess = async (paymentIntentId: string) => {
-    setShowPaymentWindow(false);
-
+    // Create agency directly without payment requirement
     try {
       setLoading(true);
 
@@ -91,44 +77,23 @@ const EnterpriseCreationForm: React.FC<EnterpriseCreationFormProps> = ({ isOpen,
 
       await createAgency(agencyData);
       onClose();
-      alert('Congratulations! Your Enterprise Agency has been created successfully. You now have a dedicated agency page with featured advertising.');
+      alert('Congratulations! Your agency has been created successfully. You now have a dedicated agency page.');
       dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
-    } catch (error) {
-      setError('Payment successful but failed to create agency. Please contact support.');
+    } catch (error: any) {
+      setError(error.message || 'Failed to create agency. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePaymentError = (error: string) => {
-    setShowPaymentWindow(false);
-    setError('Payment failed: ' + error);
-  };
-
-  const handleBack = () => {
-    if (step === 'pricing') {
-      setStep('form');
-    } else {
-      onClose();
-    }
-  };
-
-  // Determine user role for payment methods
-  const getUserRole = (): 'buyer' | 'private_seller' | 'agent' => {
-    if (!state.currentUser) return 'agent'; // Enterprise is typically for agents
-    return state.currentUser.role === 'agent' ? 'agent' : 'private_seller';
-  };
 
   return (
-    <>
     <Modal isOpen={isOpen} onClose={onClose} size="4xl">
       <div className="p-6">
-        {step === 'form' ? (
-          <>
-            <div className="flex items-center gap-3 mb-6">
-              <BuildingOfficeIcon className="w-8 h-8 text-primary" />
-              <h2 className="text-2xl font-bold text-neutral-800">Create Enterprise Agency</h2>
-            </div>
+        <div className="flex items-center gap-3 mb-6">
+          <BuildingOfficeIcon className="w-8 h-8 text-primary" />
+          <h2 className="text-2xl font-bold text-neutral-800">Create Your Agency</h2>
+        </div>
 
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
@@ -346,90 +311,12 @@ const EnterpriseCreationForm: React.FC<EnterpriseCreationFormProps> = ({ isOpen,
                   disabled={loading}
                   className="flex-1 px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Processing...' : 'Continue to Payment'}
+                  {loading ? 'Creating Agency...' : 'Create Agency'}
                 </button>
               </div>
             </form>
-          </>
-        ) : (
-          <>
-            {/* Pricing Step */}
-            <div className="text-center py-8">
-              <BuildingOfficeIcon className="w-20 h-20 text-amber-500 mx-auto mb-4" />
-              <h2 className="text-3xl font-bold text-neutral-800 mb-4">Enterprise Plan Required</h2>
-              <p className="text-lg text-neutral-600 mb-8 max-w-2xl mx-auto">
-                To create an enterprise agency profile with your own dedicated page, featured advertising, and unlimited listings, you need the Enterprise plan.
-              </p>
-
-              <div className="bg-gradient-to-br from-neutral-800 to-neutral-900 text-white rounded-2xl p-8 max-w-md mx-auto mb-8">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <BuildingOfficeIcon className="w-8 h-8 text-amber-400" />
-                  <h3 className="text-2xl font-bold">Enterprise Plan</h3>
-                </div>
-
-                <div className="mb-6">
-                  <span className="text-5xl font-extrabold">€1,000</span>
-                  <span className="text-xl text-neutral-300">/year</span>
-                </div>
-
-                <ul className="space-y-3 text-left mb-6">
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 text-xl">✓</span>
-                    <span>Dedicated agency page with branding</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 text-xl">✓</span>
-                    <span>Display all agents and properties</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 text-xl">✓</span>
-                    <span>Featured in rotating homepage ads</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 text-xl">✓</span>
-                    <span>Unlimited property listings</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 text-xl">✓</span>
-                    <span>Full contact information display</span>
-                  </li>
-                </ul>
-
-                <button
-                  onClick={handleProceedToPayment}
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 px-6 rounded-lg transition-all hover:scale-105"
-                >
-                  Proceed to Payment
-                </button>
-              </div>
-
-              <button
-                onClick={handleBack}
-                className="text-neutral-600 hover:text-neutral-800 font-semibold"
-              >
-                ← Back to Form
-              </button>
-            </div>
-          </>
-        )}
       </div>
     </Modal>
-
-    {/* Payment Window */}
-    <PaymentWindow
-      isOpen={showPaymentWindow}
-      onClose={() => setShowPaymentWindow(false)}
-      planName="Enterprise"
-      planPrice={1000}
-      planInterval="year"
-      userRole={getUserRole()}
-      userEmail={state.currentUser?.email}
-      userCountry={state.currentUser?.country || 'RS'}
-      onSuccess={handlePaymentSuccess}
-      onError={handlePaymentError}
-      discountPercent={0}
-    />
-    </>
   );
 };
 

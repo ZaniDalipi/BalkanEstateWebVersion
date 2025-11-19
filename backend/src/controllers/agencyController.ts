@@ -29,15 +29,6 @@ export const createAgency = async (
       return;
     }
 
-    // Check if user has enterprise tier
-    if (user.subscriptionPlan !== 'enterprise') {
-      res.status(403).json({
-        message: 'Agency profiles are only available for Enterprise tier subscribers.',
-        code: 'ENTERPRISE_TIER_REQUIRED',
-      });
-      return;
-    }
-
     // Check if agency already exists for this user
     const existingAgency = await Agency.findOne({ ownerId: user._id });
     if (existingAgency) {
@@ -56,7 +47,7 @@ export const createAgency = async (
     const agencyData = {
       ...req.body,
       ownerId: user._id,
-      isFeatured: true, // Enterprise tier gets featured by default
+      isFeatured: req.body.isFeatured || false, // Can be set manually or defaults to false
       // Add geocoded coordinates (will be undefined if geocoding failed)
       ...(coordinates.lat && coordinates.lng && {
         lat: coordinates.lat,

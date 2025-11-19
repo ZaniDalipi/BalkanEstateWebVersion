@@ -238,7 +238,7 @@ const AgenciesListPage: React.FC = () => {
               className="inline-flex items-center gap-2 bg-black text-white px-8 py-4 rounded-full font-medium hover:bg-gray-900 transition-all hover:scale-105 shadow-lg"
             >
               <BuildingOfficeIcon className="w-5 h-5" />
-              Create Enterprise Agency
+              Create Agency
             </button>
           </div>
         </div>
@@ -336,7 +336,7 @@ const AgenciesListPage: React.FC = () => {
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No agencies found</h3>
             <p className="text-gray-600 mb-4">
               {filter === 'all' && !cityFilter
-                ? 'No agencies are registered yet. Be the first to create an enterprise agency!'
+                ? 'No agencies are registered yet. Be the first to create your agency!'
                 : 'Try adjusting your filters or search criteria'}
             </p>
             {filter === 'all' && !cityFilter && (
@@ -345,7 +345,7 @@ const AgenciesListPage: React.FC = () => {
                 className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-full font-medium hover:bg-primary-dark transition-all mt-4"
               >
                 <BuildingOfficeIcon className="w-5 h-5" />
-                Create Enterprise Agency
+                Create Agency
               </button>
             )}
           </div>

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '../shared/Modal';
 import { BuildingOfficeIcon, CheckCircleIcon } from '../../constants';
+import { useAppContext } from '../../context/AppContext';
 
 interface AgencyCreationModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
   onClose,
   onAgencyCreated,
 }) => {
+  const { state } = useAppContext();
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -25,6 +27,23 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
     email: '',
     website: '',
   });
+
+  // Auto-populate form with user data when modal opens
+  useEffect(() => {
+    if (isOpen && state.currentUser) {
+      const user = state.currentUser;
+      setFormData(prev => ({
+        ...prev,
+        // Pre-fill with user data, but allow it to be overridden if already set
+        email: prev.email || user.email || '',
+        phone: prev.phone || user.phone || '',
+        city: prev.city || user.city || '',
+        country: prev.country || user.country || '',
+        // If user already has an agency name (e.g., they're an agent), use it
+        name: prev.name || user.agencyName || '',
+      }));
+    }
+  }, [isOpen, state.currentUser]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -92,7 +111,7 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
           </div>
           <h2 className="text-2xl font-bold text-neutral-800 mb-2">Create Your Agency</h2>
           <p className="text-sm text-neutral-600">
-            Before activating your Enterprise plan, let's set up your agency profile
+            Set up your agency profile to showcase your team and properties
           </p>
         </div>
 
@@ -279,7 +298,7 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
                   <span>Creating Agency...</span>
                 </>
               ) : (
-                <span>Create Agency & Continue to Payment</span>
+                <span>Create Agency</span>
               )}
             </button>
           </div>
