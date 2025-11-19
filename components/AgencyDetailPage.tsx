@@ -8,6 +8,7 @@ import InvitationCodeModal from './InvitationCodeModal';
 import { formatPrice } from '../utils/currency';
 import { createJoinRequest, removeAgentFromAgency, addAgencyAdmin, removeAgencyAdmin, verifyInvitationCode } from '../services/apiService';
 import { Agency } from '../types';
+import { socketService } from '../services/socketService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
@@ -59,15 +60,46 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
 
   useEffect(() => {
     fetchAgencyData();
-    setAgencyData(agency);
-  }, [agency._id, agency]);
+  }, [agency._id]);
+
+  // Listen for real-time agency updates (new members, etc.)
+  useEffect(() => {
+    const handleAgencyUpdate = (data: any) => {
+      console.log('🏢 Agency update event received:', data);
+
+      if (data.type === 'member-added') {
+        // Refetch agency data to get the updated member list
+        fetchAgencyData();
+      }
+    };
+
+    const unsubscribe = socketService.onAgencyUpdate(agency._id, handleAgencyUpdate);
+
+    return () => {
+      unsubscribe();
+    };
+  }, [agency._id]);
 
   const fetchAgencyData = async () => {
     setLoading(true);
     try {
-      setAgents(agency.agents || []);
+      // Fetch fresh agency data from the backend to get updated agents list
+      const response = await fetch(`${API_URL}/agencies/${agency._id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAgencyData(data.agency);
+        setAgents(data.agency.agents || []);
+        console.log('✅ Agency data refreshed, agents:', data.agency.agents?.length || 0);
+      } else {
+        // Fallback to prop data if API fails
+        setAgencyData(agency);
+        setAgents(agency.agents || []);
+      }
     } catch (error) {
-      // Silent error handling
+      console.error('Failed to fetch agency data:', error);
+      // Fallback to prop data on error
+      setAgencyData(agency);
+      setAgents(agency.agents || []);
     } finally {
       setLoading(false);
     }

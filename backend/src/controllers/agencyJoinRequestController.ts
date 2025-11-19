@@ -221,6 +221,7 @@ export const approveJoinRequest = async (req: Request, res: Response): Promise<v
     // Emit socket event to notify the agent in real-time
     const io = getSocketInstance();
     if (io) {
+      // Notify the agent who joined
       io.emit(`user-update-${String(joinRequest.agentId)}`, {
         type: 'agency-joined',
         message: `You have been accepted to ${agency.name}!`,
@@ -238,6 +239,15 @@ export const approveJoinRequest = async (req: Request, res: Response): Promise<v
         },
       });
       console.log(`✅ Socket event emitted to agent ${joinRequest.agentId} for agency approval`);
+
+      // Notify all viewers of the agency page that the member list has changed
+      io.emit(`agency-update-${String(agency._id)}`, {
+        type: 'member-added',
+        agencyId: String(agency._id),
+        agentId: String(agent._id),
+        agentName: agent.name,
+      });
+      console.log(`✅ Socket event emitted to agency ${agency._id} for member addition`);
     }
 
     res.json({

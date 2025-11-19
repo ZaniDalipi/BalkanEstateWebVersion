@@ -9,6 +9,7 @@ class SocketService {
   private conversationHandlers: Set<(conversation: any) => void> = new Set();
   private deleteHandlers: Set<(conversationId: string) => void> = new Set();
   private userUpdateHandlers: Set<(data: any) => void> = new Set();
+  private agencyUpdateHandlers: Map<string, Set<(data: any) => void>> = new Map();
   private currentUserId: string | null = null;
 
   connect(token: string, userId?: string) {
@@ -213,6 +214,40 @@ class SocketService {
         this.userUpdateHandlers.forEach(handler => handler(data));
       });
     }
+  }
+
+  // Subscribe to agency updates
+  onAgencyUpdate(agencyId: string, handler: (data: any) => void) {
+    if (!this.agencyUpdateHandlers.has(agencyId)) {
+      this.agencyUpdateHandlers.set(agencyId, new Set());
+
+      // Start listening to this agency's events if socket is connected
+      if (this.socket?.connected) {
+        this.socket.on(`agency-update-${agencyId}`, (data: any) => {
+          console.log('🏢 Agency update received:', data);
+          const handlers = this.agencyUpdateHandlers.get(agencyId);
+          if (handlers) {
+            handlers.forEach(h => h(data));
+          }
+        });
+      }
+    }
+    this.agencyUpdateHandlers.get(agencyId)?.add(handler);
+
+    // Return unsubscribe function
+    return () => {
+      const handlers = this.agencyUpdateHandlers.get(agencyId);
+      if (handlers) {
+        handlers.delete(handler);
+        if (handlers.size === 0) {
+          this.agencyUpdateHandlers.delete(agencyId);
+          // Stop listening to this agency's events
+          if (this.socket?.connected) {
+            this.socket.off(`agency-update-${agencyId}`);
+          }
+        }
+      }
+    };
   }
 
   isConnected() {
