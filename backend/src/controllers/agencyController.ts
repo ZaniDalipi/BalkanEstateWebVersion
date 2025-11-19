@@ -57,7 +57,9 @@ export const createAgency = async (
 
     console.log(`📍 Creating agency with coordinates:`, coordinates.lat ? `${coordinates.lat}, ${coordinates.lng}` : 'No coordinates');
 
-    const agency = await Agency.create(agencyData);
+    // Use constructor + save() pattern to allow pre-save hook to generate slug and invitationCode
+    const agency = new Agency(agencyData);
+    await agency.save();
 
     // Update user with agency reference
     user.agencyId = agency._id as mongoose.Types.ObjectId;

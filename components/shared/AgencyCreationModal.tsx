@@ -26,6 +26,19 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
     phone: '',
     email: '',
     website: '',
+    yearsInBusiness: '',
+    facebookUrl: '',
+    instagramUrl: '',
+    linkedinUrl: '',
+    businessHours: {
+      monday: '9:00 AM - 6:00 PM',
+      tuesday: '9:00 AM - 6:00 PM',
+      wednesday: '9:00 AM - 6:00 PM',
+      thursday: '9:00 AM - 6:00 PM',
+      friday: '9:00 AM - 6:00 PM',
+      saturday: '10:00 AM - 4:00 PM',
+      sunday: 'Closed',
+    },
   });
 
   // Auto-populate form with user data when modal opens
@@ -48,6 +61,13 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleBusinessHoursChange = (day: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      businessHours: { ...prev.businessHours, [day]: value },
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,13 +96,19 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
         throw new Error('Please log in to create an agency');
       }
 
+      // Prepare data with yearsInBusiness as a number
+      const agencyData = {
+        ...formData,
+        yearsInBusiness: formData.yearsInBusiness ? parseInt(formData.yearsInBusiness) : undefined,
+      };
+
       const response = await fetch('http://localhost:5001/api/agencies', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(agencyData),
       });
 
       const data = await response.json();
@@ -103,8 +129,8 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
   const labelClasses = "block text-sm font-medium text-neutral-700 mb-1";
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="">
-      <div className="max-w-2xl mx-auto">
+    <Modal isOpen={isOpen} onClose={onClose} title="" size="4xl">
+      <div className="max-w-4xl mx-auto">
         <div className="text-center pb-6 border-b border-neutral-200 mb-6">
           <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
             <BuildingOfficeIcon className="w-8 h-8 text-white" />
@@ -260,6 +286,103 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
               className={inputClasses}
               disabled={isCreating}
             />
+          </div>
+
+          {/* Years in Business */}
+          <div>
+            <label htmlFor="yearsInBusiness" className={labelClasses}>
+              Years in Business
+            </label>
+            <input
+              type="number"
+              id="yearsInBusiness"
+              name="yearsInBusiness"
+              value={formData.yearsInBusiness}
+              onChange={handleInputChange}
+              placeholder="e.g., 5"
+              min="0"
+              className={inputClasses}
+              disabled={isCreating}
+            />
+          </div>
+
+          {/* Social Media Links */}
+          <div className="bg-neutral-50 p-4 rounded-lg space-y-3">
+            <h3 className="font-semibold text-neutral-800 text-sm">Social Media (Optional)</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="facebookUrl" className={labelClasses}>
+                  Facebook
+                </label>
+                <input
+                  type="url"
+                  id="facebookUrl"
+                  name="facebookUrl"
+                  value={formData.facebookUrl}
+                  onChange={handleInputChange}
+                  placeholder="https://facebook.com/yourpage"
+                  className={inputClasses}
+                  disabled={isCreating}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="instagramUrl" className={labelClasses}>
+                  Instagram
+                </label>
+                <input
+                  type="url"
+                  id="instagramUrl"
+                  name="instagramUrl"
+                  value={formData.instagramUrl}
+                  onChange={handleInputChange}
+                  placeholder="https://instagram.com/yourpage"
+                  className={inputClasses}
+                  disabled={isCreating}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="linkedinUrl" className={labelClasses}>
+                  LinkedIn
+                </label>
+                <input
+                  type="url"
+                  id="linkedinUrl"
+                  name="linkedinUrl"
+                  value={formData.linkedinUrl}
+                  onChange={handleInputChange}
+                  placeholder="https://linkedin.com/company/yourcompany"
+                  className={inputClasses}
+                  disabled={isCreating}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Business Hours */}
+          <div className="bg-neutral-50 p-4 rounded-lg space-y-3">
+            <h3 className="font-semibold text-neutral-800 text-sm">Business Hours (Optional)</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
+                <div key={day}>
+                  <label htmlFor={day} className={labelClasses}>
+                    {day.charAt(0).toUpperCase() + day.slice(1)}
+                  </label>
+                  <input
+                    type="text"
+                    id={day}
+                    value={formData.businessHours[day as keyof typeof formData.businessHours]}
+                    onChange={(e) => handleBusinessHoursChange(day, e.target.value)}
+                    placeholder="9:00 AM - 5:00 PM"
+                    className={inputClasses}
+                    disabled={isCreating}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Info Box */}
