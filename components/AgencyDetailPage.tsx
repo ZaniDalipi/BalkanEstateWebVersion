@@ -32,8 +32,9 @@ interface AgencyDetailPageProps {
 
 const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const { state, dispatch } = useAppContext();
-  const { properties, isLoadingProperties, currentUser, isAuthenticated } = state;
+  const { currentUser, isAuthenticated } = state;
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [agencyProperties, setAgencyProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isJoinRequestsModalOpen, setIsJoinRequestsModalOpen] = useState(false);
   const [isInvitationCodeModalOpen, setIsInvitationCodeModalOpen] = useState(false);
@@ -43,7 +44,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const [agencyData, setAgencyData] = useState<Agency>(agency);
   const [uploadError, setUploadError] = useState('');
   const [removingAgentId, setRemovingAgentId] = useState<string | null>(null);
-  const [showAllMembers, setShowAllMembers] = useState(false);
+  const [showAllMembers, setShowAllMembers] = useState(true);
 
   // Check if current user is owner - handle both populated and unpopulated ownerId
   const agencyOwnerId = typeof agencyData.ownerId === 'object' && agencyData.ownerId !== null
@@ -83,7 +84,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const fetchAgencyData = async () => {
     setLoading(true);
     try {
-      // Fetch fresh agency data from the backend to get updated agents list
+      // Fetch fresh agency data from the backend to get updated agents list and properties
       // Include auth token so backend can identify current user and auto-add owner as member
       const token = localStorage.getItem('balkan_estate_token');
       const headers: Record<string, string> = {
@@ -98,26 +99,24 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
         const data = await response.json();
         setAgencyData(data.agency);
         setAgents(data.agency.agents || []);
-        console.log('✅ Agency data refreshed, agents:', data.agency.agents?.length || 0);
+        setAgencyProperties(data.properties || []);
+        console.log('✅ Agency data refreshed, agents:', data.agency.agents?.length || 0, 'properties:', data.properties?.length || 0);
       } else {
         // Fallback to prop data if API fails
         setAgencyData(agency);
         setAgents(agency.agents || []);
+        setAgencyProperties([]);
       }
     } catch (error) {
       console.error('Failed to fetch agency data:', error);
       // Fallback to prop data on error
       setAgencyData(agency);
       setAgents(agency.agents || []);
+      setAgencyProperties([]);
     } finally {
       setLoading(false);
     }
   };
-
-  // Filter properties belonging to agents in this agency
-  const agencyProperties = properties.filter(p =>
-    agents.some(agent => agent.id === p.sellerId || agent._id === p.sellerId) && p.status === 'active'
-  );
 
   // Sort agents by performance
   const rankedAgents = [...agents].sort((a, b) => {
@@ -140,7 +139,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const handleAgentClick = (agentId: string) => {
     console.log('🔍 Viewing agent profile:', agentId);
     dispatch({ type: 'SET_SELECTED_AGENT', payload: agentId });
-    dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agentProfile' });
+    dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agents' });
     window.history.pushState({}, '', `/agents/${agentId}`);
   };
 
@@ -801,7 +800,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
             <span className="text-sm text-gray-500">{agencyProperties.length} properties</span>
           </div>
 
-          {isLoadingProperties ? (
+          {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map(i => <PropertyCardSkeleton key={i} />)}
             </div>
