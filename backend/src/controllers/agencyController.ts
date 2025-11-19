@@ -142,6 +142,7 @@ export const getAgencies = async (
     const agencies = await Agency.find(filter)
       .populate('ownerId', 'name email phone avatarUrl')
       .populate('agents', 'name email phone avatarUrl role agencyName')
+      .populate('admins', 'name email phone avatarUrl')
       .sort({ isFeatured: -1, adRotationOrder: 1, createdAt: -1 })
       .skip(skip)
       .limit(limitNum)
@@ -205,7 +206,8 @@ export const getAgency = async (
       console.log(`🔑 Attempting lookup by ObjectId: ${identifier}`);
       agency = await Agency.findById(identifier)
         .populate('ownerId', 'name email phone avatarUrl')
-        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating');
+        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating')
+        .populate('admins', 'name email phone avatarUrl');
     }
 
     if (!agency) {
@@ -214,7 +216,8 @@ export const getAgency = async (
       console.log(`🏷️  Attempting lookup by slug: ${slugLower}`);
       agency = await Agency.findOne({ slug: slugLower })
         .populate('ownerId', 'name email phone avatarUrl')
-        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating');
+        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating')
+        .populate('admins', 'name email phone avatarUrl');
     }
 
     // If not found and slug contains forward slash, try converting to comma format for backward compatibility
@@ -224,7 +227,8 @@ export const getAgency = async (
       console.log(`🏷️  Attempting lookup by legacy slug format: ${legacySlug}`);
       agency = await Agency.findOne({ slug: legacySlug })
         .populate('ownerId', 'name email phone avatarUrl')
-        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating');
+        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating')
+        .populate('admins', 'name email phone avatarUrl');
     }
 
     if (!agency) {
@@ -242,6 +246,39 @@ export const getAgency = async (
     // Validate that populated fields were successful
     if (!agency.ownerId) {
       console.warn(`⚠️  Agency owner not found or failed to populate for agency: ${agency._id}`);
+    }
+
+    // Auto-add admin as member if they're viewing the agency and not already a member
+    if (req.user) {
+      const currentUser = req.user as IUser;
+      const userId = String(currentUser._id);
+      const agencyAdmins = agency.admins?.map((id: any) => String(id)) || [];
+      const agencyAgents = agency.agents.map((agent: any) => String(agent._id || agent));
+
+      // Check if user is an admin but not in the agents array
+      if (agencyAdmins.includes(userId) && !agencyAgents.includes(userId)) {
+        console.log(`👤 Auto-adding admin ${currentUser.email} to agency members`);
+
+        // Add user to agents array
+        agency.agents.push(currentUser._id as mongoose.Types.ObjectId);
+        agency.totalAgents = (agency.totalAgents || 0) + 1;
+        await agency.save();
+
+        // Update user's agency info if not already set
+        const user = await User.findById(userId);
+        if (user && !user.agencyId) {
+          user.agencyId = agency._id as mongoose.Types.ObjectId;
+          user.agencyName = agency.name;
+          if (user.role !== 'agent') {
+            user.role = 'agent';
+          }
+          await user.save();
+          console.log(`✅ User ${currentUser.email} profile updated with agency info`);
+        }
+
+        // Re-populate agents to include the newly added admin
+        await agency.populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating');
+      }
     }
 
     // Get agency's properties with error handling
