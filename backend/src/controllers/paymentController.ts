@@ -395,12 +395,12 @@ async function handleSubscriptionUpdated(stripeSubscription: Stripe.Subscription
 
     // Update subscription expiration date if changed
     const subscription = await Subscription.findById(user.activeSubscriptionId);
-    if (subscription) {
-      const newExpirationDate = new Date(stripeSubscription.current_period_end * 1000);
+    if (subscription && stripeSubscription.current_period_end) {
+      const newExpirationDate = new Date((stripeSubscription as any).current_period_end * 1000);
       subscription.expirationDate = newExpirationDate;
       subscription.renewalDate = newExpirationDate;
       subscription.status = stripeSubscription.status === 'active' ? 'active' : 'canceled';
-      subscription.autoRenewing = !stripeSubscription.cancel_at_period_end;
+      subscription.autoRenewing = !(stripeSubscription as any).cancel_at_period_end;
       await subscription.save();
 
       // Update user
@@ -461,7 +461,7 @@ async function handleSubscriptionDeleted(stripeSubscription: Stripe.Subscription
  */
 async function handleRecurringPaymentSucceeded(invoice: Stripe.Invoice) {
   try {
-    const subscription = invoice.subscription;
+    const subscription = (invoice as any).subscription;
     if (!subscription || typeof subscription !== 'string') {
       console.log('No subscription ID in invoice');
       return;
@@ -506,7 +506,7 @@ async function handleRecurringPaymentSucceeded(invoice: Stripe.Invoice) {
  */
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
   try {
-    const subscription = invoice.subscription;
+    const subscription = (invoice as any).subscription;
     if (!subscription || typeof subscription !== 'string') {
       return;
     }
