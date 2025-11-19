@@ -102,7 +102,9 @@ export interface Agency {
     specialties?: string[];
     certifications?: string[];
     agents?: any[]; // Array of agent objects
-    ownerId?: string; // Owner user ID
+    ownerId?: string; // Owner user ID (also the creator/admin)
+    admins?: string[]; // Array of admin user IDs
+    invitationCode?: string; // Code required to join agency
 }
 
 export interface PropertyImage {

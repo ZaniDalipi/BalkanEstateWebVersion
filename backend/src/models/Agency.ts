@@ -208,8 +208,18 @@ AgencySchema.index({ country: 1, city: 1 }); // For location-based queries
 AgencySchema.index({ isFeatured: 1, adRotationOrder: 1 });
 AgencySchema.index({ agents: 1 }); // For agent lookup queries
 
-// Generate invitation code before saving
+// Generate slug and invitation code before saving
 AgencySchema.pre<IAgency>('save', async function (next) {
+  // Generate slug from name if not provided
+  if (!this.slug) {
+    // Convert name to URL-friendly slug: replace spaces/special chars with dashes, lowercase
+    this.slug = this.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')  // Replace non-alphanumeric with dashes
+      .replace(/^-+|-+$/g, '');     // Remove leading/trailing dashes
+  }
+
+  // Generate invitation code if not provided
   if (!this.invitationCode) {
     // Generate a unique invitation code: AGY-{agencyName}-{random6digits}
     const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, StarIcon, ArrowLeftIcon, UserCircleIcon, BellIcon, TrophyIcon, ChartBarIcon, HomeIcon, UsersIcon, XMarkIcon } from '../constants';
+import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, StarIcon, ArrowLeftIcon, UserCircleIcon, BellIcon, TrophyIcon, ChartBarIcon, HomeIcon, UsersIcon, XMarkIcon, ShieldCheckIcon } from '../constants';
 import PropertyCard from './BuyerFlow/PropertyCard';
 import PropertyCardSkeleton from './BuyerFlow/PropertyCardSkeleton';
 import AgencyJoinRequestsModal from './AgencyJoinRequestsModal';
+import InvitationCodeModal from './InvitationCodeModal';
 import { formatPrice } from '../utils/currency';
-import { createJoinRequest, removeAgentFromAgency } from '../services/apiService';
+import { createJoinRequest, removeAgentFromAgency, addAgencyAdmin, removeAgencyAdmin, verifyInvitationCode } from '../services/apiService';
 import { Agency } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
@@ -34,18 +35,26 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [isJoinRequestsModalOpen, setIsJoinRequestsModalOpen] = useState(false);
+  const [isInvitationCodeModalOpen, setIsInvitationCodeModalOpen] = useState(false);
   const [isRequesting, setIsRequesting] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [agencyData, setAgencyData] = useState<Agency>(agency);
   const [uploadError, setUploadError] = useState('');
   const [removingAgentId, setRemovingAgentId] = useState<string | null>(null);
+  const [showAllMembers, setShowAllMembers] = useState(false);
 
   // Check if current user is owner - handle both populated and unpopulated ownerId
   const agencyOwnerId = typeof agencyData.ownerId === 'object' && agencyData.ownerId !== null
     ? (agencyData.ownerId as any)._id
     : agencyData.ownerId;
   const isOwner = currentUser && agencyOwnerId && (String(agencyOwnerId) === String(currentUser.id) || String(agencyOwnerId) === String(currentUser._id));
+
+  // Check if current user is admin (owner or in admins array)
+  const isAdmin = isOwner || (currentUser && agencyData.admins && agencyData.admins.some(adminId =>
+    String(adminId) === String(currentUser.id) || String(adminId) === String(currentUser._id)
+  ));
+
   const canRequestToJoin = isAuthenticated && currentUser?.role === 'agent' && !currentUser?.agencyId;
 
   useEffect(() => {
@@ -94,23 +103,66 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     window.history.pushState({}, '', `/agents/${agentId}`);
   };
 
-  const handleRequestToJoin = async () => {
+  const handleRequestToJoin = () => {
     if (!canRequestToJoin) return;
+    setIsInvitationCodeModalOpen(true);
+  };
 
-    setIsRequesting(true);
+  const handleSubmitInvitationCode = async (code: string) => {
     try {
-      await createJoinRequest(agency._id, 'I would like to join your agency');
-      alert('Join request sent successfully! The agency owner will review your request.');
+      // Verify the invitation code
+      const verification = await verifyInvitationCode(agency._id, code);
+
+      if (!verification.valid) {
+        throw new Error(verification.message || 'Invalid invitation code');
+      }
+
+      // If code is valid, send join request with the code
+      await createJoinRequest(agency._id, `Joining with invitation code: ${code}`);
+      alert('Join request sent successfully! The agency admin will review your request.');
+      setIsInvitationCodeModalOpen(false);
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to send join request');
-    } finally {
-      setIsRequesting(false);
+      throw error; // Let the modal handle the error display
+    }
+  };
+
+  const handleToggleAdmin = async (agentId: string, agentName: string, isCurrentlyAdmin: boolean) => {
+    if (!isOwner) {
+      alert('Only the agency owner can manage admins');
+      return;
+    }
+
+    const action = isCurrentlyAdmin ? 'remove admin rights from' : 'make admin';
+    const confirmed = window.confirm(
+      `Are you sure you want to ${action} ${agentName}?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      if (isCurrentlyAdmin) {
+        await removeAgencyAdmin(agencyData._id, agentId);
+        setAgencyData(prev => ({
+          ...prev,
+          admins: prev.admins?.filter(id => id !== agentId) || []
+        }));
+        alert(`${agentName} is no longer an admin.`);
+      } else {
+        await addAgencyAdmin(agencyData._id, agentId);
+        setAgencyData(prev => ({
+          ...prev,
+          admins: [...(prev.admins || []), agentId]
+        }));
+        alert(`${agentName} is now an admin!`);
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to update admin status');
     }
   };
 
   const handleRemoveAgent = async (agentId: string, agentName: string) => {
-    if (!isOwner) {
-      alert('Only the agency owner can remove agents');
+    if (!isAdmin) {
+      alert('Only agency admins can remove agents');
       return;
     }
 
@@ -474,9 +526,36 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
             )}
           </div>
 
+          {/* Admin Section - Invitation Code */}
+          {isAdmin && agencyData.invitationCode && (
+            <div className="mt-6 p-4 bg-amber-50 border-2 border-amber-200 rounded-xl">
+              <div className="flex items-start gap-3">
+                <ShieldCheckIcon className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-900 mb-1">Agency Invitation Code</h4>
+                  <p className="text-sm text-gray-600 mb-2">Share this code with agents you want to join your agency</p>
+                  <div className="flex items-center gap-2">
+                    <code className="px-4 py-2 bg-white border border-amber-300 rounded-lg font-mono text-lg font-semibold text-primary tracking-wider">
+                      {agencyData.invitationCode}
+                    </code>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(agencyData.invitationCode || '');
+                        alert('Invitation code copied to clipboard!');
+                      }}
+                      className="px-3 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="mt-6 flex flex-wrap gap-3">
-            {isOwner && (
+            {isAdmin && (
               <button
                 onClick={() => setIsJoinRequestsModalOpen(true)}
                 className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-dark transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
@@ -489,22 +568,29 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
             {canRequestToJoin && (
               <button
                 onClick={handleRequestToJoin}
-                disabled={isRequesting}
-                className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
-                {isRequesting ? 'Sending...' : 'Request to Join Agency'}
+                Request to Join Agency
               </button>
             )}
           </div>
         </div>
 
-        {/* Top Agents Section */}
+        {/* Team Members Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold text-gray-900">Top Performing Agents</h2>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <TrophyIcon className="w-5 h-5" />
-              <span>Ranked by Performance</span>
+            <h2 className="text-3xl font-bold text-gray-900">Team Members</h2>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setShowAllMembers(!showAllMembers)}
+                className="px-4 py-2 text-sm font-medium text-primary border-2 border-primary rounded-lg hover:bg-primary hover:text-white transition-colors"
+              >
+                {showAllMembers ? 'Show Top Performers' : 'Show All Members'}
+              </button>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <TrophyIcon className="w-5 h-5" />
+                <span>Ranked by Performance</span>
+              </div>
             </div>
           </div>
 
@@ -514,12 +600,18 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
             </div>
           ) : rankedAgents.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {rankedAgents.map((agent, index) => {
+              {(showAllMembers ? rankedAgents : rankedAgents.slice(0, 3)).map((agent, index) => {
                 const rank = getRankBadge(index);
+                const agentId = agent.id || agent._id || '';
+                const isAgentAdmin = agentId && agencyData.admins && agencyData.admins.some(adminId =>
+                  String(adminId) === String(agentId)
+                );
+                const isAgentOwner = agentId && agencyOwnerId && String(agentId) === String(agencyOwnerId);
+
                 return (
                   <div
-                    key={agent.id || agent._id}
-                    onClick={() => handleAgentClick(agent.id || agent._id || '')}
+                    key={agentId}
+                    onClick={() => handleAgentClick(agentId)}
                     className="relative bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
                   >
                     {/* Rank Badge */}
@@ -554,7 +646,21 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
 
                       {/* Agent Info */}
                       <div className="flex-1">
-                        <h3 className="text-xl font-bold text-gray-900">{agent.name}</h3>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-xl font-bold text-gray-900">{agent.name}</h3>
+                          {isAgentOwner && (
+                            <span className="px-2 py-1 bg-gradient-to-r from-purple-500 to-purple-700 text-white text-xs font-bold rounded-full flex items-center gap-1">
+                              <ShieldCheckIcon className="w-3 h-3" />
+                              Owner
+                            </span>
+                          )}
+                          {isAgentAdmin && !isAgentOwner && (
+                            <span className="px-2 py-1 bg-gradient-to-r from-blue-500 to-blue-700 text-white text-xs font-bold rounded-full flex items-center gap-1">
+                              <ShieldCheckIcon className="w-3 h-3" />
+                              Admin
+                            </span>
+                          )}
+                        </div>
                         {agent.licenseNumber && (
                           <p className="text-sm text-gray-500">License: {agent.licenseNumber}</p>
                         )}
@@ -577,8 +683,8 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
                           </div>
                         </div>
 
-                        {/* Contact */}
-                        <div className="mt-3 flex items-center justify-between gap-3">
+                        {/* Contact and Actions */}
+                        <div className="mt-3 flex flex-col gap-2">
                           {agent.phone && (
                             <a
                               href={`tel:${agent.phone}`}
@@ -590,29 +696,47 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
                             </a>
                           )}
 
-                          {/* Remove Agent Button - Only visible to owner */}
-                          {isOwner && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveAgent(agent.id || agent._id || '', agent.name);
-                              }}
-                              disabled={removingAgentId === (agent.id || agent._id)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-wait"
-                              title="Remove agent from agency"
-                            >
-                              {removingAgentId === (agent.id || agent._id) ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600"></div>
-                                  Removing...
-                                </>
-                              ) : (
-                                <>
-                                  <XMarkIcon className="w-4 h-4" />
-                                  Remove
-                                </>
-                              )}
-                            </button>
+                          {/* Admin Actions - Only visible to owner */}
+                          {isOwner && !isAgentOwner && (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleAdmin(agentId, agent.name, isAgentAdmin || false);
+                                }}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                                  isAgentAdmin
+                                    ? 'text-gray-600 bg-gray-100 hover:bg-gray-200'
+                                    : 'text-blue-600 bg-blue-50 hover:bg-blue-100'
+                                }`}
+                                title={isAgentAdmin ? 'Remove admin rights' : 'Make admin'}
+                              >
+                                <ShieldCheckIcon className="w-4 h-4" />
+                                {isAgentAdmin ? 'Remove Admin' : 'Make Admin'}
+                              </button>
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveAgent(agentId, agent.name);
+                                }}
+                                disabled={removingAgentId === agentId}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-wait"
+                                title="Remove agent from agency"
+                              >
+                                {removingAgentId === agentId ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600"></div>
+                                    Removing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <XMarkIcon className="w-4 h-4" />
+                                    Remove
+                                  </>
+                                )}
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -661,6 +785,14 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
         isOpen={isJoinRequestsModalOpen}
         onClose={() => setIsJoinRequestsModalOpen(false)}
         agencyId={agency._id}
+        agencyName={agency.name}
+      />
+
+      {/* Invitation Code Modal */}
+      <InvitationCodeModal
+        isOpen={isInvitationCodeModalOpen}
+        onClose={() => setIsInvitationCodeModalOpen(false)}
+        onSubmit={handleSubmitInvitationCode}
         agencyName={agency.name}
       />
     </div>
