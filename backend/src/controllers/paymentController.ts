@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Stripe from 'stripe';
 import User from '../models/User';
 import Product from '../models/Product';
+import Subscription from '../models/Subscription';
 import { processSubscriptionPayment } from '../services/subscriptionPaymentService';
 
 // Initialize Stripe with your secret key
@@ -280,25 +281,27 @@ export const handleWebhook = async (req: Request, res: Response): Promise<void> 
         break;
       }
 
-      case 'customer.subscription.updated':
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription;
+        await handleSubscriptionUpdated(subscription);
+        break;
+      }
+
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
-        console.log(`Subscription ${event.type}:`, subscription.id);
-        // Handle subscription updates/cancellations
+        await handleSubscriptionDeleted(subscription);
         break;
       }
 
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice;
-        console.log('Invoice payment succeeded:', invoice.id);
-        // Handle recurring payment success
+        await handleRecurringPaymentSucceeded(invoice);
         break;
       }
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
-        console.log('Invoice payment failed:', invoice.id);
-        // Handle payment failure
+        await handlePaymentFailed(invoice);
         break;
       }
 
@@ -346,8 +349,8 @@ async function handleSuccessfulCheckout(session: Stripe.Checkout.Session) {
       });
     }
 
-    // Process the subscription payment
-    await processSubscriptionPayment({
+    // Process the subscription payment and get the result
+    const result = await processSubscriptionPayment({
       userId,
       productId: productId || 'default',
       store: 'stripe',
@@ -355,10 +358,194 @@ async function handleSuccessfulCheckout(session: Stripe.Checkout.Session) {
       currency: product.currency,
     });
 
+    // Store Stripe subscription ID if this is a subscription (not one-time payment)
+    if (session.subscription && result.subscription) {
+      const subscription = await Subscription.findById(result.subscription._id);
+      if (subscription) {
+        subscription.stripeSubscriptionId = session.subscription as string;
+        await subscription.save();
+      }
+    }
+
     console.log(`✅ Subscription activated for user ${userId}`);
   } catch (error) {
     console.error('Error processing successful checkout:', error);
     throw error;
+  }
+}
+
+/**
+ * Handle subscription updated event from Stripe
+ */
+async function handleSubscriptionUpdated(stripeSubscription: Stripe.Subscription) {
+  try {
+    const userId = stripeSubscription.metadata?.userId;
+    if (!userId) {
+      console.error('No userId in subscription metadata');
+      return;
+    }
+
+    console.log(`📝 Updating subscription for user ${userId}`);
+
+    const user = await User.findById(userId);
+    if (!user || !user.activeSubscriptionId) {
+      console.error(`User or subscription not found for user ${userId}`);
+      return;
+    }
+
+    // Update subscription expiration date if changed
+    const subscription = await Subscription.findById(user.activeSubscriptionId);
+    if (subscription && (stripeSubscription as any).current_period_end) {
+      const newExpirationDate = new Date((stripeSubscription as any).current_period_end * 1000);
+      subscription.expirationDate = newExpirationDate;
+      subscription.renewalDate = newExpirationDate;
+      subscription.status = stripeSubscription.status === 'active' ? 'active' : 'canceled';
+      subscription.autoRenewing = !(stripeSubscription as any).cancel_at_period_end;
+      await subscription.save();
+
+      // Update user
+      user.subscriptionExpiresAt = newExpirationDate;
+      user.subscriptionStatus = stripeSubscription.status === 'active' ? 'active' : 'canceled';
+      await user.save();
+
+      console.log(`✅ Subscription updated for user ${userId}`);
+    }
+  } catch (error) {
+    console.error('Error handling subscription update:', error);
+  }
+}
+
+/**
+ * Handle subscription deleted event from Stripe
+ */
+async function handleSubscriptionDeleted(stripeSubscription: Stripe.Subscription) {
+  try {
+    const userId = stripeSubscription.metadata?.userId;
+    if (!userId) {
+      console.error('No userId in subscription metadata');
+      return;
+    }
+
+    console.log(`🗑️ Canceling subscription for user ${userId}`);
+
+    const user = await User.findById(userId);
+    if (!user) {
+      console.error(`User not found: ${userId}`);
+      return;
+    }
+
+    // Mark subscription as canceled
+    if (user.activeSubscriptionId) {
+      const subscription = await Subscription.findById(user.activeSubscriptionId);
+      if (subscription) {
+        subscription.status = 'canceled';
+        subscription.autoRenewing = false;
+        subscription.canceledAt = new Date();
+        await subscription.save();
+      }
+    }
+
+    // Update user
+    user.subscriptionStatus = 'canceled';
+    user.isSubscribed = false;
+    await user.save();
+
+    console.log(`✅ Subscription canceled for user ${userId}`);
+  } catch (error) {
+    console.error('Error handling subscription deletion:', error);
+  }
+}
+
+/**
+ * Handle recurring payment succeeded (monthly/yearly renewals)
+ */
+async function handleRecurringPaymentSucceeded(invoice: Stripe.Invoice) {
+  try {
+    const subscription = (invoice as any).subscription;
+    if (!subscription || typeof subscription !== 'string') {
+      console.log('No subscription ID in invoice');
+      return;
+    }
+
+    // Get the full subscription object
+    const stripeSubscription = await stripe.subscriptions.retrieve(subscription);
+    const userId = stripeSubscription.metadata?.userId;
+    const productId = stripeSubscription.metadata?.productId;
+
+    if (!userId || !productId) {
+      console.error('Missing userId or productId in subscription metadata');
+      return;
+    }
+
+    console.log(`💰 Processing recurring payment for user ${userId}`);
+
+    // Find product
+    const product = await Product.findOne({ productId });
+    if (!product) {
+      console.error(`Product not found: ${productId}`);
+      return;
+    }
+
+    // Process the renewal payment
+    await processSubscriptionPayment({
+      userId,
+      productId,
+      store: 'stripe',
+      amount: (invoice.amount_paid || 0) / 100, // Convert from cents
+      currency: (invoice.currency || 'eur').toUpperCase(),
+    });
+
+    console.log(`✅ Recurring payment processed for user ${userId}`);
+  } catch (error) {
+    console.error('Error handling recurring payment:', error);
+  }
+}
+
+/**
+ * Handle payment failed event
+ */
+async function handlePaymentFailed(invoice: Stripe.Invoice) {
+  try {
+    const subscription = (invoice as any).subscription;
+    if (!subscription || typeof subscription !== 'string') {
+      return;
+    }
+
+    const stripeSubscription = await stripe.subscriptions.retrieve(subscription);
+    const userId = stripeSubscription.metadata?.userId;
+
+    if (!userId) {
+      console.error('No userId in subscription metadata');
+      return;
+    }
+
+    console.log(`❌ Payment failed for user ${userId}`);
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return;
+    }
+
+    // Update user subscription status to grace period
+    user.subscriptionStatus = 'grace';
+    await user.save();
+
+    // Update subscription to grace status
+    if (user.activeSubscriptionId) {
+      const subscription = await Subscription.findById(user.activeSubscriptionId);
+      if (subscription) {
+        subscription.status = 'grace';
+        // Set grace period for 7 days
+        const graceEnd = new Date();
+        graceEnd.setDate(graceEnd.getDate() + 7);
+        subscription.graceExpirationDate = graceEnd;
+        await subscription.save();
+      }
+    }
+
+    console.log(`✅ User ${userId} moved to grace period`);
+  } catch (error) {
+    console.error('Error handling payment failure:', error);
   }
 }
 

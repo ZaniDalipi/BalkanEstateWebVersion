@@ -8,11 +8,18 @@ class SocketService {
   private readHandlers: Map<string, Set<(data: { messageIds: string[]; readBy: string }) => void>> = new Map();
   private conversationHandlers: Set<(conversation: any) => void> = new Set();
   private deleteHandlers: Set<(conversationId: string) => void> = new Set();
+  private userUpdateHandlers: Set<(data: any) => void> = new Set();
+  private agencyUpdateHandlers: Map<string, Set<(data: any) => void>> = new Map();
+  private currentUserId: string | null = null;
 
-  connect(token: string) {
+  connect(token: string, userId?: string) {
     if (this.socket?.connected) {
       console.log('✅ Socket already connected');
       return;
+    }
+
+    if (userId) {
+      this.currentUserId = userId;
     }
 
     const serverUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5001';
@@ -77,6 +84,14 @@ class SocketService {
       console.log('🗑️ Conversation deleted:', conversationId);
       this.deleteHandlers.forEach(handler => handler(conversationId));
     });
+
+    // Handle user updates (agency joins, profile changes, etc.)
+    if (this.currentUserId) {
+      this.socket.on(`user-update-${this.currentUserId}`, (data: any) => {
+        console.log('👤 User update received:', data);
+        this.userUpdateHandlers.forEach(handler => handler(data));
+      });
+    }
   }
 
   disconnect() {
@@ -176,6 +191,62 @@ class SocketService {
 
     return () => {
       this.deleteHandlers.delete(handler);
+    };
+  }
+
+  // Subscribe to user updates
+  onUserUpdate(handler: (data: any) => void) {
+    this.userUpdateHandlers.add(handler);
+
+    return () => {
+      this.userUpdateHandlers.delete(handler);
+    };
+  }
+
+  // Set current user ID (for listening to user-specific events)
+  setCurrentUserId(userId: string) {
+    this.currentUserId = userId;
+
+    // If already connected, start listening for user-specific events
+    if (this.socket?.connected && userId) {
+      this.socket.on(`user-update-${userId}`, (data: any) => {
+        console.log('👤 User update received:', data);
+        this.userUpdateHandlers.forEach(handler => handler(data));
+      });
+    }
+  }
+
+  // Subscribe to agency updates
+  onAgencyUpdate(agencyId: string, handler: (data: any) => void) {
+    if (!this.agencyUpdateHandlers.has(agencyId)) {
+      this.agencyUpdateHandlers.set(agencyId, new Set());
+
+      // Start listening to this agency's events if socket is connected
+      if (this.socket?.connected) {
+        this.socket.on(`agency-update-${agencyId}`, (data: any) => {
+          console.log('🏢 Agency update received:', data);
+          const handlers = this.agencyUpdateHandlers.get(agencyId);
+          if (handlers) {
+            handlers.forEach(h => h(data));
+          }
+        });
+      }
+    }
+    this.agencyUpdateHandlers.get(agencyId)?.add(handler);
+
+    // Return unsubscribe function
+    return () => {
+      const handlers = this.agencyUpdateHandlers.get(agencyId);
+      if (handlers) {
+        handlers.delete(handler);
+        if (handlers.size === 0) {
+          this.agencyUpdateHandlers.delete(agencyId);
+          // Stop listening to this agency's events
+          if (this.socket?.connected) {
+            this.socket.off(`agency-update-${agencyId}`);
+          }
+        }
+      }
     };
   }
 

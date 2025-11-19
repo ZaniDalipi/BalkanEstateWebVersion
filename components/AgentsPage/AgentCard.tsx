@@ -68,8 +68,10 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
         dispatch({ type: 'SET_SELECTED_AGENCY', payload: data.agency });
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
 
-        // Update URL
-        const urlSlug = data.agency.slug || data.agency._id;
+        // Update URL - convert old comma format to new forward slash format
+        let urlSlug = data.agency.slug || data.agency._id;
+        // Replace comma with forward slash for backward compatibility with old slugs
+        urlSlug = urlSlug.replace(',', '/');
         window.history.pushState({}, '', `/agencies/${urlSlug}`);
       } else {
         console.error('❌ Agency not found:', agent.agencyName, 'with identifier:', agencyIdentifier);

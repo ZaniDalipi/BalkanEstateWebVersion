@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, memo } from 'react';
 import { UserIcon, Bars3Icon, UserCircleIcon } from '../../constants';
 import { UserRole } from '../../types';
 import { useAppContext } from '../../context/AppContext';
@@ -11,22 +11,26 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isFloating }) => {
   const { state, dispatch } = useAppContext();
   const { isAuthenticated, currentUser } = state;
-  
-  const handleAccountClick = () => {
+
+  const handleAccountClick = useCallback(() => {
     if (isAuthenticated) {
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
     } else {
         dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'login' } });
     }
-  };
+  }, [isAuthenticated, dispatch]);
 
-  const handleNewListingClick = () => {
+  const handleNewListingClick = useCallback(() => {
     if (isAuthenticated) {
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'create-listing' });
     } else {
         dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'signup' } });
     }
-  };
+  }, [isAuthenticated, dispatch]);
+
+  const handleSubscribeClick = useCallback(() => {
+    dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true });
+  }, [dispatch]);
 
   const AuthButton: React.FC<{ floating?: boolean }> = ({ floating }) => {
     if (isAuthenticated && currentUser) {
@@ -60,14 +64,16 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isFloating }) => {
       <header className="absolute top-0 right-0 z-[1001] p-4">
         <nav className="flex items-center space-x-2 sm:space-x-4 bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md">
           <button
-            onClick={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true })}
+            onClick={handleSubscribeClick}
             className="bg-primary text-white px-3 py-2 sm:px-5 sm:py-2.5 rounded-full text-sm sm:text-base font-semibold hover:bg-primary-dark transition-all shadow-sm hover:shadow-md whitespace-nowrap"
+            aria-label="Subscribe to premium plan"
           >
               Subscribe
           </button>
-          <button 
+          <button
             onClick={handleNewListingClick}
             className="bg-secondary text-white px-3 py-2 sm:px-5 sm:py-2.5 rounded-full text-sm sm:text-base font-semibold hover:bg-opacity-90 transition-all shadow-sm hover:shadow-md whitespace-nowrap"
+            aria-label="Create new property listing"
           >
               + New Listing
           </button>
@@ -82,7 +88,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isFloating }) => {
       <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-3">
           <div className="flex items-center">
-             <button onClick={onToggleSidebar} className="md:hidden text-neutral-600 hover:text-primary p-2 -ml-2">
+             <button onClick={onToggleSidebar} className="md:hidden text-neutral-600 hover:text-primary p-2 -ml-2" aria-label="Toggle sidebar navigation">
                  <Bars3Icon className="w-6 h-6"/>
              </button>
              <div className="hidden md:block">
@@ -92,14 +98,16 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isFloating }) => {
 
           <nav className="flex justify-end items-center space-x-2 sm:space-x-4">
             <button
-              onClick={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true })}
+              onClick={handleSubscribeClick}
               className="bg-primary text-white px-3 py-2 sm:px-5 sm:py-2.5 rounded-full text-sm sm:text-base font-semibold hover:bg-primary-dark transition-all shadow-sm hover:shadow-md whitespace-nowrap"
+              aria-label="Subscribe to premium plan"
             >
                 Subscribe
             </button>
             <button
               onClick={handleNewListingClick}
               className="bg-secondary text-white px-3 py-2 sm:px-5 sm:py-2.5 rounded-full text-sm sm:text-base font-semibold hover:bg-opacity-90 transition-all shadow-sm hover:shadow-md whitespace-nowrap"
+              aria-label="Create new property listing"
             >
                 + New Listing
             </button>
@@ -111,4 +119,4 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isFloating }) => {
   );
 };
 
-export default Header;
+export default memo(Header);

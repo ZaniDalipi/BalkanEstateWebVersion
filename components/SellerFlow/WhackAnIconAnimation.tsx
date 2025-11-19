@@ -12,6 +12,8 @@ const icons = [
 
 const GRID_SIZE = 9;
 const GAME_DURATION = 20; // seconds
+const MOLE_UP_TIME = 1200; // Time mole stays visible (ms)
+const MOLE_DOWN_TIME = 300; // Time between moles (ms)
 
 interface WhackAnIconAnimationProps {
     mode?: 'loading' | 'game';
@@ -25,12 +27,20 @@ const WhackAnIconAnimation: React.FC<WhackAnIconAnimationProps> = ({ mode = 'loa
     const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
     const [totalMoles, setTotalMoles] = useState(0);
     const [isGameActive, setIsGameActive] = useState(mode === 'game');
-    
+
     const scoreRef = useRef(0);
     const totalMolesRef = useRef(0);
+    const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-    // This function now just sets the next active mole.
+    // This function sets the next active mole with proper timing
     const popUp = useCallback(() => {
+        if (!isGameActive && mode !== 'loading') return;
+
+        // Clear any existing hide timer
+        if (hideTimerRef.current) {
+            clearTimeout(hideTimerRef.current);
+        }
+
         const randomIndex = Math.floor(Math.random() * GRID_SIZE);
         setActiveMole(randomIndex);
 
@@ -41,7 +51,13 @@ const WhackAnIconAnimation: React.FC<WhackAnIconAnimationProps> = ({ mode = 'loa
                 return newTotal;
             });
         }
-    }, [isGameActive]);
+
+        // Hide mole after MOLE_UP_TIME
+        hideTimerRef.current = setTimeout(() => {
+            setActiveMole(null);
+            hideTimerRef.current = null;
+        }, mode === 'game' ? MOLE_UP_TIME : 1000);
+    }, [isGameActive, mode]);
 
     // Timer effect
     useEffect(() => {
@@ -71,23 +87,40 @@ const WhackAnIconAnimation: React.FC<WhackAnIconAnimationProps> = ({ mode = 'loa
         if (isGameActive) {
             // Start the game immediately
             popUp();
-            const moleInterval = setInterval(popUp, 900); // A bit faster to be more engaging
+            // Total cycle time: mole visible + mole hidden
+            const cycleTime = MOLE_UP_TIME + MOLE_DOWN_TIME;
+            const moleInterval = setInterval(popUp, cycleTime);
             return () => clearInterval(moleInterval);
         }
     }, [isGameActive, popUp]);
-    
+
     // For loading mode
     useEffect(() => {
         if (mode === 'loading') {
-            const loadingInterval = setInterval(popUp, 1200); // Slower rhythm for loading animation
+            const loadingInterval = setInterval(popUp, 1500); // Slower rhythm for loading animation
             return () => clearInterval(loadingInterval);
         }
     }, [mode, popUp]);
+
+    // Cleanup hide timer on unmount
+    useEffect(() => {
+        return () => {
+            if (hideTimerRef.current) {
+                clearTimeout(hideTimerRef.current);
+            }
+        };
+    }, []);
 
 
     const handleWhack = (index: number) => {
         // If the clicked mole is not the active one, do nothing.
         if (index !== activeMole) return;
+
+        // Clear the hide timer since the mole was hit
+        if (hideTimerRef.current) {
+            clearTimeout(hideTimerRef.current);
+            hideTimerRef.current = null;
+        }
 
         // Immediately set activeMole to null to prevent multiple scores on the same mole
         setActiveMole(null);

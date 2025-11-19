@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import AgencyJoinRequest from '../models/AgencyJoinRequest';
 import Agency from '../models/Agency';
 import User, { IUser } from '../models/User';
+import { getSocketInstance } from '../utils/socketInstance';
 
 // Create a join request
 export const createJoinRequest = async (req: Request, res: Response): Promise<void> => {
@@ -202,6 +203,52 @@ export const approveJoinRequest = async (req: Request, res: Response): Promise<v
     joinRequest.respondedAt = new Date();
     joinRequest.respondedBy = new mongoose.Types.ObjectId(userId);
     await joinRequest.save();
+
+    // Auto-reject all other pending requests from this agent
+    await AgencyJoinRequest.updateMany(
+      {
+        agentId: joinRequest.agentId,
+        status: 'pending',
+        _id: { $ne: joinRequest._id },
+      },
+      {
+        status: 'rejected',
+        respondedAt: new Date(),
+        respondedBy: new mongoose.Types.ObjectId(userId),
+      }
+    );
+
+    // Emit socket event to notify the agent in real-time
+    const io = getSocketInstance();
+    if (io) {
+      // Notify the agent who joined
+      io.emit(`user-update-${String(joinRequest.agentId)}`, {
+        type: 'agency-joined',
+        message: `You have been accepted to ${agency.name}!`,
+        user: {
+          id: String(agent._id),
+          agencyId: String(agent.agencyId),
+          agencyName: agent.agencyName,
+        },
+        agency: {
+          id: String(agency._id),
+          name: agency.name,
+          logo: agency.logo,
+          city: agency.city,
+          country: agency.country,
+        },
+      });
+      console.log(`✅ Socket event emitted to agent ${joinRequest.agentId} for agency approval`);
+
+      // Notify all viewers of the agency page that the member list has changed
+      io.emit(`agency-update-${String(agency._id)}`, {
+        type: 'member-added',
+        agencyId: String(agency._id),
+        agentId: String(agent._id),
+        agentName: agent.name,
+      });
+      console.log(`✅ Socket event emitted to agency ${agency._id} for member addition`);
+    }
 
     res.json({
       message: 'Join request approved successfully',

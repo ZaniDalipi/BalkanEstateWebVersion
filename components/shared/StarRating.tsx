@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { StarIcon } from '../../constants';
 import { StarIconSolid } from '../../constants';
 
@@ -33,4 +33,4 @@ const StarRating: React.FC<StarRatingProps> = ({ rating, totalStars = 5, classNa
   );
 };
 
-export default StarRating;
+export default memo(StarRating);

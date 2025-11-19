@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { User, UserRole } from '../../types';
-import { ChartBarIcon, HomeIcon, EyeIcon, HeartIcon, ChatBubbleBottomCenterTextIcon } from '../../constants';
+import { ChartBarIcon, HomeIcon, EyeIcon, HeartIcon, ChatBubbleBottomCenterTextIcon, CalendarIcon, MapPinIcon } from '../../constants';
 
 interface ProfileStatisticsProps {
   user: User;
@@ -14,6 +14,41 @@ interface UserStats {
   totalInquiries: number;
   propertiesSold?: number;
   totalSalesValue?: number;
+}
+
+interface SaleRecord {
+  _id: string;
+  propertyAddress: string;
+  propertyCity: string;
+  propertyCountry: string;
+  propertyType: string;
+  salePrice: number;
+  currency: string;
+  soldAt: string;
+  beds?: number;
+  baths?: number;
+  sqft?: number;
+  totalViews: number;
+  totalSaves: number;
+  daysOnMarket: number;
+  commission?: number;
+}
+
+interface SalesHistoryData {
+  sales: SaleRecord[];
+  summary: {
+    totalSales: number;
+    totalRevenue: number;
+    totalCommission: number;
+    averageSalePrice: number;
+    averageDaysOnMarket: number;
+  };
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
 }
 
 const StatCard: React.FC<{
@@ -43,13 +78,16 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
     propertiesSold: 0,
     totalSalesValue: 0,
   });
+  const [salesHistory, setSalesHistory] = useState<SalesHistoryData | null>(null);
+  const [showSalesHistory, setShowSalesHistory] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/users/my-stats', {
+        const response = await fetch('/api/auth/my-stats', {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
           },
@@ -67,6 +105,31 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
 
     fetchStats();
   }, [user.id]);
+
+  const fetchSalesHistory = async () => {
+    if (salesHistory) {
+      setShowSalesHistory(!showSalesHistory);
+      return;
+    }
+
+    try {
+      setLoadingHistory(true);
+      const response = await fetch('/api/sales-history/my-sales?limit=10', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSalesHistory(data);
+        setShowSalesHistory(true);
+      }
+    } catch (error) {
+      console.error('Failed to fetch sales history:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -164,6 +227,111 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
                     ✓ Verified License
                   </span>
                   <span className="text-sm text-neutral-500">License #{user.licenseNumber}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Sales History Section */}
+          {(stats.propertiesSold || 0) > 0 && (
+            <div className="mt-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-neutral-800">Sales History</h3>
+                <button
+                  onClick={fetchSalesHistory}
+                  disabled={loadingHistory}
+                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+                >
+                  {loadingHistory ? 'Loading...' : showSalesHistory ? 'Hide History' : 'View History'}
+                </button>
+              </div>
+
+              {showSalesHistory && salesHistory && (
+                <div className="space-y-4">
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg p-4 text-white">
+                      <div className="text-sm opacity-90">Total Revenue</div>
+                      <div className="text-2xl font-bold">€{(salesHistory.summary.totalRevenue / 1000).toFixed(0)}K</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-4 text-white">
+                      <div className="text-sm opacity-90">Avg. Sale Price</div>
+                      <div className="text-2xl font-bold">€{(salesHistory.summary.averageSalePrice / 1000).toFixed(0)}K</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-4 text-white">
+                      <div className="text-sm opacity-90">Avg. Days on Market</div>
+                      <div className="text-2xl font-bold">{Math.round(salesHistory.summary.averageDaysOnMarket)}</div>
+                    </div>
+                    {salesHistory.summary.totalCommission > 0 && (
+                      <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg p-4 text-white">
+                        <div className="text-sm opacity-90">Total Commission</div>
+                        <div className="text-2xl font-bold">€{(salesHistory.summary.totalCommission / 1000).toFixed(1)}K</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Sales List */}
+                  <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-neutral-50 border-b border-neutral-200">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-700">Property</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-700">Location</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-700">Type</th>
+                            <th className="px-4 py-3 text-right text-sm font-semibold text-neutral-700">Sale Price</th>
+                            <th className="px-4 py-3 text-center text-sm font-semibold text-neutral-700">Days on Market</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-700">Sold Date</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-200">
+                          {salesHistory.sales.map((sale) => (
+                            <tr key={sale._id} className="hover:bg-neutral-50 transition-colors">
+                              <td className="px-4 py-3">
+                                <div className="text-sm font-medium text-neutral-800">{sale.propertyAddress}</div>
+                                <div className="text-xs text-neutral-500">
+                                  {sale.beds && `${sale.beds} beds`}
+                                  {sale.baths && ` • ${sale.baths} baths`}
+                                  {sale.sqft && ` • ${sale.sqft} sqft`}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-1 text-sm text-neutral-600">
+                                  <MapPinIcon className="w-4 h-4" />
+                                  {sale.propertyCity}, {sale.propertyCountry}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full font-medium">
+                                  {sale.propertyType}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <div className="text-sm font-semibold text-neutral-800">
+                                  €{sale.salePrice.toLocaleString()}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <span className="text-sm text-neutral-600">{sale.daysOnMarket} days</span>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-1 text-sm text-neutral-600">
+                                  <CalendarIcon className="w-4 h-4" />
+                                  {new Date(sale.soldAt).toLocaleDateString()}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {salesHistory.pagination.total > salesHistory.pagination.limit && (
+                    <div className="text-center text-sm text-neutral-600">
+                      Showing {salesHistory.sales.length} of {salesHistory.pagination.total} sales
+                    </div>
+                  )}
                 </div>
               )}
             </div>

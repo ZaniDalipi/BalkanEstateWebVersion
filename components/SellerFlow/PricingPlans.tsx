@@ -66,6 +66,36 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
     }
   }, [isOpen, isOffer, onClose]);
 
+  // Auto-select Enterprise and show payment when modal opens with pending agency data
+  useEffect(() => {
+    if (isOpen && state.pendingAgencyData && !selectedPlan && products.length > 0) {
+      const enterpriseProduct = products.find(p => p.productId === 'seller_enterprise_yearly');
+      const enterprisePrice = enterpriseProduct?.price || 1000;
+      const enterpriseDiscount = isOffer && activeDiscount ? activeDiscount.enterprise : 0;
+
+      // Auto-select Enterprise plan
+      setSelectedPlan({
+        name: 'Enterprise',
+        price: enterprisePrice,
+        interval: 'year',
+        discount: enterpriseDiscount,
+        productId: enterpriseProduct?.productId || 'seller_enterprise_yearly',
+      });
+
+      // Show payment window
+      setShowPaymentWindow(true);
+    }
+  }, [isOpen, state.pendingAgencyData, selectedPlan, products, isOffer, activeDiscount]);
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedPlan(null);
+      setShowPaymentWindow(false);
+      setShowConfirmation(false);
+    }
+  }, [isOpen]);
+
   const handleCloseAttempt = () => {
     if (isOffer) {
       setShowConfirmation(true);
@@ -131,17 +161,85 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
   }
 
   setSelectedPlan({ name: planName, price, interval, discount, productId });
-  setShowPaymentWindow(true);
-};
-  const handlePaymentSuccess = (paymentIntentId: string) => {
-    console.log('Payment successful:', paymentIntentId);
-    // TODO: Update user subscription status via API
-    setShowPaymentWindow(false);
+
+  // If Enterprise plan and no pending agency data, show agency creation first
+  if (planName.toLowerCase().includes('enterprise') && !state.pendingAgencyData) {
+    // Close pricing modal and open agency creation modal
     onClose();
-    if (onSubscribe) {
-      onSubscribe();
+    dispatch({ type: 'TOGGLE_ENTERPRISE_MODAL', payload: true });
+  } else {
+    // For other plans, or Enterprise with pending data, show payment window
+    setShowPaymentWindow(true);
+  }
+};
+
+  const handlePaymentSuccess = async (paymentIntentId: string) => {
+    console.log('Payment successful:', paymentIntentId);
+    setShowPaymentWindow(false);
+
+    // If Enterprise plan and there's pending agency data, create the agency
+    if (selectedPlan && selectedPlan.name.toLowerCase().includes('enterprise') && state.pendingAgencyData) {
+      try {
+        const token = localStorage.getItem('balkan_estate_token');
+        if (!token) {
+          throw new Error('Please log in to create an agency');
+        }
+
+        const response = await fetch('http://localhost:5001/api/agencies', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(state.pendingAgencyData),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to create agency');
+        }
+
+        // Clear pending agency data
+        dispatch({ type: 'SET_PENDING_AGENCY_DATA', payload: null });
+
+        // Refresh user data to get updated role and agency info
+        try {
+          const userResponse = await fetch('http://localhost:5001/api/auth/me', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: true, user: userData.user } });
+          }
+        } catch (error) {
+          console.error('Failed to refresh user data:', error);
+        }
+
+        // Close modal and show success
+        onClose();
+        if (onSubscribe) {
+          onSubscribe();
+        }
+        alert('Congratulations! Your Enterprise subscription is activated and your agency has been created successfully! You are now the admin of your agency.');
+
+        // Redirect to agencies view
+        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
+      } catch (err) {
+        console.error('Failed to create agency:', err);
+        alert('Payment successful, but failed to create agency: ' + (err instanceof Error ? err.message : 'Unknown error'));
+        onClose();
+      }
+    } else {
+      // For other plans, close and show success
+      onClose();
+      if (onSubscribe) {
+        onSubscribe();
+      }
+      alert('Subscription activated successfully!');
     }
-    alert('Subscription activated successfully!');
   };
 
   const handlePaymentError = (error: string) => {
@@ -385,7 +483,10 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
       {selectedPlan && (
         <PaymentWindow
           isOpen={showPaymentWindow}
-          onClose={() => setShowPaymentWindow(false)}
+          onClose={() => {
+            setShowPaymentWindow(false);
+            setSelectedPlan(null);
+          }}
           planName={selectedPlan.name}
           planPrice={selectedPlan.price}
           planInterval={selectedPlan.interval}
@@ -395,6 +496,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
           onSuccess={handlePaymentSuccess}
           onError={handlePaymentError}
           discountPercent={selectedPlan.discount}
+          productId={selectedPlan.productId}
         />
       )}
     </>

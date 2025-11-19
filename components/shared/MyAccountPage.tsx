@@ -3,11 +3,11 @@ import { useAppContext } from '../../context/AppContext';
 import MyListings from './MyListings';
 import SubscriptionManagement from './SubscriptionManagement';
 import ProfileStatistics from './ProfileStatistics';
-import { User, UserRole } from '../../types';
+import { User, UserRole, Agency } from '../../types';
 import { BuildingOfficeIcon, ChartBarIcon, UserCircleIcon, ArrowLeftOnRectangleIcon } from '../../constants';
 import AgentLicenseModal from './AgentLicenseModal';
 import AgencyManagementSection from './AgencyManagementSection';
-import { switchRole, joinAgencyByInvitationCode } from '../../services/apiService';
+import { switchRole, joinAgencyByInvitationCode, getAgencies } from '../../services/apiService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
@@ -84,6 +84,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
     const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
     const [error, setError] = useState('');
+    const [agencies, setAgencies] = useState<Agency[]>([]);
     const [invitationCode, setInvitationCode] = useState('');
     const [isJoiningAgency, setIsJoiningAgency] = useState(false);
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -99,7 +100,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                     dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
                 }
             } catch (error) {
-                console.error('Error fetching agency:', error);
+                // Failed to fetch agency details
             }
         }
     };
@@ -107,6 +108,21 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     useEffect(() => {
         setFormData(user);
     }, [user]);
+
+    // Fetch agencies when component mounts or when user is an agent
+    useEffect(() => {
+        const fetchAgencies = async () => {
+            if (formData.role === UserRole.AGENT) {
+                try {
+                    const response = await getAgencies();
+                    setAgencies(response.agencies || []);
+                } catch (error) {
+                    setAgencies([]);
+                }
+            }
+        };
+        fetchAgencies();
+    }, [formData.role]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
@@ -116,7 +132,14 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const handleRoleChange = async (role: UserRole) => {
         setError('');
 
-        // Allow switching to any role freely without requiring license
+        // If switching to agent, require license verification
+        if (role === UserRole.AGENT && !user.licenseVerified) {
+            setPendingRole(role);
+            setIsLicenseModalOpen(true);
+            return;
+        }
+
+        // For other role switches, allow freely
         try {
             setIsSaving(true);
             const updatedUser = await switchRole(role);
@@ -124,9 +147,8 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
             setFormData(updatedUser);
             setIsSaved(true);
             setTimeout(() => setIsSaved(false), 2000);
-        } catch (err: any) {
-            setError(err.message || 'Failed to switch role');
-            console.error('Failed to switch role:', err);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to switch role');
         } finally {
             setIsSaving(false);
         }
@@ -135,55 +157,16 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const handleLicenseSubmit = async (licenseData: { licenseNumber: string; agencyInvitationCode?: string; agentId?: string; selectedAgencyId?: string }) => {
         setIsSaving(true);
         try {
-            // Check if user is already an agent (joining an existing agency)
-            const isJoiningAgency = Boolean(user.licenseNumber && user.agentId);
-
-            if (isJoiningAgency && licenseData.agencyInvitationCode) {
-                // Existing agent joining an agency
-                const response = await joinAgencyByInvitationCode(
-                    licenseData.agencyInvitationCode,
-                    licenseData.selectedAgencyId
-                );
-
-                // Update user with complete agency info from backend
-                const updatedUser = response.user;
-
-                // Update context immediately
-                dispatch({ type: 'UPDATE_USER', payload: updatedUser });
-                setFormData(updatedUser);
-                setIsLicenseModalOpen(false);
-                setIsSaved(true);
-
-                // Show success message (join vs switch)
-                const wasIndependent = !user.agencyName || user.agencyName === 'Independent Agent';
-                const actionText = wasIndependent ? 'joined' : 'switched to';
-                alert(`✅ Successfully ${actionText} ${updatedUser.agencyName}!\n\n🏢 You are now affiliated with ${response.agency.name}.\n🎯 Total Agents: ${response.agency.totalAgents}\n\n👉 Refreshing to show latest data...`);
-
-                // Force complete page refresh to sync all data (profile, DB, agents list, agency pages)
-                setTimeout(() => {
-                    window.location.reload();
-                }, 500);
-            } else {
-                // New agent registration
-                const roleToSwitch = pendingRole || formData.role;
-                const updatedUser = await switchRole(roleToSwitch, licenseData);
-                dispatch({ type: 'UPDATE_USER', payload: updatedUser });
-                setFormData(updatedUser);
-                setIsLicenseModalOpen(false);
-                setPendingRole(null);
-                setIsSaved(true);
-
-                // Show success message with agency info
-                const agencyInfo = updatedUser.agencyName || 'Independent Agent';
-                alert(`✅ Successfully registered as an agent!\n\n📋 License: ${updatedUser.licenseNumber}\n🏢 Agency: ${agencyInfo}\n\n👉 You can now view your profile in the Agents page.`);
-
-                // Navigate to agents page
-                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agents' });
-
-                setTimeout(() => setIsSaved(false), 2000);
-            }
-        } catch (err: any) {
-            throw err; // Let the modal handle the error
+            const roleToSwitch = pendingRole || formData.role;
+            const updatedUser = await switchRole(roleToSwitch, licenseData);
+            dispatch({ type: 'UPDATE_USER', payload: updatedUser });
+            setFormData(updatedUser);
+            setIsLicenseModalOpen(false);
+            setPendingRole(null);
+            setIsSaved(true);
+            setTimeout(() => setIsSaved(false), 2000);
+        } catch (err) {
+            throw err;
         } finally {
             setIsSaving(false);
         }
@@ -197,7 +180,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
             setIsSaved(true);
             setTimeout(() => setIsSaved(false), 2000);
         } catch (error) {
-            console.error("Failed to update user", error);
+            // Silent error handling
         } finally {
             setIsSaving(false);
         }
@@ -242,8 +225,8 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
             setError('');
             alert(`✅ Successfully joined ${data.agency.name}!`);
             setTimeout(() => setIsSaved(false), 2000);
-        } catch (err: any) {
-            setError(err.message || 'Failed to join agency');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to join agency');
         } finally {
             setIsJoiningAgency(false);
         }
@@ -253,13 +236,11 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Validate file type
         if (!file.type.startsWith('image/')) {
             setError('Please select an image file');
             return;
         }
 
-        // Validate file size (5MB)
         if (file.size > 5 * 1024 * 1024) {
             setError('Image size must be less than 5MB');
             return;
@@ -269,14 +250,12 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
         setError('');
 
         try {
-            // Create preview
             const reader = new FileReader();
             reader.onloadend = () => {
                 setAvatarPreview(reader.result as string);
             };
             reader.readAsDataURL(file);
 
-            // Upload to server
             const formData = new FormData();
             formData.append('avatar', file);
 
@@ -294,7 +273,6 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 throw new Error(data.message || 'Failed to upload avatar');
             }
 
-            // Update user in context
             dispatch({ type: 'UPDATE_USER', payload: data.user });
             setFormData(data.user);
             setIsSaved(true);
@@ -302,8 +280,8 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 setIsSaved(false);
                 setAvatarPreview(null);
             }, 2000);
-        } catch (err: any) {
-            setError(err.message || 'Failed to upload avatar');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to upload avatar');
             setAvatarPreview(null);
         } finally {
             setIsUploadingAvatar(false);
@@ -395,25 +373,11 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 <fieldset className="space-y-6 animate-fade-in border-t pt-8">
                      <div className="flex items-center justify-between -mt-2 mb-4">
                         <legend className="text-lg font-semibold text-neutral-700">Agent Information</legend>
-                        <div className="flex items-center gap-2">
-                            {user.licenseVerified && (
-                                <span className="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-full font-medium">
-                                    ✓ License Verified
-                                </span>
-                            )}
-                            {!user.licenseVerified && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setPendingRole(UserRole.AGENT);
-                                        setIsLicenseModalOpen(true);
-                                    }}
-                                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                                >
-                                    Join an Existing Agency
-                                </button>
-                            )}
-                        </div>
+                        {user.licenseVerified && (
+                            <span className="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-full font-medium">
+                                ✓ License Verified
+                            </span>
+                        )}
                      </div>
 
                      {user.licenseVerified && (
@@ -529,7 +493,7 @@ const MyAccountPage: React.FC = () => {
                     dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
                 }
             } catch (error) {
-                console.error('Error fetching agency:', error);
+                // Silent error handling
             }
         }
     };

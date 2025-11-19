@@ -800,6 +800,31 @@ export const cancelJoinRequest = async (requestId: string): Promise<any> => {
   });
 };
 
+// --- AGENCY ADMIN MANAGEMENT API ---
+
+export const addAgencyAdmin = async (agencyId: string, userId: string): Promise<any> => {
+  return await apiRequest(`/agencies/${agencyId}/admins`, {
+    method: 'POST',
+    body: { userId },
+    requiresAuth: true,
+  });
+};
+
+export const removeAgencyAdmin = async (agencyId: string, userId: string): Promise<any> => {
+  return await apiRequest(`/agencies/${agencyId}/admins/${userId}`, {
+    method: 'DELETE',
+    requiresAuth: true,
+  });
+};
+
+export const verifyInvitationCode = async (agencyId: string, code: string): Promise<{valid: boolean; message?: string}> => {
+  return await apiRequest(`/agencies/${agencyId}/verify-code`, {
+    method: 'POST',
+    body: { code },
+    requiresAuth: true,
+  });
+};
+
 // --- PROMOTION API ---
 
 export const promoteProperty = async (propertyId: string): Promise<any> => {

@@ -3,27 +3,52 @@ import { getFeaturedAgencies } from '../services/apiService';
 import { XMarkIcon, BuildingOfficeIcon } from '../constants';
 import { useAppContext } from '../context/AppContext';
 
+const AD_VIEW_THRESHOLD = 3; // Trigger gamification after 3 ad views
+const AD_VIEW_STORAGE_KEY = 'balkan_estate_ad_views';
+
+interface FeaturedAgency {
+  _id: string;
+  slug?: string;
+  name: string;
+  description?: string;
+  logo?: string;
+  totalProperties: number;
+  totalAgents: number;
+  city?: string;
+}
+
 interface AdvertisementBannerProps {
   position?: 'top' | 'bottom' | 'sidebar';
 }
 
 const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 'top' }) => {
   const { dispatch } = useAppContext();
-  const [currentAd, setCurrentAd] = useState<any>(null);
-  const [ads, setAds] = useState<any[]>([]);
+  const [currentAd, setCurrentAd] = useState<FeaturedAgency | null>(null);
+  const [ads, setAds] = useState<FeaturedAgency[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDismissed, setIsDismissed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [adViewCount, setAdViewCount] = useState(0);
 
   useEffect(() => {
     fetchAds();
+    // Load ad view count from localStorage
+    const savedCount = localStorage.getItem(AD_VIEW_STORAGE_KEY);
+    if (savedCount) {
+      setAdViewCount(parseInt(savedCount, 10));
+    }
   }, []);
 
   useEffect(() => {
     if (ads.length > 1) {
       const interval = setInterval(() => {
-        setCurrentIndex((prev) => (prev + 1) % ads.length);
+        setCurrentIndex((prev) => {
+          const nextIndex = (prev + 1) % ads.length;
+          // Track ad view on rotation
+          trackAdView();
+          return nextIndex;
+        });
       }, 10000); // Rotate every 10 seconds
 
       return () => clearInterval(interval);
@@ -36,12 +61,28 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
     }
   }, [currentIndex, ads]);
 
+  const trackAdView = () => {
+    const newCount = adViewCount + 1;
+    setAdViewCount(newCount);
+    localStorage.setItem(AD_VIEW_STORAGE_KEY, newCount.toString());
+
+    // Trigger gamification after threshold reached
+    if (newCount === AD_VIEW_THRESHOLD) {
+      console.log('🎮 Ad view threshold reached! Triggering gamification...');
+      triggerGamification();
+    }
+  };
+
+  const triggerGamification = () => {
+    // Dispatch action to show gamification modal
+    dispatch({ type: 'TOGGLE_DISCOUNT_GAME', payload: true });
+  };
+
   const fetchAds = async () => {
     try {
       setIsLoading(true);
       setError(null);
       const response = await getFeaturedAgencies(5);
-      console.log('Featured agencies response:', response);
 
       if (response.agencies && response.agencies.length > 0) {
         setAds(response.agencies);
@@ -49,9 +90,8 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
       } else {
         setError('No featured agencies available. Please run: npm run seed:agencies');
       }
-    } catch (error: any) {
-      console.error('Failed to fetch advertisements:', error);
-      setError(error.message || 'Failed to load agencies');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to load agencies');
     } finally {
       setIsLoading(false);
     }
@@ -62,10 +102,10 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
       // Use slug if available, otherwise fall back to _id
       let identifier = currentAd.slug || currentAd._id;
 
-      // Normalize slug: remove country prefix with comma if present
-      // Handles old format: "serbia,belgrade-premium-properties" -> "belgrade-premium-properties"
+      // Convert old comma format to new forward slash format for backward compatibility
+      // Handles old format: "serbia,belgrade-premium-properties" -> "serbia/belgrade-premium-properties"
       if (identifier.includes(',')) {
-        identifier = identifier.split(',')[1];
+        identifier = identifier.replace(',', '/');
       }
 
       dispatch({ type: 'SET_SELECTED_AGENCY', payload: identifier });
@@ -119,6 +159,7 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
         <button
           onClick={() => setIsDismissed(true)}
           className="absolute top-2 right-2 text-white/80 hover:text-white z-10"
+          aria-label="Dismiss advertisement"
         >
           <XMarkIcon className="w-4 h-4" />
         </button>
@@ -170,6 +211,7 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
       <button
         onClick={() => setIsDismissed(true)}
         className="absolute top-2 right-2 md:top-3 md:right-4 text-white/80 hover:text-white z-10"
+        aria-label="Dismiss advertisement"
       >
         <XMarkIcon className="w-5 h-5" />
       </button>

@@ -21,6 +21,8 @@ interface PaymentWindowProps {
   onSuccess: (paymentIntentId: string) => void;
   onError: (error: string) => void;
   discountPercent?: number;
+  productId?: string;
+  onEnterpriseSelected?: () => void; // Callback when enterprise plan needs agency creation
 }
 
 const PaymentWindow: React.FC<PaymentWindowProps> = ({
@@ -35,16 +37,39 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
   onSuccess,
   onError,
   discountPercent = 0,
+  productId,
+  onEnterpriseSelected,
 }) => {
   const { state } = useAppContext();
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [discountCode, setDiscountCode] = useState('');
+  const [validatingCode, setValidatingCode] = useState(false);
+  const [codeValidation, setCodeValidation] = useState<{
+    valid: boolean;
+    message?: string;
+    discountAmount?: number;
+    finalPrice?: number;
+  } | null>(null);
 
-  const finalPrice = discountPercent > 0
-    ? planPrice * (1 - discountPercent / 100)
-    : planPrice;
+  const [appliedDiscountCode, setAppliedDiscountCode] = useState<string | null>(null);
 
-  const savings = planPrice - finalPrice;
+  // Calculate price with discounts
+  let finalPrice = planPrice;
+  let totalDiscountPercent = discountPercent;
+  let savings = 0;
+
+  // Apply percentage discount first
+  if (discountPercent > 0) {
+    finalPrice = planPrice * (1 - discountPercent / 100);
+    savings = planPrice - finalPrice;
+  }
+
+  // Apply discount code if validated
+  if (codeValidation?.valid && codeValidation.discountAmount) {
+    finalPrice = codeValidation.finalPrice || finalPrice;
+    savings = planPrice - finalPrice;
+  }
 
   useEffect(() => {
     if (isOpen) {
@@ -58,8 +83,65 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
     } else {
       // Reset state when modal closes
       setShowSuccess(false);
+      setDiscountCode('');
+      setCodeValidation(null);
+      setAppliedDiscountCode(null);
     }
   }, [isOpen, state.isAuthenticated, onError, onClose]);
+
+  const handleValidateDiscountCode = async () => {
+    if (!discountCode.trim()) {
+      setCodeValidation({ valid: false, message: 'Please enter a discount code' });
+      return;
+    }
+
+    setValidatingCode(true);
+    setCodeValidation(null);
+
+    try {
+      const response = await fetch('http://localhost:5001/api/discount-codes/validate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code: discountCode.trim(),
+          planId: productId,
+          purchaseAmount: planPrice,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.valid) {
+        setCodeValidation({
+          valid: true,
+          message: `Discount applied: Save €${data.discount.discountAmount.toFixed(2)}!`,
+          discountAmount: data.discount.discountAmount,
+          finalPrice: data.discount.finalPrice,
+        });
+        setAppliedDiscountCode(discountCode.trim());
+      } else {
+        setCodeValidation({
+          valid: false,
+          message: data.message || 'Invalid discount code',
+        });
+      }
+    } catch (error) {
+      setCodeValidation({
+        valid: false,
+        message: 'Failed to validate discount code',
+      });
+    } finally {
+      setValidatingCode(false);
+    }
+  };
+
+  const handleRemoveDiscountCode = () => {
+    setDiscountCode('');
+    setCodeValidation(null);
+    setAppliedDiscountCode(null);
+  };
 
   const handlePayment = async () => {
     setIsProcessing(true);
@@ -72,22 +154,26 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
         throw new Error('Please log in to complete your purchase');
       }
 
-      // Determine product ID based on plan name and interval
-      let productId = 'buyer_pro_monthly';
-      if (planName.toLowerCase().includes('buyer') && planInterval === 'month') {
-        productId = 'buyer_pro_monthly';
-      } else if (planName.toLowerCase().includes('buyer') && planInterval === 'year') {
-        productId = 'buyer_pro_yearly';
-      } else if (planName.toLowerCase().includes('seller') && planInterval === 'month') {
-        productId = 'seller_premium_monthly';
-      } else if (planName.toLowerCase().includes('seller') && planInterval === 'year') {
-        productId = 'seller_premium_yearly';
-      } else if (planName.toLowerCase().includes('agent') && planInterval === 'month') {
-        productId = 'agent_pro_monthly';
-      } else if (planName.toLowerCase().includes('agent') && planInterval === 'year') {
-        productId = 'agent_pro_yearly';
-      } else if (planName.toLowerCase().includes('enterprise')) {
-        productId = 'enterprise_tier_' + Date.now();
+      // Determine product ID if not provided
+      let finalProductId = productId;
+      if (!finalProductId) {
+        if (planName.toLowerCase().includes('buyer') && planInterval === 'month') {
+          finalProductId = 'buyer_pro_monthly';
+        } else if (planName.toLowerCase().includes('buyer') && planInterval === 'year') {
+          finalProductId = 'buyer_pro_yearly';
+        } else if (planName.toLowerCase().includes('seller') && planInterval === 'month') {
+          finalProductId = 'seller_premium_monthly';
+        } else if (planName.toLowerCase().includes('seller') && planInterval === 'year') {
+          finalProductId = 'seller_premium_yearly';
+        } else if (planName.toLowerCase().includes('agent') && planInterval === 'month') {
+          finalProductId = 'agent_pro_monthly';
+        } else if (planName.toLowerCase().includes('agent') && planInterval === 'year') {
+          finalProductId = 'agent_pro_yearly';
+        } else if (planName.toLowerCase().includes('enterprise')) {
+          finalProductId = 'enterprise_tier_' + Date.now();
+        } else {
+          finalProductId = 'buyer_pro_monthly';
+        }
       }
 
       // Create checkout session with backend
@@ -101,7 +187,8 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
           planName,
           planInterval,
           amount: finalPrice,
-          productId,
+          productId: finalProductId,
+          discountCode: appliedDiscountCode || undefined,
         }),
       });
 
@@ -127,9 +214,8 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
         throw new Error('No payment URL received');
       }
 
-    } catch (error: any) {
-      console.error('Payment error:', error);
-      onError(error.message || 'Failed to initialize payment');
+    } catch (error) {
+      onError(error instanceof Error ? error.message : 'Failed to initialize payment');
       setIsProcessing(false);
     }
   };
@@ -164,20 +250,71 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
                   <p className="text-sm text-neutral-500 capitalize">Billed {planInterval}ly</p>
                 </div>
                 <div className="text-right">
-                  {discountPercent > 0 && (
+                  {(discountPercent > 0 || codeValidation?.valid) && (
                     <>
                       <p className="text-sm text-neutral-400 line-through">€{planPrice.toFixed(2)}</p>
                       <p className="text-2xl font-bold text-primary">€{finalPrice.toFixed(2)}</p>
                       <p className="text-xs text-green-600 font-semibold">Save €{savings.toFixed(2)}</p>
                     </>
                   )}
-                  {discountPercent === 0 && (
+                  {discountPercent === 0 && !codeValidation?.valid && (
                     <p className="text-2xl font-bold text-primary">€{finalPrice.toFixed(2)}</p>
                   )}
                 </div>
               </div>
 
-              {discountPercent > 0 && (
+              {/* Discount Code Input */}
+              {!appliedDiscountCode && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Have a discount code?
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={discountCode}
+                      onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                      placeholder="Enter code"
+                      className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                      onKeyPress={(e) => e.key === 'Enter' && handleValidateDiscountCode()}
+                      disabled={validatingCode}
+                    />
+                    <button
+                      onClick={handleValidateDiscountCode}
+                      disabled={validatingCode || !discountCode.trim()}
+                      className="px-4 py-2 bg-primary text-white rounded-lg font-medium text-sm hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {validatingCode ? 'Checking...' : 'Apply'}
+                    </button>
+                  </div>
+                  {codeValidation && !codeValidation.valid && (
+                    <p className="text-xs text-red-600 mt-1">{codeValidation.message}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Applied Discount Code */}
+              {appliedDiscountCode && codeValidation?.valid && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm text-green-700 font-medium">
+                        Code "{appliedDiscountCode}" applied!
+                      </p>
+                      <p className="text-xs text-green-600">{codeValidation.message}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleRemoveDiscountCode}
+                    className="text-green-700 hover:text-green-900 text-xs font-medium"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+
+              {discountPercent > 0 && !appliedDiscountCode && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
                   <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
                   <p className="text-sm text-green-700 font-medium">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { Property } from '../../types';
 import { MapPinIcon, BedIcon, BathIcon, SqftIcon, UserCircleIcon, ScaleIcon, LivingRoomIcon, BuildingOfficeIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
@@ -18,23 +18,23 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
   const isNew = property.createdAt && (Date.now() - property.createdAt < 3 * 24 * 60 * 60 * 1000);
   const isSold = property.status === 'sold';
 
-  const handleCardClick = (e: React.MouseEvent) => {
+  const handleCardClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     dispatch({ type: 'SET_SELECTED_PROPERTY', payload: property.id });
     // Update browser history to enable back button navigation (web & mobile)
     window.history.pushState({ propertyId: property.id }, '', `/property/${property.id}`);
-  };
+  }, [dispatch, property.id]);
 
-  const handleFavoriteClick = (e: React.MouseEvent) => {
+  const handleFavoriteClick = useCallback((e: React.MouseEvent) => {
       e.stopPropagation(); // Prevent card click
       if (!state.isAuthenticated && !state.user) {
           dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
       } else {
           dispatch({ type: 'TOGGLE_SAVED_HOME', payload: property });
       }
-  };
+  }, [state.isAuthenticated, state.user, dispatch, property]);
 
-  const handleCompareClick = (e: React.MouseEvent) => {
+  const handleCompareClick = useCallback((e: React.MouseEvent) => {
       e.stopPropagation();
       if (isInComparison) {
           dispatch({ type: 'REMOVE_FROM_COMPARISON', payload: property.id });
@@ -45,7 +45,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
               showToast?.("You can compare a maximum of 5 properties.", 'error');
           }
       }
-  };
+  }, [isInComparison, dispatch, property.id, state.comparisonList.length, showToast]);
 
   return (
     <div
@@ -139,4 +139,4 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
   );
 };
 
-export default PropertyCard;
+export default memo(PropertyCard);

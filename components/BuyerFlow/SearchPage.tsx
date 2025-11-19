@@ -45,7 +45,7 @@ const MobileFilters: React.FC<{
     <div className="bg-white h-full w-full flex flex-col">
         <div className="flex-shrink-0 p-4 border-b border-neutral-200 flex justify-between items-center">
             <h2 className="text-lg font-bold text-neutral-800">Filters</h2>
-            <button onClick={onClose} className="p-2 text-neutral-500 hover:text-neutral-800">
+            <button onClick={onClose} className="p-2 text-neutral-500 hover:text-neutral-800" aria-label="Close filters">
                 <XMarkIcon className="w-6 h-6" />
             </button>
         </div>
@@ -193,7 +193,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             const parsed = JSON.parse(mapBoundsJSON);
             return L.latLngBounds(parsed._southWest, parsed._northEast);
         } catch (e) {
-            console.error("Failed to parse mapBoundsJSON", e);
             return null;
         }
     }, [mapBoundsJSON]);
@@ -204,7 +203,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             const parsed = JSON.parse(drawnBoundsJSON);
             return L.latLngBounds(parsed._southWest, parsed._northEast);
         } catch (e) {
-            console.error("Failed to parse drawnBoundsJSON", e);
             return null;
         }
     }, [drawnBoundsJSON]);
@@ -252,7 +250,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                     },
                     (error) => {
                         if (highAccuracy && error.code === error.POSITION_UNAVAILABLE) {
-                            console.warn("High accuracy geolocation failed, trying low accuracy.");
                             getLocation(false);
                         } else {
                             handleGeoError(error);

@@ -8,6 +8,13 @@ import { geocodeAgency } from '../services/geocodingService';
 import cloudinary from '../config/cloudinary';
 import { Readable } from 'stream';
 
+// Helper function to generate unique Agent ID
+function generateAgentId(): string {
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+  return `AGT-${timestamp}-${randomStr}`;
+}
+
 // @desc    Create agency profile (Enterprise tier only)
 // @route   POST /api/agencies
 // @access  Private
@@ -29,11 +36,10 @@ export const createAgency = async (
       return;
     }
 
-    // Check if user has enterprise tier
+    // Check if user has Enterprise subscription
     if (user.subscriptionPlan !== 'enterprise') {
       res.status(403).json({
-        message: 'Agency profiles are only available for Enterprise tier subscribers.',
-        code: 'ENTERPRISE_TIER_REQUIRED',
+        message: 'Agency profiles are only available for Enterprise tier subscribers. Please upgrade your plan to create an agency.',
       });
       return;
     }
@@ -56,7 +62,10 @@ export const createAgency = async (
     const agencyData = {
       ...req.body,
       ownerId: user._id,
-      isFeatured: true, // Enterprise tier gets featured by default
+      agents: [user._id], // Add the owner as the first agent
+      admins: [user._id], // Add the owner as admin
+      isFeatured: req.body.isFeatured || false, // Can be set manually or defaults to false
+      totalAgents: 1, // Initialize with 1 agent (the owner)
       // Add geocoded coordinates (will be undefined if geocoding failed)
       ...(coordinates.lat && coordinates.lng && {
         lat: coordinates.lat,
@@ -66,7 +75,9 @@ export const createAgency = async (
 
     console.log(`📍 Creating agency with coordinates:`, coordinates.lat ? `${coordinates.lat}, ${coordinates.lng}` : 'No coordinates');
 
-    const agency = await Agency.create(agencyData);
+    // Use constructor + save() pattern to allow pre-save hook to generate slug and invitationCode
+    const agency = new Agency(agencyData);
+    await agency.save();
 
     // Add owner to agents array
     agency.agents.push(user._id as mongoose.Types.ObjectId);
@@ -76,9 +87,47 @@ export const createAgency = async (
     // Update user with agency reference
     user.agencyId = agency._id as mongoose.Types.ObjectId;
     user.isEnterpriseTier = true;
+    user.agencyName = agency.name;
+
+    // If user is not already an agent, change their role to agent
+    if (user.role !== 'agent') {
+      user.role = 'agent';
+    }
+
     await user.save();
 
-    res.status(201).json({ agency });
+    // Create or update Agent profile for the agency owner
+    const licenseNumber = req.body.licenseNumber || `LIC-${Date.now()}`;
+    let agentProfile = await Agent.findOne({ userId: user._id });
+
+    if (agentProfile) {
+      // Update existing agent profile with new agency
+      agentProfile.agencyId = agency._id as mongoose.Types.ObjectId;
+      agentProfile.agencyName = agency.name;
+      agentProfile.licenseNumber = licenseNumber;
+      await agentProfile.save();
+      console.log(`✅ Updated existing agent profile for ${user.email}`);
+    } else {
+      // Create new agent profile
+      const agentId = generateAgentId();
+      agentProfile = await Agent.create({
+        userId: user._id,
+        agencyId: agency._id,
+        agencyName: agency.name,
+        agentId,
+        licenseNumber,
+        licenseVerified: false,
+      });
+      console.log(`✅ Created new agent profile for ${user.email} with ID: ${agentId}`);
+    }
+
+    // Update user with agent ID
+    user.agentId = agentProfile.agentId;
+    await user.save();
+
+    console.log(`✅ Agency created successfully. User ${user.email} is now admin of agency ${agency.name}`);
+
+    res.status(201).json({ agency, agent: agentProfile });
   } catch (error: any) {
     console.error('Create agency error:', error);
     res.status(500).json({ message: 'Error creating agency', error: error.message });
@@ -134,6 +183,7 @@ export const getAgencies = async (
     const agencies = await Agency.find(filter)
       .populate('ownerId', 'name email phone avatarUrl')
       .populate('agents', 'name email phone avatarUrl role agencyName')
+      .populate('admins', 'name email phone avatarUrl')
       .sort({ isFeatured: -1, adRotationOrder: 1, createdAt: -1 })
       .skip(skip)
       .limit(limitNum)
@@ -164,50 +214,70 @@ export const getAgencies = async (
 };
 
 // @desc    Get single agency by ID or slug
-// @route   GET /api/agencies/:idOrSlug
+// @route   GET /api/agencies/:country/:name OR GET /api/agencies/:idOrSlug
 // @access  Public
 export const getAgency = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const { idOrSlug } = req.params;
+    const { country, name, idOrSlug } = req.params;
 
-    if (!idOrSlug) {
-      console.error('❌ getAgency: No idOrSlug parameter provided');
+    // Construct slug from country/name or use idOrSlug
+    let identifier = idOrSlug;
+    if (country && name) {
+      identifier = `${country}/${name}`;
+      console.log(`🔍 Looking up agency by country/name: ${identifier}`);
+    } else if (idOrSlug) {
+      console.log(`🔍 Looking up agency by idOrSlug: ${idOrSlug}`);
+    }
+
+    if (!identifier) {
+      console.error('❌ getAgency: No identifier provided');
       res.status(400).json({ message: 'Agency ID or slug is required' });
       return;
     }
-
-    console.log(`🔍 Looking up agency by: ${idOrSlug}`);
 
     // Try to find by ID first, then by slug
     let agency;
     let lookupMethod = '';
 
-    if (mongoose.Types.ObjectId.isValid(idOrSlug)) {
+    if (mongoose.Types.ObjectId.isValid(identifier)) {
       lookupMethod = 'ID';
-      console.log(`🔑 Attempting lookup by ObjectId: ${idOrSlug}`);
-      agency = await Agency.findById(idOrSlug)
+      console.log(`🔑 Attempting lookup by ObjectId: ${identifier}`);
+      agency = await Agency.findById(identifier)
         .populate('ownerId', 'name email phone avatarUrl')
-        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating');
+        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating')
+        .populate('admins', 'name email phone avatarUrl');
     }
 
     if (!agency) {
       lookupMethod = 'slug';
-      const slugLower = idOrSlug.toLowerCase();
+      const slugLower = identifier.toLowerCase();
       console.log(`🏷️  Attempting lookup by slug: ${slugLower}`);
       agency = await Agency.findOne({ slug: slugLower })
         .populate('ownerId', 'name email phone avatarUrl')
-        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating');
+        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating')
+        .populate('admins', 'name email phone avatarUrl');
+    }
+
+    // If not found and slug contains forward slash, try converting to comma format for backward compatibility
+    if (!agency && identifier.includes('/')) {
+      lookupMethod = 'slug (legacy format)';
+      const legacySlug = identifier.toLowerCase().replace('/', ',');
+      console.log(`🏷️  Attempting lookup by legacy slug format: ${legacySlug}`);
+      agency = await Agency.findOne({ slug: legacySlug })
+        .populate('ownerId', 'name email phone avatarUrl')
+        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating')
+        .populate('admins', 'name email phone avatarUrl');
     }
 
     if (!agency) {
-      console.error(`❌ Agency not found for identifier: ${idOrSlug}`);
+      console.error(`❌ Agency not found for identifier: ${identifier}`);
       res.status(404).json({
         message: 'Agency not found',
-        searchedFor: idOrSlug,
-        attemptedMethods: ['ObjectId', 'slug']
+        searchedFor: identifier,
+        attemptedMethods: ['ObjectId', 'slug', 'legacy slug format']
       });
       return;
     }
@@ -217,6 +287,68 @@ export const getAgency = async (
     // Validate that populated fields were successful
     if (!agency.ownerId) {
       console.warn(`⚠️  Agency owner not found or failed to populate for agency: ${agency._id}`);
+    }
+
+    // Auto-add admin as member if they're viewing the agency and not already a member
+    if (req.user) {
+      const currentUser = req.user as IUser;
+      const userId = String(currentUser._id);
+      const agencyAdmins = agency.admins?.map((id: any) => String(id)) || [];
+      const agencyAgents = agency.agents.map((agent: any) => String(agent._id || agent));
+
+      // Check if user is an admin but not in the agents array
+      if (agencyAdmins.includes(userId) && !agencyAgents.includes(userId)) {
+        console.log(`👤 Auto-adding admin ${currentUser.email} to agency members`);
+
+        // Add user to agents array
+        agency.agents.push(new mongoose.Types.ObjectId(userId));
+        agency.totalAgents = (agency.totalAgents || 0) + 1;
+        await agency.save();
+
+        // Update user's agency info if not already set
+        const user = await User.findById(userId);
+        if (user) {
+          if (!user.agencyId) {
+            user.agencyId = new mongoose.Types.ObjectId(String(agency._id));
+            user.agencyName = agency.name;
+            if (user.role !== 'agent') {
+              user.role = 'agent';
+            }
+          }
+
+          // Create or update Agent profile when user joins agency
+          let agentProfile = await Agent.findOne({ userId: user._id });
+          const licenseNumber = agentProfile?.licenseNumber || `LIC-${Date.now()}`;
+
+          if (agentProfile) {
+            // Update existing agent profile with new agency
+            agentProfile.agencyId = agency._id as mongoose.Types.ObjectId;
+            agentProfile.agencyName = agency.name;
+            await agentProfile.save();
+            console.log(`✅ Updated existing agent profile for ${user.email}`);
+          } else {
+            // Create new agent profile
+            const agentId = generateAgentId();
+            agentProfile = await Agent.create({
+              userId: user._id,
+              agencyId: agency._id,
+              agencyName: agency.name,
+              agentId,
+              licenseNumber,
+              licenseVerified: false,
+            });
+            console.log(`✅ Created new agent profile for ${user.email} with ID: ${agentId}`);
+          }
+
+          // Update user with agent ID
+          user.agentId = agentProfile.agentId;
+          await user.save();
+          console.log(`✅ User ${currentUser.email} profile updated with agency info`);
+        }
+
+        // Re-populate agents to include the newly added admin
+        await agency.populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating');
+      }
     }
 
     // Get agency's properties with error handling
@@ -759,5 +891,157 @@ export const joinAgencyByInvitationCode = async (
   } catch (error: any) {
     console.error('Join agency by invitation code error:', error);
     res.status(500).json({ message: 'Error joining agency', error: error.message });
+  }
+};
+
+// @desc    Verify invitation code for an agency
+// @route   POST /api/agencies/:id/verify-code
+// @access  Private
+export const verifyInvitationCode = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { code } = req.body;
+
+    if (!code) {
+      res.status(400).json({ valid: false, message: 'Invitation code is required' });
+      return;
+    }
+
+    // Find the agency by ID
+    const agency = await Agency.findById(id);
+
+    if (!agency) {
+      res.status(404).json({ valid: false, message: 'Agency not found' });
+      return;
+    }
+
+    // Compare the invitation codes (case-insensitive)
+    const isValid = agency.invitationCode &&
+                    agency.invitationCode.toUpperCase() === code.toUpperCase();
+
+    if (isValid) {
+      console.log(`✅ Valid invitation code for agency: ${agency.name}`);
+      res.json({ valid: true, message: 'Invitation code is valid' });
+    } else {
+      console.log(`❌ Invalid invitation code for agency: ${agency.name}`);
+      res.json({ valid: false, message: 'Invalid invitation code' });
+    }
+  } catch (error: any) {
+    console.error('Verify invitation code error:', error);
+    res.status(500).json({ valid: false, message: 'Error verifying invitation code', error: error.message });
+  }
+};
+
+// @desc    Add admin to agency
+// @route   POST /api/agencies/:id/admins
+// @access  Private (Owner only)
+export const addAgencyAdmin = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const { id } = req.params;
+    const { userId } = req.body;
+    const currentUser = req.user as IUser;
+
+    if (!userId) {
+      res.status(400).json({ message: 'User ID is required' });
+      return;
+    }
+
+    // Find the agency
+    const agency = await Agency.findById(id);
+
+    if (!agency) {
+      res.status(404).json({ message: 'Agency not found' });
+      return;
+    }
+
+    // Check if current user is the owner
+    if (String(agency.ownerId) !== String(currentUser._id)) {
+      res.status(403).json({ message: 'Only the agency owner can add admins' });
+      return;
+    }
+
+    // Check if user is already an admin
+    if (agency.admins && agency.admins.some(adminId => String(adminId) === String(userId))) {
+      res.status(400).json({ message: 'User is already an admin' });
+      return;
+    }
+
+    // Check if user is an agent in this agency
+    if (!agency.agents.some(agentId => String(agentId) === String(userId))) {
+      res.status(400).json({ message: 'User must be an agent in this agency to become an admin' });
+      return;
+    }
+
+    // Add user to admins array
+    if (!agency.admins) {
+      agency.admins = [];
+    }
+    agency.admins.push(userId as unknown as mongoose.Types.ObjectId);
+    await agency.save();
+
+    console.log(`✅ Added admin to agency: ${agency.name}`);
+    res.json({ message: 'Admin added successfully', agency });
+  } catch (error: any) {
+    console.error('Add agency admin error:', error);
+    res.status(500).json({ message: 'Error adding admin', error: error.message });
+  }
+};
+
+// @desc    Remove admin from agency
+// @route   DELETE /api/agencies/:id/admins/:userId
+// @access  Private (Owner only)
+export const removeAgencyAdmin = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const { id, userId } = req.params;
+    const currentUser = req.user as IUser;
+
+    // Find the agency
+    const agency = await Agency.findById(id);
+
+    if (!agency) {
+      res.status(404).json({ message: 'Agency not found' });
+      return;
+    }
+
+    // Check if current user is the owner
+    if (String(agency.ownerId) !== String(currentUser._id)) {
+      res.status(403).json({ message: 'Only the agency owner can remove admins' });
+      return;
+    }
+
+    // Check if user is an admin
+    if (!agency.admins || !agency.admins.some(adminId => String(adminId) === String(userId))) {
+      res.status(400).json({ message: 'User is not an admin' });
+      return;
+    }
+
+    // Remove user from admins array
+    agency.admins = agency.admins.filter(adminId => String(adminId) !== String(userId));
+    await agency.save();
+
+    console.log(`✅ Removed admin from agency: ${agency.name}`);
+    res.json({ message: 'Admin removed successfully', agency });
+  } catch (error: any) {
+    console.error('Remove agency admin error:', error);
+    res.status(500).json({ message: 'Error removing admin', error: error.message });
   }
 };

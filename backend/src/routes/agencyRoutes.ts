@@ -11,6 +11,9 @@ import {
   uploadAgencyLogo,
   uploadAgencyCover,
   joinAgencyByInvitationCode,
+  verifyInvitationCode,
+  addAgencyAdmin,
+  removeAgencyAdmin,
 } from '../controllers/agencyController';
 import { protect } from '../middleware/auth';
 
@@ -35,7 +38,8 @@ const upload = multer({
 // Public routes
 router.get('/', getAgencies);
 router.get('/featured/rotation', getFeaturedAgencies);
-router.get('/:idOrSlug', getAgency);
+router.get('/:country/:name', getAgency); // Format: /agencies/:country/:name (e.g., /agencies/albania/zano-real-estate)
+router.get('/:idOrSlug', getAgency); // Fallback for ID or single-segment slug lookups
 
 // Protected routes
 router.post('/', protect, createAgency);
@@ -43,6 +47,11 @@ router.put('/:id', protect, updateAgency);
 router.post('/:id/agents', protect, addAgentToAgency);
 router.delete('/:id/agents/:agentId', protect, removeAgentFromAgency);
 router.post('/join-by-code', protect, joinAgencyByInvitationCode);
+
+// Admin management routes
+router.post('/:id/verify-code', protect, verifyInvitationCode);
+router.post('/:id/admins', protect, addAgencyAdmin);
+router.delete('/:id/admins/:userId', protect, removeAgencyAdmin);
 
 // Image upload routes
 router.post('/:id/upload-logo', protect, upload.single('logo'), uploadAgencyLogo);

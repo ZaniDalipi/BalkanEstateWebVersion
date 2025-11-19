@@ -10,6 +10,7 @@
     "seed:products": "ts-node src/scripts/seedProducts.ts",
     "seed:agencies": "ts-node src/scripts/seedAgencies.ts",
     "test:agencies": "ts-node src/scripts/testAgencyAccess.ts",
+    "sync:agents": "ts-node src/scripts/syncAgents.ts",
     "cleanup:sold": "ts-node src/scripts/archiveSoldProperties.ts",
     "cleanup:conversations": "ts-node src/scripts/cleanupConversations.ts",
     "remove:agents": "ts-node src/scripts/removeAllAgents.ts",
