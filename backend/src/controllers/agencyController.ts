@@ -80,7 +80,7 @@ export const createAgency = async (
     await agency.save();
 
     // Add owner to agents array
-    agency.agents.push(user._id as mongoose.Types.ObjectId);
+    user.agencyId = agency._id as unknown as mongoose.Types.ObjectId;
     agency.totalAgents = 1;
     await agency.save();
 
