@@ -283,6 +283,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         dispatch({ type: 'USER_DATA_LOADING' });
         const userData = await api.getMyData();
         dispatch({ type: 'USER_DATA_SUCCESS', payload: userData });
+
+        // Connect to WebSocket with user ID
+        const token = localStorage.getItem('balkan_estate_token');
+        if (token) {
+          socketService.connect(token, user.id);
+        }
     }
   }, []);
 
@@ -296,7 +302,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Connect to WebSocket for real-time chat
     const token = localStorage.getItem('balkan_estate_token');
     if (token) {
-      socketService.connect(token);
+      socketService.connect(token, user.id);
     }
 
     // Initialize browser notifications
@@ -335,7 +341,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Connect to WebSocket for real-time chat
     const token = localStorage.getItem('balkan_estate_token');
     if (token) {
-      socketService.connect(token);
+      socketService.connect(token, user.id);
     }
 
     // Initialize browser notifications
@@ -389,7 +395,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'USER_DATA_LOADING' });
 
     // Connect to WebSocket for real-time chat
-    socketService.connect(token);
+    socketService.connect(token, user.id);
 
     try {
       const userData = await api.getMyData();
@@ -495,6 +501,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await api.updateSavedSearchAccessTime(searchId);
     dispatch({ type: 'UPDATE_SAVED_SEARCH_ACCESS_TIME', payload: searchId });
   }, []);
+
+  // Listen for user updates from WebSocket (agency joins, profile changes, etc.)
+  React.useEffect(() => {
+    if (!state.currentUser) return;
+
+    const handleUserUpdate = (data: any) => {
+      console.log('📢 User update event:', data);
+
+      // Handle agency-joined event
+      if (data.type === 'agency-joined' && data.user) {
+        dispatch({ type: 'UPDATE_USER', payload: {
+          agencyId: data.user.agencyId,
+          agencyName: data.user.agencyName,
+        }});
+
+        // Show notification to user
+        notificationService.showNotification(
+          'Agency Joined!',
+          data.message || `You have joined ${data.agency?.name}!`,
+          { tag: 'agency-joined' }
+        );
+      }
+    };
+
+    const unsubscribe = socketService.onUserUpdate(handleUserUpdate);
+
+    return () => {
+      unsubscribe();
+    };
+  }, [state.currentUser]);
 
   const value = { state, dispatch, checkAuthStatus, login, signup, logout, requestPasswordReset, resetPassword, loginWithSocial, handleOAuthCallback, sendPhoneCode, verifyPhoneCode, completePhoneSignup, fetchProperties, toggleSavedHome, addSavedSearch, createConversation, deleteConversation, sendMessage, createListing, updateListing, updateUser, updateSearchPageState, updateSavedSearchAccessTime };
 
