@@ -3,6 +3,9 @@ import { getFeaturedAgencies } from '../services/apiService';
 import { XMarkIcon, BuildingOfficeIcon } from '../constants';
 import { useAppContext } from '../context/AppContext';
 
+const AD_VIEW_THRESHOLD = 3; // Trigger gamification after 3 ad views
+const AD_VIEW_STORAGE_KEY = 'balkan_estate_ad_views';
+
 interface FeaturedAgency {
   _id: string;
   slug?: string;
@@ -26,15 +29,26 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
   const [isDismissed, setIsDismissed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [adViewCount, setAdViewCount] = useState(0);
 
   useEffect(() => {
     fetchAds();
+    // Load ad view count from localStorage
+    const savedCount = localStorage.getItem(AD_VIEW_STORAGE_KEY);
+    if (savedCount) {
+      setAdViewCount(parseInt(savedCount, 10));
+    }
   }, []);
 
   useEffect(() => {
     if (ads.length > 1) {
       const interval = setInterval(() => {
-        setCurrentIndex((prev) => (prev + 1) % ads.length);
+        setCurrentIndex((prev) => {
+          const nextIndex = (prev + 1) % ads.length;
+          // Track ad view on rotation
+          trackAdView();
+          return nextIndex;
+        });
       }, 10000); // Rotate every 10 seconds
 
       return () => clearInterval(interval);
@@ -46,6 +60,23 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
       setCurrentAd(ads[currentIndex]);
     }
   }, [currentIndex, ads]);
+
+  const trackAdView = () => {
+    const newCount = adViewCount + 1;
+    setAdViewCount(newCount);
+    localStorage.setItem(AD_VIEW_STORAGE_KEY, newCount.toString());
+
+    // Trigger gamification after threshold reached
+    if (newCount === AD_VIEW_THRESHOLD) {
+      console.log('🎮 Ad view threshold reached! Triggering gamification...');
+      triggerGamification();
+    }
+  };
+
+  const triggerGamification = () => {
+    // Dispatch action to show gamification modal
+    dispatch({ type: 'TOGGLE_DISCOUNT_GAME', payload: true });
+  };
 
   const fetchAds = async () => {
     try {
