@@ -135,28 +135,34 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
 
   setSelectedPlan({ name: planName, price, interval, discount, productId });
 
-  // If Enterprise plan, show agency creation first
-  if (planName.toLowerCase().includes('enterprise')) {
-    setShowAgencyCreation(true);
-  } else {
-    setShowPaymentWindow(true);
-  }
+  // Always show payment window first (agency creation comes after payment for Enterprise)
+  setShowPaymentWindow(true);
 };
 
 const handleAgencyCreated = (agencyId: string) => {
   setCreatedAgencyId(agencyId);
   setShowAgencyCreation(false);
-  setShowPaymentWindow(true);
+  onClose();
+  if (onSubscribe) {
+    onSubscribe();
+  }
+  alert('Congratulations! Your agency has been created successfully. You now have a dedicated agency page with Enterprise subscription!');
 };
   const handlePaymentSuccess = (paymentIntentId: string) => {
     console.log('Payment successful:', paymentIntentId);
-    // TODO: Update user subscription status via API
     setShowPaymentWindow(false);
-    onClose();
-    if (onSubscribe) {
-      onSubscribe();
+
+    // If Enterprise plan, show agency creation modal after payment
+    if (selectedPlan && selectedPlan.name.toLowerCase().includes('enterprise')) {
+      setShowAgencyCreation(true);
+    } else {
+      // For other plans, close and show success
+      onClose();
+      if (onSubscribe) {
+        onSubscribe();
+      }
+      alert('Subscription activated successfully!');
     }
-    alert('Subscription activated successfully!');
   };
 
   const handlePaymentError = (error: string) => {

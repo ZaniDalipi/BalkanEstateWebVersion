@@ -29,6 +29,14 @@ export const createAgency = async (
       return;
     }
 
+    // Check if user has Enterprise subscription
+    if (user.subscriptionPlan !== 'enterprise') {
+      res.status(403).json({
+        message: 'Agency profiles are only available for Enterprise tier subscribers. Please upgrade your plan to create an agency.',
+      });
+      return;
+    }
+
     // Check if agency already exists for this user
     const existingAgency = await Agency.findOne({ ownerId: user._id });
     if (existingAgency) {
