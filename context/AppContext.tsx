@@ -247,7 +247,7 @@ interface AppContextType {
     dispatch: Dispatch<AppAction>;
     checkAuthStatus: () => Promise<void>;
     login: (emailOrPhone: string, pass: string) => Promise<User>;
-    signup: (email: string, pass: string) => Promise<User>;
+    signup: (email: string, pass: string, options?: { name?: string; phone?: string; role?: 'buyer' | 'private_seller' | 'agent'; licenseNumber?: string; agencyInvitationCode?: string; }) => Promise<User>;
     logout: () => Promise<void>;
     requestPasswordReset: (email: string) => Promise<void>;
     resetPassword: (token: string, newPassword: string) => Promise<User>;
