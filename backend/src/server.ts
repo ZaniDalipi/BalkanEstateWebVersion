@@ -30,6 +30,7 @@ import agentRoutes from './routes/agentRoutes';
 import geocodingRoutes from './routes/geocodingRoutes';
 import neighborhoodInsightsRoutes from './routes/neighborhoodInsightsRoutes';
 import salesHistoryRoutes from './routes/salesHistoryRoutes';
+import discountCodeRoutes from './routes/discountCodeRoutes';
 
 // Import services
 import { initializeGooglePlayService } from './services/googlePlayService';
@@ -165,6 +166,7 @@ app.use('/api/agents', agentRoutes);
 app.use('/api/geocoding', geocodingRoutes);
 app.use('/api/neighborhood-insights', neighborhoodInsightsRoutes);
 app.use('/api/sales-history', salesHistoryRoutes);
+app.use('/api/discount-codes', discountCodeRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

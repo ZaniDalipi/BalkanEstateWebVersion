@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../shared/Modal';
 import PaymentWindow from '../shared/PaymentWindow';
+import AgencyCreationModal from '../shared/AgencyCreationModal';
 import { BuildingOfficeIcon, ChartBarIcon, CurrencyDollarIcon, BoltIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { fetchSellerProducts, Product } from '../../utils/api';
@@ -22,6 +23,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
   const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes in seconds
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showPaymentWindow, setShowPaymentWindow] = useState(false);
+  const [showAgencyCreation, setShowAgencyCreation] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{
     name: string;
     price: number;
@@ -31,6 +33,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
   } | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [createdAgencyId, setCreatedAgencyId] = useState<string | null>(null);
 
   // Fetch products from backend
   useEffect(() => {
@@ -131,6 +134,18 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
   }
 
   setSelectedPlan({ name: planName, price, interval, discount, productId });
+
+  // If Enterprise plan, show agency creation first
+  if (planName.toLowerCase().includes('enterprise')) {
+    setShowAgencyCreation(true);
+  } else {
+    setShowPaymentWindow(true);
+  }
+};
+
+const handleAgencyCreated = (agencyId: string) => {
+  setCreatedAgencyId(agencyId);
+  setShowAgencyCreation(false);
   setShowPaymentWindow(true);
 };
   const handlePaymentSuccess = (paymentIntentId: string) => {
@@ -381,11 +396,27 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
         </div>
       </Modal>
 
+      {/* Agency Creation Modal (for Enterprise plan) */}
+      {selectedPlan && showAgencyCreation && (
+        <AgencyCreationModal
+          isOpen={showAgencyCreation}
+          onClose={() => {
+            setShowAgencyCreation(false);
+            setSelectedPlan(null);
+          }}
+          onAgencyCreated={handleAgencyCreated}
+        />
+      )}
+
       {/* Payment Window */}
       {selectedPlan && (
         <PaymentWindow
           isOpen={showPaymentWindow}
-          onClose={() => setShowPaymentWindow(false)}
+          onClose={() => {
+            setShowPaymentWindow(false);
+            setSelectedPlan(null);
+            setCreatedAgencyId(null);
+          }}
           planName={selectedPlan.name}
           planPrice={selectedPlan.price}
           planInterval={selectedPlan.interval}
@@ -395,6 +426,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
           onSuccess={handlePaymentSuccess}
           onError={handlePaymentError}
           discountPercent={selectedPlan.discount}
+          productId={selectedPlan.productId}
         />
       )}
     </>
