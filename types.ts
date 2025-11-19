@@ -92,12 +92,16 @@ export interface Agency {
     city?: string;
     country?: string;
     address?: string;
+    website?: string;
     lat?: number;
     lng?: number;
     totalProperties: number;
     totalAgents: number;
     yearsInBusiness?: number;
     isFeatured: boolean;
+    specialties?: string[];
+    certifications?: string[];
+    agents?: any[]; // Array of agent objects
     ownerId?: string; // Owner user ID
 }
 

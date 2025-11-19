@@ -6,6 +6,7 @@ import PropertyCardSkeleton from './BuyerFlow/PropertyCardSkeleton';
 import AgencyJoinRequestsModal from './AgencyJoinRequestsModal';
 import { formatPrice } from '../utils/currency';
 import { createJoinRequest, removeAgentFromAgency } from '../services/apiService';
+import { Agency } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
@@ -21,28 +22,6 @@ interface Agent {
   propertiesSold?: number;
   activeListings?: number;
   licenseNumber?: string;
-}
-
-interface Agency {
-  _id: string;
-  name: string;
-  slug?: string;
-  description?: string;
-  logo?: string;
-  coverImage?: string;
-  email: string;
-  phone: string;
-  city?: string;
-  country?: string;
-  address?: string;
-  website?: string;
-  totalProperties: number;
-  totalAgents: number;
-  yearsInBusiness?: number;
-  isFeatured: boolean;
-  specialties?: string[];
-  certifications?: string[];
-  agents?: Agent[];
 }
 
 interface AgencyDetailPageProps {
