@@ -85,7 +85,7 @@ export const createAgency = async (
     await agency.save();
 
     // Update user with agency reference
-    user.agencyId = agency._id as mongoose.Types.ObjectId;
+    user.agencyId = agency._id as unknown as mongoose.Types.ObjectId;
     user.isEnterpriseTier = true;
     user.agencyName = agency.name;
 
