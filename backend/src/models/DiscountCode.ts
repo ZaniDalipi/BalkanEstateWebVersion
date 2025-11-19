@@ -18,6 +18,11 @@ export interface IDiscountCode extends Document {
   source?: string; // Where this code came from (e.g., 'gamification', 'admin', 'promotion')
   createdAt: Date;
   updatedAt: Date;
+
+  // Methods
+  isValid(userId?: string, planId?: string, purchaseAmount?: number): { valid: boolean; reason?: string };
+  calculateDiscount(originalPrice: number): number;
+  markAsUsed(userId: string): Promise<void>;
 }
 
 const discountCodeSchema = new Schema<IDiscountCode>(

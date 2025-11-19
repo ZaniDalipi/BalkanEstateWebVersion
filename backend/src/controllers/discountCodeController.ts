@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import DiscountCode from '../models/DiscountCode';
 import { IUser } from '../models/User';
-import mongoose from 'mongoose';
 
 // @desc    Create a new discount code (Admin only)
 // @route   POST /api/discount-codes
