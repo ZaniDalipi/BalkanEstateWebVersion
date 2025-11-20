@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import AgencyJoinRequest from '../models/AgencyJoinRequest';
 import Agency from '../models/Agency';
 import User, { IUser } from '../models/User';
+import Agent from '../models/Agent';
 import { getSocketInstance } from '../utils/socketInstance';
 
 // Create a join request
@@ -190,6 +191,14 @@ export const approveJoinRequest = async (req: Request, res: Response): Promise<v
     agent.agencyId = joinRequest.agencyId;
     agent.agencyName = agency.name;
     await agent.save();
+
+    // Update Agent model as well
+    const agentProfile = await Agent.findOne({ userId: joinRequest.agentId });
+    if (agentProfile) {
+      agentProfile.agencyId = joinRequest.agencyId;
+      agentProfile.agencyName = agency.name;
+      await agentProfile.save();
+    }
 
     // Add agent to agency's agents array
     if (!agency.agents.includes(joinRequest.agentId)) {

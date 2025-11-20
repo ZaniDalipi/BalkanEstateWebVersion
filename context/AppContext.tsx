@@ -532,6 +532,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           { tag: 'agency-joined' }
         );
       }
+
+      // Handle agency-left event
+      if (data.type === 'agency-left' && data.user) {
+        dispatch({ type: 'UPDATE_USER', payload: {
+          agencyId: null,
+          agencyName: 'Independent Agent',
+        }});
+
+        // Show notification to user
+        notificationService.showNotification(
+          'Agency Left',
+          data.message || 'You have left your agency',
+          { tag: 'agency-left' }
+        );
+      }
     };
 
     const unsubscribe = socketService.onUserUpdate(handleUserUpdate);

@@ -6,6 +6,7 @@ import {
   updateAgentProfile,
   addTestimonial,
   addReview,
+  leaveAgency,
 } from '../controllers/agentController';
 import { protect } from '../middleware/auth';
 
@@ -20,5 +21,6 @@ router.get('/user/:userId', getAgentByUserId);
 router.put('/profile', protect, updateAgentProfile);
 router.post('/:id/reviews', protect, addReview);
 router.post('/:id/testimonials', protect, addTestimonial); // Deprecated - use /reviews instead
+router.post('/leave-agency', protect, leaveAgency);
 
 export default router;
