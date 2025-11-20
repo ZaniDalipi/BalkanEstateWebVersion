@@ -362,7 +362,17 @@ export const getAgency = async (
       properties = await Property.find({
         sellerId: { $in: sellerIds },
         status: 'active',
-      }).sort({ createdAt: -1 });
+      })
+        .populate('sellerId', 'name email phone avatarUrl role agencyName')
+        .sort({ createdAt: -1 })
+        .lean();
+
+      // Transform sellerId to seller for frontend compatibility
+      properties = properties.map((prop: any) => ({
+        ...prop,
+        id: prop._id.toString(),
+        seller: prop.sellerId,
+      }));
 
       console.log(`✅ Found ${properties.length} properties for agency`);
     } catch (propertyError: any) {
