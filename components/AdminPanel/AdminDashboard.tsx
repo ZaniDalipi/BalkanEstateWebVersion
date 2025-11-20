@@ -29,8 +29,9 @@ const AdminDashboard: React.FC = () => {
       }
 
       try {
-        // Test VPN access by hitting a test endpoint
-        const response = await fetch('http://localhost:5001/api/admin/stats', {
+        // Test admin access by hitting a test endpoint
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+        const response = await fetch(`${API_URL}/admin/stats`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -38,7 +39,7 @@ const AdminDashboard: React.FC = () => {
 
         if (response.status === 403) {
           const data = await response.json();
-          setError(data.message || 'VPN connection required');
+          setError(data.message || 'Admin access denied');
           return;
         }
 
