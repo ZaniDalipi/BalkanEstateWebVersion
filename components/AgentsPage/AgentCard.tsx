@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Agent } from '../../types';
 import StarRating from '../shared/StarRating';
 import { TrophyIcon, UserCircleIcon, BuildingOfficeIcon } from '../../constants';
@@ -30,6 +30,16 @@ const AgentAvatar: React.FC<{ agent: Agent }> = ({ agent }) => {
 
 const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
   const { dispatch } = useAppContext();
+  const [showAnimation, setShowAnimation] = useState(true);
+
+  // Disable animations after 30 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowAnimation(false);
+    }, 30000); // 30 seconds
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const rankColors: { [key: number]: { bg: string; text: string; border: string } } = {
     1: { bg: 'bg-yellow-400', text: 'text-yellow-800', border: 'border-yellow-400' },
@@ -38,6 +48,16 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
   };
 
   const rankColor = rankColors[rank] || { bg: 'bg-neutral-200', text: 'text-neutral-600', border: 'border-neutral-300' };
+
+  // Animation for top 3 (staggered bounce effect)
+  const getAnimationStyle = (): React.CSSProperties => {
+    if (!showAnimation || rank > 3) return {};
+    const delays = [0, 300, 600]; // ms delays for each rank
+    return {
+      animation: `gentle-bounce 2s ease-in-out infinite`,
+      animationDelay: `${delays[rank - 1]}ms`,
+    };
+  };
 
   const handleSelectAgent = () => {
     // Use agentId for URL-friendly sharing, fallback to id
@@ -94,10 +114,22 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
   };
 
   return (
-    <div 
-      className={`bg-white rounded-xl shadow-md border hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer ${rank <= 3 ? rankColor.border : 'border-neutral-200'}`}
-      onClick={handleSelectAgent}
-    >
+    <>
+      <style>{`
+        @keyframes gentle-bounce {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+      `}</style>
+      <div
+        className={`bg-white rounded-xl shadow-md border hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer ${rank <= 3 ? rankColor.border : 'border-neutral-200'}`}
+        style={getAnimationStyle()}
+        onClick={handleSelectAgent}
+      >
       <div className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -146,6 +178,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
