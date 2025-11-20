@@ -128,6 +128,13 @@ export const updateUserAdmin = async (req: Request, res: Response): Promise<void
     // Prevent updating password through this endpoint
     delete updates.password;
 
+    // Remove empty string values that might cause validation issues
+    Object.keys(updates).forEach(key => {
+      if (updates[key] === '') {
+        delete updates[key];
+      }
+    });
+
     const user = await User.findByIdAndUpdate(id, updates, {
       new: true,
       runValidators: true,
