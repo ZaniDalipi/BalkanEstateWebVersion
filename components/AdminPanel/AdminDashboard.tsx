@@ -4,6 +4,8 @@ import AdminNav from './AdminNav';
 import DiscountCodeManager from './DiscountCodeManager';
 import UserManager from './UserManager';
 import AnalyticsDashboard from './AnalyticsDashboard';
+import PropertyManager from './PropertyManager';
+import AgencyManager from './AgencyManager';
 
 type AdminView = 'dashboard' | 'discounts' | 'users' | 'properties' | 'agencies';
 
@@ -122,19 +124,9 @@ const AdminDashboard: React.FC = () => {
       case 'users':
         return <UserManager />;
       case 'properties':
-        return (
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-2xl font-bold mb-4">Property Management</h2>
-            <p className="text-gray-600">Coming soon...</p>
-          </div>
-        );
+        return <PropertyManager />;
       case 'agencies':
-        return (
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-2xl font-bold mb-4">Agency Management</h2>
-            <p className="text-gray-600">Coming soon...</p>
-          </div>
-        );
+        return <AgencyManager />;
       default:
         return null;
     }
@@ -157,7 +149,7 @@ const AdminDashboard: React.FC = () => {
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-              <span>VPN Connected</span>
+              <span>Admin Access</span>
             </div>
           </div>
         </div>

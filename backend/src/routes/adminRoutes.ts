@@ -7,7 +7,10 @@ import {
   updateUserAdmin,
   deleteUser,
   getAllAgenciesAdmin,
+  updateAgency,
+  deleteAgency,
   getAllPropertiesAdmin,
+  updateProperty,
   deleteProperty,
   getSystemConfig,
 } from '../controllers/adminController';
@@ -36,9 +39,12 @@ router.delete('/users/:id', logAdminAction('DELETE_USER'), deleteUser);
 
 // ===== Agency Management =====
 router.get('/agencies', logAdminAction('VIEW_AGENCIES'), getAllAgenciesAdmin);
+router.patch('/agencies/:id', logAdminAction('UPDATE_AGENCY'), updateAgency);
+router.delete('/agencies/:id', logAdminAction('DELETE_AGENCY'), deleteAgency);
 
 // ===== Property Management =====
 router.get('/properties', logAdminAction('VIEW_PROPERTIES'), getAllPropertiesAdmin);
+router.patch('/properties/:id', logAdminAction('UPDATE_PROPERTY'), updateProperty);
 router.delete('/properties/:id', logAdminAction('DELETE_PROPERTY'), deleteProperty);
 
 // ===== Discount Code Management =====

@@ -229,8 +229,7 @@ const AnalyticsDashboard: React.FC = () => {
           <div>
             <h4 className="font-semibold text-yellow-800 mb-1">Security Notice</h4>
             <p className="text-sm text-yellow-700">
-              This admin panel is protected by VPN access control. All actions are logged for security audit purposes.
-              Ensure you're connected to the authorized VPN network.
+              This admin panel is protected by role-based access control. All administrative actions are logged for security audit purposes.
             </p>
           </div>
         </div>

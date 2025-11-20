@@ -182,7 +182,7 @@ export const getAllAgenciesAdmin = async (req: Request, res: Response): Promise<
     const skip = (Number(page) - 1) * Number(limit);
 
     const agencies = await Agency.find()
-      .populate('owner', 'name email')
+      .populate('ownerId', 'name email')
       .populate('agents', 'name email role')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -203,6 +203,67 @@ export const getAllAgenciesAdmin = async (req: Request, res: Response): Promise<
   } catch (error: any) {
     console.error('Get agencies error:', error);
     res.status(500).json({ message: 'Error fetching agencies', error: error.message });
+  }
+};
+
+// @desc    Update agency details
+// @route   PATCH /api/admin/agencies/:id
+// @access  Private/Admin
+export const updateAgency = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    // Prevent updating certain fields through this endpoint
+    delete updates.ownerId;
+    delete updates.agents;
+    delete updates.slug; // Slug should be managed separately
+
+    const agency = await Agency.findByIdAndUpdate(id, updates, { new: true })
+      .populate('ownerId', 'name email')
+      .populate('agents', 'name email role');
+
+    if (!agency) {
+      res.status(404).json({ message: 'Agency not found' });
+      return;
+    }
+
+    res.json({
+      message: 'Agency updated successfully',
+      agency,
+    });
+  } catch (error: any) {
+    console.error('Update agency error:', error);
+    res.status(500).json({ message: 'Error updating agency', error: error.message });
+  }
+};
+
+// @desc    Delete agency
+// @route   DELETE /api/admin/agencies/:id
+// @access  Private/Admin
+export const deleteAgency = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const agency = await Agency.findById(id);
+    if (!agency) {
+      res.status(404).json({ message: 'Agency not found' });
+      return;
+    }
+
+    // Unassign all agents from this agency
+    await User.updateMany(
+      { agencyId: id },
+      { $unset: { agencyId: '', agencyName: '' } }
+    );
+
+    // Delete the agency
+    await agency.deleteOne();
+
+    res.json({ message: 'Agency deleted successfully and agents unassigned' });
+  } catch (error: any) {
+    console.error('Delete agency error:', error);
+    res.status(500).json({ message: 'Error deleting agency', error: error.message });
   }
 };
 
@@ -246,6 +307,32 @@ export const getAllPropertiesAdmin = async (req: Request, res: Response): Promis
   } catch (error: any) {
     console.error('Get properties error:', error);
     res.status(500).json({ message: 'Error fetching properties', error: error.message });
+  }
+};
+
+// @desc    Update property details
+// @route   PATCH /api/admin/properties/:id
+// @access  Private/Admin
+export const updateProperty = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    const property = await Property.findByIdAndUpdate(id, updates, { new: true })
+      .populate('sellerId', 'name email role');
+
+    if (!property) {
+      res.status(404).json({ message: 'Property not found' });
+      return;
+    }
+
+    res.json({
+      message: 'Property updated successfully',
+      property,
+    });
+  } catch (error: any) {
+    console.error('Update property error:', error);
+    res.status(500).json({ message: 'Error updating property', error: error.message });
   }
 };
 
