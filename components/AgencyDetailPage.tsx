@@ -69,7 +69,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     const handleAgencyUpdate = (data: any) => {
       console.log('🏢 Agency update event received:', data);
 
-      if (data.type === 'member-added') {
+      if (data.type === 'member-added' || data.type === 'member-removed') {
         // Refetch agency data to get the updated member list
         fetchAgencyData();
       }

@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import Agent from '../models/Agent';
-import { IUser } from '../models/User';
+import User, { IUser } from '../models/User';
+import Agency from '../models/Agency';
 import Conversation from '../models/Conversation';
+import { getSocketInstance } from '../utils/socketInstance';
 
 
 
@@ -296,5 +298,101 @@ export const updateAgentStats = async (
     await agent.save();
   } catch (error: any) {
     console.error('Update agent stats error:', error);
+  }
+};
+
+// @desc    Leave agency
+// @route   POST /api/agents/leave-agency
+// @access  Private (agent only)
+export const leaveAgency = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const currentUser = req.user as IUser;
+
+    // Check if user is an agent
+    if (currentUser.role !== 'agent') {
+      res.status(403).json({ message: 'Only agents can leave agencies' });
+      return;
+    }
+
+    // Get user from database to ensure we have the latest data
+    const user = await User.findById(String(currentUser._id));
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Check if agent is part of an agency
+    if (!user.agencyId) {
+      res.status(400).json({ message: 'You are not part of any agency' });
+      return;
+    }
+
+    const agencyId = user.agencyId;
+    const agencyName = user.agencyName;
+
+    // Update User model
+    user.agencyName = 'Independent Agent';
+    user.agencyId = undefined;
+    await user.save();
+
+    // Update Agent model
+    const agentProfile = await Agent.findOne({ userId: String(currentUser._id) });
+    if (agentProfile) {
+      agentProfile.agencyName = 'Independent Agent';
+      agentProfile.agencyId = undefined;
+      await agentProfile.save();
+    }
+
+    // Remove agent from agency's agents array
+    const agency = await Agency.findById(agencyId);
+    if (agency) {
+      agency.agents = agency.agents.filter(
+        (id) => id.toString() !== String(currentUser._id)
+      );
+      agency.totalAgents = agency.agents.length;
+      await agency.save();
+
+      // Emit socket event to notify agency members
+      const io = getSocketInstance();
+      if (io) {
+        // Notify the agent who left
+        io.emit(`user-update-${String(currentUser._id)}`, {
+          type: 'agency-left',
+          message: `You have left ${agencyName}`,
+          user: {
+            id: String(user._id),
+            agencyId: null,
+            agencyName: 'Independent Agent',
+          },
+        });
+        console.log(`✅ Socket event emitted to agent ${currentUser._id} for leaving agency`);
+
+        // Notify all viewers of the agency page that a member has left
+        io.emit(`agency-update-${String(agencyId)}`, {
+          type: 'member-removed',
+          agencyId: String(agencyId),
+          agentId: String(currentUser._id),
+          agentName: user.name,
+        });
+        console.log(`✅ Socket event emitted to agency ${agencyId} for member removal`);
+      }
+    }
+
+    res.json({
+      message: 'Successfully left the agency',
+      user: {
+        id: String(user._id),
+        agencyId: null,
+        agencyName: 'Independent Agent',
+      },
+    });
+  } catch (error: any) {
+    console.error('Leave agency error:', error);
+    res.status(500).json({ message: 'Error leaving agency', error: error.message });
   }
 };

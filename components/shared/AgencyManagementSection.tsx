@@ -117,6 +117,55 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
     setError('');
   };
 
+  const handleLeaveAgency = async () => {
+    if (!confirm(`Are you sure you want to leave ${currentUser.agencyName}? You will become an Independent Agent.`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('balkan_estate_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/agents/leave-agency`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to leave agency');
+      }
+
+      console.log('✅ Successfully left agency');
+
+      // Update user context immediately
+      dispatch({
+        type: 'UPDATE_USER',
+        payload: {
+          agencyName: 'Independent Agent',
+          agencyId: null,
+        }
+      });
+
+      alert(
+        `✅ You have successfully left the agency.\n\n` +
+        `You are now an Independent Agent.`
+      );
+
+      // Trigger refresh callback
+      onAgencyChange();
+
+    } catch (err: any) {
+      console.error('❌ Failed to leave agency:', err);
+      setError(err.message || 'Failed to leave agency. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const currentAgencyInfo = currentUser.agencyName && currentUser.agencyName !== 'Independent Agent'
     ? currentUser.agencyName
     : 'Independent Agent';
@@ -133,13 +182,25 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
             <p className="text-lg font-bold text-blue-600 mt-1">{currentAgencyInfo}</p>
           </div>
           {!showForm && (
-            <button
-              type="button"
-              onClick={() => setShowForm(true)}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              {isIndependent ? 'Join an Agency' : 'Switch Agency'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowForm(true)}
+                className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                {isIndependent ? 'Join an Agency' : 'Switch Agency'}
+              </button>
+              {!isIndependent && (
+                <button
+                  type="button"
+                  onClick={handleLeaveAgency}
+                  disabled={loading}
+                  className="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Leave Agency
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
