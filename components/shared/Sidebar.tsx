@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { AppView, UserRole } from '../../types';
-import { LogoIcon, SearchIcon, MagnifyingGlassPlusIcon, HeartIcon, EnvelopeIcon, UserCircleIcon, UsersIcon, ArrowLeftOnRectangleIcon, XMarkIcon, PencilIcon, StarIconSolid, BuildingOfficeIcon } from '../../constants';
+import { LogoIcon, SearchIcon, MagnifyingGlassPlusIcon, HeartIcon, EnvelopeIcon, UserCircleIcon, UsersIcon, ArrowLeftOnRectangleIcon, XMarkIcon, PencilIcon, StarIconSolid, BuildingOfficeIcon, ShieldCheckIcon } from '../../constants';
 
 const NavItem: React.FC<{
   view: AppView;
@@ -91,13 +91,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         onClose();
     };
 
-    const navItems = [
+    const baseNavItems = [
       { view: 'search' as AppView, label: 'Search', icon: <SearchIcon /> },
       { view: 'saved-searches' as AppView, label: 'Saved Searches', icon: <MagnifyingGlassPlusIcon /> },
       { view: 'saved-properties' as AppView, label: 'Saved Properties', icon: <HeartIcon /> },
       { view: 'agents' as AppView, label: 'Top Agents', icon: <UsersIcon /> },
       { view: 'agencies' as AppView, label: 'Agencies', icon: <BuildingOfficeIcon /> },
     ];
+
+    // Add admin panel for admin users
+    const navItems = currentUser?.role === 'admin' || currentUser?.role === 'super_admin'
+      ? [...baseNavItems, { view: 'admin' as AppView, label: 'Admin Panel', icon: <ShieldCheckIcon /> }]
+      : baseNavItems;
 
     return (
         <>

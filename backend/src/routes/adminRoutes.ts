@@ -1,6 +1,6 @@
 import express from 'express';
 import { protect } from '../middleware/auth';
-import { requireAdminAccess, logAdminAction } from '../middleware/adminAuth';
+import { checkAdminRole, logAdminAction } from '../middleware/adminAuth';
 import {
   getAdminStats,
   getAllUsers,
@@ -21,9 +21,9 @@ import {
 
 const router = express.Router();
 
-// All admin routes require authentication + admin role + VPN access
+// All admin routes require authentication + admin role (VPN check removed for accessibility)
 router.use(protect);
-router.use(requireAdminAccess);
+router.use(checkAdminRole);
 
 // ===== Dashboard & Statistics =====
 router.get('/stats', getAdminStats);
