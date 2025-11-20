@@ -78,7 +78,8 @@ const AgentsPage: React.FC = () => {
   
   const selectedAgent = useMemo(() => {
       if (!selectedAgentId) return null;
-      return sortedAgents.find(a => a.id === selectedAgentId) || null;
+      // Try to find by agentId first, then fallback to id
+      return sortedAgents.find(a => a.agentId === selectedAgentId || a.id === selectedAgentId) || null;
   }, [selectedAgentId, sortedAgents]);
 
   const handleSelectAgent = (id: string) => {

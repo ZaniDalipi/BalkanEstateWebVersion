@@ -40,7 +40,11 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
   const rankColor = rankColors[rank] || { bg: 'bg-neutral-200', text: 'text-neutral-600', border: 'border-neutral-300' };
 
   const handleSelectAgent = () => {
-    dispatch({ type: 'SET_SELECTED_AGENT', payload: agent.id });
+    // Use agentId for URL-friendly sharing, fallback to id
+    const agentIdentifier = agent.agentId || agent.id;
+    dispatch({ type: 'SET_SELECTED_AGENT', payload: agentIdentifier });
+    // Update URL to use agentId
+    window.history.pushState({}, '', `/agents/${agentIdentifier}`);
   };
 
   const handleAgencyClick = async (e: React.MouseEvent) => {

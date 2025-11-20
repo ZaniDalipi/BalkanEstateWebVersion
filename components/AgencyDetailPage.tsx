@@ -136,11 +136,15 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     }
   };
 
-  const handleAgentClick = (agentId: string) => {
-    console.log('🔍 Viewing agent profile:', agentId);
-    dispatch({ type: 'SET_SELECTED_AGENT', payload: agentId });
+  const handleAgentClick = (agentDatabaseId: string) => {
+    // Find the agent in the list to get their agentId
+    const agent = agents.find(a => (a.id || a._id) === agentDatabaseId);
+    // Use agentId if available, fallback to database id
+    const agentIdentifier = agent?.agentId || agentDatabaseId;
+    console.log('🔍 Viewing agent profile:', agentIdentifier);
+    dispatch({ type: 'SET_SELECTED_AGENT', payload: agentIdentifier });
     dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agents' });
-    window.history.pushState({}, '', `/agents/${agentId}`);
+    window.history.pushState({}, '', `/agents/${agentIdentifier}`);
   };
 
   const handleRequestToJoin = () => {
