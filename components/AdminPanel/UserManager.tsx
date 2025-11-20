@@ -8,12 +8,18 @@ interface User {
   phone?: string;
   role: string;
   avatarUrl?: string;
+  city?: string;
+  country?: string;
   isSubscribed: boolean;
+  isEmailVerified?: boolean;
   subscriptionType?: string;
+  subscriptionPlan?: string;
+  subscriptionStatus?: string;
   agencyName?: string;
   agencyId?: string;
   licenseNumber?: string;
   licenseVerified?: boolean;
+  isEnterpriseTier?: boolean;
   createdAt: string;
 }
 
@@ -35,8 +41,17 @@ const UserManager: React.FC = () => {
     name: '',
     email: '',
     phone: '',
+    city: '',
+    country: '',
     role: 'buyer',
+    licenseNumber: '',
     licenseVerified: false,
+    isEmailVerified: false,
+    isSubscribed: false,
+    subscriptionPlan: '',
+    subscriptionStatus: '',
+    agencyName: '',
+    isEnterpriseTier: false,
   });
 
   // Pagination
@@ -96,8 +111,17 @@ const UserManager: React.FC = () => {
       name: user.name,
       email: user.email,
       phone: user.phone || '',
+      city: user.city || '',
+      country: user.country || '',
       role: user.role,
+      licenseNumber: user.licenseNumber || '',
       licenseVerified: user.licenseVerified || false,
+      isEmailVerified: user.isEmailVerified || false,
+      isSubscribed: user.isSubscribed || false,
+      subscriptionPlan: user.subscriptionPlan || '',
+      subscriptionStatus: user.subscriptionStatus || '',
+      agencyName: user.agencyName || '',
+      isEnterpriseTier: user.isEnterpriseTier || false,
     });
     setIsEditModalOpen(true);
   };
@@ -368,15 +392,16 @@ const UserManager: React.FC = () => {
       {/* Edit Modal */}
       {isEditModalOpen && editingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-lg w-full">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
               <h3 className="text-xl font-bold">Edit User</h3>
               <button onClick={() => setIsEditModalOpen(false)}>
                 <XMarkIcon className="w-6 h-6 text-gray-500 hover:text-gray-700" />
               </button>
             </div>
 
-            <form onSubmit={handleUpdateUser} className="p-6 space-y-4">
+            <form onSubmit={handleUpdateUser} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Name
@@ -415,6 +440,31 @@ const UserManager: React.FC = () => {
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.city}
+                    onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Country
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.country}
+                    onChange={(e) => setEditForm({ ...editForm, country: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Role
@@ -431,18 +481,118 @@ const UserManager: React.FC = () => {
                 </select>
               </div>
 
-              {editingUser.role === 'agent' && (
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="licenseVerified"
-                    checked={editForm.licenseVerified}
-                    onChange={(e) => setEditForm({ ...editForm, licenseVerified: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded"
-                  />
-                  <label htmlFor="licenseVerified" className="ml-2 text-sm text-gray-700">
-                    License Verified
-                  </label>
+              {(editForm.role === 'agent' || editingUser.role === 'agent') && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      License Number
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.licenseNumber}
+                      onChange={(e) => setEditForm({ ...editForm, licenseNumber: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="licenseVerified"
+                      checked={editForm.licenseVerified}
+                      onChange={(e) => setEditForm({ ...editForm, licenseVerified: e.target.checked })}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded"
+                    />
+                    <label htmlFor="licenseVerified" className="ml-2 text-sm text-gray-700">
+                      License Verified
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Agency Name
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.agencyName}
+                      onChange={(e) => setEditForm({ ...editForm, agencyName: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="border-t border-gray-200 pt-4">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Account Status</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="isEmailVerified"
+                      checked={editForm.isEmailVerified}
+                      onChange={(e) => setEditForm({ ...editForm, isEmailVerified: e.target.checked })}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded"
+                    />
+                    <label htmlFor="isEmailVerified" className="ml-2 text-sm text-gray-700">
+                      Email Verified
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="isSubscribed"
+                      checked={editForm.isSubscribed}
+                      onChange={(e) => setEditForm({ ...editForm, isSubscribed: e.target.checked })}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded"
+                    />
+                    <label htmlFor="isSubscribed" className="ml-2 text-sm text-gray-700">
+                      Subscribed
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="isEnterpriseTier"
+                      checked={editForm.isEnterpriseTier}
+                      onChange={(e) => setEditForm({ ...editForm, isEnterpriseTier: e.target.checked })}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded"
+                    />
+                    <label htmlFor="isEnterpriseTier" className="ml-2 text-sm text-gray-700">
+                      Enterprise Tier
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {editForm.isSubscribed && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Subscription Plan
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.subscriptionPlan}
+                      onChange={(e) => setEditForm({ ...editForm, subscriptionPlan: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      placeholder="e.g., buyer_pro_monthly"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Subscription Status
+                    </label>
+                    <select
+                      value={editForm.subscriptionStatus}
+                      onChange={(e) => setEditForm({ ...editForm, subscriptionStatus: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    >
+                      <option value="">Select status</option>
+                      <option value="active">Active</option>
+                      <option value="expired">Expired</option>
+                      <option value="trial">Trial</option>
+                      <option value="grace">Grace</option>
+                      <option value="canceled">Canceled</option>
+                    </select>
+                  </div>
                 </div>
               )}
 
@@ -451,8 +601,9 @@ const UserManager: React.FC = () => {
                   <strong>Note:</strong> Changing a user's role or verification status can affect their access and permissions.
                 </p>
               </div>
+              </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="p-6 border-t border-gray-200 flex gap-3 flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}

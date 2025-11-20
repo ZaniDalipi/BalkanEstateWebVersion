@@ -11,9 +11,17 @@ interface Property {
   city: string;
   country: string;
   propertyType: string;
+  beds?: number;
   bedrooms?: number;
+  baths?: number;
   bathrooms?: number;
+  sqft?: number;
   area?: number;
+  livingRooms?: number;
+  yearBuilt?: number;
+  parking?: number;
+  description?: string;
+  isPromoted?: boolean;
   images?: string[];
   sellerId: {
     _id: string;
@@ -45,6 +53,15 @@ const PropertyManager: React.FC = () => {
     address: '',
     city: '',
     country: '',
+    beds: 0,
+    baths: 0,
+    livingRooms: 0,
+    sqft: 0,
+    yearBuilt: new Date().getFullYear(),
+    parking: 0,
+    propertyType: 'house',
+    description: '',
+    isPromoted: false,
   });
 
   // View modal
@@ -101,12 +118,21 @@ const PropertyManager: React.FC = () => {
   const handleEditProperty = (property: Property) => {
     setEditingProperty(property);
     setEditForm({
-      title: property.title,
-      price: property.price,
+      title: property.title || '',
+      price: property.price || 0,
       status: property.status,
-      address: property.address,
-      city: property.city,
-      country: property.country,
+      address: property.address || '',
+      city: property.city || '',
+      country: property.country || '',
+      beds: property.beds || property.bedrooms || 0,
+      baths: property.baths || property.bathrooms || 0,
+      livingRooms: property.livingRooms || 0,
+      sqft: property.sqft || property.area || 0,
+      yearBuilt: property.yearBuilt || new Date().getFullYear(),
+      parking: property.parking || 0,
+      propertyType: property.propertyType || 'house',
+      description: property.description || '',
+      isPromoted: property.isPromoted || false,
     });
     setIsEditModalOpen(true);
   };
@@ -484,15 +510,16 @@ const PropertyManager: React.FC = () => {
       {/* Edit Modal */}
       {isEditModalOpen && editingProperty && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-lg w-full">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
               <h3 className="text-xl font-bold">Edit Property</h3>
               <button onClick={() => setIsEditModalOpen(false)}>
                 <XMarkIcon className="w-6 h-6 text-gray-500 hover:text-gray-700" />
               </button>
             </div>
 
-            <form onSubmit={handleUpdateProperty} className="p-6 space-y-4">
+            <form onSubmit={handleUpdateProperty} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Title
@@ -574,13 +601,135 @@ const PropertyManager: React.FC = () => {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Property Type
+                </label>
+                <select
+                  value={editForm.propertyType}
+                  onChange={(e) => setEditForm({ ...editForm, propertyType: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="house">House</option>
+                  <option value="apartment">Apartment</option>
+                  <option value="villa">Villa</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Bedrooms
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.beds}
+                    onChange={(e) => setEditForm({ ...editForm, beds: Number(e.target.value) })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Bathrooms
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.baths}
+                    onChange={(e) => setEditForm({ ...editForm, baths: Number(e.target.value) })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Living Rooms
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.livingRooms}
+                    onChange={(e) => setEditForm({ ...editForm, livingRooms: Number(e.target.value) })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Parking
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.parking}
+                    onChange={(e) => setEditForm({ ...editForm, parking: Number(e.target.value) })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Area (sqft)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.sqft}
+                    onChange={(e) => setEditForm({ ...editForm, sqft: Number(e.target.value) })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Year Built
+                  </label>
+                  <input
+                    type="number"
+                    min="1800"
+                    max={new Date().getFullYear() + 5}
+                    value={editForm.yearBuilt}
+                    onChange={(e) => setEditForm({ ...editForm, yearBuilt: Number(e.target.value) })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  rows={3}
+                  placeholder="Property description..."
+                />
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isPromoted"
+                  checked={editForm.isPromoted}
+                  onChange={(e) => setEditForm({ ...editForm, isPromoted: e.target.checked })}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded"
+                />
+                <label htmlFor="isPromoted" className="ml-2 text-sm text-gray-700">
+                  Promoted Property
+                </label>
+              </div>
+
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <p className="text-xs text-yellow-800">
                   <strong>Note:</strong> Changing property details will affect how it appears to buyers and in search results.
                 </p>
               </div>
+              </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="p-6 border-t border-gray-200 flex gap-3 flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}

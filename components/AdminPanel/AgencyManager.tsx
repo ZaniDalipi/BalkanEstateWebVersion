@@ -14,12 +14,22 @@ interface Agency {
   slug: string;
   description?: string;
   logo?: string;
+  coverImage?: string;
   website?: string;
   phone?: string;
   email?: string;
   address?: string;
   city?: string;
   country?: string;
+  zipCode?: string;
+  lat?: number;
+  lng?: number;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  linkedinUrl?: string;
+  twitterUrl?: string;
+  yearsInBusiness?: number;
+  isFeatured?: boolean;
   ownerId?: User;
   agents: User[];
   totalAgents: number;
@@ -50,6 +60,15 @@ const AgencyManager: React.FC = () => {
     address: '',
     city: '',
     country: '',
+    zipCode: '',
+    lat: 0,
+    lng: 0,
+    facebookUrl: '',
+    instagramUrl: '',
+    linkedinUrl: '',
+    twitterUrl: '',
+    yearsInBusiness: 0,
+    isFeatured: false,
   });
 
   // Pagination
@@ -108,6 +127,15 @@ const AgencyManager: React.FC = () => {
       address: agency.address || '',
       city: agency.city || '',
       country: agency.country || '',
+      zipCode: agency.zipCode || '',
+      lat: agency.lat || 0,
+      lng: agency.lng || 0,
+      facebookUrl: agency.facebookUrl || '',
+      instagramUrl: agency.instagramUrl || '',
+      linkedinUrl: agency.linkedinUrl || '',
+      twitterUrl: agency.twitterUrl || '',
+      yearsInBusiness: agency.yearsInBusiness || 0,
+      isFeatured: agency.isFeatured || false,
     });
     setIsEditModalOpen(true);
   };
@@ -561,7 +589,7 @@ const AgencyManager: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     City
@@ -583,6 +611,127 @@ const AgencyManager: React.FC = () => {
                     onChange={(e) => setEditForm({ ...editForm, country: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Zip Code
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.zipCode}
+                    onChange={(e) => setEditForm({ ...editForm, zipCode: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Latitude
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={editForm.lat}
+                    onChange={(e) => setEditForm({ ...editForm, lat: Number(e.target.value) })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    placeholder="e.g., 42.6629"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Longitude
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={editForm.lng}
+                    onChange={(e) => setEditForm({ ...editForm, lng: Number(e.target.value) })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    placeholder="e.g., 21.1655"
+                  />
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Social Media Links</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Facebook URL
+                    </label>
+                    <input
+                      type="url"
+                      value={editForm.facebookUrl}
+                      onChange={(e) => setEditForm({ ...editForm, facebookUrl: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      placeholder="https://facebook.com/..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Instagram URL
+                    </label>
+                    <input
+                      type="url"
+                      value={editForm.instagramUrl}
+                      onChange={(e) => setEditForm({ ...editForm, instagramUrl: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      placeholder="https://instagram.com/..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      LinkedIn URL
+                    </label>
+                    <input
+                      type="url"
+                      value={editForm.linkedinUrl}
+                      onChange={(e) => setEditForm({ ...editForm, linkedinUrl: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      placeholder="https://linkedin.com/..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Twitter URL
+                    </label>
+                    <input
+                      type="url"
+                      value={editForm.twitterUrl}
+                      onChange={(e) => setEditForm({ ...editForm, twitterUrl: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      placeholder="https://twitter.com/..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Years in Business
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.yearsInBusiness}
+                    onChange={(e) => setEditForm({ ...editForm, yearsInBusiness: Number(e.target.value) })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+                <div className="flex items-center pt-7">
+                  <input
+                    type="checkbox"
+                    id="isFeatured"
+                    checked={editForm.isFeatured}
+                    onChange={(e) => setEditForm({ ...editForm, isFeatured: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded"
+                  />
+                  <label htmlFor="isFeatured" className="ml-2 text-sm text-gray-700">
+                    Featured Agency
+                  </label>
                 </div>
               </div>
 
