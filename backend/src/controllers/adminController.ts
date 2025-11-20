@@ -128,7 +128,11 @@ export const updateUserAdmin = async (req: Request, res: Response): Promise<void
     // Prevent updating password through this endpoint
     delete updates.password;
 
-    const user = await User.findByIdAndUpdate(id, updates, { new: true }).select('-password');
+    const user = await User.findByIdAndUpdate(id, updates, {
+      new: true,
+      runValidators: true,
+      context: 'query'
+    }).select('-password');
 
     if (!user) {
       res.status(404).json({ message: 'User not found' });
@@ -141,6 +145,14 @@ export const updateUserAdmin = async (req: Request, res: Response): Promise<void
     });
   } catch (error: any) {
     console.error('Update user error:', error);
+
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map((err: any) => err.message);
+      res.status(400).json({ message: 'Validation error', errors });
+      return;
+    }
+
     res.status(500).json({ message: 'Error updating user', error: error.message });
   }
 };
@@ -219,7 +231,11 @@ export const updateAgency = async (req: Request, res: Response): Promise<void> =
     delete updates.agents;
     delete updates.slug; // Slug should be managed separately
 
-    const agency = await Agency.findByIdAndUpdate(id, updates, { new: true })
+    const agency = await Agency.findByIdAndUpdate(id, updates, {
+      new: true,
+      runValidators: true,
+      context: 'query'
+    })
       .populate('ownerId', 'name email')
       .populate('agents', 'name email role');
 
@@ -234,6 +250,14 @@ export const updateAgency = async (req: Request, res: Response): Promise<void> =
     });
   } catch (error: any) {
     console.error('Update agency error:', error);
+
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map((err: any) => err.message);
+      res.status(400).json({ message: 'Validation error', errors });
+      return;
+    }
+
     res.status(500).json({ message: 'Error updating agency', error: error.message });
   }
 };
@@ -318,7 +342,16 @@ export const updateProperty = async (req: Request, res: Response): Promise<void>
     const { id } = req.params;
     const updates = req.body;
 
-    const property = await Property.findByIdAndUpdate(id, updates, { new: true })
+    // Prevent updating certain fields through this endpoint
+    delete updates.sellerId;
+    delete updates.createdByName;
+    delete updates.createdByEmail;
+
+    const property = await Property.findByIdAndUpdate(id, updates, {
+      new: true,
+      runValidators: true,
+      context: 'query'
+    })
       .populate('sellerId', 'name email role');
 
     if (!property) {
@@ -332,6 +365,14 @@ export const updateProperty = async (req: Request, res: Response): Promise<void>
     });
   } catch (error: any) {
     console.error('Update property error:', error);
+
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map((err: any) => err.message);
+      res.status(400).json({ message: 'Validation error', errors });
+      return;
+    }
+
     res.status(500).json({ message: 'Error updating property', error: error.message });
   }
 };

@@ -330,7 +330,7 @@ export const setPublicKey = async (req: Request, res: Response): Promise<void> =
     const user = await User.findByIdAndUpdate(
       (req.user as IUser)._id,
       { publicKey },
-      { new: true }
+      { new: true, runValidators: true, context: 'query' }
     );
 
     if (!user) {

@@ -10,6 +10,7 @@ export interface IProperty extends Document {
   sellerId: mongoose.Types.ObjectId;
   createdByName: string; // Name of the user who created this listing
   createdByEmail: string; // Email of the user who created this listing
+  title?: string; // Optional title/headline for the property listing
   status: 'active' | 'pending' | 'sold' | 'draft';
   soldAt?: Date;
   price: number;
@@ -64,6 +65,12 @@ const PropertySchema: Schema = new Schema(
     createdByEmail: {
       type: String,
       required: true,
+      index: true,
+    },
+    title: {
+      type: String,
+      required: false,
+      trim: true,
       index: true,
     },
     status: {

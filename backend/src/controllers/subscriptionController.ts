@@ -97,11 +97,15 @@ export const createSubscription = async (req: Request, res: Response): Promise<v
     });
 
     // Update user subscription status
-    await User.findByIdAndUpdate(userId, {
-      isSubscribed: true,
-      subscriptionPlan: product.productId,
-      subscriptionExpiresAt: expirationDate,
-    });
+    await User.findByIdAndUpdate(
+      userId,
+      {
+        isSubscribed: true,
+        subscriptionPlan: product.productId,
+        subscriptionExpiresAt: expirationDate,
+      },
+      { runValidators: true, context: 'query' }
+    );
 
     res.status(201).json({
       message: 'Subscription created successfully',
