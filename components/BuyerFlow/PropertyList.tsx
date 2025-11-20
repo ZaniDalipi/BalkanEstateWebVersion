@@ -5,6 +5,7 @@ import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon, Che
 import AiSearch from './AiSearch';
 import PropertyCardSkeleton from './PropertyCardSkeleton';
 import { useAppContext } from '../../context/AppContext';
+import Footer from '../shared/Footer';
 
 interface PropertyListProps {
   properties: Property[];
@@ -360,7 +361,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                 </div>
                             </div>
                         </div>
-                        <div className="p-4 pb-8">
+                        <div className="p-4 pb-16">
                             {isLoadingProperties ? (
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     {Array.from({ length: 6 }).map((_, index) => (
@@ -383,6 +384,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                             ) : (
                                 <div className="text-center py-16 px-4"><h3 className="text-xl font-semibold text-neutral-800">No Properties Found</h3></div>
                             )}
+                            <Footer className="mt-8" />
                         </div>
                     </div>
                 </div>
@@ -392,7 +394,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
     
     // Mobile Layout
     return (
-        <div className="flex flex-col bg-white h-full pt-20 pb-20">
+        <div className="flex flex-col bg-white h-full pt-20">
             {showFilters && (
                  <div className="p-4 flex-shrink-0">
                     <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm mx-auto">
@@ -401,12 +403,12 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                     </div>
                 </div>
             )}
-            
+
             {searchMode === 'ai' && showFilters ? (
                 <div className="flex-grow min-h-0">
-                    <AiSearch 
-                        properties={properties} 
-                        onApplyFilters={onApplyAiFilters} 
+                    <AiSearch
+                        properties={properties}
+                        onApplyFilters={onApplyAiFilters}
                         isMobile={isMobile}
                         history={aiChatHistory}
                         onHistoryChange={onAiChatHistoryChange}
@@ -419,7 +421,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                             <FilterControls {...props} />
                         </div>
                     )}
-                    
+
                     {showList && (
                         <div className="flex-grow min-h-0 overflow-y-auto">
                             <div className="p-4 border-b border-neutral-200 flex items-center justify-between sticky top-0 bg-white z-10">
@@ -443,7 +445,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                 </div>
                             </div>
 
-                            <div className="p-4 pb-32">
+                            <div className="p-4 pb-40">
                                 {isLoadingProperties ? (
                                     <div className="grid grid-cols-1 gap-4">
                                         {Array.from({ length: 4 }).map((_, index) => (
@@ -475,6 +477,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                         <p className="text-neutral-500 mt-2">Try adjusting your search filters or moving the map to a different area.</p>
                                     </div>
                                 )}
+                                <Footer className="mt-8" />
                             </div>
                         </div>
                     )}
