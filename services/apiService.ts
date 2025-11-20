@@ -919,3 +919,10 @@ export const addAgentReview = async (agentId: string, review: { quote: string; r
   }
   return response;
 };
+
+export const leaveAgency = async (): Promise<{ message: string; user: { id: string; agencyId: null; agencyName: string } }> => {
+  return await apiRequest('/agents/leave-agency', {
+    method: 'POST',
+    requiresAuth: true,
+  });
+};

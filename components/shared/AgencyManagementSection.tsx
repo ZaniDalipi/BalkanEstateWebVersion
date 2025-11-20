@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../../types';
-import { getAgencies, joinAgencyByInvitationCode } from '../../services/apiService';
+import { getAgencies, joinAgencyByInvitationCode, leaveAgency } from '../../services/apiService';
 import { useAppContext } from '../../context/AppContext';
 
 interface Agency {
@@ -124,20 +124,8 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
 
     try {
       setLoading(true);
-      const token = localStorage.getItem('balkan_estate_token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/agents/leave-agency`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to leave agency');
-      }
+      const data = await leaveAgency();
 
       console.log('✅ Successfully left agency');
 
