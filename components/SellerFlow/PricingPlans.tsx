@@ -10,13 +10,14 @@ interface PricingPlansProps {
   onClose: () => void;
   onSubscribe?: () => void;
   isOffer?: boolean;
+  isAgencyMode?: boolean; // When true, only show Enterprise plan for agency creation
 }
 
 const TickIcon: React.FC = () => (
     <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
 );
 
-const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscribe, isOffer }) => {
+const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscribe, isOffer, isAgencyMode = false }) => {
   const { state, dispatch } = useAppContext();
   const { activeDiscount } = state;
   const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes in seconds
@@ -289,7 +290,12 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                 </div>
             )}
             <div className="text-center mb-10">
-                {isOffer ? (
+                {isAgencyMode ? (
+                    <>
+                        <h2 className="text-2xl sm:text-3xl font-extrabold text-neutral-800 tracking-tight">Enterprise Plan Required</h2>
+                        <p className="mt-4 text-base sm:text-lg text-neutral-600">Subscribe to Enterprise to create your agency and showcase your team</p>
+                    </>
+                ) : isOffer ? (
                     <>
                         <h2 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">Congratulations! You've Unlocked Exclusive Discounts!</h2>
                         <p className="mt-4 text-base sm:text-lg text-neutral-600">Enjoy this one-time offer on our selling plans as a thank you.</p>
@@ -302,8 +308,9 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                 )}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                {/* Pro Yearly Plan */}
+            <div className={`grid grid-cols-1 ${isAgencyMode ? 'lg:grid-cols-1 max-w-xl mx-auto' : 'lg:grid-cols-3'} gap-8 items-start`}>
+                {/* Pro Yearly Plan - Hidden in Agency Mode */}
+                {!isAgencyMode && (
                 <div className="relative p-6 sm:p-8 rounded-2xl border-2 border-green-400 bg-gradient-to-br from-green-50 to-cyan-50 shadow-lg lg:-translate-y-4 flex flex-col h-full">
                     <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
                         <span className="inline-block bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
@@ -345,8 +352,10 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                         {isOffer ? `Get Pro Annual - €${discountedProYearly}/year` : `Get Pro Annual - €${proYearlyPrice}/year`}
                     </button>
                 </div>
+                )}
 
-                {/* Pro Monthly Plan */}
+                {/* Pro Monthly Plan - Hidden in Agency Mode */}
+                {!isAgencyMode && (
                 <div className="relative p-6 sm:p-8 rounded-2xl border border-neutral-200 bg-white flex flex-col h-full">
                      {isOffer && proMonthlyDiscount > 0 && (
                         <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
@@ -402,6 +411,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
                         {isOffer ? `Get Pro Monthly - €${discountedProMonthly}/month` : `Get Pro Monthly - €${proMonthlyPrice}/month`}
                     </button>
                 </div>
+                )}
 
                 {/* Enterprise Plan */}
                 <div className="relative p-6 sm:p-8 rounded-2xl bg-neutral-800 text-white flex flex-col h-full">

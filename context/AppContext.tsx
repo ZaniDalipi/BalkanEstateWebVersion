@@ -24,6 +24,7 @@ const initialState: AppState = {
   activeView: 'search',
   isPricingModalOpen: false,
   isFirstLoginOffer: false,
+  isAgencyCreationMode: false,
   isSubscriptionModalOpen: false,
   isAuthModalOpen: false,
   authModalView: 'login',
@@ -73,7 +74,12 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         return newState;
     }
     case 'TOGGLE_PRICING_MODAL':
-      return { ...state, isPricingModalOpen: action.payload.isOpen, isFirstLoginOffer: action.payload.isOffer ?? state.isFirstLoginOffer };
+      return {
+        ...state,
+        isPricingModalOpen: action.payload.isOpen,
+        isFirstLoginOffer: action.payload.isOffer ?? state.isFirstLoginOffer,
+        isAgencyCreationMode: action.payload.isAgencyMode ?? false
+      };
     case 'TOGGLE_SUBSCRIPTION_MODAL':
       return { ...state, isSubscriptionModalOpen: action.payload };
     case 'TOGGLE_ENTERPRISE_MODAL':

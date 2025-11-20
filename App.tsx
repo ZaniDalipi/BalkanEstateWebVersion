@@ -322,11 +322,12 @@ const MainLayout: React.FC = () => {
             isOpen={state.isDiscountGameOpen}
             onGameComplete={handleGameComplete}
         />
-        <PricingPlans 
-            isOpen={state.isPricingModalOpen} 
+        <PricingPlans
+            isOpen={state.isPricingModalOpen}
             onClose={handlePricingClose}
             onSubscribe={handleSubscribe}
             isOffer={state.isFirstLoginOffer}
+            isAgencyMode={state.isAgencyCreationMode}
         />
         <SubscriptionModal
             isOpen={state.isSubscriptionModalOpen}

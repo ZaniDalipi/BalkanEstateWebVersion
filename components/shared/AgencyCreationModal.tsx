@@ -101,8 +101,8 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
     // Close this modal
     onClose();
 
-    // Open pricing modal for Enterprise plan
-    dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: false } });
+    // Open pricing modal for Enterprise plan (agency creation mode)
+    dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: false, isAgencyMode: true } });
   };
 
   const inputClasses = "w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm";

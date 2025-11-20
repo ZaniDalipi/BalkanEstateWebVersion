@@ -308,6 +308,7 @@ export interface AppState {
     activeView: AppView;
     isPricingModalOpen: boolean;
     isFirstLoginOffer: boolean;
+    isAgencyCreationMode: boolean; // Flag to indicate agency creation flow (only show Enterprise plan)
     isSubscriptionModalOpen: boolean;
     isAuthModalOpen: boolean;
     authModalView: AuthModalView;
@@ -342,7 +343,7 @@ export type AppAction =
     | { type: 'AUTH_CHECK_COMPLETE', payload: { isAuthenticated: boolean, user: User | null } }
     | { type: 'COMPLETE_ONBOARDING' }
     | { type: 'SET_ACTIVE_VIEW', payload: AppView }
-    | { type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: boolean, isOffer?: boolean } }
+    | { type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: boolean, isOffer?: boolean, isAgencyMode?: boolean } }
     | { type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: boolean }
     | { type: 'TOGGLE_ENTERPRISE_MODAL', payload: boolean }
     | { type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: boolean, view?: AuthModalView } }
