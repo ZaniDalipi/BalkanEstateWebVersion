@@ -102,7 +102,7 @@ export const logAdminAction = (action: string) => {
     console.log(`   IP: ${ip}`);
     console.log(`   Time: ${timestamp}`);
     console.log(`   Path: ${req.method} ${req.path}`);
-    console.log(`   Body: ${JSON.stringify(req.body).substring(0, 200)}`);
+    // console.log(`   Body: ${JSON.stringify(req.body).substring(0, 200)}`);
 
     // TODO: Store in database for audit trail
     // await AdminAuditLog.create({

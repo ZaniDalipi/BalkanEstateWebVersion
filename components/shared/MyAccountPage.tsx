@@ -502,6 +502,8 @@ const MyAccountPage: React.FC = () => {
         [UserRole.AGENT]: 'Agent',
         [UserRole.PRIVATE_SELLER]: 'Private Seller',
         [UserRole.BUYER]: 'Buyer',
+        [UserRole.ADMIN]: '',
+        [UserRole.SUPER_ADMIN]: ''
     };
 
     const renderContent = () => {
