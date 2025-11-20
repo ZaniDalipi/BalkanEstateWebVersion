@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import User, { IUser } from '../models/User';
 import Property from '../models/Property';
-import Conversation from '../models/Conversation';
 import { syncUserStats } from '../utils/statsUpdater';
 
 // Get all agents with their statistics
