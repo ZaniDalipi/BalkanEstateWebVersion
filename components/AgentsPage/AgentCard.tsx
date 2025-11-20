@@ -161,9 +161,18 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
               </div>
             </div>
           </div>
-          <div className={`flex items-center gap-2 font-bold px-3 py-1.5 rounded-full text-sm ${rankColor.bg} ${rankColor.text}`}>
-            <TrophyIcon className="w-4 h-4" />
-            <span>#{rank}</span>
+          <div className="flex flex-col items-end gap-1">
+            <div className={`flex items-center gap-2 font-bold px-3 py-1.5 rounded-full text-sm ${rankColor.bg} ${rankColor.text}`}>
+              <TrophyIcon className="w-4 h-4" />
+              <span>#{rank}</span>
+            </div>
+            {/* FUTURE REWARDS SYSTEM: Add reward badges here */}
+            {rank === 1 && (
+              <div className="text-xs bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-900 px-2 py-0.5 rounded-full font-bold shadow-sm">
+                🏆 Champion
+              </div>
+            )}
+            {/* Future: Add monthly/yearly rewards, achievement badges, etc. */}
           </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-4 text-center border-t border-neutral-100 pt-4">
