@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../../types';
 import { getAgencies, joinAgencyByInvitationCode } from '../../services/apiService';
+import { useAppContext } from '../../context/AppContext';
 
 interface Agency {
   _id: string;
@@ -16,6 +17,7 @@ interface AgencyManagementSectionProps {
 }
 
 const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ currentUser, onAgencyChange }) => {
+  const { dispatch } = useAppContext();
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [selectedAgencyId, setSelectedAgencyId] = useState('');
   const [invitationCode, setInvitationCode] = useState('');
@@ -71,6 +73,16 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
 
       console.log('✅ Successfully joined agency:', response.agency.name);
 
+      // Update user context immediately with new agency data
+      dispatch({
+        type: 'UPDATE_USER',
+        payload: {
+          agencyName: response.user.agencyName,
+          agencyId: response.user.agencyId,
+          agentId: response.user.agentId,
+        }
+      });
+
       // Show success message
       const wasIndependent = !currentUser.agencyName || currentUser.agencyName === 'Independent Agent';
       const actionText = wasIndependent ? 'joined' : 'switched to';
@@ -79,7 +91,7 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
         `✅ Successfully ${actionText} ${response.agency.name}!\n\n` +
         `🏢 You are now affiliated with ${response.agency.name}\n` +
         `🎯 Total Agents: ${response.agency.totalAgents}\n\n` +
-        `👉 Refreshing to update your profile...`
+        `Your profile has been updated!`
       );
 
       // Reset form
@@ -87,10 +99,8 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
       setInvitationCode('');
       setShowForm(false);
 
-      // Reload page to refresh all data
-      setTimeout(() => {
-        onAgencyChange();
-      }, 500);
+      // Trigger refresh callback
+      onAgencyChange();
 
     } catch (err: any) {
       console.error('❌ Failed to join agency:', err);
