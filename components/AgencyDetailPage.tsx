@@ -58,7 +58,13 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     String(adminId) === String(currentUser.id) || String(adminId) === String(currentUser._id)
   ));
 
-  const canRequestToJoin = isAuthenticated && currentUser?.role === 'agent' && !currentUser?.agencyId;
+  // Check if current user is already a member of this agency
+  const isAlreadyMember = currentUser && agents.some(agent => {
+    const agentUserId = agent.agentId || agent._id || agent.id;
+    return String(agentUserId) === String(currentUser.id) || String(agentUserId) === String(currentUser._id);
+  });
+
+  const canRequestToJoin = isAuthenticated && currentUser?.role === 'agent' && !currentUser?.agencyId && !isAlreadyMember;
 
   useEffect(() => {
     fetchAgencyData();
