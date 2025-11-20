@@ -354,12 +354,12 @@ export const getAgency = async (
     }
 
     // Get agency's properties with error handling
-    let properties: IProperty[] = [];
+    let properties: any[] = [];
     try {
       const sellerIds = [agency.ownerId, ...agency.agents].filter(Boolean);
       console.log(`🏠 Fetching properties for ${sellerIds.length} sellers (owner + ${agency.agents.length} agents)`);
 
-      properties = await Property.find({
+      const rawProperties = await Property.find({
         sellerId: { $in: sellerIds },
         status: 'active',
       })
@@ -368,7 +368,7 @@ export const getAgency = async (
         .lean();
 
       // Transform sellerId to seller for frontend compatibility
-      properties = properties.map((prop: any) => ({
+      properties = rawProperties.map((prop: any) => ({
         ...prop,
         id: prop._id.toString(),
         seller: prop.sellerId,
