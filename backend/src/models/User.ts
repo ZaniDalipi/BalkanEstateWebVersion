@@ -9,7 +9,7 @@ export interface IUser extends Document {
   phone?: string;
   avatarUrl?: string;
   avatarPublicId?: string;
-  role: 'buyer' | 'private_seller' | 'agent';
+  role: 'buyer' | 'private_seller' | 'agent' | 'admin' | 'super_admin';
   provider: 'local' | 'google' | 'facebook' | 'apple';
   providerId?: string;
   isEmailVerified: boolean;
@@ -118,7 +118,7 @@ const UserSchema: Schema = new Schema(
     },
     role: {
       type: String,
-      enum: ['buyer', 'private_seller', 'agent'],
+      enum: ['buyer', 'private_seller', 'agent', 'admin', 'super_admin'],
       default: 'buyer',
     },
     city: {

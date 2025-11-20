@@ -3,6 +3,8 @@ export enum UserRole {
     BUYER = 'buyer',
     PRIVATE_SELLER = 'private_seller',
     AGENT = 'agent',
+    ADMIN = 'admin',
+    SUPER_ADMIN = 'super_admin',
 }
 
 export type PropertyStatus = 'active' | 'pending' | 'sold' | 'draft';
