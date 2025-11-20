@@ -82,19 +82,35 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
   const [showSalesHistory, setShowSalesHistory] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/auth/my-stats', {
+
+        // First, sync the stats to ensure they're up-to-date
+        const syncResponse = await fetch('/api/auth/sync-stats', {
+          method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
           },
         });
-        if (response.ok) {
-          const data = await response.json();
-          setStats(data.stats);
+
+        if (syncResponse.ok) {
+          const syncData = await syncResponse.json();
+          setStats(syncData.stats);
+        } else {
+          // If sync fails, fallback to just fetching stats
+          const response = await fetch('/api/auth/my-stats', {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
+            },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setStats(data.stats);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch user stats:', error);
@@ -105,6 +121,27 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
 
     fetchStats();
   }, [user.id]);
+
+  const handleRefreshStats = async () => {
+    try {
+      setSyncing(true);
+      const syncResponse = await fetch('/api/auth/sync-stats', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
+        },
+      });
+
+      if (syncResponse.ok) {
+        const syncData = await syncResponse.json();
+        setStats(syncData.stats);
+      }
+    } catch (error) {
+      console.error('Failed to sync stats:', error);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const fetchSalesHistory = async () => {
     if (salesHistory) {
@@ -148,9 +185,32 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 mb-6">
-        <ChartBarIcon className="w-8 h-8 text-primary" />
-        <h2 className="text-2xl font-bold text-neutral-800">Your Statistics</h2>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <ChartBarIcon className="w-8 h-8 text-primary" />
+          <h2 className="text-2xl font-bold text-neutral-800">Your Statistics</h2>
+        </div>
+        <button
+          onClick={handleRefreshStats}
+          disabled={syncing}
+          className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Refresh statistics"
+        >
+          <svg
+            className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          {syncing ? 'Syncing...' : 'Refresh'}
+        </button>
       </div>
 
       {isSellerRole ? (
