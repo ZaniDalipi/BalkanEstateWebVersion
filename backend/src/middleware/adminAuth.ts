@@ -8,8 +8,8 @@ const ADMIN_WHITELIST_IPS = [
   '::1', // IPv6 localhost
   '::ffff:127.0.0.1', // IPv6-mapped IPv4 localhost
   // Add your VPN IP addresses here, for example:
-  // '10.8.0.1',
-  // '192.168.1.100',
+  '10.8.0.1',
+  '192.168.1.100',
 ];
 
 // Admin role check
