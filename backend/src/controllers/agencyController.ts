@@ -36,12 +36,18 @@ export const createAgency = async (
       return;
     }
 
-    // Check if user has Enterprise subscription
-    if (user.subscriptionPlan !== 'enterprise') {
+    // Check if user has Enterprise subscription (skip in development mode)
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
+    if (!isDevelopment && user.subscriptionPlan !== 'enterprise') {
       res.status(403).json({
         message: 'Agency profiles are only available for Enterprise tier subscribers. Please upgrade your plan to create an agency.',
       });
       return;
+    }
+
+    if (isDevelopment && user.subscriptionPlan !== 'enterprise') {
+      console.log('🔧 Development mode: Bypassing Enterprise subscription check for agency creation');
     }
 
     // Check if agency already exists for this user
