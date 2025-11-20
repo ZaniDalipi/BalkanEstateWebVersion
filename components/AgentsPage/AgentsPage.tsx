@@ -4,7 +4,7 @@ import { Agent, Property } from '../../types';
 import { getAllAgents } from '../../services/apiService';
 import AgentCard from './AgentCard';
 import AgentProfilePage from './AgentProfilePage';
-import { Bars3Icon, Squares2x2Icon, TrophyIcon } from '../../constants';
+import { Bars3Icon, Squares2x2Icon, TrophyIcon, UserGroupIcon } from '../../constants';
 import StarRating from '../shared/StarRating';
 import { formatPrice } from '../../utils/currency';
 import AdvertisementBanner from '../AdvertisementBanner';
@@ -105,7 +105,7 @@ const AgentsPage: React.FC = () => {
       <AdvertisementBanner position="top" />
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
-            <TrophyIcon className="w-12 h-12 text-primary mx-auto mb-2" />
+            <UserGroupIcon className="w-12 h-12 text-primary mx-auto mb-2" />
             <h1 className="text-3xl font-bold text-neutral-900">Top Agents</h1>
             <p className="text-lg text-neutral-600 mt-2">
                 Discover the best real estate agents in the Balkans.
