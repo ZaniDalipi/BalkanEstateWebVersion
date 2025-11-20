@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import Agency from '../models/Agency';
 import User, { IUser } from '../models/User';
 import Agent from '../models/Agent';
-import Property, { IProperty } from '../models/Property';
+import Property from '../models/Property';
 import { geocodeAgency } from '../services/geocodingService';
 import cloudinary from '../config/cloudinary';
 import { Readable } from 'stream';
