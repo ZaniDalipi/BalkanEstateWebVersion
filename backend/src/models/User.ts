@@ -65,6 +65,13 @@ export interface IUser extends Document {
     monthResetDate: Date;        // When the monthly counter resets
   };
 
+  // Weekly Search Usage Tracking
+  weeklySearches?: {
+    weeklyCount: number;         // Number of searches performed this week
+    lastUsed?: Date;             // Last time a search was performed
+    weekResetDate: Date;         // When the weekly counter resets
+  };
+
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -265,6 +272,24 @@ const UserSchema: Schema = new Schema(
           nextMonth.setDate(1);
           nextMonth.setHours(0, 0, 0, 0);
           return nextMonth;
+        },
+      },
+    },
+    weeklySearches: {
+      weeklyCount: {
+        type: Number,
+        default: 0,
+      },
+      lastUsed: {
+        type: Date,
+      },
+      weekResetDate: {
+        type: Date,
+        default: () => {
+          const nextWeek = new Date();
+          nextWeek.setDate(nextWeek.getDate() + 7);
+          nextWeek.setHours(0, 0, 0, 0);
+          return nextWeek;
         },
       },
     },

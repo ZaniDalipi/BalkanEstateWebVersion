@@ -302,7 +302,7 @@ const parseMarkdown = (text: string) => {
     return elements;
 };
 
-const NeighborhoodInsights: React.FC<{ lat: number; lng: number; city: string; country: string; }> = ({ lat, lng, city, country }) => {
+const NeighborhoodInsights: React.FC<{ lat: number; lng: number; address: string; city: string; country: string; }> = ({ lat, lng, address, city, country }) => {
     const { state, dispatch } = useAppContext();
     const [insights, setInsights] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -330,7 +330,7 @@ const NeighborhoodInsights: React.FC<{ lat: number; lng: number; city: string; c
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify({ lat, lng, city, country }),
+                body: JSON.stringify({ lat, lng, address, city, country }),
             });
 
             const data = await response.json();
@@ -960,11 +960,12 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                 </button>
             </div>
 
-            <NeighborhoodInsights 
-                lat={property.lat} 
-                lng={property.lng} 
-                city={property.city} 
-                country={property.country} 
+            <NeighborhoodInsights
+                lat={property.lat}
+                lng={property.lng}
+                address={property.address}
+                city={property.city}
+                country={property.country}
             />
           </div>
 

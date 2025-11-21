@@ -12,12 +12,12 @@ const SUBSCRIBED_USER_MONTHLY_LIMIT = 20; // Subscribed users get 20 insights pe
  */
 export const getNeighborhoodInsights = async (req: Request, res: Response) => {
   try {
-    const { lat, lng, city, country } = req.body;
+    const { lat, lng, address, city, country } = req.body;
 
     // Validate required fields
-    if (!lat || !lng || !city || !country) {
+    if (!lat || !lng || !address || !city || !country) {
       return res.status(400).json({
-        message: 'Missing required fields: lat, lng, city, country',
+        message: 'Missing required fields: lat, lng, address, city, country',
       });
     }
 
@@ -85,6 +85,7 @@ export const getNeighborhoodInsights = async (req: Request, res: Response) => {
       const insights = await getNeighborhoodInsightsFromGemini(
         Number(lat),
         Number(lng),
+        String(address),
         String(city),
         String(country)
       );

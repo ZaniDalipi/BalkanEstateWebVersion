@@ -6,7 +6,7 @@ import PropertyCardSkeleton from './BuyerFlow/PropertyCardSkeleton';
 import AgencyJoinRequestsModal from './AgencyJoinRequestsModal';
 import InvitationCodeModal from './InvitationCodeModal';
 import { formatPrice } from '../utils/currency';
-import { createJoinRequest, removeAgentFromAgency, addAgencyAdmin, removeAgencyAdmin, verifyInvitationCode } from '../services/apiService';
+import { createJoinRequest, removeAgentFromAgency, addAgencyAdmin, removeAgencyAdmin, verifyInvitationCode, leaveAgency } from '../services/apiService';
 import { Agency } from '../types';
 import { socketService } from '../services/socketService';
 
@@ -46,6 +46,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const [uploadError, setUploadError] = useState('');
   const [removingAgentId, setRemovingAgentId] = useState<string | null>(null);
   const [showAllMembers, setShowAllMembers] = useState(true);
+  const [isLeavingAgency, setIsLeavingAgency] = useState(false);
 
   // Check if current user is owner - handle both populated and unpopulated ownerId
   const agencyOwnerId = typeof agencyData.ownerId === 'object' && agencyData.ownerId !== null
@@ -248,6 +249,46 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
       alert(error.message || 'Failed to remove agent from agency');
     } finally {
       setRemovingAgentId(null);
+    }
+  };
+
+  const handleLeaveAgency = async () => {
+    const confirmed = window.confirm(
+      `Are you sure you want to leave ${agencyData.name}?\n\n` +
+      `This will:\n` +
+      `- Remove you from this agency\n` +
+      `- Clear your agency affiliation\n` +
+      `- Keep your properties and reviews intact\n` +
+      `- Change your status to Independent Agent`
+    );
+
+    if (!confirmed) return;
+
+    setIsLeavingAgency(true);
+    try {
+      const response = await leaveAgency();
+
+      // Update current user in app context
+      if (dispatch && currentUser) {
+        dispatch({
+          type: 'SET_USER',
+          payload: {
+            ...currentUser,
+            agencyId: undefined,
+            agencyName: undefined,
+          }
+        });
+      }
+
+      alert(response.message || `You have successfully left ${agencyData.name}`);
+
+      // Redirect to home or agencies page
+      window.location.href = '/';
+    } catch (error: any) {
+      console.error('Error leaving agency:', error);
+      alert(error.message || 'Failed to leave agency');
+    } finally {
+      setIsLeavingAgency(false);
     }
   };
 
@@ -784,6 +825,33 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
                                   <>
                                     <XMarkIcon className="w-4 h-4" />
                                     Remove
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Leave Agency Button - Only visible to current user who is not the owner */}
+                          {!isOwner && currentUser && agentId && (String(agentId) === String(currentUser.id) || String(agentId) === String(currentUser._id)) && !isAgentOwner && (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleLeaveAgency();
+                                }}
+                                disabled={isLeavingAgency}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-wait"
+                                title="Leave this agency"
+                              >
+                                {isLeavingAgency ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600"></div>
+                                    Leaving...
+                                  </>
+                                ) : (
+                                  <>
+                                    <XMarkIcon className="w-4 h-4" />
+                                    Leave Agency
                                   </>
                                 )}
                               </button>

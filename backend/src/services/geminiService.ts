@@ -50,12 +50,13 @@ async function retryWithBackoff<T>(
 export const getNeighborhoodInsights = async (
   lat: number,
   lng: number,
+  address: string,
   city: string,
   country: string
 ): Promise<string> => {
   const prompt = `
 You are a helpful local guide for the "Balkan Estate" real estate agency.
-A user is looking at a property located in ${city}, ${country} at coordinates (latitude: ${lat}, longitude: ${lng}).
+A user is looking at a property located at ${address}, ${city}, ${country} (coordinates: ${lat}, ${lng}).
 
 Based on these coordinates, generate a proximity-based summary of the neighborhood. Your response should be helpful for someone considering moving there. Structure your response as a short introductory paragraph followed by a bulleted list.
 
