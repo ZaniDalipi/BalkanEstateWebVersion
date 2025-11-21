@@ -5,6 +5,7 @@ import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon, Che
 import AiSearch from './AiSearch';
 import PropertyCardSkeleton from './PropertyCardSkeleton';
 import { useAppContext } from '../../context/AppContext';
+import Footer from '../shared/Footer';
 
 interface PropertyListProps {
   properties: Property[];
@@ -634,7 +635,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                 </div>
                             </div>
                         </div>
-                        <div className="p-4 pb-16">
+                        <div className="p-4">
                             {isLoadingProperties ? (
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     {Array.from({ length: 6 }).map((_, index) => (
@@ -657,6 +658,9 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                             ) : (
                                 <div className="text-center py-16 px-4"><h3 className="text-xl font-semibold text-neutral-800">No Properties Found</h3></div>
                             )}
+
+                            {/* Footer - Integrated at bottom of property list */}
+                            <Footer />
                         </div>
                     </div>
                 </div>
@@ -717,7 +721,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                 </div>
                             </div>
 
-                            <div className="p-4 pb-40">
+                            <div className="p-4">
                                 {isLoadingProperties ? (
                                     <div className="grid grid-cols-1 gap-4">
                                         {Array.from({ length: 4 }).map((_, index) => (
@@ -749,6 +753,9 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                         <p className="text-neutral-500 mt-2">Try adjusting your search filters or moving the map to a different area.</p>
                                     </div>
                                 )}
+
+                                {/* Footer - Integrated at bottom of property list */}
+                                <Footer />
                             </div>
                         </div>
                     )}

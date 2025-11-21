@@ -44,8 +44,8 @@ const Footer: React.FC<FooterProps> = ({ className = '' }) => {
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-secondary via-yellow-400 to-secondary"></div>
 
             {/* Main Footer Content */}
-            <div className="relative z-10 max-w-7xl mx-auto px-4 py-4 md:py-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            <div className="relative z-10 max-w-7xl mx-auto px-4 py-3 md:py-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
                     {/* Brand Section */}
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
@@ -182,8 +182,8 @@ const Footer: React.FC<FooterProps> = ({ className = '' }) => {
 
             {/* Bottom Bar */}
             <div className="relative z-10 border-t border-white/20 bg-primary-dark/50 backdrop-blur-sm">
-                <div className="max-w-7xl mx-auto px-4 py-2">
-                    <div className="flex flex-col md:flex-row justify-between items-center gap-2 text-xs">
+                <div className="max-w-7xl mx-auto px-4 py-1.5">
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-1.5 text-xs">
                         <p className="text-white/70">
                             © {currentYear} <span className="font-semibold text-white">Balkan Estate</span>
                         </p>

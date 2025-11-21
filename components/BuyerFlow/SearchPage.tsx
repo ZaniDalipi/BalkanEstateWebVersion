@@ -12,7 +12,6 @@ import { filterProperties } from '../../utils/propertyUtils';
 import AiSearch from './AiSearch';
 import Modal from '../shared/Modal';
 import { COUNTRY_OPTIONS, BALKAN_COUNTRIES } from '../../constants/countries';
-import Footer from '../shared/Footer';
 
 interface SearchPageProps {
     onToggleSidebar: () => void;
@@ -679,11 +678,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                     </div>
                 </div>
             )}
-
-            {/* Footer - Only on SearchPage, matches property list width */}
-            <div className="fixed bottom-0 left-0 z-10 md:pl-20 w-full md:w-3/5">
-                <Footer />
-            </div>
         </div>
     );
 };
