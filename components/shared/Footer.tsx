@@ -16,6 +16,7 @@ import {
     WhatsappIcon,
     InboxIcon
 } from '../../constants';
+import FooterCityscape from './FooterCityscape';
 
 interface FooterProps {
     className?: string;
@@ -289,6 +290,9 @@ const Footer: React.FC<FooterProps> = ({ className = '' }) => {
                     </div>
                 </div>
             </div>
+
+            {/* Animated Cityscape */}
+            <FooterCityscape />
         </footer>
     );
 };
