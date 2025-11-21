@@ -392,7 +392,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
     
     // Mobile Layout
     return (
-        <div className="flex flex-col bg-white h-full pt-20 pb-20">
+        <div className="flex flex-col bg-white h-full pt-20">
             {showFilters && (
                  <div className="p-4 flex-shrink-0">
                     <div className="bg-neutral-100 p-1 rounded-full flex items-center space-x-1 border border-neutral-200 shadow-sm max-w-sm mx-auto">
@@ -443,7 +443,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                 </div>
                             </div>
 
-                            <div className="p-4 pb-32">
+                            <div className="p-4 pb-4">
                                 {isLoadingProperties ? (
                                     <div className="grid grid-cols-1 gap-4">
                                         {Array.from({ length: 4 }).map((_, index) => (
