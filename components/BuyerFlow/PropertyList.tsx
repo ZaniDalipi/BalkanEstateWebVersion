@@ -78,7 +78,7 @@ const ToggleSwitch: React.FC<{
     <label className="text-xs font-medium text-neutral-700">{label}</label>
     <div className="flex items-center gap-1">
       <button
-        onClick={() => onChange(value === false ? null : false)}
+        onClick={() => onChange(false)}
         className={`px-2 py-1 text-xs rounded transition-colors ${
           value === false ? 'bg-red-500 text-white' : 'bg-neutral-200 text-neutral-600'
         }`}
@@ -86,7 +86,7 @@ const ToggleSwitch: React.FC<{
         No
       </button>
       <button
-        onClick={() => onChange(value === null ? null : null)}
+        onClick={() => onChange(null)}
         className={`px-2 py-1 text-xs rounded transition-colors ${
           value === null ? 'bg-neutral-400 text-white' : 'bg-neutral-200 text-neutral-600'
         }`}
@@ -94,7 +94,7 @@ const ToggleSwitch: React.FC<{
         Any
       </button>
       <button
-        onClick={() => onChange(value === true ? null : true)}
+        onClick={() => onChange(true)}
         className={`px-2 py-1 text-xs rounded transition-colors ${
           value === true ? 'bg-green-500 text-white' : 'bg-neutral-200 text-neutral-600'
         }`}
@@ -519,207 +519,6 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                                         ))}
                                     </div>
                                 )}
-                            </div>
-                        </div>
-
-                        {/* Property Features Filter */}
-                        <div className="space-y-3 p-3 bg-neutral-50 rounded-lg">
-                            <h4 className="text-xs font-semibold text-neutral-800 mb-2">Property Features</h4>
-
-                            {/* Balcony/Terrace */}
-                            <div>
-                                <label className="block text-xs text-neutral-600 mb-1">Balcony/Terrace</label>
-                                <div className="flex gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('hasBalcony', false)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.hasBalcony === false ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        No
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('hasBalcony', null)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.hasBalcony === null ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        Any
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('hasBalcony', true)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.hasBalcony === true ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        Yes
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Garden/Yard */}
-                            <div>
-                                <label className="block text-xs text-neutral-600 mb-1">Garden/Yard</label>
-                                <div className="flex gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('hasGarden', false)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.hasGarden === false ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        No
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('hasGarden', null)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.hasGarden === null ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        Any
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('hasGarden', true)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.hasGarden === true ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        Yes
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Elevator */}
-                            <div>
-                                <label className="block text-xs text-neutral-600 mb-1">Elevator</label>
-                                <div className="flex gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('hasElevator', false)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.hasElevator === false ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        No
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('hasElevator', null)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.hasElevator === null ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        Any
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('hasElevator', true)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.hasElevator === true ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        Yes
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Security System */}
-                            <div>
-                                <label className="block text-xs text-neutral-600 mb-1">Security System</label>
-                                <div className="flex gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('hasSecurity', false)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.hasSecurity === false ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        No
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('hasSecurity', null)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.hasSecurity === null ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        Any
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('hasSecurity', true)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.hasSecurity === true ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        Yes
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Air Conditioning */}
-                            <div>
-                                <label className="block text-xs text-neutral-600 mb-1">Air Conditioning</label>
-                                <div className="flex gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('hasAirConditioning', false)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.hasAirConditioning === false ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        No
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('hasAirConditioning', null)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.hasAirConditioning === null ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        Any
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('hasAirConditioning', true)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.hasAirConditioning === true ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        Yes
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Swimming Pool */}
-                            <div>
-                                <label className="block text-xs text-neutral-600 mb-1">Swimming Pool</label>
-                                <div className="flex gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('hasPool', false)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.hasPool === false ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        No
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('hasPool', null)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.hasPool === null ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        Any
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('hasPool', true)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.hasPool === true ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        Yes
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Pets Allowed */}
-                            <div>
-                                <label className="block text-xs text-neutral-600 mb-1">Pets Allowed</label>
-                                <div className="flex gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('petsAllowed', false)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.petsAllowed === false ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        No
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('petsAllowed', null)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.petsAllowed === null ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        Any
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onFilterChange('petsAllowed', true)}
-                                        className={`px-3 py-1 text-xs rounded ${filters.petsAllowed === true ? 'bg-primary-dark text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}
-                                    >
-                                        Yes
-                                    </button>
-                                </div>
                             </div>
                         </div>
                     </div>
