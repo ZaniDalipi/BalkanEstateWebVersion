@@ -33,17 +33,11 @@ const Footer: React.FC<FooterProps> = ({ className = '' }) => {
 
     return (
         <footer className={`relative bg-gradient-to-br from-primary-dark via-primary to-primary text-white overflow-hidden ${className}`}>
-            {/* Decorative Wave Pattern */}
-            <div className="absolute inset-0 opacity-10">
-                <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <pattern id="wave-pattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-                            <path d="M0 50 Q 25 30, 50 50 T 100 50" fill="none" stroke="currentColor" strokeWidth="2"/>
-                        </pattern>
-                    </defs>
-                    <rect width="100%" height="100%" fill="url(#wave-pattern)" />
-                </svg>
-            </div>
+            {/* Subtle Dot Pattern Background */}
+            <div className="absolute inset-0 opacity-5" style={{
+                backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
+                backgroundSize: '24px 24px'
+            }}></div>
 
             {/* Accent Decoration */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-secondary via-yellow-400 to-secondary"></div>
@@ -62,9 +56,14 @@ const Footer: React.FC<FooterProps> = ({ className = '' }) => {
                         <p className="text-sm text-white/80 leading-relaxed">
                             Your trusted partner in finding the perfect property across the Balkans. Making real estate simple, transparent, and accessible.
                         </p>
-                        <div className="flex items-center gap-2 text-sm bg-white/10 rounded-lg px-3 py-2 backdrop-blur-sm">
-                            <MapPinIcon className="w-5 h-5 text-secondary flex-shrink-0" />
-                            <span className="font-medium">Serving Albania, Kosovo & beyond</span>
+                        <div className="bg-white/10 rounded-lg px-4 py-3 backdrop-blur-sm">
+                            <div className="flex items-center gap-2 mb-2">
+                                <MapPinIcon className="w-5 h-5 text-secondary flex-shrink-0" />
+                                <span className="font-semibold text-sm">Available in 10 Countries:</span>
+                            </div>
+                            <p className="text-xs text-white/90 leading-relaxed">
+                                Albania, Bosnia and Herzegovina, Bulgaria, Croatia, Greece, Kosovo, Montenegro, North Macedonia, Romania, and Serbia
+                            </p>
                         </div>
 
                         {/* Social Media Links */}
@@ -260,18 +259,17 @@ const Footer: React.FC<FooterProps> = ({ className = '' }) => {
                 {/* Newsletter Section */}
                 <div className="mt-12 pt-8 border-t border-white/20">
                     <div className="max-w-2xl mx-auto text-center">
-                        <h3 className="text-xl font-bold mb-2">Stay Updated</h3>
-                        <p className="text-sm text-white/80 mb-6">Get the latest properties and real estate news delivered to your inbox</p>
+                        <h3 className="text-xl font-bold mb-2">Never Miss a New Listing</h3>
+                        <p className="text-sm text-white/80 mb-6">Get instant notifications for properties matching your search criteria</p>
                         <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-                            <input
-                                type="email"
-                                placeholder="Enter your email"
-                                className="flex-1 px-4 py-3 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder-white/50 focus:outline-none focus:border-secondary focus:bg-white/20 transition-all"
-                            />
-                            <button className="px-6 py-3 bg-secondary hover:bg-orange-600 text-white font-semibold rounded-lg transition-all duration-300 hover:shadow-lg hover:scale-105">
-                                Subscribe
+                            <button
+                                onClick={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true })}
+                                className="w-full px-8 py-3 bg-secondary hover:bg-orange-600 text-white font-semibold rounded-lg transition-all duration-300 hover:shadow-lg hover:scale-105"
+                            >
+                                Subscribe for Notifications
                             </button>
                         </div>
+                        <p className="text-xs text-white/70 mt-3">€1.50/month - Cancel anytime</p>
                     </div>
                 </div>
             </div>
