@@ -757,13 +757,6 @@ export const joinAgencyByInvitationCode = async (invitationCode: string, agencyI
   });
 };
 
-export const leaveAgency = async (): Promise<any> => {
-  return await apiRequest('/agencies/leave', {
-    method: 'POST',
-    requiresAuth: true,
-  });
-};
-
 // --- AGENCY JOIN REQUEST API ---
 
 export const createJoinRequest = async (agencyId: string, message?: string): Promise<any> => {
@@ -908,7 +901,7 @@ function transformBackendAgent(backendAgent: any): any {
 }
 
 export const getAllAgents = async (): Promise<any> => {
-  const response = await apiRequest("/agents");
+  const response = await apiRequest<{ agents?: any[] }>("/agents");
   if (response.agents) {
     response.agents = response.agents.map(transformBackendAgent);
   }
@@ -916,7 +909,7 @@ export const getAllAgents = async (): Promise<any> => {
 };
 
 export const addAgentReview = async (agentId: string, review: { quote: string; rating: number; propertyId?: string }): Promise<any> => {
-  const response = await apiRequest(`/agents/${agentId}/reviews`, {
+  const response = await apiRequest<{ agent?: any }>(`/agents/${agentId}/reviews`, {
     method: 'POST',
     body: review,
     requiresAuth: true,
