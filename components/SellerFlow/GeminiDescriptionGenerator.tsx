@@ -26,6 +26,7 @@ interface ListingData {
     parking_spots: number;
     specialFeatures: string[];
     materials: string[];
+    amenities: string[];
     description: string;
     image_tags: { index: number; tag: string; }[];
     tourUrl: string;
@@ -52,6 +53,7 @@ const initialListingData: ListingData = {
     parking_spots: 0,
     specialFeatures: [],
     materials: [],
+    amenities: [],
     description: '',
     image_tags: [],
     tourUrl: '',
@@ -279,6 +281,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 parking_spots: propertyToEdit.parking,
                 specialFeatures: propertyToEdit.specialFeatures,
                 materials: propertyToEdit.materials,
+                amenities: propertyToEdit.amenities || [],
                 description: propertyToEdit.description,
                 tourUrl: propertyToEdit.tourUrl || '',
                 propertyType: propertyToEdit.propertyType || 'house',
@@ -752,6 +755,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 description: listingData.description,
                 specialFeatures: listingData.specialFeatures,
                 materials: listingData.materials,
+                amenities: listingData.amenities,
                 tourUrl: listingData.tourUrl,
                 imageUrl: imageUrls.length > 0 ? imageUrls[0].url : 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=500',
                 images: imageUrls,
@@ -962,6 +966,14 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                     <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end"><div className="relative"><select name="propertyType" id="propertyType" value={listingData.propertyType} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`}><option value="house">House</option><option value="apartment">Apartment</option><option value="villa">Villa</option><option value="other">Other</option></select><label htmlFor="propertyType" className={floatingSelectLabelClasses}>Property Type</label></div>{listingData.propertyType === 'apartment' && (<NumberInputWithSteppers label="Floor Number" value={listingData.floorNumber} onChange={(val) => setListingData(p => ({ ...p, floorNumber: val }))} min={1} />)}{(listingData.propertyType === 'house' || listingData.propertyType === 'villa') && (<NumberInputWithSteppers label="Total Floors" value={listingData.totalFloors} min={1} onChange={(val) => setListingData(p => ({ ...p, totalFloors: val }))} />)}</fieldset>
                     <fieldset><TagListInput label="Special Features" tags={listingData.specialFeatures} setTags={(tags) => setListingData(p => ({ ...p, specialFeatures: tags }))} /></fieldset>
                     <fieldset><TagListInput label="Materials" tags={listingData.materials} setTags={(tags) => setListingData(p => ({ ...p, materials: tags }))} /></fieldset>
+                    <fieldset>
+                        <TagListInput
+                            label="Amenities (e.g., #gym, #pool, #parking, #wifi)"
+                            tags={listingData.amenities}
+                            setTags={(tags) => setListingData(p => ({ ...p, amenities: tags }))}
+                        />
+                        <p className="text-xs text-neutral-500 mt-1">Add hashtag-style amenities that buyers can search for</p>
+                    </fieldset>
                     <fieldset><label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-1">Description</label><textarea id="description" name="description" value={listingData.description} onChange={handleInputChange} className={`${inputBaseClasses} h-48`} required /></fieldset>
                     
                     <fieldset>

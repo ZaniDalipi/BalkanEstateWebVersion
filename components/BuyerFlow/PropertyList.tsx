@@ -477,10 +477,54 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                                 </div>
                             </div>
                         </div>
+
+                        {/* Amenities Filter */}
+                        <div className="space-y-2 p-3 bg-neutral-50 rounded-lg">
+                            <h4 className="text-xs font-semibold text-neutral-800 mb-2">Amenities</h4>
+                            <div>
+                                <input
+                                    type="text"
+                                    placeholder="Type amenity and press Enter (e.g., gym, pool)"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            const input = e.currentTarget;
+                                            const value = input.value.trim().toLowerCase();
+                                            if (value && !filters.amenities.includes(value)) {
+                                                onFilterChange('amenities', [...filters.amenities, value]);
+                                            }
+                                            input.value = '';
+                                        }
+                                    }}
+                                    className={inputBaseClasses}
+                                />
+                                {filters.amenities.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        {filters.amenities.map((amenity) => (
+                                            <div
+                                                key={amenity}
+                                                className="flex items-center gap-1 bg-primary-light text-primary-dark text-xs font-semibold px-2 py-1 rounded-full"
+                                            >
+                                                <span>#{amenity}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        onFilterChange('amenities', filters.amenities.filter(a => a !== amenity));
+                                                    }}
+                                                    className="text-primary-dark/70 hover:text-primary-dark"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
-            
+
             {!isMobile && (
                  <div className="pt-2 space-y-2">
                      <button 

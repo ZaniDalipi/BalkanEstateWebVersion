@@ -67,6 +67,15 @@ export const filterProperties = (properties: Property[], filters: Filters): Prop
         const maxDistanceToHospitalMatch = filters.maxDistanceToHospital !== null ?
             (p.distanceToHospital !== undefined && p.distanceToHospital <= filters.maxDistanceToHospital) : true;
 
+        // Amenities filter - check if property has all required amenities
+        const amenitiesMatch = filters.amenities && filters.amenities.length > 0 ?
+            filters.amenities.every(amenity => {
+                const propertyAmenities = p.amenities || [];
+                return propertyAmenities.some(pAmenity =>
+                    pAmenity.toLowerCase().includes(amenity.toLowerCase())
+                );
+            }) : true;
+
         return queryMatch &&
                countryMatch &&
                minPriceMatch &&
@@ -98,6 +107,7 @@ export const filterProperties = (properties: Property[], filters: Filters): Prop
                maxDistanceToCenterMatch &&
                maxDistanceToSeaMatch &&
                maxDistanceToSchoolMatch &&
-               maxDistanceToHospitalMatch;
+               maxDistanceToHospitalMatch &&
+               amenitiesMatch;
     });
 };
