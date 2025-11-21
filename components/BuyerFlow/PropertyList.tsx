@@ -5,6 +5,7 @@ import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon, Che
 import AiSearch from './AiSearch';
 import PropertyCardSkeleton from './PropertyCardSkeleton';
 import { useAppContext } from '../../context/AppContext';
+import Footer from '../shared/Footer';
 
 interface PropertyListProps {
   properties: Property[];
@@ -379,6 +380,10 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                             {isLoadingMore && <span>Loading more...</span>}
                                         </div>
                                     )}
+                                    {/* Footer - only visible when scrolled to bottom */}
+                                    {visibleCount >= properties.length && (
+                                        <Footer />
+                                    )}
                                 </>
                             ) : (
                                 <div className="text-center py-16 px-4"><h3 className="text-xl font-semibold text-neutral-800">No Properties Found</h3></div>
@@ -466,6 +471,10 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                                     </div>
                                                 ) : <div className="h-1"></div>}
                                             </div>
+                                        )}
+                                        {/* Footer - only visible when scrolled to bottom */}
+                                        {visibleCount >= properties.length && (
+                                            <Footer />
                                         )}
                                     </>
                                 ) : (
