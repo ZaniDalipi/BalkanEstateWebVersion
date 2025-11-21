@@ -680,8 +680,8 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                 </div>
             )}
 
-            {/* Footer - Only on SearchPage */}
-            <div className="fixed bottom-0 left-0 right-0 z-10 md:pl-20">
+            {/* Footer - Only on SearchPage, matches property list width */}
+            <div className="fixed bottom-0 left-0 z-10 md:pl-20 w-full md:w-3/5">
                 <Footer />
             </div>
         </div>
