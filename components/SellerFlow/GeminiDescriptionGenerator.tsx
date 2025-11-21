@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Property, PropertyImage, PropertyImageTag, Seller, UserRole, NominatimResult } from '../../types';
-import { generateDescriptionFromImages, PropertyAnalysisResult } from '../../services/geminiService';
+import { generateDescriptionFromImages, PropertyAnalysisResult, calculatePropertyDistances } from '../../services/geminiService';
 import { searchLocation } from '../../services/osmService';
 import { SparklesIcon, MapPinIcon, SpinnerIcon } from '../../constants';
 import { getCurrencySymbol } from '../../utils/currency';
@@ -35,6 +35,14 @@ interface ListingData {
     totalFloors: number;
     lat: number;
     lng: number;
+    // Mandatory amenities
+    hasBalcony?: boolean;
+    hasGarden?: boolean;
+    hasElevator?: boolean;
+    hasSecurity?: boolean;
+    hasAirConditioning?: boolean;
+    hasPool?: boolean;
+    petsAllowed?: boolean;
 }
 
 interface ImageData {
@@ -62,6 +70,13 @@ const initialListingData: ListingData = {
     totalFloors: 1,
     lat: 0,
     lng: 0,
+    hasBalcony: undefined,
+    hasGarden: undefined,
+    hasElevator: undefined,
+    hasSecurity: undefined,
+    hasAirConditioning: undefined,
+    hasPool: undefined,
+    petsAllowed: undefined,
 };
 
 // Languages corresponding to supported countries: Kosovo, Albania, North Macedonia, Serbia, Bosnia and Herzegovina, Croatia, Montenegro, Greece, Bulgaria, Romania
@@ -210,6 +225,64 @@ const TagListInput: React.FC<{
     );
 };
 
+// Tri-State Checkbox Component (No/Any/Yes)
+const TriStateCheckbox: React.FC<{
+    label: string;
+    value: boolean | undefined;
+    onChange: (value: boolean | undefined) => void;
+}> = ({ label, value, onChange }) => {
+    const handleClick = () => {
+        if (value === undefined) {
+            onChange(true); // undefined -> Yes (true)
+        } else if (value === true) {
+            onChange(false); // Yes -> No (false)
+        } else {
+            onChange(undefined); // No -> Any (undefined)
+        }
+    };
+
+    const getButtonStyle = (state: 'no' | 'any' | 'yes') => {
+        let isActive = false;
+        if (state === 'no') isActive = value === false;
+        if (state === 'any') isActive = value === undefined;
+        if (state === 'yes') isActive = value === true;
+
+        return `px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+            isActive
+                ? 'bg-primary-dark text-white'
+                : 'bg-neutral-200 text-neutral-600 hover:bg-neutral-300'
+        }`;
+    };
+
+    return (
+        <div className="flex flex-col gap-2">
+            <label className="block text-sm font-medium text-neutral-700">{label}</label>
+            <div className="flex gap-2">
+                <button
+                    type="button"
+                    onClick={() => onChange(false)}
+                    className={getButtonStyle('no')}
+                >
+                    No
+                </button>
+                <button
+                    type="button"
+                    onClick={() => onChange(undefined)}
+                    className={getButtonStyle('any')}
+                >
+                    Any
+                </button>
+                <button
+                    type="button"
+                    onClick={() => onChange(true)}
+                    className={getButtonStyle('yes')}
+                >
+                    Yes
+                </button>
+            </div>
+        </div>
+    );
+};
 
 // --- Main Component ---
 const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> = ({ propertyToEdit }) => {
@@ -290,6 +363,13 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 image_tags: (propertyToEdit.images || []).map((img, index) => ({ index, tag: img.tag })),
                 lat: originalLat,
                 lng: originalLng,
+                hasBalcony: propertyToEdit.hasBalcony,
+                hasGarden: propertyToEdit.hasGarden,
+                hasElevator: propertyToEdit.hasElevator,
+                hasSecurity: propertyToEdit.hasSecurity,
+                hasAirConditioning: propertyToEdit.hasAirConditioning,
+                hasPool: propertyToEdit.hasPool,
+                petsAllowed: propertyToEdit.petsAllowed,
             });
 
             // Set country and city from property
@@ -738,6 +818,35 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             // Use street address if provided, otherwise default to city name
             const finalAddress = listingData.streetAddress.trim() || selectedCity;
 
+            // Calculate distances using Gemini AI
+            let distances = {
+                distanceToCenter: undefined,
+                distanceToSea: undefined,
+                distanceToSchool: undefined,
+                distanceToHospital: undefined,
+            };
+
+            try {
+                console.log('📍 Calculating property distances using Gemini AI...');
+                const calculatedDistances = await calculatePropertyDistances(
+                    finalAddress,
+                    selectedCity,
+                    selectedCountry,
+                    finalLat,
+                    finalLng
+                );
+                distances = {
+                    distanceToCenter: calculatedDistances.distanceToCenter < 999 ? calculatedDistances.distanceToCenter : undefined,
+                    distanceToSea: calculatedDistances.distanceToSea < 999 ? calculatedDistances.distanceToSea : undefined,
+                    distanceToSchool: calculatedDistances.distanceToSchool < 999 ? calculatedDistances.distanceToSchool : undefined,
+                    distanceToHospital: calculatedDistances.distanceToHospital < 999 ? calculatedDistances.distanceToHospital : undefined,
+                };
+                console.log('✅ Distances calculated:', distances);
+            } catch (error) {
+                console.error('⚠️ Failed to calculate distances:', error);
+                // Continue without distances - they will be undefined
+            }
+
             const newProperty: Property = {
                 id: propertyToEdit ? propertyToEdit.id : `prop-${Date.now()}`,
                 sellerId: currentUser.id,
@@ -776,6 +885,19 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 views: propertyToEdit?.views || 0,
                 saves: propertyToEdit?.saves || 0,
                 inquiries: propertyToEdit?.inquiries || 0,
+                // Mandatory amenities
+                hasBalcony: listingData.hasBalcony,
+                hasGarden: listingData.hasGarden,
+                hasElevator: listingData.hasElevator,
+                hasSecurity: listingData.hasSecurity,
+                hasAirConditioning: listingData.hasAirConditioning,
+                hasPool: listingData.hasPool,
+                petsAllowed: listingData.petsAllowed,
+                // Calculated distances
+                distanceToCenter: distances.distanceToCenter,
+                distanceToSea: distances.distanceToSea,
+                distanceToSchool: distances.distanceToSchool,
+                distanceToHospital: distances.distanceToHospital,
             };
 
             if (!propertyToEdit && !currentUser.isSubscribed) {
@@ -974,6 +1096,50 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                         />
                         <p className="text-xs text-neutral-500 mt-1">Add hashtag-style amenities that buyers can search for</p>
                     </fieldset>
+
+                    {/* Mandatory Amenities Section */}
+                    <fieldset className="space-y-4 p-4 bg-neutral-50 rounded-lg border border-neutral-200">
+                        <h3 className="text-base font-semibold text-neutral-800 mb-3">Property Features</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <TriStateCheckbox
+                                label="Balcony/Terrace"
+                                value={listingData.hasBalcony}
+                                onChange={(val) => setListingData(p => ({ ...p, hasBalcony: val }))}
+                            />
+                            <TriStateCheckbox
+                                label="Garden/Yard"
+                                value={listingData.hasGarden}
+                                onChange={(val) => setListingData(p => ({ ...p, hasGarden: val }))}
+                            />
+                            <TriStateCheckbox
+                                label="Elevator"
+                                value={listingData.hasElevator}
+                                onChange={(val) => setListingData(p => ({ ...p, hasElevator: val }))}
+                            />
+                            <TriStateCheckbox
+                                label="Security System"
+                                value={listingData.hasSecurity}
+                                onChange={(val) => setListingData(p => ({ ...p, hasSecurity: val }))}
+                            />
+                            <TriStateCheckbox
+                                label="Air Conditioning"
+                                value={listingData.hasAirConditioning}
+                                onChange={(val) => setListingData(p => ({ ...p, hasAirConditioning: val }))}
+                            />
+                            <TriStateCheckbox
+                                label="Swimming Pool"
+                                value={listingData.hasPool}
+                                onChange={(val) => setListingData(p => ({ ...p, hasPool: val }))}
+                            />
+                            <TriStateCheckbox
+                                label="Pets Allowed"
+                                value={listingData.petsAllowed}
+                                onChange={(val) => setListingData(p => ({ ...p, petsAllowed: val }))}
+                            />
+                        </div>
+                        <p className="text-xs text-neutral-500 mt-2">Select "Yes" if available, "No" if not available, or leave as "Any" to skip</p>
+                    </fieldset>
+
                     <fieldset><label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-1">Description</label><textarea id="description" name="description" value={listingData.description} onChange={handleInputChange} className={`${inputBaseClasses} h-48`} required /></fieldset>
                     
                     <fieldset>

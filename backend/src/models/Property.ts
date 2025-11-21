@@ -45,6 +45,20 @@ export interface IProperty extends Document {
   isPromoted: boolean;
   promotionStartDate?: Date;
   promotionEndDate?: Date;
+  // Amenities fields
+  amenities: string[];
+  hasBalcony?: boolean;
+  hasGarden?: boolean;
+  hasElevator?: boolean;
+  hasSecurity?: boolean;
+  hasAirConditioning?: boolean;
+  hasPool?: boolean;
+  petsAllowed?: boolean;
+  // Distance fields (in km)
+  distanceToCenter?: number;
+  distanceToSea?: number;
+  distanceToSchool?: number;
+  distanceToHospital?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -221,6 +235,50 @@ const PropertySchema: Schema = new Schema(
     },
     promotionEndDate: {
       type: Date,
+    },
+    // Amenities fields
+    amenities: {
+      type: [String],
+      default: [],
+      index: true,
+    },
+    hasBalcony: {
+      type: Boolean,
+    },
+    hasGarden: {
+      type: Boolean,
+    },
+    hasElevator: {
+      type: Boolean,
+    },
+    hasSecurity: {
+      type: Boolean,
+    },
+    hasAirConditioning: {
+      type: Boolean,
+    },
+    hasPool: {
+      type: Boolean,
+    },
+    petsAllowed: {
+      type: Boolean,
+    },
+    // Distance fields (in km)
+    distanceToCenter: {
+      type: Number,
+      min: 0,
+    },
+    distanceToSea: {
+      type: Number,
+      min: 0,
+    },
+    distanceToSchool: {
+      type: Number,
+      min: 0,
+    },
+    distanceToHospital: {
+      type: Number,
+      min: 0,
     },
   },
   {
