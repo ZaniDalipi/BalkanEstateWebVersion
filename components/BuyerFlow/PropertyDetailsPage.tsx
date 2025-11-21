@@ -933,6 +933,189 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                 </div>
             </div>
 
+            {/* Amenities & Features Section */}
+            {((property.amenities && property.amenities.length > 0) ||
+              property.hasBalcony !== undefined ||
+              property.hasGarden !== undefined ||
+              property.hasElevator !== undefined ||
+              property.hasSecurity !== undefined ||
+              property.hasAirConditioning !== undefined ||
+              property.hasPool !== undefined ||
+              property.petsAllowed !== undefined ||
+              property.distanceToCenter !== undefined ||
+              property.distanceToSea !== undefined ||
+              property.distanceToSchool !== undefined ||
+              property.distanceToHospital !== undefined) && (
+                <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
+                    <h3 className="text-lg sm:text-xl font-bold text-neutral-800 mb-6">Amenities & Features</h3>
+
+                    {/* Hashtag-style Amenities */}
+                    {property.amenities && property.amenities.length > 0 && (
+                        <div className="mb-6">
+                            <h4 className="text-md font-semibold text-neutral-700 mb-3">Property Amenities</h4>
+                            <div className="flex flex-wrap gap-2">
+                                {property.amenities.map((amenity, index) => (
+                                    <span
+                                        key={index}
+                                        className="inline-flex items-center px-4 py-2 bg-primary-light text-primary-dark font-semibold rounded-full text-sm border border-primary/20 hover:bg-primary/20 transition-colors"
+                                    >
+                                        {amenity.startsWith('#') ? amenity : `#${amenity}`}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Boolean Property Features */}
+                    {(property.hasBalcony !== undefined ||
+                      property.hasGarden !== undefined ||
+                      property.hasElevator !== undefined ||
+                      property.hasSecurity !== undefined ||
+                      property.hasAirConditioning !== undefined ||
+                      property.hasPool !== undefined ||
+                      property.petsAllowed !== undefined) && (
+                        <div className="mb-6">
+                            <h4 className="text-md font-semibold text-neutral-700 mb-3">Property Features</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {property.hasBalcony !== undefined && (
+                                    <div className={`flex items-center gap-3 p-3 rounded-lg border ${property.hasBalcony ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                        <span className="text-2xl">{property.hasBalcony ? '✓' : '✗'}</span>
+                                        <div>
+                                            <span className="font-medium text-neutral-800">Balcony/Terrace</span>
+                                            <span className={`block text-xs ${property.hasBalcony ? 'text-green-700' : 'text-red-700'}`}>
+                                                {property.hasBalcony ? 'Available' : 'Not available'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                                {property.hasGarden !== undefined && (
+                                    <div className={`flex items-center gap-3 p-3 rounded-lg border ${property.hasGarden ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                        <span className="text-2xl">{property.hasGarden ? '✓' : '✗'}</span>
+                                        <div>
+                                            <span className="font-medium text-neutral-800">Garden/Yard</span>
+                                            <span className={`block text-xs ${property.hasGarden ? 'text-green-700' : 'text-red-700'}`}>
+                                                {property.hasGarden ? 'Available' : 'Not available'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                                {property.hasElevator !== undefined && (
+                                    <div className={`flex items-center gap-3 p-3 rounded-lg border ${property.hasElevator ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                        <span className="text-2xl">{property.hasElevator ? '✓' : '✗'}</span>
+                                        <div>
+                                            <span className="font-medium text-neutral-800">Elevator</span>
+                                            <span className={`block text-xs ${property.hasElevator ? 'text-green-700' : 'text-red-700'}`}>
+                                                {property.hasElevator ? 'Available' : 'Not available'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                                {property.hasSecurity !== undefined && (
+                                    <div className={`flex items-center gap-3 p-3 rounded-lg border ${property.hasSecurity ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                        <span className="text-2xl">{property.hasSecurity ? '✓' : '✗'}</span>
+                                        <div>
+                                            <span className="font-medium text-neutral-800">Security System</span>
+                                            <span className={`block text-xs ${property.hasSecurity ? 'text-green-700' : 'text-red-700'}`}>
+                                                {property.hasSecurity ? 'Available' : 'Not available'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                                {property.hasAirConditioning !== undefined && (
+                                    <div className={`flex items-center gap-3 p-3 rounded-lg border ${property.hasAirConditioning ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                        <span className="text-2xl">{property.hasAirConditioning ? '✓' : '✗'}</span>
+                                        <div>
+                                            <span className="font-medium text-neutral-800">Air Conditioning</span>
+                                            <span className={`block text-xs ${property.hasAirConditioning ? 'text-green-700' : 'text-red-700'}`}>
+                                                {property.hasAirConditioning ? 'Available' : 'Not available'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                                {property.hasPool !== undefined && (
+                                    <div className={`flex items-center gap-3 p-3 rounded-lg border ${property.hasPool ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                        <span className="text-2xl">{property.hasPool ? '✓' : '✗'}</span>
+                                        <div>
+                                            <span className="font-medium text-neutral-800">Swimming Pool</span>
+                                            <span className={`block text-xs ${property.hasPool ? 'text-green-700' : 'text-red-700'}`}>
+                                                {property.hasPool ? 'Available' : 'Not available'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                                {property.petsAllowed !== undefined && (
+                                    <div className={`flex items-center gap-3 p-3 rounded-lg border ${property.petsAllowed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                        <span className="text-2xl">{property.petsAllowed ? '✓' : '✗'}</span>
+                                        <div>
+                                            <span className="font-medium text-neutral-800">Pets Allowed</span>
+                                            <span className={`block text-xs ${property.petsAllowed ? 'text-green-700' : 'text-red-700'}`}>
+                                                {property.petsAllowed ? 'Yes' : 'No'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Distance Information */}
+                    {(property.distanceToCenter !== undefined ||
+                      property.distanceToSea !== undefined ||
+                      property.distanceToSchool !== undefined ||
+                      property.distanceToHospital !== undefined) && (
+                        <div>
+                            <h4 className="text-md font-semibold text-neutral-700 mb-3">Distance Information</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {property.distanceToCenter !== undefined && (
+                                    <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                                        <span className="text-2xl">🏙️</span>
+                                        <div>
+                                            <span className="font-medium text-neutral-800">City Center</span>
+                                            <span className="block text-sm text-blue-700 font-semibold">
+                                                {property.distanceToCenter.toFixed(1)} km
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                                {property.distanceToSea !== undefined && (
+                                    <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                                        <span className="text-2xl">🌊</span>
+                                        <div>
+                                            <span className="font-medium text-neutral-800">Sea/Beach</span>
+                                            <span className="block text-sm text-blue-700 font-semibold">
+                                                {property.distanceToSea.toFixed(1)} km
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                                {property.distanceToSchool !== undefined && (
+                                    <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                                        <span className="text-2xl">🏫</span>
+                                        <div>
+                                            <span className="font-medium text-neutral-800">School</span>
+                                            <span className="block text-sm text-blue-700 font-semibold">
+                                                {property.distanceToSchool.toFixed(1)} km
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                                {property.distanceToHospital !== undefined && (
+                                    <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                                        <span className="text-2xl">🏥</span>
+                                        <div>
+                                            <span className="font-medium text-neutral-800">Hospital</span>
+                                            <span className="block text-sm text-blue-700 font-semibold">
+                                                {property.distanceToHospital.toFixed(1)} km
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
             <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
                 <h3 className="text-lg sm:text-xl font-bold text-neutral-800 mb-4">View on Map</h3>
                 <p className="text-neutral-600 mb-4">Want to explore the area around this property?</p>
