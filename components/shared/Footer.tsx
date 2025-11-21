@@ -33,7 +33,7 @@ const Footer: React.FC<FooterProps> = ({ className = '' }) => {
     };
 
     return (
-        <footer className={`relative bg-gradient-to-br from-primary-dark via-primary to-primary text-white overflow-hidden ${className}`}>
+        <footer className={`relative bg-gradient-to-br from-primary-dark via-primary to-primary text-white overflow-hidden pb-24 ${className}`}>
             {/* Subtle Dot Pattern Background */}
             <div className="absolute inset-0 opacity-5" style={{
                 backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
@@ -44,7 +44,7 @@ const Footer: React.FC<FooterProps> = ({ className = '' }) => {
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-secondary via-yellow-400 to-secondary"></div>
 
             {/* Main Footer Content */}
-            <div className="relative z-10 max-w-7xl mx-auto px-4 py-3 md:py-4 pb-24">
+            <div className="relative z-10 max-w-7xl mx-auto px-4 py-3 md:py-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
                     {/* Brand Section */}
                     <div className="space-y-2">
