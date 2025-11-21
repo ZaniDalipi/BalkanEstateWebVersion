@@ -1063,3 +1063,97 @@ export const removeAgencyAdmin = async (
     res.status(500).json({ message: 'Error removing admin', error: error.message });
   }
 };
+
+// @desc    Leave agency (agent can leave their own agency)
+// @route   POST /api/agencies/leave
+// @access  Private
+export const leaveAgency = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const currentUser = req.user as IUser;
+    const user = await User.findById(String(currentUser._id));
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Check if user has an agency
+    if (!user.agencyId) {
+      res.status(400).json({ message: 'You are not part of any agency' });
+      return;
+    }
+
+    // Find the agency
+    const agency = await Agency.findById(user.agencyId);
+
+    if (!agency) {
+      res.status(404).json({ message: 'Agency not found' });
+      return;
+    }
+
+    // Prevent owner from leaving their own agency
+    if (String(agency.ownerId) === String(user._id)) {
+      res.status(403).json({
+        message: 'Agency owners cannot leave their own agency. Please transfer ownership or delete the agency first.'
+      });
+      return;
+    }
+
+    const agencyName = agency.name;
+
+    // Remove agent from agency's agents array
+    agency.agents = agency.agents.filter(
+      id => id.toString() !== String(user._id)
+    );
+    agency.totalAgents = agency.agents.length;
+
+    // Also remove from admins array if they are an admin
+    if (agency.admins && agency.admins.some(id => String(id) === String(user._id))) {
+      agency.admins = agency.admins.filter(
+        id => String(id) !== String(user._id)
+      );
+      console.log(`✅ Removed user from admins of agency: ${agencyName}`);
+    }
+
+    await agency.save();
+
+    // Clear agent's agency info in User model
+    user.agencyName = undefined;
+    user.agencyId = undefined;
+    await user.save();
+
+    // Clear agent's agency info in Agent model
+    const agentRecord = await Agent.findOne({ userId: user._id });
+    if (agentRecord) {
+      agentRecord.agencyName = 'Independent Agent';
+      agentRecord.agencyId = undefined;
+      await agentRecord.save();
+      console.log(`✅ Updated agent profile to Independent Agent`);
+    }
+
+    console.log(`✅ User ${user.email} left agency: ${agencyName}`);
+
+    res.json({
+      message: `Successfully left ${agencyName}`,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        agencyId: user.agencyId,
+        agencyName: user.agencyName,
+      }
+    });
+  } catch (error: any) {
+    console.error('Leave agency error:', error);
+    res.status(500).json({ message: 'Error leaving agency', error: error.message });
+  }
+};

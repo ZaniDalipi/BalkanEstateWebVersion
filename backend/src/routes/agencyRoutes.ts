@@ -14,6 +14,7 @@ import {
   verifyInvitationCode,
   addAgencyAdmin,
   removeAgencyAdmin,
+  leaveAgency,
 } from '../controllers/agencyController';
 import { protect } from '../middleware/auth';
 
@@ -47,6 +48,7 @@ router.put('/:id', protect, updateAgency);
 router.post('/:id/agents', protect, addAgentToAgency);
 router.delete('/:id/agents/:agentId', protect, removeAgentFromAgency);
 router.post('/join-by-code', protect, joinAgencyByInvitationCode);
+router.post('/leave', protect, leaveAgency);
 
 // Admin management routes
 router.post('/:id/verify-code', protect, verifyInvitationCode);

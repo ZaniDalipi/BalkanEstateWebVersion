@@ -757,6 +757,13 @@ export const joinAgencyByInvitationCode = async (invitationCode: string, agencyI
   });
 };
 
+export const leaveAgency = async (): Promise<any> => {
+  return await apiRequest('/agencies/leave', {
+    method: 'POST',
+    requiresAuth: true,
+  });
+};
+
 // --- AGENCY JOIN REQUEST API ---
 
 export const createJoinRequest = async (agencyId: string, message?: string): Promise<any> => {
