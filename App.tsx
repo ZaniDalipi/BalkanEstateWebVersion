@@ -12,6 +12,7 @@ import InboxPage from './components/BuyerFlow/InboxPage';
 import MyAccountPage from './components/shared/MyAccountPage';
 import Sidebar from './components/shared/Sidebar';
 import Header from './components/shared/Header';
+import Footer from './components/shared/Footer';
 import SubscriptionModal from './components/BuyerFlow/SubscriptionModal';
 import AgentsPage from './components/AgentsPage/AgentsPage';
 import AgenciesListPage from './components/AgenciesListPage';
@@ -302,12 +303,17 @@ const MainLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-neutral-50 font-sans">
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-        
+
         <div className={`relative transition-all duration-300 ease-in-out h-screen flex flex-col md:pl-20 ${isOverlayVisible ? 'blur-sm pointer-events-none' : ''}`}>
             {showHeader && <Header onToggleSidebar={() => setIsSidebarOpen(true)} isFloating={isSearchPage} />}
-            <main className={`flex flex-col flex-grow ${isFullHeightView ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+            <main className={`flex flex-col flex-grow ${isFullHeightView ? 'overflow-hidden' : 'overflow-y-auto'} pb-24`}>
                 <AppContent onToggleSidebar={() => setIsSidebarOpen(true)} />
             </main>
+
+            {/* Fixed Footer at the bottom */}
+            <div className="fixed bottom-0 left-0 right-0 z-30 md:pl-20">
+                <Footer />
+            </div>
         </div>
         
         <ListingLimitWarningModal

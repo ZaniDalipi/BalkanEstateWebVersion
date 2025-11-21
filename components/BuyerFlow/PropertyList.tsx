@@ -5,7 +5,6 @@ import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon, Che
 import AiSearch from './AiSearch';
 import PropertyCardSkeleton from './PropertyCardSkeleton';
 import { useAppContext } from '../../context/AppContext';
-import Footer from '../shared/Footer';
 
 interface PropertyListProps {
   properties: Property[];
@@ -384,7 +383,6 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                             ) : (
                                 <div className="text-center py-16 px-4"><h3 className="text-xl font-semibold text-neutral-800">No Properties Found</h3></div>
                             )}
-                            <Footer className="mt-8" />
                         </div>
                     </div>
                 </div>
@@ -477,7 +475,6 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                         <p className="text-neutral-500 mt-2">Try adjusting your search filters or moving the map to a different area.</p>
                                     </div>
                                 )}
-                                <Footer className="mt-8" />
                             </div>
                         </div>
                     )}
