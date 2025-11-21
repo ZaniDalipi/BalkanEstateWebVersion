@@ -50,6 +50,20 @@ const MobileFilters: React.FC<{
                 <XMarkIcon className="w-6 h-6" />
             </button>
         </div>
+        <div className="flex-shrink-0 p-4 bg-neutral-50 border-b border-neutral-200">
+            <label className="block text-xs font-medium text-neutral-700 mb-2">Country</label>
+            <select
+                value={localFilters.country}
+                onChange={(e) => onLocalFilterChange('country', e.target.value)}
+                className="w-full bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-sm font-medium"
+            >
+                {COUNTRY_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>
+                        {option.label}
+                    </option>
+                ))}
+            </select>
+        </div>
         <div className="flex-grow overflow-y-auto min-h-0 pt-4">
             <PropertyList 
                 {...propertyListProps}
@@ -601,17 +615,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                                         </button>
                                     )}
                                 </div>
-                                <select
-                                    value={filters.country}
-                                    onChange={(e) => handleFilterChange('country', e.target.value)}
-                                    className="w-full bg-white/90 backdrop-blur-sm border border-neutral-300 rounded-full text-neutral-900 shadow-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-sm font-medium"
-                                >
-                                    {COUNTRY_OPTIONS.map(option => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
                             </div>
                         </div>
                         
