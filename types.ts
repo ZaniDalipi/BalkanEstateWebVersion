@@ -191,6 +191,7 @@ export interface Conversation {
 
 export interface Filters {
     query: string;
+    country: string;
     minPrice: number | null;
     maxPrice: number | null;
     beds: number | null;
@@ -205,6 +206,7 @@ export interface Filters {
 
 export const initialFilters: Filters = {
     query: '',
+    country: 'any',
     minPrice: null,
     maxPrice: null,
     beds: null,

@@ -2,9 +2,9 @@ import React from 'react';
 
 const FooterCityscape: React.FC = () => {
     return (
-        <div className="relative w-full h-32 overflow-hidden bg-gradient-to-b from-transparent to-primary-dark/30">
-            {/* Sky background with subtle gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-primary-dark/80 to-primary/40"></div>
+        <div className="relative w-full h-48 overflow-hidden bg-gradient-to-b from-transparent to-primary-dark/50">
+            {/* Sky background with better contrast */}
+            <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/90 to-indigo-600/60"></div>
 
             {/* Stars in the background */}
             <div className="absolute inset-0">
@@ -153,38 +153,56 @@ const FooterCityscape: React.FC = () => {
                 </div>
             </div>
 
-            {/* Walking People */}
-            <svg className="absolute bottom-0 left-0 w-full h-full pointer-events-none" style={{ zIndex: 10 }}>
+            {/* Walking People - Fixed to prevent jumping */}
+            <div className="absolute bottom-0 left-0 w-full h-full pointer-events-none" style={{ zIndex: 10 }}>
                 {/* Person 1 - Walking right */}
-                <g className="animate-walk-right">
-                    <circle cx="0" cy="90" r="3" fill="#FFF" />
-                    <line x1="0" y1="93" x2="0" y2="103" stroke="#FFF" strokeWidth="2" />
-                    <line x1="0" y1="103" x2="-3" y2="110" stroke="#FFF" strokeWidth="2" className="animate-walk-leg" />
-                    <line x1="0" y1="103" x2="3" y2="110" stroke="#FFF" strokeWidth="2" className="animate-walk-leg-alt" />
-                    <line x1="0" y1="95" x2="-3" y2="100" stroke="#FFF" strokeWidth="2" className="animate-walk-arm" />
-                    <line x1="0" y1="95" x2="3" y2="100" stroke="#FFF" strokeWidth="2" className="animate-walk-arm-alt" />
-                </g>
+                <div className="person-walking person-walk-right absolute" style={{ bottom: '8px' }}>
+                    <svg width="30" height="40" viewBox="0 0 30 40" className="person-svg">
+                        <circle cx="15" cy="8" r="4" fill="#FFF" stroke="#000" strokeWidth="1" />
+                        <line x1="15" y1="12" x2="15" y2="24" stroke="#FFF" strokeWidth="3" strokeLinecap="round" />
+                        <g className="person-legs">
+                            <line x1="15" y1="24" x2="10" y2="36" stroke="#FFF" strokeWidth="3" strokeLinecap="round" className="leg-left" />
+                            <line x1="15" y1="24" x2="20" y2="36" stroke="#FFF" strokeWidth="3" strokeLinecap="round" className="leg-right" />
+                        </g>
+                        <g className="person-arms">
+                            <line x1="15" y1="16" x2="10" y2="22" stroke="#FFF" strokeWidth="2.5" strokeLinecap="round" className="arm-left" />
+                            <line x1="15" y1="16" x2="20" y2="22" stroke="#FFF" strokeWidth="2.5" strokeLinecap="round" className="arm-right" />
+                        </g>
+                    </svg>
+                </div>
 
                 {/* Person 2 - Walking left */}
-                <g className="animate-walk-left">
-                    <circle cx="100%" cy="92" r="3" fill="#FFD700" />
-                    <line x1="100%" y1="95" x2="100%" y2="105" stroke="#FFD700" strokeWidth="2" />
-                    <line x1="100%" y1="105" x2="calc(100% - 3px)" y2="112" stroke="#FFD700" strokeWidth="2" className="animate-walk-leg" />
-                    <line x1="100%" y1="105" x2="calc(100% + 3px)" y2="112" stroke="#FFD700" strokeWidth="2" className="animate-walk-leg-alt" />
-                    <line x1="100%" y1="97" x2="calc(100% - 3px)" y2="102" stroke="#FFD700" strokeWidth="2" className="animate-walk-arm" />
-                    <line x1="100%" y1="97" x2="calc(100% + 3px)" y2="102" stroke="#FFD700" strokeWidth="2" className="animate-walk-arm-alt" />
-                </g>
+                <div className="person-walking person-walk-left absolute" style={{ bottom: '8px' }}>
+                    <svg width="30" height="40" viewBox="0 0 30 40" className="person-svg">
+                        <circle cx="15" cy="8" r="4" fill="#FFD700" stroke="#000" strokeWidth="1" />
+                        <line x1="15" y1="12" x2="15" y2="24" stroke="#FFD700" strokeWidth="3" strokeLinecap="round" />
+                        <g className="person-legs">
+                            <line x1="15" y1="24" x2="10" y2="36" stroke="#FFD700" strokeWidth="3" strokeLinecap="round" className="leg-left" />
+                            <line x1="15" y1="24" x2="20" y2="36" stroke="#FFD700" strokeWidth="3" strokeLinecap="round" className="leg-right" />
+                        </g>
+                        <g className="person-arms">
+                            <line x1="15" y1="16" x2="10" y2="22" stroke="#FFD700" strokeWidth="2.5" strokeLinecap="round" className="arm-left" />
+                            <line x1="15" y1="16" x2="20" y2="22" stroke="#FFD700" strokeWidth="2.5" strokeLinecap="round" className="arm-right" />
+                        </g>
+                    </svg>
+                </div>
 
                 {/* Person 3 - Walking right (slower) */}
-                <g className="animate-walk-right-slow">
-                    <circle cx="0" cy="91" r="3" fill="#FF6B6B" />
-                    <line x1="0" y1="94" x2="0" y2="104" stroke="#FF6B6B" strokeWidth="2" />
-                    <line x1="0" y1="104" x2="-3" y2="111" stroke="#FF6B6B" strokeWidth="2" className="animate-walk-leg" />
-                    <line x1="0" y1="104" x2="3" y2="111" stroke="#FF6B6B" strokeWidth="2" className="animate-walk-leg-alt" />
-                    <line x1="0" y1="96" x2="-3" y2="101" stroke="#FF6B6B" strokeWidth="2" className="animate-walk-arm" />
-                    <line x1="0" y1="96" x2="3" y2="101" stroke="#FF6B6B" strokeWidth="2" className="animate-walk-arm-alt" />
-                </g>
-            </svg>
+                <div className="person-walking person-walk-right-slow absolute" style={{ bottom: '8px' }}>
+                    <svg width="30" height="40" viewBox="0 0 30 40" className="person-svg">
+                        <circle cx="15" cy="8" r="4" fill="#FF6B6B" stroke="#000" strokeWidth="1" />
+                        <line x1="15" y1="12" x2="15" y2="24" stroke="#FF6B6B" strokeWidth="3" strokeLinecap="round" />
+                        <g className="person-legs">
+                            <line x1="15" y1="24" x2="10" y2="36" stroke="#FF6B6B" strokeWidth="3" strokeLinecap="round" className="leg-left" />
+                            <line x1="15" y1="24" x2="20" y2="36" stroke="#FF6B6B" strokeWidth="3" strokeLinecap="round" className="leg-right" />
+                        </g>
+                        <g className="person-arms">
+                            <line x1="15" y1="16" x2="10" y2="22" stroke="#FF6B6B" strokeWidth="2.5" strokeLinecap="round" className="arm-left" />
+                            <line x1="15" y1="16" x2="20" y2="22" stroke="#FF6B6B" strokeWidth="2.5" strokeLinecap="round" className="arm-right" />
+                        </g>
+                    </svg>
+                </div>
+            </div>
 
             {/* Ground/Street */}
             <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-gray-600 via-gray-700 to-gray-600">
@@ -205,38 +223,60 @@ const FooterCityscape: React.FC = () => {
                 }
 
                 @keyframes walkRight {
-                    0% { transform: translateX(-50px); }
-                    100% { transform: translateX(calc(100vw + 50px)); }
+                    0% { transform: translate3d(-50px, 0, 0); }
+                    100% { transform: translate3d(calc(100vw + 50px), 0, 0); }
                 }
 
                 @keyframes walkLeft {
-                    0% { transform: translateX(50px); }
-                    100% { transform: translateX(calc(-100vw - 50px)); }
+                    0% { transform: translate3d(calc(100vw + 50px), 0, 0); }
+                    100% { transform: translate3d(-50px, 0, 0); }
                 }
 
                 @keyframes walkRightSlow {
-                    0% { transform: translateX(-50px); }
-                    100% { transform: translateX(calc(100vw + 50px)); }
+                    0% { transform: translate3d(-50px, 0, 0); }
+                    100% { transform: translate3d(calc(100vw + 50px), 0, 0); }
                 }
 
-                @keyframes walkLeg {
-                    0%, 100% { transform: rotate(0deg); }
-                    50% { transform: rotate(20deg); }
+                @keyframes legWalkLeft {
+                    0%, 100% {
+                        transform: rotate(0deg);
+                    }
+                    25% {
+                        transform: rotate(-25deg);
+                    }
+                    75% {
+                        transform: rotate(25deg);
+                    }
                 }
 
-                @keyframes walkLegAlt {
-                    0%, 100% { transform: rotate(0deg); }
-                    50% { transform: rotate(-20deg); }
+                @keyframes legWalkRight {
+                    0%, 100% {
+                        transform: rotate(0deg);
+                    }
+                    25% {
+                        transform: rotate(25deg);
+                    }
+                    75% {
+                        transform: rotate(-25deg);
+                    }
                 }
 
-                @keyframes walkArm {
-                    0%, 100% { transform: rotate(0deg); }
-                    50% { transform: rotate(-15deg); }
+                @keyframes armSwingLeft {
+                    0%, 100% {
+                        transform: rotate(0deg);
+                    }
+                    50% {
+                        transform: rotate(-20deg);
+                    }
                 }
 
-                @keyframes walkArmAlt {
-                    0%, 100% { transform: rotate(0deg); }
-                    50% { transform: rotate(15deg); }
+                @keyframes armSwingRight {
+                    0%, 100% {
+                        transform: rotate(0deg);
+                    }
+                    50% {
+                        transform: rotate(20deg);
+                    }
                 }
 
                 .animate-twinkle {
@@ -247,36 +287,44 @@ const FooterCityscape: React.FC = () => {
                     animation: windowLight 4s ease-in-out infinite;
                 }
 
-                .animate-walk-right {
-                    animation: walkRight 20s linear infinite;
+                .person-walking {
+                    will-change: transform;
                 }
 
-                .animate-walk-left {
-                    animation: walkLeft 25s linear infinite;
+                .person-walk-right {
+                    animation: walkRight 25s linear infinite;
                 }
 
-                .animate-walk-right-slow {
-                    animation: walkRightSlow 35s linear infinite;
+                .person-walk-left {
+                    animation: walkLeft 30s linear infinite;
                 }
 
-                .animate-walk-leg {
-                    animation: walkLeg 0.5s ease-in-out infinite;
-                    transform-origin: top;
+                .person-walk-right-slow {
+                    animation: walkRightSlow 40s linear infinite;
                 }
 
-                .animate-walk-leg-alt {
-                    animation: walkLegAlt 0.5s ease-in-out infinite;
-                    transform-origin: top;
+                .person-svg {
+                    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
                 }
 
-                .animate-walk-arm {
-                    animation: walkArm 0.5s ease-in-out infinite;
-                    transform-origin: top;
+                .leg-left {
+                    animation: legWalkLeft 1s ease-in-out infinite;
+                    transform-origin: 15px 24px;
                 }
 
-                .animate-walk-arm-alt {
-                    animation: walkArmAlt 0.5s ease-in-out infinite;
-                    transform-origin: top;
+                .leg-right {
+                    animation: legWalkRight 1s ease-in-out infinite;
+                    transform-origin: 15px 24px;
+                }
+
+                .arm-left {
+                    animation: armSwingLeft 1s ease-in-out infinite;
+                    transform-origin: 15px 16px;
+                }
+
+                .arm-right {
+                    animation: armSwingRight 1s ease-in-out infinite;
+                    transform-origin: 15px 16px;
                 }
             `}</style>
         </div>

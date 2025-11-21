@@ -1,4 +1,5 @@
 import { Property, Filters } from '../types';
+import { BALKAN_COUNTRIES } from '../constants/countries';
 
 export const filterProperties = (properties: Property[], filters: Filters): Property[] => {
     const query = filters.query?.toLowerCase().trim();
@@ -11,6 +12,15 @@ export const filterProperties = (properties: Property[], filters: Filters): Prop
             queryMatch = addressMatch || cityMatch;
         }
 
+        // Country filter
+        let countryMatch = true;
+        if (filters.country && filters.country !== 'any') {
+            const selectedCountry = BALKAN_COUNTRIES[filters.country];
+            if (selectedCountry) {
+                countryMatch = p.country.toLowerCase() === selectedCountry.name.toLowerCase();
+            }
+        }
+
         const minPriceMatch = filters.minPrice ? p.price >= filters.minPrice : true;
         const maxPriceMatch = filters.maxPrice ? p.price <= filters.maxPrice : true;
         const bedsMatch = filters.beds ? p.beds >= filters.beds : true;
@@ -20,7 +30,7 @@ export const filterProperties = (properties: Property[], filters: Filters): Prop
         const maxSqftMatch = filters.maxSqft ? p.sqft <= filters.maxSqft : true;
         const sellerTypeMatch = filters.sellerType !== 'any' ? p.seller.type === filters.sellerType : true;
         const propertyTypeMatch = filters.propertyType !== 'any' ? p.propertyType === filters.propertyType : true;
-        
-        return queryMatch && minPriceMatch && maxPriceMatch && bedsMatch && bathsMatch && livingRoomsMatch && sellerTypeMatch && propertyTypeMatch && minSqftMatch && maxSqftMatch;
+
+        return queryMatch && countryMatch && minPriceMatch && maxPriceMatch && bedsMatch && bathsMatch && livingRoomsMatch && sellerTypeMatch && propertyTypeMatch && minSqftMatch && maxSqftMatch;
     });
 };

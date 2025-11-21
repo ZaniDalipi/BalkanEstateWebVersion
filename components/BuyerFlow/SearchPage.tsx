@@ -11,6 +11,7 @@ import { Bars3Icon, SearchIcon, UserCircleIcon, XMarkIcon, AdjustmentsHorizontal
 import { filterProperties } from '../../utils/propertyUtils';
 import AiSearch from './AiSearch';
 import Modal from '../shared/Modal';
+import { COUNTRY_OPTIONS, BALKAN_COUNTRIES } from '../../constants/countries';
 
 interface SearchPageProps {
     onToggleSidebar: () => void;
@@ -296,6 +297,22 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
 
     const handleFilterChange = useCallback((name: keyof Filters, value: string | number | null) => {
         const newFilters = { ...filters, [name]: value };
+
+        // If country filter is changed, fly to the country bounds
+        if (name === 'country' && value && value !== 'any') {
+            const countryData = BALKAN_COUNTRIES[value as string];
+            if (countryData) {
+                const bounds = L.latLngBounds(countryData.bounds);
+                setFlyToTarget({ center: countryData.center, zoom: countryData.zoom });
+                updateSearchPageState({
+                    filters: newFilters,
+                    activeFilters: newFilters,
+                    drawnBoundsJSON: JSON.stringify(bounds), // Set the country bounds as the search area
+                });
+                return;
+            }
+        }
+
         updateSearchPageState({ filters: newFilters });
     }, [filters, updateSearchPageState]);
     
@@ -541,7 +558,20 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                  <div className={`absolute inset-0 z-10 h-full w-full bg-white md:relative md:w-3/5 md:flex-shrink-0 md:border-r md:border-neutral-200 md:flex md:flex-col ${ isMobile && mobileView === 'list' ? 'translate-x-0' : 'translate-x-full md:translate-x-0' } transition-transform duration-300`}>
                     <div className="hidden md:block p-4 border-b border-neutral-200 flex-shrink-0">
                         <h2 className="text-lg font-bold text-neutral-800 mb-4">Properties for Sale</h2>
-                        {renderSearchInput(false)}
+                        <div className="flex gap-2 items-start">
+                            {renderSearchInput(false)}
+                            <select
+                                value={filters.country}
+                                onChange={(e) => handleFilterChange('country', e.target.value)}
+                                className="flex-shrink-0 bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                            >
+                                {COUNTRY_OPTIONS.map(option => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                     <PropertyList {...propertyListProps} isMobile={isMobile} showList={true} showFilters={!isMobile} />
                 </div>
@@ -556,19 +586,32 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                 {isMobile && !isFiltersOpen && (
                     <>
                         <div className="absolute top-0 left-0 right-0 z-20 p-2 pointer-events-none">
-                            <div ref={searchWrapperRef} className="pointer-events-auto w-full bg-white/80 backdrop-blur-sm rounded-full shadow-lg p-1 flex items-center gap-1">
-                                <button onClick={onToggleSidebar} className="p-2 flex-shrink-0"><Bars3Icon className="w-6 h-6 text-neutral-800"/></button>
-                                {renderSearchInput(true)}
-                                <button onClick={() => updateSearchPageState({ isFiltersOpen: true })} className="p-2 flex-shrink-0 hover:bg-neutral-100 rounded-full"><AdjustmentsHorizontalIcon className="w-6 h-6 text-neutral-800"/></button>
-                                {isAuthenticated && currentUser && (
-                                    <button onClick={() => dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' })} className="flex-shrink-0 mr-1">
-                                        {currentUser.avatarUrl ? (
-                                            <img src={currentUser.avatarUrl} alt="My Account" className="w-8 h-8 rounded-full object-cover"/>
-                                        ) : (
-                                            <UserCircleIcon className="w-8 h-8 text-neutral-400"/>
-                                        )}
-                                    </button>
-                                )}
+                            <div ref={searchWrapperRef} className="pointer-events-auto w-full space-y-2">
+                                <div className="w-full bg-white/80 backdrop-blur-sm rounded-full shadow-lg p-1 flex items-center gap-1">
+                                    <button onClick={onToggleSidebar} className="p-2 flex-shrink-0"><Bars3Icon className="w-6 h-6 text-neutral-800"/></button>
+                                    {renderSearchInput(true)}
+                                    <button onClick={() => updateSearchPageState({ isFiltersOpen: true })} className="p-2 flex-shrink-0 hover:bg-neutral-100 rounded-full"><AdjustmentsHorizontalIcon className="w-6 h-6 text-neutral-800"/></button>
+                                    {isAuthenticated && currentUser && (
+                                        <button onClick={() => dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' })} className="flex-shrink-0 mr-1">
+                                            {currentUser.avatarUrl ? (
+                                                <img src={currentUser.avatarUrl} alt="My Account" className="w-8 h-8 rounded-full object-cover"/>
+                                            ) : (
+                                                <UserCircleIcon className="w-8 h-8 text-neutral-400"/>
+                                            )}
+                                        </button>
+                                    )}
+                                </div>
+                                <select
+                                    value={filters.country}
+                                    onChange={(e) => handleFilterChange('country', e.target.value)}
+                                    className="w-full bg-white/90 backdrop-blur-sm border border-neutral-300 rounded-full text-neutral-900 shadow-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-sm font-medium"
+                                >
+                                    {COUNTRY_OPTIONS.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
                         
