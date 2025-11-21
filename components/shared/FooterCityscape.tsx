@@ -2,7 +2,7 @@ import React from 'react';
 
 const FooterCityscape: React.FC = () => {
     return (
-        <div className="relative w-full h-16 overflow-visible bg-gradient-to-b from-transparent to-primary-dark/50 pb-2">
+        <div className="relative w-full min-h-[80px] overflow-visible bg-gradient-to-b from-transparent to-primary-dark/50 pb-2">
             {/* Sky background with better contrast */}
             <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/90 to-indigo-600/60"></div>
 
@@ -23,9 +23,9 @@ const FooterCityscape: React.FC = () => {
             </div>
 
             {/* Buildings Container */}
-            <div className="absolute bottom-0 left-0 right-0 flex items-end justify-around h-full pb-2">
+            <div className="relative bottom-0 left-0 right-0 flex items-end justify-around pb-2" style={{ height: '70px' }}>
                 {/* Building 1 - Tall Apartment */}
-                <div className="relative" style={{ height: '60%', width: '35px' }}>
+                <div className="relative" style={{ height: '48px', width: '35px' }}>
                     <div className="absolute bottom-0 w-full h-full bg-gradient-to-b from-orange-400 to-orange-600 rounded-t-lg shadow-2xl">
                         {/* Windows */}
                         {[...Array(5)].map((_, floor) => (
@@ -47,7 +47,7 @@ const FooterCityscape: React.FC = () => {
                 </div>
 
                 {/* Building 2 - Medium House */}
-                <div className="relative" style={{ height: '45%', width: '32px' }}>
+                <div className="relative" style={{ height: '32px', width: '32px' }}>
                     <div className="absolute bottom-0 w-full h-full bg-gradient-to-b from-blue-400 to-blue-600 rounded-t-lg shadow-2xl">
                         {/* Roof */}
                         <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[35px] border-r-[35px] border-b-[25px] border-l-transparent border-r-transparent border-b-red-600"></div>
@@ -72,7 +72,7 @@ const FooterCityscape: React.FC = () => {
                 </div>
 
                 {/* Building 3 - Tall Modern Apartment */}
-                <div className="relative" style={{ height: '70%', width: '42px' }}>
+                <div className="relative" style={{ height: '52px', width: '42px' }}>
                     <div className="absolute bottom-0 w-full h-full bg-gradient-to-b from-teal-400 to-teal-700 rounded-t-lg shadow-2xl">
                         {/* Windows grid */}
                         {[...Array(6)].map((_, floor) => (
@@ -94,7 +94,7 @@ const FooterCityscape: React.FC = () => {
                 </div>
 
                 {/* Building 4 - Small House */}
-                <div className="relative" style={{ height: '40%', width: '30px' }}>
+                <div className="relative" style={{ height: '28px', width: '30px' }}>
                     <div className="absolute bottom-0 w-full h-full bg-gradient-to-b from-purple-400 to-purple-600 rounded-t-lg shadow-2xl">
                         {/* Roof */}
                         <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[30px] border-r-[30px] border-b-[22px] border-l-transparent border-r-transparent border-b-orange-700"></div>
@@ -117,7 +117,7 @@ const FooterCityscape: React.FC = () => {
                 </div>
 
                 {/* Building 5 - Medium Apartment */}
-                <div className="relative" style={{ height: '55%', width: '38px' }}>
+                <div className="relative" style={{ height: '39px', width: '38px' }}>
                     <div className="absolute bottom-0 w-full h-full bg-gradient-to-b from-pink-400 to-pink-600 rounded-t-lg shadow-2xl">
                         {/* Windows */}
                         {[...Array(4)].map((_, floor) => (
@@ -139,7 +139,7 @@ const FooterCityscape: React.FC = () => {
                 </div>
 
                 {/* Building 6 - Short House */}
-                <div className="relative" style={{ height: '35%', width: '28px' }}>
+                <div className="relative" style={{ height: '25px', width: '28px' }}>
                     <div className="absolute bottom-0 w-full h-full bg-gradient-to-b from-green-400 to-green-600 rounded-t-lg shadow-2xl">
                         {/* Roof */}
                         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[28px] border-r-[28px] border-b-[20px] border-l-transparent border-r-transparent border-b-slate-700"></div>
@@ -154,7 +154,7 @@ const FooterCityscape: React.FC = () => {
             </div>
 
             {/* Walking People - Fixed to prevent jumping */}
-            <div className="absolute bottom-0 left-0 w-full h-full pointer-events-none pb-2" style={{ zIndex: 10 }}>
+            <div className="absolute bottom-0 left-0 w-full pointer-events-none pb-2" style={{ height: '70px', zIndex: 10 }}>
                 {/* Person 1 - Walking right */}
                 <div className="person-walking person-walk-right absolute" style={{ bottom: '2px' }}>
                     <svg width="18" height="24" viewBox="0 0 30 40" className="person-svg">
