@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
-import { Property, ChatMessage, AiSearchQuery, Filters, SellerType } from '../../types';
+import { Property, ChatMessage, AiSearchQuery, Filters, SellerType, FurnishingStatus, HeatingType, PropertyCondition, ViewType, EnergyRating } from '../../types';
 import PropertyCard from './PropertyCard';
 import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon, ChevronUpIcon, ChevronDownIcon, PencilIcon, XCircleIcon, MapPinIcon, SpinnerIcon } from '../../constants';
 import AiSearch from './AiSearch';
@@ -64,6 +64,42 @@ const FilterButtonGroup: React.FC<{
           {optionLabel}
         </FilterButton>
       ))}
+    </div>
+  </div>
+);
+
+const ToggleSwitch: React.FC<{
+  label: string;
+  value: boolean | null;
+  onChange: (value: boolean | null) => void;
+}> = ({ label, value, onChange }) => (
+  <div className="flex items-center justify-between">
+    <label className="text-xs font-medium text-neutral-700">{label}</label>
+    <div className="flex items-center gap-1">
+      <button
+        onClick={() => onChange(value === false ? null : false)}
+        className={`px-2 py-1 text-xs rounded transition-colors ${
+          value === false ? 'bg-red-500 text-white' : 'bg-neutral-200 text-neutral-600'
+        }`}
+      >
+        No
+      </button>
+      <button
+        onClick={() => onChange(value === null ? null : null)}
+        className={`px-2 py-1 text-xs rounded transition-colors ${
+          value === null ? 'bg-neutral-400 text-white' : 'bg-neutral-200 text-neutral-600'
+        }`}
+      >
+        Any
+      </button>
+      <button
+        onClick={() => onChange(value === true ? null : true)}
+        className={`px-2 py-1 text-xs rounded transition-colors ${
+          value === true ? 'bg-green-500 text-white' : 'bg-neutral-200 text-neutral-600'
+        }`}
+      >
+        Yes
+      </button>
     </div>
   </div>
 );
@@ -169,19 +205,19 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                 {isAdvancedOpen && (
                     <div className="pt-4 space-y-4 animate-fade-in">
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <FilterButtonGroup 
+                            <FilterButtonGroup
                                 label="Bedrooms"
                                 options={[ {value: null, label: 'Any'}, {value: 1, label: '1+'}, {value: 2, label: '2+'}, {value: 3, label: '3+'}, {value: 4, label: '4+'}, ]}
                                 selectedValue={filters.beds}
                                 onChange={(value) => onFilterChange('beds', value)}
                             />
-                            <FilterButtonGroup 
+                            <FilterButtonGroup
                                 label="Bathrooms"
                                 options={[ {value: null, label: 'Any'}, {value: 1, label: '1+'}, {value: 2, label: '2+'}, {value: 3, label: '3+'}, ]}
                                 selectedValue={filters.baths}
                                 onChange={(value) => onFilterChange('baths', value)}
                             />
-                            <FilterButtonGroup 
+                            <FilterButtonGroup
                                 label="Living Rooms"
                                 options={[ {value: null, label: 'Any'}, {value: 1, label: '1+'}, {value: 2, label: '2+'}, ]}
                                 selectedValue={filters.livingRooms}
@@ -189,7 +225,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                             />
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <FilterButtonGroup 
+                            <FilterButtonGroup
                                 label="Listing Type"
                                 options={[ {value: 'any', label: 'Any'}, {value: 'agent', label: 'Agent'}, {value: 'private', label: 'Private'}, ]}
                                 selectedValue={filters.sellerType}
@@ -201,6 +237,244 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                                 selectedValue={filters.propertyType}
                                 onChange={(value) => onFilterChange('propertyType', (value as Filters['propertyType']) || 'any')}
                             />
+                        </div>
+
+                        {/* Year Built */}
+                        <div>
+                            <label className="block text-xs font-medium text-neutral-700 mb-1">Year Built</label>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="number"
+                                    placeholder="Min Year"
+                                    value={filters.minYearBuilt || ''}
+                                    onChange={(e) => onFilterChange('minYearBuilt', e.target.value ? parseInt(e.target.value) : null)}
+                                    className={inputBaseClasses}
+                                />
+                                <span className="text-neutral-400">-</span>
+                                <input
+                                    type="number"
+                                    placeholder="Max Year"
+                                    value={filters.maxYearBuilt || ''}
+                                    onChange={(e) => onFilterChange('maxYearBuilt', e.target.value ? parseInt(e.target.value) : null)}
+                                    className={inputBaseClasses}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Parking */}
+                        <FilterButtonGroup
+                            label="Parking Spaces"
+                            options={[
+                                {value: null, label: 'Any'},
+                                {value: 1, label: '1+'},
+                                {value: 2, label: '2+'},
+                                {value: 3, label: '3+'}
+                            ]}
+                            selectedValue={filters.minParking}
+                            onChange={(value) => onFilterChange('minParking', value)}
+                        />
+
+                        {/* Furnishing Status */}
+                        <div>
+                            <label className="block text-xs font-medium text-neutral-700 mb-1">Furnishing</label>
+                            <select
+                                value={filters.furnishing}
+                                onChange={(e) => onFilterChange('furnishing', e.target.value as FurnishingStatus)}
+                                className={inputBaseClasses}
+                            >
+                                <option value="any">Any</option>
+                                <option value="furnished">Furnished</option>
+                                <option value="semi-furnished">Semi-Furnished</option>
+                                <option value="unfurnished">Unfurnished</option>
+                            </select>
+                        </div>
+
+                        {/* Heating Type */}
+                        <div>
+                            <label className="block text-xs font-medium text-neutral-700 mb-1">Heating Type</label>
+                            <select
+                                value={filters.heatingType}
+                                onChange={(e) => onFilterChange('heatingType', e.target.value as HeatingType)}
+                                className={inputBaseClasses}
+                            >
+                                <option value="any">Any</option>
+                                <option value="central">Central Heating</option>
+                                <option value="electric">Electric</option>
+                                <option value="gas">Gas</option>
+                                <option value="oil">Oil</option>
+                                <option value="heat-pump">Heat Pump</option>
+                                <option value="solar">Solar</option>
+                                <option value="wood">Wood</option>
+                                <option value="none">None</option>
+                            </select>
+                        </div>
+
+                        {/* Property Condition */}
+                        <div>
+                            <label className="block text-xs font-medium text-neutral-700 mb-1">Condition</label>
+                            <select
+                                value={filters.condition}
+                                onChange={(e) => onFilterChange('condition', e.target.value as PropertyCondition)}
+                                className={inputBaseClasses}
+                            >
+                                <option value="any">Any</option>
+                                <option value="new">New</option>
+                                <option value="excellent">Excellent</option>
+                                <option value="good">Good</option>
+                                <option value="fair">Fair</option>
+                                <option value="needs-renovation">Needs Renovation</option>
+                            </select>
+                        </div>
+
+                        {/* View Type */}
+                        <div>
+                            <label className="block text-xs font-medium text-neutral-700 mb-1">View</label>
+                            <select
+                                value={filters.viewType}
+                                onChange={(e) => onFilterChange('viewType', e.target.value as ViewType)}
+                                className={inputBaseClasses}
+                            >
+                                <option value="any">Any</option>
+                                <option value="sea">Sea View</option>
+                                <option value="mountain">Mountain View</option>
+                                <option value="city">City View</option>
+                                <option value="park">Park View</option>
+                                <option value="garden">Garden View</option>
+                                <option value="street">Street View</option>
+                            </select>
+                        </div>
+
+                        {/* Energy Rating */}
+                        <div>
+                            <label className="block text-xs font-medium text-neutral-700 mb-1">Energy Rating</label>
+                            <select
+                                value={filters.energyRating}
+                                onChange={(e) => onFilterChange('energyRating', e.target.value as EnergyRating)}
+                                className={inputBaseClasses}
+                            >
+                                <option value="any">Any</option>
+                                <option value="A+">A+</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="C">C</option>
+                                <option value="D">D</option>
+                                <option value="E">E</option>
+                                <option value="F">F</option>
+                                <option value="G">G</option>
+                            </select>
+                        </div>
+
+                        {/* Floor Number Range (for apartments) */}
+                        <div>
+                            <label className="block text-xs font-medium text-neutral-700 mb-1">Floor Number</label>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="number"
+                                    placeholder="Min"
+                                    value={filters.minFloorNumber !== null ? filters.minFloorNumber : ''}
+                                    onChange={(e) => onFilterChange('minFloorNumber', e.target.value ? parseInt(e.target.value) : null)}
+                                    className={inputBaseClasses}
+                                />
+                                <span className="text-neutral-400">-</span>
+                                <input
+                                    type="number"
+                                    placeholder="Max"
+                                    value={filters.maxFloorNumber !== null ? filters.maxFloorNumber : ''}
+                                    onChange={(e) => onFilterChange('maxFloorNumber', e.target.value ? parseInt(e.target.value) : null)}
+                                    className={inputBaseClasses}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Amenities Toggle Switches */}
+                        <div className="space-y-2 p-3 bg-neutral-50 rounded-lg">
+                            <h4 className="text-xs font-semibold text-neutral-800 mb-2">Amenities</h4>
+                            <ToggleSwitch
+                                label="Balcony/Terrace"
+                                value={filters.hasBalcony}
+                                onChange={(value) => onFilterChange('hasBalcony', value)}
+                            />
+                            <ToggleSwitch
+                                label="Garden/Yard"
+                                value={filters.hasGarden}
+                                onChange={(value) => onFilterChange('hasGarden', value)}
+                            />
+                            <ToggleSwitch
+                                label="Elevator"
+                                value={filters.hasElevator}
+                                onChange={(value) => onFilterChange('hasElevator', value)}
+                            />
+                            <ToggleSwitch
+                                label="Security System"
+                                value={filters.hasSecurity}
+                                onChange={(value) => onFilterChange('hasSecurity', value)}
+                            />
+                            <ToggleSwitch
+                                label="Air Conditioning"
+                                value={filters.hasAirConditioning}
+                                onChange={(value) => onFilterChange('hasAirConditioning', value)}
+                            />
+                            <ToggleSwitch
+                                label="Swimming Pool"
+                                value={filters.hasPool}
+                                onChange={(value) => onFilterChange('hasPool', value)}
+                            />
+                            <ToggleSwitch
+                                label="Pets Allowed"
+                                value={filters.petsAllowed}
+                                onChange={(value) => onFilterChange('petsAllowed', value)}
+                            />
+                        </div>
+
+                        {/* Distance Filters */}
+                        <div className="space-y-2 p-3 bg-neutral-50 rounded-lg">
+                            <h4 className="text-xs font-semibold text-neutral-800 mb-2">Maximum Distance (km)</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="block text-xs text-neutral-600 mb-1">To City Center</label>
+                                    <input
+                                        type="number"
+                                        placeholder="Max km"
+                                        value={filters.maxDistanceToCenter !== null ? filters.maxDistanceToCenter : ''}
+                                        onChange={(e) => onFilterChange('maxDistanceToCenter', e.target.value ? parseFloat(e.target.value) : null)}
+                                        className={inputBaseClasses}
+                                        step="0.1"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-600 mb-1">To Sea/Beach</label>
+                                    <input
+                                        type="number"
+                                        placeholder="Max km"
+                                        value={filters.maxDistanceToSea !== null ? filters.maxDistanceToSea : ''}
+                                        onChange={(e) => onFilterChange('maxDistanceToSea', e.target.value ? parseFloat(e.target.value) : null)}
+                                        className={inputBaseClasses}
+                                        step="0.1"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-600 mb-1">To School</label>
+                                    <input
+                                        type="number"
+                                        placeholder="Max km"
+                                        value={filters.maxDistanceToSchool !== null ? filters.maxDistanceToSchool : ''}
+                                        onChange={(e) => onFilterChange('maxDistanceToSchool', e.target.value ? parseFloat(e.target.value) : null)}
+                                        className={inputBaseClasses}
+                                        step="0.1"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-600 mb-1">To Hospital</label>
+                                    <input
+                                        type="number"
+                                        placeholder="Max km"
+                                        value={filters.maxDistanceToHospital !== null ? filters.maxDistanceToHospital : ''}
+                                        onChange={(e) => onFilterChange('maxDistanceToHospital', e.target.value ? parseFloat(e.target.value) : null)}
+                                        className={inputBaseClasses}
+                                        step="0.1"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}

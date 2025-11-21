@@ -114,6 +114,12 @@ export interface PropertyImage {
     tag: PropertyImageTag;
 }
 
+export type FurnishingStatus = 'any' | 'furnished' | 'semi-furnished' | 'unfurnished';
+export type HeatingType = 'any' | 'central' | 'electric' | 'gas' | 'oil' | 'heat-pump' | 'solar' | 'wood' | 'none';
+export type PropertyCondition = 'any' | 'new' | 'excellent' | 'good' | 'fair' | 'needs-renovation';
+export type ViewType = 'any' | 'sea' | 'mountain' | 'city' | 'park' | 'garden' | 'street';
+export type EnergyRating = 'any' | 'A+' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
+
 export interface Property {
     id: string;
     sellerId: string;
@@ -147,6 +153,23 @@ export interface Property {
     views?: number;
     saves?: number;
     inquiries?: number;
+    // Advanced property features
+    furnishing?: FurnishingStatus;
+    heatingType?: HeatingType;
+    condition?: PropertyCondition;
+    viewType?: ViewType;
+    energyRating?: EnergyRating;
+    hasBalcony?: boolean;
+    hasGarden?: boolean;
+    hasElevator?: boolean;
+    hasSecurity?: boolean;
+    hasAirConditioning?: boolean;
+    hasPool?: boolean;
+    petsAllowed?: boolean;
+    distanceToCenter?: number; // in km
+    distanceToSea?: number; // in km
+    distanceToSchool?: number; // in km
+    distanceToHospital?: number; // in km
 }
 
 export interface Message {
@@ -202,6 +225,28 @@ export interface Filters {
     sortBy: string;
     sellerType: SellerType;
     propertyType: 'any' | 'house' | 'apartment' | 'villa' | 'other';
+    // Advanced filters
+    minYearBuilt: number | null;
+    maxYearBuilt: number | null;
+    minParking: number | null;
+    furnishing: FurnishingStatus;
+    heatingType: HeatingType;
+    condition: PropertyCondition;
+    viewType: ViewType;
+    energyRating: EnergyRating;
+    hasBalcony: boolean | null;
+    hasGarden: boolean | null;
+    hasElevator: boolean | null;
+    hasSecurity: boolean | null;
+    hasAirConditioning: boolean | null;
+    hasPool: boolean | null;
+    petsAllowed: boolean | null;
+    minFloorNumber: number | null;
+    maxFloorNumber: number | null;
+    maxDistanceToCenter: number | null; // in km
+    maxDistanceToSea: number | null; // in km
+    maxDistanceToSchool: number | null; // in km
+    maxDistanceToHospital: number | null; // in km
 }
 
 export const initialFilters: Filters = {
@@ -217,6 +262,28 @@ export const initialFilters: Filters = {
     sortBy: 'newest',
     sellerType: 'any',
     propertyType: 'any',
+    // Advanced filters
+    minYearBuilt: null,
+    maxYearBuilt: null,
+    minParking: null,
+    furnishing: 'any',
+    heatingType: 'any',
+    condition: 'any',
+    viewType: 'any',
+    energyRating: 'any',
+    hasBalcony: null,
+    hasGarden: null,
+    hasElevator: null,
+    hasSecurity: null,
+    hasAirConditioning: null,
+    hasPool: null,
+    petsAllowed: null,
+    minFloorNumber: null,
+    maxFloorNumber: null,
+    maxDistanceToCenter: null,
+    maxDistanceToSea: null,
+    maxDistanceToSchool: null,
+    maxDistanceToHospital: null,
 };
 
 export interface SavedSearch {
@@ -246,6 +313,75 @@ export interface AiSearchQuery {
 }
 
 // --- Location/Map Data ---
+
+export interface CountryBounds {
+    name: string;
+    bounds: [[number, number], [number, number]]; // [[south, west], [north, east]]
+    center: [number, number]; // [lat, lng]
+}
+
+export const COUNTRY_BOUNDS: Record<string, CountryBounds> = {
+    'albania': {
+        name: 'Albania',
+        bounds: [[39.6448, 19.2823], [42.6611, 21.0574]],
+        center: [41.1533, 20.1683]
+    },
+    'bosnia': {
+        name: 'Bosnia and Herzegovina',
+        bounds: [[42.5553, 15.7287], [45.2764, 19.6237]],
+        center: [43.9159, 17.6791]
+    },
+    'bulgaria': {
+        name: 'Bulgaria',
+        bounds: [[41.2353, 22.3571], [44.2167, 28.6122]],
+        center: [42.7339, 25.4858]
+    },
+    'croatia': {
+        name: 'Croatia',
+        bounds: [[42.3869, 13.4932], [46.5549, 19.4277]],
+        center: [45.1000, 15.2000]
+    },
+    'greece': {
+        name: 'Greece',
+        bounds: [[34.8021, 19.3736], [41.7488, 28.2336]],
+        center: [39.0742, 21.8243]
+    },
+    'kosovo': {
+        name: 'Kosovo',
+        bounds: [[41.8564, 20.0142], [43.2682, 21.7895]],
+        center: [42.6026, 20.9030]
+    },
+    'macedonia': {
+        name: 'North Macedonia',
+        bounds: [[40.8427, 20.4529], [42.3736, 23.0342]],
+        center: [41.6086, 21.7453]
+    },
+    'montenegro': {
+        name: 'Montenegro',
+        bounds: [[41.8503, 18.4331], [43.5585, 20.3398]],
+        center: [42.7087, 19.3744]
+    },
+    'romania': {
+        name: 'Romania',
+        bounds: [[43.6190, 20.2619], [48.2653, 29.7497]],
+        center: [45.9432, 24.9668]
+    },
+    'serbia': {
+        name: 'Serbia',
+        bounds: [[42.2322, 18.8142], [46.1900, 23.0063]],
+        center: [44.0165, 21.0059]
+    },
+    'slovenia': {
+        name: 'Slovenia',
+        bounds: [[45.4214, 13.3754], [46.8766, 16.5967]],
+        center: [46.1512, 14.9955]
+    },
+    'turkey': {
+        name: 'Turkey (European part)',
+        bounds: [[40.8223, 26.0433], [42.1061, 29.4149]],
+        center: [41.0082, 28.9784]
+    }
+};
 
 export interface SettlementData {
   name: string;
