@@ -12,6 +12,7 @@ import { filterProperties } from '../../utils/propertyUtils';
 import AiSearch from './AiSearch';
 import Modal from '../shared/Modal';
 import { COUNTRY_OPTIONS, BALKAN_COUNTRIES } from '../../constants/countries';
+import Footer from '../shared/Footer';
 
 interface SearchPageProps {
     onToggleSidebar: () => void;
@@ -663,7 +664,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                     <div className="absolute inset-0 bg-black/50" onClick={() => updateSearchPageState({ isFiltersOpen: false })}></div>
                     <div className="relative w-full h-full" onClick={(e) => { e.stopPropagation(); updateSearchPageState({ isFiltersOpen: false }); }}>
                         <div className="absolute inset-0 bg-white" onClick={e => e.stopPropagation()}>
-                             <MobileFilters 
+                             <MobileFilters
                                 onClose={() => updateSearchPageState({ isFiltersOpen: false })}
                                 propertyListProps={propertyListProps}
                                 localFilters={localFilters}
@@ -678,6 +679,11 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                     </div>
                 </div>
             )}
+
+            {/* Footer - Only on SearchPage */}
+            <div className="fixed bottom-0 left-0 right-0 z-10 md:pl-20">
+                <Footer />
+            </div>
         </div>
     );
 };
