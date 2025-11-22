@@ -31,6 +31,8 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const streetLayerRef = useRef<L.TileLayer | null>(null);
+  const satelliteLayerRef = useRef<L.TileLayer | null>(null);
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
@@ -42,11 +44,43 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
       zoomControl: true, // Enable zoom controls
     }).setView([lat, lng], zoom);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+    // Create street view layer (HOT tiles with building outlines)
+    const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team',
       maxZoom: 19,
       minZoom: 6,
-    }).addTo(map);
+    });
+
+    // Create satellite view layer
+    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: '© Esri, Maxar, Earthstar Geographics',
+      maxZoom: 19,
+      minZoom: 6,
+    });
+
+    // Start with street layer
+    streetLayer.addTo(map);
+    streetLayerRef.current = streetLayer;
+    satelliteLayerRef.current = satelliteLayer;
+
+    // Switch to satellite view when zoomed in close (zoom level 18+)
+    map.on('zoomend', () => {
+      const currentZoom = map.getZoom();
+
+      if (currentZoom >= 18) {
+        // Switch to satellite view at maximum zoom
+        if (map.hasLayer(streetLayer)) {
+          map.removeLayer(streetLayer);
+          map.addLayer(satelliteLayer);
+        }
+      } else {
+        // Switch back to street view at lower zoom levels
+        if (map.hasLayer(satelliteLayer)) {
+          map.removeLayer(satelliteLayer);
+          map.addLayer(streetLayer);
+        }
+      }
+    });
 
     // Add draggable marker
     const marker = L.marker([lat, lng], {
