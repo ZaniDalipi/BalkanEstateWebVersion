@@ -409,14 +409,21 @@ export interface NominatimResult {
   type: string;
   importance: number;
   icon?: string;
+  name?: string;
   address?: {
+    road?: string;
+    street?: string;
+    suburb?: string;
+    neighbourhood?: string;
     city?: string;
     town?: string;
     village?: string;
+    municipality?: string;
     county?: string;
     state?: string;
     country: string;
     country_code: string;
+    postcode?: string;
   };
 }
 

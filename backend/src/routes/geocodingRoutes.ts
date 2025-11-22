@@ -1,9 +1,10 @@
 import express from 'express';
-import { searchLocation } from '../controllers/geocodingController';
+import { searchLocation, reverseGeocode } from '../controllers/geocodingController';
 
 const router = express.Router();
 
-// Public route - no authentication required
+// Public routes - no authentication required
 router.get('/search', searchLocation);
+router.get('/reverse', reverseGeocode);
 
 export default router;

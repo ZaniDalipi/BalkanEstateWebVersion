@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { searchLocation } from '../../services/osmService';
+import { searchLocation, reverseGeocode } from '../../services/osmService';
 import { NominatimResult } from '../../types';
 
 // Fix for default markers in Leaflet with webpack
@@ -61,11 +61,38 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
       setIsDragging(true);
     });
 
-    marker.on('dragend', (e) => {
+    marker.on('dragend', async (e) => {
       const position = e.target.getLatLng();
       onLocationChange(position.lat, position.lng);
       setIsDragging(false);
-      marker.setPopupContent(`<b>Location set</b><br>Lat: ${position.lat.toFixed(6)}, Lng: ${position.lng.toFixed(6)}`);
+
+      // Show loading state in popup
+      marker.setPopupContent(`<b>Finding address...</b><br>Please wait...`);
+      marker.openPopup();
+
+      // Reverse geocode to get address
+      try {
+        const result = await reverseGeocode(position.lat, position.lng);
+        if (result && onAddressChange) {
+          // Extract clean address from result
+          // Priority: road/street > village/town > city > suburb
+          const address = result.address?.road ||
+                         result.address?.village ||
+                         result.address?.town ||
+                         result.address?.city ||
+                         result.address?.suburb ||
+                         result.name ||
+                         result.display_name.split(',')[0].trim();
+
+          onAddressChange(address);
+          marker.setPopupContent(`<b>Address found!</b><br>${address}`);
+        } else {
+          marker.setPopupContent(`<b>Location set</b><br>Lat: ${position.lat.toFixed(6)}, Lng: ${position.lng.toFixed(6)}`);
+        }
+      } catch (error) {
+        console.error('Reverse geocoding failed:', error);
+        marker.setPopupContent(`<b>Location set</b><br>Lat: ${position.lat.toFixed(6)}, Lng: ${position.lng.toFixed(6)}`);
+      }
       marker.openPopup();
     });
 
