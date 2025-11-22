@@ -801,19 +801,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 });
             }
 
-            let { lat, lng } = listingData;
-            
-            const hashString = `${listingData.streetAddress}`;
-            let hash = 0;
-            for (let i = 0; i < hashString.length; i++) {
-                const char = hashString.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash |= 0;
-            }
-            const latOffset = Math.sin(hash) * 0.005;
-            const lngOffset = Math.cos(hash) * 0.005;
-            const finalLat = lat + latOffset;
-            const finalLng = lng + lngOffset;
+            const { lat, lng } = listingData;
 
             // Use street address if provided, otherwise default to city name
             const finalAddress = listingData.streetAddress.trim() || selectedCity;
@@ -832,8 +820,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                     finalAddress,
                     selectedCity,
                     selectedCountry,
-                    finalLat,
-                    finalLng
+                    lat,
+                    lng
                 );
                 distances = {
                     distanceToCenter: calculatedDistances.distanceToCenter < 999 ? calculatedDistances.distanceToCenter : undefined,
@@ -868,8 +856,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 tourUrl: listingData.tourUrl,
                 imageUrl: imageUrls.length > 0 ? imageUrls[0].url : 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=500',
                 images: imageUrls,
-                lat: finalLat,
-                lng: finalLng,
+                lat: lat,
+                lng: lng,
                 seller: {
                     type: currentUser.role === UserRole.AGENT ? 'agent' : 'private',
                     name: currentUser.name,
