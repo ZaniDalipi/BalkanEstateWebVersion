@@ -314,7 +314,8 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             }
         }
 
-        updateSearchPageState({ filters: newFilters });
+        // Apply filters in real-time by updating both filters and activeFilters
+        updateSearchPageState({ filters: newFilters, activeFilters: newFilters });
     }, [filters, updateSearchPageState]);
     
     const handleSearch = useCallback(async (searchQuery?: string) => {
