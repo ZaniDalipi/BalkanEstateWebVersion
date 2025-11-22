@@ -95,12 +95,29 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
       setIsDragging(true);
     });
 
-    marker.on('dragend', (e) => {
+    marker.on('dragend', async (e) => {
       const position = e.target.getLatLng();
       onLocationChange(position.lat, position.lng);
       setIsDragging(false);
       marker.setPopupContent(`<b>Location set</b><br>Lat: ${position.lat.toFixed(6)}, Lng: ${position.lng.toFixed(6)}`);
       marker.openPopup();
+
+      // Reverse geocode to get address for the new pin location
+      if (onAddressChange) {
+        try {
+          const result = await reverseGeocode(position.lat, position.lng);
+          if (result) {
+            // Extract the most specific address component available
+            const address = result.address;
+            const locationName = address?.road || address?.street || address?.suburb ||
+                                address?.neighbourhood || result.name ||
+                                result.display_name.split(',')[0].trim();
+            onAddressChange(locationName);
+          }
+        } catch (error) {
+          console.error('Reverse geocoding error:', error);
+        }
+      }
     });
 
     marker.on('drag', (e) => {
