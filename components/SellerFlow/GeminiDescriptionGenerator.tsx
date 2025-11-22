@@ -428,6 +428,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     }, [listingData.streetAddress]);
 
     const handleMapLocationChange = (newLat: number, newLng: number) => {
+        console.log('📍 PIN DRAGGED TO EXACT COORDINATES:', { lat: newLat, lng: newLng });
         setListingData(prev => ({
             ...prev,
             lat: newLat,
@@ -802,6 +803,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             }
 
             const { lat, lng } = listingData;
+            console.log('💾 SAVING PROPERTY WITH EXACT COORDINATES:', { lat, lng });
 
             // Use street address if provided, otherwise default to city name
             const finalAddress = listingData.streetAddress.trim() || selectedCity;
@@ -834,6 +836,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 console.error('⚠️ Failed to calculate distances:', error);
                 // Continue without distances - they will be undefined
             }
+
+            console.log('✅ FINAL COORDINATES BEING SAVED TO PROPERTY:', { lat, lng });
 
             const newProperty: Property = {
                 id: propertyToEdit ? propertyToEdit.id : `prop-${Date.now()}`,
