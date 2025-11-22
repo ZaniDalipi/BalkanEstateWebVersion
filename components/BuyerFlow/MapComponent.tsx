@@ -385,6 +385,116 @@ interface MarkersProps {
     onPopupClick: (id: string) => void;
 }
 
+const PropertyPopup: React.FC<{ property: Property; onPopupClick: (id: string) => void }> = ({ property, onPopupClick }) => {
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+    const images = property.images && property.images.length > 0
+        ? property.images.map(img => img.url)
+        : [property.imageUrl];
+
+    const nextImage = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    };
+
+    const prevImage = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    };
+
+    return (
+        <div
+            className="w-72 cursor-pointer"
+            onClick={() => onPopupClick(property.id)}
+        >
+            {/* Image carousel */}
+            <div className="relative mb-3">
+                <img
+                    src={images[currentImageIndex]}
+                    alt={property.address}
+                    className="w-full h-40 object-cover rounded-lg"
+                />
+
+                {/* Image navigation */}
+                {images.length > 1 && (
+                    <>
+                        <button
+                            onClick={prevImage}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-7 h-7 flex items-center justify-center transition-colors"
+                        >
+                            ‹
+                        </button>
+                        <button
+                            onClick={nextImage}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-7 h-7 flex items-center justify-center transition-colors"
+                        >
+                            ›
+                        </button>
+
+                        {/* Image counter */}
+                        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
+                            {currentImageIndex + 1} / {images.length}
+                        </div>
+                    </>
+                )}
+            </div>
+
+            {/* Price and property type */}
+            <div className="mb-2">
+                <div className="flex items-center justify-between">
+                    <p className="font-bold text-lg text-primary">{formatPrice(property.price, property.country)}</p>
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-neutral-100 text-neutral-700 capitalize">
+                        {property.propertyType}
+                    </span>
+                </div>
+            </div>
+
+            {/* Address */}
+            <p className="text-sm text-neutral-600 mb-3 line-clamp-2">{property.address}, {property.city}</p>
+
+            {/* Essential information */}
+            <div className="grid grid-cols-3 gap-2 mb-3 text-center">
+                <div className="bg-neutral-50 rounded-lg py-2">
+                    <div className="text-xs text-neutral-500">Beds</div>
+                    <div className="font-bold text-neutral-800">{property.beds}</div>
+                </div>
+                <div className="bg-neutral-50 rounded-lg py-2">
+                    <div className="text-xs text-neutral-500">Baths</div>
+                    <div className="font-bold text-neutral-800">{property.baths}</div>
+                </div>
+                <div className="bg-neutral-50 rounded-lg py-2">
+                    <div className="text-xs text-neutral-500">m²</div>
+                    <div className="font-bold text-neutral-800">{property.sqft}</div>
+                </div>
+            </div>
+
+            {/* Additional features */}
+            <div className="flex flex-wrap gap-1 mb-2">
+                {property.livingRooms > 0 && (
+                    <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                        {property.livingRooms} Living Room{property.livingRooms > 1 ? 's' : ''}
+                    </span>
+                )}
+                {property.parking > 0 && (
+                    <span className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded">
+                        {property.parking} Parking
+                    </span>
+                )}
+                {property.yearBuilt && (
+                    <span className="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded">
+                        Built {property.yearBuilt}
+                    </span>
+                )}
+            </div>
+
+            {/* View details prompt */}
+            <div className="text-center pt-2 border-t border-neutral-200">
+                <p className="text-xs font-semibold text-primary">Click to view full details →</p>
+            </div>
+        </div>
+    );
+};
+
 const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) => {
     const map = useMap();
     const [zoom, setZoom] = useState(map.getZoom());
@@ -399,15 +509,8 @@ const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) => {
         <>
             {properties.map(prop => (
                 <Marker key={prop.id} position={[prop.lat, prop.lng]} icon={createCustomMarkerIcon(prop, zoom)}>
-                    <Popup>
-                        <div 
-                            className="w-48 cursor-pointer"
-                            onClick={() => onPopupClick(prop.id)}
-                        >
-                            <img src={prop.imageUrl} alt={prop.address} className="w-full h-24 object-cover rounded-md mb-2" />
-                            <p className="font-bold text-md leading-tight">{formatPrice(prop.price, prop.country)}</p>
-                            <p className="text-sm text-neutral-600 truncate">{prop.address}, {prop.city}</p>
-                        </div>
+                    <Popup maxWidth={300} minWidth={280}>
+                        <PropertyPopup property={prop} onPopupClick={onPopupClick} />
                     </Popup>
                 </Marker>
             ))}
