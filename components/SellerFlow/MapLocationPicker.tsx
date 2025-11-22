@@ -42,8 +42,8 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
       zoomControl: true, // Enable zoom controls
     }).setView([lat, lng], zoom);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
+    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team',
       maxZoom: 19,
       minZoom: 6,
     }).addTo(map);
