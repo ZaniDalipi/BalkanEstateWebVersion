@@ -584,6 +584,7 @@ function transformBackendProperty(backendProp: any): Property {
     description: backendProp.description,
     specialFeatures: backendProp.specialFeatures || [],
     materials: backendProp.materials || [],
+    amenities: backendProp.amenities || [],
     tourUrl: backendProp.tourUrl,
     imageUrl: backendProp.imageUrl,
     images: backendProp.images || [],
@@ -605,6 +606,23 @@ function transformBackendProperty(backendProp: any): Property {
     views: backendProp.views || 0,
     saves: backendProp.saves || 0,
     inquiries: backendProp.inquiries || 0,
+    // Advanced property features
+    furnishing: backendProp.furnishing,
+    heatingType: backendProp.heatingType,
+    condition: backendProp.condition,
+    viewType: backendProp.viewType,
+    energyRating: backendProp.energyRating,
+    hasBalcony: backendProp.hasBalcony,
+    hasGarden: backendProp.hasGarden,
+    hasElevator: backendProp.hasElevator,
+    hasSecurity: backendProp.hasSecurity,
+    hasAirConditioning: backendProp.hasAirConditioning,
+    hasPool: backendProp.hasPool,
+    petsAllowed: backendProp.petsAllowed,
+    distanceToCenter: backendProp.distanceToCenter,
+    distanceToSea: backendProp.distanceToSea,
+    distanceToSchool: backendProp.distanceToSchool,
+    distanceToHospital: backendProp.distanceToHospital,
   };
 }
 
@@ -625,6 +643,7 @@ function transformToBackendProperty(frontendProp: Property): any {
     description: frontendProp.description,
     specialFeatures: frontendProp.specialFeatures,
     materials: frontendProp.materials,
+    amenities: frontendProp.amenities,
     tourUrl: frontendProp.tourUrl,
     imageUrl: frontendProp.imageUrl,
     images: frontendProp.images,
@@ -634,6 +653,23 @@ function transformToBackendProperty(frontendProp: Property): any {
     floorNumber: frontendProp.floorNumber,
     totalFloors: frontendProp.totalFloors,
     floorplanUrl: frontendProp.floorplanUrl,
+    // Advanced property features
+    furnishing: frontendProp.furnishing,
+    heatingType: frontendProp.heatingType,
+    condition: frontendProp.condition,
+    viewType: frontendProp.viewType,
+    energyRating: frontendProp.energyRating,
+    hasBalcony: frontendProp.hasBalcony,
+    hasGarden: frontendProp.hasGarden,
+    hasElevator: frontendProp.hasElevator,
+    hasSecurity: frontendProp.hasSecurity,
+    hasAirConditioning: frontendProp.hasAirConditioning,
+    hasPool: frontendProp.hasPool,
+    petsAllowed: frontendProp.petsAllowed,
+    distanceToCenter: frontendProp.distanceToCenter,
+    distanceToSea: frontendProp.distanceToSea,
+    distanceToSchool: frontendProp.distanceToSchool,
+    distanceToHospital: frontendProp.distanceToHospital,
   };
 }
 
