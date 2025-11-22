@@ -895,12 +895,42 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-4">
                     <DetailItem icon={<CalendarIcon />} label="Year Built">{property.yearBuilt}</DetailItem>
                     <DetailItem icon={<ParkingIcon />} label="Parking">{property.parking > 0 ? `${property.parking} ${property.parking === 1 ? 'spot' : 'spots'}` : 'None'}</DetailItem>
-                    
+
                     {property.propertyType === 'apartment' && property.floorNumber && (
                         <DetailItem icon={<BuildingOfficeIcon />} label="Floor">{property.floorNumber}</DetailItem>
                     )}
                     {(property.propertyType === 'house' || property.propertyType === 'villa') && property.totalFloors && (
                          <DetailItem icon={<BuildingOfficeIcon />} label="Floors">{property.totalFloors}</DetailItem>
+                    )}
+
+                    {property.furnishing && property.furnishing !== 'any' && (
+                        <DetailItem icon={<span className="text-2xl">🛋️</span>} label="Furnishing">
+                            <span className="capitalize">{property.furnishing.replace('-', ' ')}</span>
+                        </DetailItem>
+                    )}
+
+                    {property.heatingType && property.heatingType !== 'any' && property.heatingType !== 'none' && (
+                        <DetailItem icon={<span className="text-2xl">🔥</span>} label="Heating">
+                            <span className="capitalize">{property.heatingType.replace('-', ' ')}</span>
+                        </DetailItem>
+                    )}
+
+                    {property.condition && property.condition !== 'any' && (
+                        <DetailItem icon={<span className="text-2xl">⭐</span>} label="Condition">
+                            <span className="capitalize">{property.condition.replace('-', ' ')}</span>
+                        </DetailItem>
+                    )}
+
+                    {property.viewType && property.viewType !== 'any' && (
+                        <DetailItem icon={<span className="text-2xl">👁️</span>} label="View">
+                            <span className="capitalize">{property.viewType} View</span>
+                        </DetailItem>
+                    )}
+
+                    {property.energyRating && property.energyRating !== 'any' && (
+                        <DetailItem icon={<span className="text-2xl">⚡</span>} label="Energy Rating">
+                            <span className="font-bold text-lg">{property.energyRating}</span>
+                        </DetailItem>
                     )}
 
                     {property.floorplanUrl && (
