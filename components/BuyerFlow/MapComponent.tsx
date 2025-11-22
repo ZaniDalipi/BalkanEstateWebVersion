@@ -5,6 +5,7 @@ import L, { LeafletMouseEvent } from 'leaflet';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
 import { BellIcon, PencilIcon, XCircleIcon, Bars3Icon, CrosshairsIcon } from '../../constants';
+import { CadastreLayer } from '../Map/CadastreLayer';
 
 
 // Fix for default icon issue with bundlers
@@ -404,6 +405,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, user
   const { dispatch } = useAppContext();
   const [mapType, setMapType] = useState<TileLayerType>('street');
   const [isLegendOpen, setIsLegendOpen] = useState(false);
+  const [showCadastre, setShowCadastre] = useState(false);
   
   const validProperties = useMemo(() => {
     return properties.filter(p => 
@@ -459,6 +461,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, user
           attribution={TILE_LAYERS[mapType].attribution}
           url={TILE_LAYERS[mapType].url}
         />
+        <CadastreLayer enabled={showCadastre && mapType === 'satellite'} opacity={0.7} />
         <Markers properties={propertiesInView} onPopupClick={handlePopupClick} />
       </MapContainer>
       
@@ -487,6 +490,15 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, user
                             Satellite
                         </button>
                     </div>
+                    {mapType === 'satellite' && (
+                        <button
+                            onClick={() => setShowCadastre(!showCadastre)}
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${showCadastre ? 'bg-primary text-white shadow' : 'bg-white/80 text-neutral-700 hover:bg-white'}`}
+                            title="Show cadastral parcels (zoom in to see)"
+                        >
+                            Parcels
+                        </button>
+                    )}
                     <button 
                         onClick={onDrawStart}
                         className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-full shadow-md transition-colors ${
