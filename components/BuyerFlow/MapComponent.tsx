@@ -151,6 +151,39 @@ const MapEvents: React.FC<{ onMove: (bounds: L.LatLngBounds, center: L.LatLng) =
     return null;
 };
 
+const ZoomBasedTileSwitch: React.FC<{
+    mapType: TileLayerType;
+    setMapType: (type: TileLayerType) => void;
+}> = ({ mapType, setMapType }) => {
+    const map = useMap();
+
+    useEffect(() => {
+        const handleZoomEnd = () => {
+            const currentZoom = map.getZoom();
+
+            if (currentZoom >= 18) {
+                // Switch to satellite view at maximum zoom
+                if (mapType !== 'satellite') {
+                    setMapType('satellite');
+                }
+            } else {
+                // Switch back to street view at lower zoom levels
+                if (mapType !== 'street') {
+                    setMapType('street');
+                }
+            }
+        };
+
+        map.on('zoomend', handleZoomEnd);
+
+        return () => {
+            map.off('zoomend', handleZoomEnd);
+        };
+    }, [map, mapType, setMapType]);
+
+    return null;
+};
+
 const MapDrawEvents: React.FC<{
     isDrawing: boolean;
     onDrawComplete: (bounds: L.LatLngBounds | null) => void;
@@ -448,6 +481,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, user
         <FlyToController target={flyToTarget} onComplete={onFlyComplete} />
         <MapEvents onMove={onMapMove} mapBounds={mapBounds} searchMode={searchMode} />
         <MapDrawEvents isDrawing={isDrawing} onDrawComplete={onDrawComplete} />
+        <ZoomBasedTileSwitch mapType={mapType} setMapType={setMapType} />
         {drawnBounds && !isDrawing && (
             <Rectangle
                 bounds={drawnBounds}
