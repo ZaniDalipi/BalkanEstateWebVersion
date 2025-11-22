@@ -63,6 +63,10 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
 
     marker.on('dragend', async (e) => {
       const position = e.target.getLatLng();
+
+      // CRITICAL: Set coordinates to EXACT position where user dragged the pin
+      // The pin stays EXACTLY where the user placed it - never snapped to roads or addresses
+      // These are the property's actual coordinates, even if no address exists there
       onLocationChange(position.lat, position.lng);
       setIsDragging(false);
 
@@ -70,11 +74,12 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
       marker.setPopupContent(`<b>Finding address...</b><br>Please wait...`);
       marker.openPopup();
 
-      // Reverse geocode to get address
+      // Reverse geocode ONLY to get a human-readable address for the address field
+      // This does NOT change the pin position - pin stays at exact coordinates above
       try {
         const result = await reverseGeocode(position.lat, position.lng);
         if (result && onAddressChange) {
-          // Extract clean address from result
+          // Extract clean address from result (nearest address to the pin location)
           // Priority: road/street > village/town > city > suburb
           const address = result.address?.road ||
                          result.address?.village ||
@@ -84,14 +89,15 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
                          result.name ||
                          result.display_name.split(',')[0].trim();
 
+          // Update address field with nearest address, but coordinates remain unchanged
           onAddressChange(address);
-          marker.setPopupContent(`<b>Address found!</b><br>${address}`);
+          marker.setPopupContent(`<b>Pin location saved!</b><br>${address}<br><span class="text-xs">Lat: ${position.lat.toFixed(6)}, Lng: ${position.lng.toFixed(6)}</span>`);
         } else {
-          marker.setPopupContent(`<b>Location set</b><br>Lat: ${position.lat.toFixed(6)}, Lng: ${position.lng.toFixed(6)}`);
+          marker.setPopupContent(`<b>Pin location saved!</b><br>Lat: ${position.lat.toFixed(6)}, Lng: ${position.lng.toFixed(6)}`);
         }
       } catch (error) {
         console.error('Reverse geocoding failed:', error);
-        marker.setPopupContent(`<b>Location set</b><br>Lat: ${position.lat.toFixed(6)}, Lng: ${position.lng.toFixed(6)}`);
+        marker.setPopupContent(`<b>Pin location saved!</b><br>Lat: ${position.lat.toFixed(6)}, Lng: ${position.lng.toFixed(6)}`);
       }
       marker.openPopup();
     });
@@ -323,8 +329,14 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
       {/* Instructions */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
         <p className="text-xs text-blue-800">
-          <span className="font-semibold">💡 Tips:</span> Use the search box to find your village/town, zoom with +/- buttons or scroll wheel, pan by dragging the map, and drag the red marker to your exact property location.
+          <span className="font-semibold">💡 How to set your location:</span>
         </p>
+        <ol className="text-xs text-blue-800 mt-2 ml-4 space-y-1 list-decimal">
+          <li><strong>Search</strong> for your street or village to get close to your property</li>
+          <li><strong>Drag the pin</strong> to your EXACT property location (building, land plot, etc.)</li>
+          <li>The pin stays <strong>exactly where you place it</strong> - even if there's no street address there</li>
+          <li>We'll find the nearest address to fill in the address field for you</li>
+        </ol>
       </div>
 
       {/* Coordinates */}
