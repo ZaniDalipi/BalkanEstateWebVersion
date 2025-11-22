@@ -5,6 +5,7 @@ import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon, Che
 import AiSearch from './AiSearch';
 import PropertyCardSkeleton from './PropertyCardSkeleton';
 import { useAppContext } from '../../context/AppContext';
+import Footer from '../shared/Footer';
 
 interface PropertyListProps {
   properties: Property[];
@@ -77,7 +78,7 @@ const ToggleSwitch: React.FC<{
     <label className="text-xs font-medium text-neutral-700">{label}</label>
     <div className="flex items-center gap-1">
       <button
-        onClick={() => onChange(value === false ? null : false)}
+        onClick={() => onChange(false)}
         className={`px-2 py-1 text-xs rounded transition-colors ${
           value === false ? 'bg-red-500 text-white' : 'bg-neutral-200 text-neutral-600'
         }`}
@@ -85,7 +86,7 @@ const ToggleSwitch: React.FC<{
         No
       </button>
       <button
-        onClick={() => onChange(value === null ? null : null)}
+        onClick={() => onChange(null)}
         className={`px-2 py-1 text-xs rounded transition-colors ${
           value === null ? 'bg-neutral-400 text-white' : 'bg-neutral-200 text-neutral-600'
         }`}
@@ -93,7 +94,7 @@ const ToggleSwitch: React.FC<{
         Any
       </button>
       <button
-        onClick={() => onChange(value === true ? null : true)}
+        onClick={() => onChange(true)}
         className={`px-2 py-1 text-xs rounded transition-colors ${
           value === true ? 'bg-green-500 text-white' : 'bg-neutral-200 text-neutral-600'
         }`}
@@ -476,10 +477,54 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                                 </div>
                             </div>
                         </div>
+
+                        {/* Amenities Filter */}
+                        <div className="space-y-2 p-3 bg-neutral-50 rounded-lg">
+                            <h4 className="text-xs font-semibold text-neutral-800 mb-2">Amenities</h4>
+                            <div>
+                                <input
+                                    type="text"
+                                    placeholder="Type amenity and press Enter (e.g., gym, pool)"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            const input = e.currentTarget;
+                                            const value = input.value.trim().toLowerCase();
+                                            if (value && !filters.amenities.includes(value)) {
+                                                onFilterChange('amenities', [...filters.amenities, value]);
+                                            }
+                                            input.value = '';
+                                        }
+                                    }}
+                                    className={inputBaseClasses}
+                                />
+                                {filters.amenities.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        {filters.amenities.map((amenity) => (
+                                            <div
+                                                key={amenity}
+                                                className="flex items-center gap-1 bg-primary-light text-primary-dark text-xs font-semibold px-2 py-1 rounded-full"
+                                            >
+                                                <span>#{amenity}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        onFilterChange('amenities', filters.amenities.filter(a => a !== amenity));
+                                                    }}
+                                                    className="text-primary-dark/70 hover:text-primary-dark"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
-            
+
             {!isMobile && (
                  <div className="pt-2 space-y-2">
                      <button 
@@ -634,7 +679,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                 </div>
                             </div>
                         </div>
-                        <div className="p-4 pb-16">
+                        <div className="p-4">
                             {isLoadingProperties ? (
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     {Array.from({ length: 6 }).map((_, index) => (
@@ -657,6 +702,9 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                             ) : (
                                 <div className="text-center py-16 px-4"><h3 className="text-xl font-semibold text-neutral-800">No Properties Found</h3></div>
                             )}
+
+                            {/* Footer - Integrated at bottom of property list */}
+                            <Footer />
                         </div>
                     </div>
                 </div>
@@ -717,7 +765,7 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                 </div>
                             </div>
 
-                            <div className="p-4 pb-40">
+                            <div className="p-4">
                                 {isLoadingProperties ? (
                                     <div className="grid grid-cols-1 gap-4">
                                         {Array.from({ length: 4 }).map((_, index) => (
@@ -749,6 +797,9 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                         <p className="text-neutral-500 mt-2">Try adjusting your search filters or moving the map to a different area.</p>
                                     </div>
                                 )}
+
+                                {/* Footer - Integrated at bottom of property list */}
+                                <Footer />
                             </div>
                         </div>
                     )}

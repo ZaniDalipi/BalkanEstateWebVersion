@@ -211,6 +211,90 @@ export const generateDescriptionFromImages = async (images: File[], language: st
     }
 };
 
+export interface DistanceCalculationResult {
+    distanceToCenter: number; // in km
+    distanceToSea: number; // in km
+    distanceToSchool: number; // in km
+    distanceToHospital: number; // in km
+}
+
+export const calculatePropertyDistances = async (
+    address: string,
+    city: string,
+    country: string,
+    lat: number,
+    lng: number
+): Promise<DistanceCalculationResult> => {
+    const prompt = `You are a geographic analyst specializing in property locations. Analyze the following property location and provide estimated distances to key amenities:
+
+Property Address: ${address}
+City: ${city}
+Country: ${country}
+Coordinates: ${lat}, ${lng}
+
+Based on your knowledge of ${city}, ${country} and typical urban planning in the region, provide realistic distance estimates (in kilometers) to the following locations:
+
+1. **distanceToCenter**: Distance to the city center/downtown area (main commercial/cultural hub)
+2. **distanceToSea**: Distance to the nearest sea, beach, or major waterfront (if landlocked or very far, use 999 km as indicator)
+3. **distanceToSchool**: Distance to the nearest primary or secondary school
+4. **distanceToHospital**: Distance to the nearest hospital or major medical facility
+
+Provide accurate estimates based on:
+- The property's coordinates and address
+- Typical infrastructure and amenities in ${city}
+- Regional geography and city layout
+- For sea distance: consider if the country/city is coastal or landlocked
+
+Return ONLY a JSON object with the four distance values as numbers (in kilometers, rounded to 1 decimal place).
+If a location type doesn't apply (e.g., sea for landlocked cities), use 999 to indicate "not applicable/very far".`;
+
+    const responseSchema = {
+        type: Type.OBJECT,
+        properties: {
+            distanceToCenter: {
+                type: Type.NUMBER,
+                description: 'Distance in km to city center/downtown',
+            },
+            distanceToSea: {
+                type: Type.NUMBER,
+                description: 'Distance in km to nearest sea/beach (999 if landlocked)',
+            },
+            distanceToSchool: {
+                type: Type.NUMBER,
+                description: 'Distance in km to nearest school',
+            },
+            distanceToHospital: {
+                type: Type.NUMBER,
+                description: 'Distance in km to nearest hospital',
+            },
+        },
+        required: ['distanceToCenter', 'distanceToSea', 'distanceToSchool', 'distanceToHospital'],
+    };
+
+    const result = await retryWithBackoff(() =>
+        ai.models.generateContent({
+            model: 'gemini-2.5-pro',
+            contents: { parts: [{ text: prompt }] },
+            config: {
+                responseMimeType: 'application/json',
+                responseSchema: responseSchema,
+                timeout: 30000, // 30 second timeout
+            },
+        })
+    );
+
+    try {
+        const jsonText = result.text.trim();
+        const sanitizedJsonText = jsonText.replace(/^```json\n/, '').replace(/\n```$/, '');
+        const parsedResult = JSON.parse(sanitizedJsonText);
+        return parsedResult as DistanceCalculationResult;
+    } catch (e) {
+        console.error("Error parsing Gemini distance calculation response:", e instanceof Error ? e.message : String(e));
+        console.error("Raw response text:", result.text);
+        throw new Error("Failed to calculate distances. Using default values.");
+    }
+};
+
 export interface AiChatResponse {
     responseMessage: string;
     searchQuery: AiSearchQuery | null;

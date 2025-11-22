@@ -57,15 +57,28 @@ export const filterProperties = (properties: Property[], filters: Filters): Prop
         const minFloorNumberMatch = filters.minFloorNumber !== null ? (p.floorNumber !== undefined && p.floorNumber >= filters.minFloorNumber) : true;
         const maxFloorNumberMatch = filters.maxFloorNumber !== null ? (p.floorNumber !== undefined && p.floorNumber <= filters.maxFloorNumber) : true;
 
-        // Distance filters (only filter if property has distance data)
+        // Distance filters - include properties without distance data (treat as unknown/not yet calculated)
         const maxDistanceToCenterMatch = filters.maxDistanceToCenter !== null ?
-            (p.distanceToCenter !== undefined && p.distanceToCenter <= filters.maxDistanceToCenter) : true;
+            (p.distanceToCenter === undefined || p.distanceToCenter <= filters.maxDistanceToCenter) : true;
         const maxDistanceToSeaMatch = filters.maxDistanceToSea !== null ?
-            (p.distanceToSea !== undefined && p.distanceToSea <= filters.maxDistanceToSea) : true;
+            (p.distanceToSea === undefined || p.distanceToSea <= filters.maxDistanceToSea) : true;
         const maxDistanceToSchoolMatch = filters.maxDistanceToSchool !== null ?
-            (p.distanceToSchool !== undefined && p.distanceToSchool <= filters.maxDistanceToSchool) : true;
+            (p.distanceToSchool === undefined || p.distanceToSchool <= filters.maxDistanceToSchool) : true;
         const maxDistanceToHospitalMatch = filters.maxDistanceToHospital !== null ?
-            (p.distanceToHospital !== undefined && p.distanceToHospital <= filters.maxDistanceToHospital) : true;
+            (p.distanceToHospital === undefined || p.distanceToHospital <= filters.maxDistanceToHospital) : true;
+
+        // Amenities filter - check if property has all required amenities (bidirectional substring matching)
+        const amenitiesMatch = filters.amenities && filters.amenities.length > 0 ?
+            filters.amenities.every(amenity => {
+                const propertyAmenities = p.amenities || [];
+                const searchTerm = amenity.toLowerCase().trim();
+                return propertyAmenities.some(pAmenity => {
+                    const propAmenity = pAmenity.toLowerCase().trim();
+                    // Bidirectional matching: either the property amenity contains the search term,
+                    // or the search term contains the property amenity
+                    return propAmenity.includes(searchTerm) || searchTerm.includes(propAmenity);
+                });
+            }) : true;
 
         return queryMatch &&
                countryMatch &&
@@ -98,6 +111,7 @@ export const filterProperties = (properties: Property[], filters: Filters): Prop
                maxDistanceToCenterMatch &&
                maxDistanceToSeaMatch &&
                maxDistanceToSchoolMatch &&
-               maxDistanceToHospitalMatch;
+               maxDistanceToHospitalMatch &&
+               amenitiesMatch;
     });
 };

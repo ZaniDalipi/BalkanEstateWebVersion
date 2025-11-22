@@ -138,6 +138,7 @@ export interface Property {
     description: string;
     specialFeatures: string[];
     materials: string[];
+    amenities: string[];
     tourUrl?: string;
     imageUrl: string;
     images?: PropertyImage[];
@@ -247,6 +248,7 @@ export interface Filters {
     maxDistanceToSea: number | null; // in km
     maxDistanceToSchool: number | null; // in km
     maxDistanceToHospital: number | null; // in km
+    amenities: string[]; // Array of amenity tags to filter by
 }
 
 export const initialFilters: Filters = {
@@ -284,6 +286,7 @@ export const initialFilters: Filters = {
     maxDistanceToSea: null,
     maxDistanceToSchool: null,
     maxDistanceToHospital: null,
+    amenities: [],
 };
 
 export interface SavedSearch {
