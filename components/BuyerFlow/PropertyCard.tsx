@@ -56,11 +56,11 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
       <div className="block w-full relative">
         <button onClick={handleCardClick} className="block w-full">
             {imageError ? (
-                <div className="w-full h-40 bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center">
-                    <BuildingOfficeIcon className="w-12 h-12 text-neutral-400" />
+                <div className="w-full h-40 md:h-32 bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center">
+                    <BuildingOfficeIcon className="w-12 h-12 md:w-10 md:h-10 text-neutral-400" />
                 </div>
             ) : (
-                <img src={property.imageUrl} alt={property.address} className="w-full h-40 object-cover" onError={() => setImageError(true)} />
+                <img src={property.imageUrl} alt={property.address} className="w-full h-40 md:h-32 object-cover" onError={() => setImageError(true)} />
             )}
         </button>
         {isSold && (
@@ -79,57 +79,57 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
             </svg>
         </div>
       </div>
-      <div className="p-3 flex flex-col flex-grow">
+      <div className="p-3 md:p-2 flex flex-col flex-grow">
         <button onClick={handleCardClick} className="text-left flex-grow">
             <div className="flex items-center text-neutral-600">
-                <MapPinIcon className="w-4 h-4 mr-1.5 text-neutral-400 flex-shrink-0" />
-                <span className="truncate text-sm">{property.address}, {property.city}</span>
+                <MapPinIcon className="w-4 h-4 md:w-3.5 md:h-3.5 mr-1.5 md:mr-1 text-neutral-400 flex-shrink-0" />
+                <span className="truncate text-sm md:text-xs">{property.address}, {property.city}</span>
             </div>
-            <p className="text-2xl font-bold text-neutral-900 my-1.5">{formatPrice(property.price, property.country)}</p>
-            <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-neutral-700">
-                <div className="flex items-center gap-1.5" title={`${property.beds} bedrooms`}>
-                    <BedIcon className="w-5 h-5 text-neutral-500" />
-                    <span className="font-semibold text-sm">{property.beds}</span>
+            <p className="text-2xl md:text-xl font-bold text-neutral-900 my-1.5 md:my-1">{formatPrice(property.price, property.country)}</p>
+            <div className="flex items-center flex-wrap gap-x-3 md:gap-x-2 gap-y-1 text-neutral-700">
+                <div className="flex items-center gap-1.5 md:gap-1" title={`${property.beds} bedrooms`}>
+                    <BedIcon className="w-5 h-5 md:w-4 md:h-4 text-neutral-500" />
+                    <span className="font-semibold text-sm md:text-xs">{property.beds}</span>
                 </div>
-                <div className="flex items-center gap-1.5" title={`${property.baths} bathrooms`}>
-                    <BathIcon className="w-5 h-5 text-neutral-500" />
-                    <span className="font-semibold text-sm">{property.baths}</span>
+                <div className="flex items-center gap-1.5 md:gap-1" title={`${property.baths} bathrooms`}>
+                    <BathIcon className="w-5 h-5 md:w-4 md:h-4 text-neutral-500" />
+                    <span className="font-semibold text-sm md:text-xs">{property.baths}</span>
                 </div>
-                <div className="flex items-center gap-1.5" title={`${property.livingRooms} living rooms`}>
-                    <LivingRoomIcon className="w-5 h-5 text-neutral-500" />
-                    <span className="font-semibold text-sm">{property.livingRooms}</span>
+                <div className="flex items-center gap-1.5 md:gap-1" title={`${property.livingRooms} living rooms`}>
+                    <LivingRoomIcon className="w-5 h-5 md:w-4 md:h-4 text-neutral-500" />
+                    <span className="font-semibold text-sm md:text-xs">{property.livingRooms}</span>
                 </div>
-                <div className="flex items-center gap-1.5" title={`${property.sqft} square meters`}>
-                    <SqftIcon className="w-5 h-5 text-neutral-500" />
-                    <span className="font-semibold text-sm">{property.sqft} m²</span>
+                <div className="flex items-center gap-1.5 md:gap-1" title={`${property.sqft} square meters`}>
+                    <SqftIcon className="w-5 h-5 md:w-4 md:h-4 text-neutral-500" />
+                    <span className="font-semibold text-sm md:text-xs">{property.sqft} m²</span>
                 </div>
             </div>
         </button>
 
-        <div className="flex-grow"></div> 
-        
-        <div className="mt-3 pt-3 border-t border-neutral-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
+        <div className="flex-grow"></div>
+
+        <div className="mt-3 md:mt-2 pt-3 md:pt-2 border-t border-neutral-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 md:gap-1.5">
             {showCompareButton && (
                 <button
                     onClick={handleCompareClick}
-                    className={`flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all shadow-sm hover:shadow-md w-full sm:w-auto ${
+                    className={`flex items-center justify-center gap-2 md:gap-1.5 px-4 md:px-3 py-2 md:py-1.5 rounded-full text-sm md:text-xs font-semibold transition-all shadow-sm hover:shadow-md w-full sm:w-auto ${
                         isInComparison
                             ? 'bg-primary-light text-primary-dark border border-primary/50'
                             : 'bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100'
                     }`}
                 >
-                    <ScaleIcon className="w-5 h-5" />
+                    <ScaleIcon className="w-5 h-5 md:w-4 md:h-4" />
                     <span>{isInComparison ? 'Selected' : 'Compare'}</span>
                 </button>
             )}
              <button
                 onClick={handleCardClick}
-                className="bg-primary text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary-dark transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 w-full sm:w-auto"
+                className="bg-primary text-white px-4 md:px-3 py-2 md:py-1.5 rounded-full text-sm md:text-xs font-semibold hover:bg-primary-dark transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 md:gap-1.5 w-full sm:w-auto"
             >
                 {property.seller.avatarUrl ? (
-                    <img src={property.seller.avatarUrl} alt={property.seller.name} className="w-6 h-6 rounded-full object-cover border-2 border-white/50" />
+                    <img src={property.seller.avatarUrl} alt={property.seller.name} className="w-6 h-6 md:w-5 md:h-5 rounded-full object-cover border-2 border-white/50" />
                 ) : (
-                    <UserCircleIcon className="w-6 h-6" />
+                    <UserCircleIcon className="w-6 h-6 md:w-5 md:h-5" />
                 )}
                 <span>View Details</span>
             </button>

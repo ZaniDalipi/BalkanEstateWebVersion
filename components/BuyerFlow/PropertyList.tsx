@@ -679,22 +679,22 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                 </div>
                             </div>
                         </div>
-                        <div className="p-4">
+                        <div className="p-4 md:p-3">
                             {isLoadingProperties ? (
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-3">
                                     {Array.from({ length: 6 }).map((_, index) => (
                                         <PropertyCardSkeleton key={index} />
                                     ))}
                                 </div>
                             ) : properties.length > 0 ? (
                                 <>
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-3">
                                         {properties.slice(0, visibleCount).map(prop => (
                                             <PropertyCard key={prop.id} property={prop} />
                                         ))}
                                     </div>
                                     {visibleCount < properties.length && (
-                                        <div ref={loadMoreRef} className="text-center p-8">
+                                        <div ref={loadMoreRef} className="text-center p-8 md:p-4">
                                             {isLoadingMore && <span>Loading more...</span>}
                                         </div>
                                     )}
@@ -765,16 +765,16 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                 </div>
                             </div>
 
-                            <div className="p-4">
+                            <div className="p-4 md:p-3">
                                 {isLoadingProperties ? (
-                                    <div className="grid grid-cols-1 gap-4">
+                                    <div className="grid grid-cols-1 gap-4 md:gap-3">
                                         {Array.from({ length: 4 }).map((_, index) => (
                                             <PropertyCardSkeleton key={index} />
                                         ))}
                                     </div>
                                 ) : properties.length > 0 ? (
                                     <>
-                                        <div className="grid grid-cols-1 gap-4">
+                                        <div className="grid grid-cols-1 gap-4 md:gap-3">
                                             {properties.slice(0, visibleCount).map(prop => (
                                                 <PropertyCard key={prop.id} property={prop} />
                                             ))}
