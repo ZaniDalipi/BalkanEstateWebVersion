@@ -3,7 +3,6 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { searchLocation, reverseGeocode } from '../../services/osmService';
 import { NominatimResult } from '../../types';
-import { getCadastreLayerForLocation, CADASTRE_MIN_ZOOM } from '../../config/cadastreLayers';
 
 // Fix for default markers in Leaflet with webpack
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -12,19 +11,6 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
-
-const TILE_LAYERS = {
-  street: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '© OpenStreetMap contributors',
-  },
-  satellite: {
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
-  },
-};
-
-type TileLayerType = keyof typeof TILE_LAYERS;
 
 interface MapLocationPickerProps {
   lat: number;
@@ -39,16 +25,11 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const tileLayerRef = useRef<L.TileLayer | null>(null);
-  const cadastreLayerRef = useRef<L.TileLayer.WMS | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<NominatimResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const [mapType, setMapType] = useState<TileLayerType>('street');
-  const [showCadastre, setShowCadastre] = useState(false);
-  const [currentZoom, setCurrentZoom] = useState(zoom);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const streetLayerRef = useRef<L.TileLayer | null>(null);
   const satelliteLayerRef = useRef<L.TileLayer | null>(null);
@@ -99,13 +80,6 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
           map.addLayer(streetLayer);
         }
       }
-    });
-
-    tileLayerRef.current = tileLayer;
-
-    // Track zoom changes
-    map.on('zoomend', () => {
-      setCurrentZoom(map.getZoom());
     });
 
     // Add draggable marker
@@ -246,66 +220,6 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
     }
   }, [lat, lng, address, zoom, isDragging]);
 
-  // Handle tile layer switching
-  useEffect(() => {
-    if (!mapRef.current || !tileLayerRef.current) return;
-
-    // Remove old tile layer
-    mapRef.current.removeLayer(tileLayerRef.current);
-
-    // Add new tile layer
-    const newTileLayer = L.tileLayer(TILE_LAYERS[mapType].url, {
-      attribution: TILE_LAYERS[mapType].attribution,
-      maxZoom: 19,
-      minZoom: 6,
-    }).addTo(mapRef.current);
-
-    tileLayerRef.current = newTileLayer;
-  }, [mapType]);
-
-  // Handle cadastre layer management
-  useEffect(() => {
-    if (!mapRef.current) return;
-
-    const map = mapRef.current;
-    const shouldShow = showCadastre && mapType === 'satellite' && currentZoom >= CADASTRE_MIN_ZOOM;
-
-    if (shouldShow) {
-      // Get the cadastre config for current location
-      const center = map.getCenter();
-      const cadastreConfig = getCadastreLayerForLocation(center.lat, center.lng);
-
-      if (cadastreConfig && !cadastreLayerRef.current) {
-        // Add cadastre layer
-        const wmsParams: any = {
-          layers: cadastreConfig.layers,
-          format: cadastreConfig.format || 'image/png',
-          transparent: cadastreConfig.transparent !== false,
-          version: cadastreConfig.version || '1.3.0',
-          ...cadastreConfig.additionalParams,
-        };
-
-        const cadastreLayer = L.tileLayer.wms(cadastreConfig.wmsUrl, wmsParams);
-        cadastreLayer.setOpacity(0.7);
-        cadastreLayer.addTo(map);
-        cadastreLayerRef.current = cadastreLayer;
-      }
-    } else {
-      // Remove cadastre layer if it exists
-      if (cadastreLayerRef.current) {
-        map.removeLayer(cadastreLayerRef.current);
-        cadastreLayerRef.current = null;
-      }
-    }
-
-    return () => {
-      if (cadastreLayerRef.current && mapRef.current) {
-        mapRef.current.removeLayer(cadastreLayerRef.current);
-        cadastreLayerRef.current = null;
-      }
-    };
-  }, [showCadastre, mapType, currentZoom, lat, lng]);
-
   // Handle location search
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -424,40 +338,11 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
       </div>
 
       {/* Map */}
-      <div className="relative">
-        <div
-          ref={mapContainerRef}
-          className="w-full h-96 rounded-lg border-2 border-neutral-300 shadow-sm"
-          style={{ zIndex: 0 }}
-        />
-
-        {/* Map controls */}
-        <div className="absolute top-3 right-3 z-[1000] flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm p-1 rounded-lg shadow-lg">
-            <button
-              onClick={() => setMapType('street')}
-              className={`px-2 py-1 rounded text-xs font-semibold transition-all ${mapType === 'street' ? 'bg-primary text-white shadow' : 'text-neutral-600 hover:bg-neutral-100'}`}
-            >
-              Street
-            </button>
-            <button
-              onClick={() => setMapType('satellite')}
-              className={`px-2 py-1 rounded text-xs font-semibold transition-all ${mapType === 'satellite' ? 'bg-primary text-white shadow' : 'text-neutral-600 hover:bg-neutral-100'}`}
-            >
-              Satellite
-            </button>
-          </div>
-          {mapType === 'satellite' && (
-            <button
-              onClick={() => setShowCadastre(!showCadastre)}
-              className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all shadow-lg ${showCadastre ? 'bg-primary text-white' : 'bg-white/90 text-neutral-700 hover:bg-white'}`}
-              title={currentZoom < CADASTRE_MIN_ZOOM ? `Zoom in to see cadastral parcels (zoom ${CADASTRE_MIN_ZOOM}+)` : 'Show cadastral parcels'}
-            >
-              Parcels
-            </button>
-          )}
-        </div>
-      </div>
+      <div
+        ref={mapContainerRef}
+        className="w-full h-96 rounded-lg border-2 border-neutral-300 shadow-sm"
+        style={{ zIndex: 0 }}
+      />
 
       {/* Instructions */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
