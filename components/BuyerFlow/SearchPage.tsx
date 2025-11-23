@@ -606,13 +606,13 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                             <p className="text-xs text-white/80 mb-2">Subscribe to get notifications about new listings in your area</p>
                             <form onSubmit={(e) => {
                                 e.preventDefault();
-                                const emailInput = e.currentTarget.elements.namedItem('email') as HTMLInputElement;
-                                const email = emailInput.value;
-                                if (!email || !email.includes('@')) {
+                                const formData = new FormData(e.currentTarget);
+                                const email = formData.get('email') as string;
+                                if (!email || !email.trim() || !email.includes('@')) {
+                                    alert('Please enter a valid email address');
                                     return;
                                 }
-                                // Open subscription modal with email
-                                dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: { isOpen: true, email } });
+                                dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: { isOpen: true, email: email.trim() } });
                             }} className="flex gap-2">
                                 <input
                                     type="email"
