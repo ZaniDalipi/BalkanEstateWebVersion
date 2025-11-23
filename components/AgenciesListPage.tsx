@@ -3,6 +3,7 @@ import { getAgencies } from '../services/apiService';
 import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, StarIcon, SearchIcon } from '../constants';
 import { useAppContext } from '../context/AppContext';
 import AgenciesMap from './AgenciesMap';
+import Footer from './shared/Footer';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
@@ -445,6 +446,9 @@ const AgenciesListPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };

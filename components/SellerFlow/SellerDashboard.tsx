@@ -3,6 +3,7 @@ import { CurrencyDollarIcon, SparklesIcon } from '../../constants';
 import PropertyCalculator from './PropertyCalculator';
 import GeminiDescriptionGenerator from './GeminiDescriptionGenerator';
 import { useAppContext } from '../../context/AppContext';
+import Footer from '../shared/Footer';
 
 const CreateListingPage: React.FC = () => {
   const { state } = useAppContext();
@@ -45,6 +46,9 @@ const CreateListingPage: React.FC = () => {
             </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };

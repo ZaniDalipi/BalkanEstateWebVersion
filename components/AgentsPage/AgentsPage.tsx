@@ -8,6 +8,7 @@ import { Bars3Icon, Squares2x2Icon, TrophyIcon, UserGroupIcon } from '../../cons
 import StarRating from '../shared/StarRating';
 import { formatPrice } from '../../utils/currency';
 import AdvertisementBanner from '../AdvertisementBanner';
+import Footer from '../shared/Footer';
 
 type SortKey = 'sales' | 'rating' | 'name' | 'sold';
 type ViewMode = 'grid' | 'list';
@@ -199,6 +200,9 @@ const AgentsPage: React.FC = () => {
             </div>
         )}
       </main>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };

@@ -308,7 +308,6 @@ const MainLayout: React.FC = () => {
             {showHeader && <Header onToggleSidebar={() => setIsSidebarOpen(true)} isFloating={isSearchPage} />}
             <main className={`flex flex-col flex-grow ${isFullHeightView ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                 <AppContent onToggleSidebar={() => setIsSidebarOpen(true)} />
-                {!isFullHeightView && <Footer />}
             </main>
         </div>
 
