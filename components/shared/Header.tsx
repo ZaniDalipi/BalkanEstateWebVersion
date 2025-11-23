@@ -29,7 +29,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isFloating }) => {
   }, [isAuthenticated, dispatch]);
 
   const handleSubscribeClick = useCallback(() => {
-    dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true });
+    dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: { isOpen: true } });
   }, [dispatch]);
 
   const AuthButton: React.FC<{ floating?: boolean }> = ({ floating }) => {
