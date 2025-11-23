@@ -115,7 +115,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
         onFilterChange(field, isNaN(num) ? null : num);
     };
     
-    const inputBaseClasses = "block w-full text-xs bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 px-3 py-2 focus:outline-none focus:bg-white focus:border-primary transition-all placeholder:text-neutral-500";
+    const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-xl text-neutral-900 px-3 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-neutral-400";
 
     return (
          <div className="space-y-4">
