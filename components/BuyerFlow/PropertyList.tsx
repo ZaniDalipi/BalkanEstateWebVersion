@@ -115,7 +115,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
         onFilterChange(field, isNaN(num) ? null : num);
     };
     
-    const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder:text-neutral-700";
+    const inputBaseClasses = "block w-full text-xs bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 px-3 py-2 focus:outline-none focus:bg-white focus:border-primary transition-all placeholder:text-neutral-500";
 
     return (
          <div className="space-y-4">
@@ -123,20 +123,20 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                 <button
                     type="button"
                     onClick={onDrawStart}
-                    className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold rounded-lg shadow-sm border transition-colors ${
-                        isDrawing 
-                        ? 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100' 
+                    className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl border transition-all ${
+                        isDrawing
+                        ? 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
                         : 'bg-white border-primary text-primary hover:bg-primary-light'
                     }`}
                 >
                     {isDrawing ? (
                         <>
-                            <XCircleIcon className="w-5 h-5" />
+                            <XCircleIcon className="w-4 h-4" />
                             <span>Cancel Drawing</span>
                         </>
                     ) : (
                         <>
-                            <PencilIcon className="w-5 h-5" />
+                            <PencilIcon className="w-4 h-4" />
                             <span>Draw on Map</span>
                         </>
                     )}
@@ -704,7 +704,9 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                             )}
 
                             {/* Footer - Integrated at bottom of property list */}
-                            <Footer />
+                            <div className="mt-8">
+                                <Footer />
+                            </div>
                         </div>
                     </div>
                 </div>
