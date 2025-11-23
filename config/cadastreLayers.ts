@@ -34,7 +34,7 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
   AL: {
     country: 'Albania',
     countryCode: 'AL',
-    enabled: true,
+    enabled: false,
     wmsUrl: 'https://geoportal.asig.gov.al/service/zrpp/wms',
     layers: 'ZRPP',
     format: 'image/png',
@@ -47,7 +47,7 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
       'CRS': 'EPSG:4326',
       'STYLES': 'default',
     },
-    notes: '✅ CONFIRMED: ZRPP (Property Registry) service.',
+    notes: '❌ DISABLED: WMS endpoint returns 404. May require API key or authentication.',
   },
 
   MK: {
@@ -68,7 +68,7 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
   GR: {
     country: 'Greece',
     countryCode: 'GR',
-    enabled: true,
+    enabled: false,
     wmsUrl: 'http://gis.ktimanet.gr/inspire/rest/services/cadastralparcels/CadastralParcelWMS/MapServer/exts/InspireView/service',
     layers: 'CP.CadastralParcel',
     format: 'image/png',
@@ -81,13 +81,13 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
       'CRS': 'EPSG:4326',
       'STYLES': 'default',
     },
-    notes: '✅ CONFIRMED: INSPIRE compliant. Shows parcel boundaries with labels.',
+    notes: '❌ DISABLED: WMS endpoint returns 404. May require API key or authentication.',
   },
 
   BG: {
     country: 'Bulgaria',
     countryCode: 'BG',
-    enabled: true,
+    enabled: false,
     wmsUrl: 'https://inspire.cadastre.bg/arcgis/services/Cadastral_Parcel/MapServer/WmsServer',
     layers: '0',
     format: 'image/png',
@@ -100,7 +100,7 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
       'CRS': 'EPSG:4326',
       'STYLES': 'default',
     },
-    notes: '✅ CONFIRMED: INSPIRE compliant. Layer 0 shows parcel boundaries.',
+    notes: '❌ DISABLED: WMS endpoint returns 404. May require API key or authentication.',
   },
 
   XK: {
@@ -121,7 +121,7 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
   RO: {
     country: 'Romania',
     countryCode: 'RO',
-    enabled: true,
+    enabled: false,
     wmsUrl: 'http://geoportal.ancpi.ro/inspireview/rest/services/CP/CP_View/MapServer/exts/InspireView/service',
     layers: '1',
     format: 'image/png',
@@ -134,13 +134,13 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
       'CRS': 'EPSG:4326',
       'STYLES': 'default',
     },
-    notes: '✅ CONFIRMED: INSPIRE compliant. Layer 1 shows parcel boundaries with identifiers.',
+    notes: '❌ DISABLED: WMS endpoint returns 404. May require API key or authentication.',
   },
 
   BA: {
     country: 'Bosnia & Herzegovina',
     countryCode: 'BA',
-    enabled: true,
+    enabled: false,
     wmsUrl: 'https://static.katastar.ba/arcgis/services/katastarski_podaci/MapServer/WMSServer',
     layers: '0',
     format: 'image/png',
@@ -152,13 +152,13 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     additionalParams: {
       'CRS': 'EPSG:4326',
     },
-    notes: '✅ CONFIRMED: ArcGIS Server. Layer 0 shows cadastral parcels.',
+    notes: '❌ DISABLED: WMS endpoint returns 404. May require API key or authentication.',
   },
 
   HR: {
     country: 'Croatia',
     countryCode: 'HR',
-    enabled: true,
+    enabled: false,
     wmsUrl: 'https://api.uredjenazemlja.hr/services/inspire/cp_wms/wms',
     layers: 'CP.CadastralParcel',
     format: 'image/png',
@@ -171,13 +171,13 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
       'CRS': 'EPSG:4326',
       'STYLES': 'default',
     },
-    notes: '✅ CONFIRMED: INSPIRE compliant. Shows parcel boundaries with cadastral numbers.',
+    notes: '❌ DISABLED: WMS endpoint returns 404. May require API key or authentication.',
   },
 
   RS: {
     country: 'Serbia',
     countryCode: 'RS',
-    enabled: true,
+    enabled: false,
     wmsUrl: 'http://a3.geosrbija.rs/arcgis/services/OpenData/Katastar/MapServer/WMSServer',
     layers: '0',
     format: 'image/png',
@@ -189,7 +189,7 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     additionalParams: {
       'CRS': 'EPSG:4326',
     },
-    notes: '✅ CONFIRMED: ArcGIS MapServer. Layer 0 shows cadastral parcels with numbers.',
+    notes: '❌ DISABLED: WMS endpoint returns 404. May require API key or authentication.',
   },
 
   ME: {
@@ -210,7 +210,7 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
   SI: {
     country: 'Slovenia',
     countryCode: 'SI',
-    enabled: true,
+    enabled: false,
     wmsUrl: 'https://storitve.eprostor.gov.si/ows-pub-wms/wms',
     layers: 'CP.CadastralParcel',
     format: 'image/png',
@@ -223,7 +223,7 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
       'CRS': 'EPSG:4326',
       'STYLES': 'default',
     },
-    notes: '✅ CONFIRMED: INSPIRE compliant. Shows parcel boundaries with cadastral identifiers.',
+    notes: '❌ DISABLED: WMS endpoint returns 404. May require API key or authentication.',
   },
 };
 
