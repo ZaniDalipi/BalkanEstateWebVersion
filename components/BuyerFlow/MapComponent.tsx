@@ -627,20 +627,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, user
                             Satellite
                         </button>
                     </div>
-                    {mapType === 'satellite' && (
-                        <button
-                            onClick={() => setShowCadastre(!showCadastre)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${showCadastre ? 'bg-primary text-white shadow' : 'bg-white/80 text-neutral-700 hover:bg-white'}`}
-                            title="Show cadastral parcels (zoom in to see)"
-                        >
-                            Parcels
-                        </button>
-                    )}
-                    <button 
+                    <button
                         onClick={onDrawStart}
                         className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-full shadow-md transition-colors ${
-                            isDrawing 
-                            ? 'bg-red-600 text-white hover:bg-red-700' 
+                            isDrawing
+                            ? 'bg-red-600 text-white hover:bg-red-700'
                             : 'bg-neutral-800 text-white hover:bg-neutral-900'
                         }`}
                     >
@@ -648,6 +639,16 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, user
                         <span>{isDrawing ? 'Cancel' : 'Draw Area'}</span>
                     </button>
                 </div>
+
+                {mapType === 'satellite' && (
+                    <button
+                        onClick={() => setShowCadastre(!showCadastre)}
+                        className={`px-4 py-2 text-sm font-bold rounded-full shadow-lg transition-all animate-fade-in ${showCadastre ? 'bg-primary text-white hover:bg-primary-dark' : 'bg-white/90 text-neutral-800 hover:bg-white'}`}
+                        title="Show cadastral parcels (zoom in to see)"
+                    >
+                        {showCadastre ? '✓ ' : ''}Cadastral Parcels
+                    </button>
+                )}
 
                 {drawnBounds && !isDrawing && (
                     <div className="flex flex-col items-end gap-2 animate-fade-in">
