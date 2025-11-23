@@ -26,6 +26,7 @@ const initialState: AppState = {
   isFirstLoginOffer: false,
   isAgencyCreationMode: false,
   isSubscriptionModalOpen: false,
+  subscriptionEmail: null,
   isAuthModalOpen: false,
   authModalView: 'login',
   properties: [],
@@ -81,7 +82,11 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         isAgencyCreationMode: action.payload.isAgencyMode ?? false
       };
     case 'TOGGLE_SUBSCRIPTION_MODAL':
-      return { ...state, isSubscriptionModalOpen: action.payload };
+      return {
+        ...state,
+        isSubscriptionModalOpen: action.payload.isOpen,
+        subscriptionEmail: action.payload.email || state.subscriptionEmail
+      };
     case 'TOGGLE_ENTERPRISE_MODAL':
       return { ...state, isEnterpriseModalOpen: action.payload };
     case 'TOGGLE_AUTH_MODAL':
@@ -322,7 +327,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setTimeout(() => {
         const pendingSub = state.pendingSubscription;
         if (pendingSub.modalType === 'buyer') {
-          dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true });
+          dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: { isOpen: true } });
         } else {
           dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: state.isFirstLoginOffer } });
         }
@@ -361,7 +366,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setTimeout(() => {
         const pendingSub = state.pendingSubscription;
         if (pendingSub.modalType === 'buyer') {
-          dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true });
+          dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: { isOpen: true } });
         } else {
           dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: state.isFirstLoginOffer } });
         }

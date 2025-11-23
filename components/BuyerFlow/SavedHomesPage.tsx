@@ -8,6 +8,7 @@ import ComparisonModal from './ComparisonModal';
 import Toast from '../shared/Toast';
 import PropertyCardSkeleton from './PropertyCardSkeleton';
 import AdvertisementBanner from '../AdvertisementBanner';
+import Footer from '../shared/Footer';
 
 const SavedHomesPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
@@ -153,6 +154,9 @@ const SavedHomesPage: React.FC = () => {
               onClear={() => dispatch({ type: 'CLEAR_COMPARISON' })}
           />
       )}
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };

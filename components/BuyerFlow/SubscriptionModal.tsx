@@ -8,15 +8,23 @@ import { fetchBuyerProducts, Product } from '../../utils/api';
 interface SubscriptionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialEmail?: string;
 }
 
-const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose }) => {
+const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose, initialEmail }) => {
   const { state, dispatch } = useAppContext();
   const [activeTab, setActiveTab] = useState<'buyer' | 'seller'>('buyer');
   const [showPaymentWindow, setShowPaymentWindow] = useState(false);
-  const [email, setEmail] = useState(state.currentUser?.email || '');
+  const [email, setEmail] = useState(initialEmail || state.currentUser?.email || '');
   const [buyerProducts, setBuyerProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Update email when initialEmail changes
+  useEffect(() => {
+    if (initialEmail) {
+      setEmail(initialEmail);
+    }
+  }, [initialEmail]);
 
   // Fetch buyer products when modal opens
   useEffect(() => {

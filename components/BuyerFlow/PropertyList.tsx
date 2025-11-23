@@ -115,7 +115,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
         onFilterChange(field, isNaN(num) ? null : num);
     };
     
-    const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-lg text-neutral-900 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors placeholder:text-neutral-700";
+    const inputBaseClasses = "block w-full text-xs bg-white border border-neutral-300 rounded-xl text-neutral-900 px-3 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-neutral-400";
 
     return (
          <div className="space-y-4">
@@ -123,20 +123,20 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                 <button
                     type="button"
                     onClick={onDrawStart}
-                    className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold rounded-lg shadow-sm border transition-colors ${
-                        isDrawing 
-                        ? 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100' 
+                    className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl border transition-all ${
+                        isDrawing
+                        ? 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
                         : 'bg-white border-primary text-primary hover:bg-primary-light'
                     }`}
                 >
                     {isDrawing ? (
                         <>
-                            <XCircleIcon className="w-5 h-5" />
+                            <XCircleIcon className="w-4 h-4" />
                             <span>Cancel Drawing</span>
                         </>
                     ) : (
                         <>
-                            <PencilIcon className="w-5 h-5" />
+                            <PencilIcon className="w-4 h-4" />
                             <span>Draw on Map</span>
                         </>
                     )}
@@ -679,22 +679,22 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                 </div>
                             </div>
                         </div>
-                        <div className="p-4">
+                        <div className="p-4 md:p-3">
                             {isLoadingProperties ? (
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-3">
                                     {Array.from({ length: 6 }).map((_, index) => (
                                         <PropertyCardSkeleton key={index} />
                                     ))}
                                 </div>
                             ) : properties.length > 0 ? (
                                 <>
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-3">
                                         {properties.slice(0, visibleCount).map(prop => (
                                             <PropertyCard key={prop.id} property={prop} />
                                         ))}
                                     </div>
                                     {visibleCount < properties.length && (
-                                        <div ref={loadMoreRef} className="text-center p-8">
+                                        <div ref={loadMoreRef} className="text-center p-8 md:p-4">
                                             {isLoadingMore && <span>Loading more...</span>}
                                         </div>
                                     )}
@@ -704,7 +704,9 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                             )}
 
                             {/* Footer - Integrated at bottom of property list */}
-                            <Footer />
+                            <div className="mt-8">
+                                <Footer />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -765,16 +767,16 @@ const PropertyList: React.FC<PropertyListProps> = (props) => {
                                 </div>
                             </div>
 
-                            <div className="p-4">
+                            <div className="p-4 md:p-3">
                                 {isLoadingProperties ? (
-                                    <div className="grid grid-cols-1 gap-4">
+                                    <div className="grid grid-cols-1 gap-4 md:gap-3">
                                         {Array.from({ length: 4 }).map((_, index) => (
                                             <PropertyCardSkeleton key={index} />
                                         ))}
                                     </div>
                                 ) : properties.length > 0 ? (
                                     <>
-                                        <div className="grid grid-cols-1 gap-4">
+                                        <div className="grid grid-cols-1 gap-4 md:gap-3">
                                             {properties.slice(0, visibleCount).map(prop => (
                                                 <PropertyCard key={prop.id} property={prop} />
                                             ))}

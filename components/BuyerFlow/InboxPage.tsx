@@ -4,6 +4,7 @@ import ConversationList from './ConversationList';
 import ConversationView from './ConversationView';
 import { EnvelopeIcon } from '../../constants';
 import PropertyCard from './PropertyCard';
+import Footer from '../shared/Footer';
 
 const InboxPage: React.FC = () => {
     const { state, dispatch } = useAppContext();
@@ -106,13 +107,13 @@ const InboxPage: React.FC = () => {
     }
 
     return (
-        <div className="h-full w-full flex flex-col bg-neutral-50">
+        <div className="h-full w-full flex flex-col bg-neutral-50 overflow-y-auto">
             <main className="flex-grow flex flex-row overflow-hidden">
                 <div className={`
                     ${isMobile && selectedConversationId ? 'hidden' : 'block'}
                     w-full md:w-1/3 lg:w-1/4 h-full flex-shrink-0 overflow-y-auto bg-white border-r border-neutral-200
                 `}>
-                    <ConversationList 
+                    <ConversationList
                         conversations={conversations}
                         selectedConversationId={selectedConversationId}
                         onSelectConversation={setSelectedConversationId}
@@ -141,6 +142,7 @@ const InboxPage: React.FC = () => {
                     )}
                 </div>
             </main>
+            <Footer />
         </div>
     );
 };

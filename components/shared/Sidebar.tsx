@@ -78,7 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     };
 
     const handleSubscriptionClick = () => {
-        dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true });
+        dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: { isOpen: true } });
         onClose();
     };
 

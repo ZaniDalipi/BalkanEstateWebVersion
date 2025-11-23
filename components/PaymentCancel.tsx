@@ -7,7 +7,7 @@ const PaymentCancel: React.FC = () => {
 
   const handleReturnToSubscriptions = () => {
     dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
-    dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: true });
+    dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: { isOpen: true } });
     window.history.pushState({}, '', '/account');
   };
 

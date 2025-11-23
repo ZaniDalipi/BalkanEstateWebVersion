@@ -428,6 +428,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     }, [listingData.streetAddress]);
 
     const handleMapLocationChange = (newLat: number, newLng: number) => {
+        console.log('📍 PIN DRAGGED TO EXACT COORDINATES:', { lat: newLat, lng: newLng });
         setListingData(prev => ({
             ...prev,
             lat: newLat,
@@ -801,19 +802,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 });
             }
 
-            let { lat, lng } = listingData;
-            
-            const hashString = `${listingData.streetAddress}`;
-            let hash = 0;
-            for (let i = 0; i < hashString.length; i++) {
-                const char = hashString.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash |= 0;
-            }
-            const latOffset = Math.sin(hash) * 0.005;
-            const lngOffset = Math.cos(hash) * 0.005;
-            const finalLat = lat + latOffset;
-            const finalLng = lng + lngOffset;
+            const { lat, lng } = listingData;
+            console.log('💾 SAVING PROPERTY WITH EXACT COORDINATES:', { lat, lng });
 
             // Use street address if provided, otherwise default to city name
             const finalAddress = listingData.streetAddress.trim() || selectedCity;
@@ -832,8 +822,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                     finalAddress,
                     selectedCity,
                     selectedCountry,
-                    finalLat,
-                    finalLng
+                    lat,
+                    lng
                 );
                 distances = {
                     distanceToCenter: calculatedDistances.distanceToCenter < 999 ? calculatedDistances.distanceToCenter : undefined,
@@ -846,6 +836,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 console.error('⚠️ Failed to calculate distances:', error);
                 // Continue without distances - they will be undefined
             }
+
+            console.log('✅ FINAL COORDINATES BEING SAVED TO PROPERTY:', { lat, lng });
 
             const newProperty: Property = {
                 id: propertyToEdit ? propertyToEdit.id : `prop-${Date.now()}`,
@@ -868,8 +860,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 tourUrl: listingData.tourUrl,
                 imageUrl: imageUrls.length > 0 ? imageUrls[0].url : 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=500',
                 images: imageUrls,
-                lat: finalLat,
-                lng: finalLng,
+                lat: lat,
+                lng: lng,
                 seller: {
                     type: currentUser.role === UserRole.AGENT ? 'agent' : 'private',
                     name: currentUser.name,

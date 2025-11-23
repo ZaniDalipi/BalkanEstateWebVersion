@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { searchLocation } from '../../services/osmService';
+import { searchLocation, reverseGeocode } from '../../services/osmService';
 import { NominatimResult } from '../../types';
 import { getCadastreLayerForLocation, CADASTRE_MIN_ZOOM } from '../../config/cadastreLayers';
 
@@ -50,6 +50,8 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
   const [showCadastre, setShowCadastre] = useState(false);
   const [currentZoom, setCurrentZoom] = useState(zoom);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const streetLayerRef = useRef<L.TileLayer | null>(null);
+  const satelliteLayerRef = useRef<L.TileLayer | null>(null);
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
@@ -61,12 +63,43 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
       zoomControl: true, // Enable zoom controls
     }).setView([lat, lng], zoom);
 
-    // Add initial tile layer
-    const tileLayer = L.tileLayer(TILE_LAYERS.street.url, {
-      attribution: TILE_LAYERS.street.attribution,
+    // Create street view layer (HOT tiles with building outlines)
+    const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team',
       maxZoom: 19,
       minZoom: 6,
-    }).addTo(map);
+    });
+
+    // Create satellite view layer
+    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: '© Esri, Maxar, Earthstar Geographics',
+      maxZoom: 19,
+      minZoom: 6,
+    });
+
+    // Start with street layer
+    streetLayer.addTo(map);
+    streetLayerRef.current = streetLayer;
+    satelliteLayerRef.current = satelliteLayer;
+
+    // Switch to satellite view when zoomed in close (zoom level 18+)
+    map.on('zoomend', () => {
+      const currentZoom = map.getZoom();
+
+      if (currentZoom >= 18) {
+        // Switch to satellite view at maximum zoom
+        if (map.hasLayer(streetLayer)) {
+          map.removeLayer(streetLayer);
+          map.addLayer(satelliteLayer);
+        }
+      } else {
+        // Switch back to street view at lower zoom levels
+        if (map.hasLayer(satelliteLayer)) {
+          map.removeLayer(satelliteLayer);
+          map.addLayer(streetLayer);
+        }
+      }
+    });
 
     tileLayerRef.current = tileLayer;
 
@@ -88,12 +121,29 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
       setIsDragging(true);
     });
 
-    marker.on('dragend', (e) => {
+    marker.on('dragend', async (e) => {
       const position = e.target.getLatLng();
       onLocationChange(position.lat, position.lng);
       setIsDragging(false);
       marker.setPopupContent(`<b>Location set</b><br>Lat: ${position.lat.toFixed(6)}, Lng: ${position.lng.toFixed(6)}`);
       marker.openPopup();
+
+      // Reverse geocode to get address for the new pin location
+      if (onAddressChange) {
+        try {
+          const result = await reverseGeocode(position.lat, position.lng);
+          if (result) {
+            // Extract the most specific address component available
+            const address = result.address;
+            const locationName = address?.road || address?.street || address?.suburb ||
+                                address?.neighbourhood || result.name ||
+                                result.display_name.split(',')[0].trim();
+            onAddressChange(locationName);
+          }
+        } catch (error) {
+          console.error('Reverse geocoding error:', error);
+        }
+      }
     });
 
     marker.on('drag', (e) => {

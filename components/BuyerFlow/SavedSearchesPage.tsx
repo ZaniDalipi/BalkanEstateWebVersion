@@ -4,6 +4,7 @@ import SavedSearchAccordion from './SavedSearchAccordion';
 import { MagnifyingGlassPlusIcon } from '../../constants';
 import { SavedSearch, Filters, SellerType } from '../../types';
 import AdvertisementBanner from '../AdvertisementBanner';
+import Footer from '../shared/Footer';
 
 const initialFilters: Filters = {
     query: '',
@@ -150,6 +151,9 @@ const SavedSearchesPage: React.FC = () => {
             {renderContent()}
         </div>
       </main>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };

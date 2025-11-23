@@ -152,6 +152,39 @@ const MapEvents: React.FC<{ onMove: (bounds: L.LatLngBounds, center: L.LatLng) =
     return null;
 };
 
+const ZoomBasedTileSwitch: React.FC<{
+    mapType: TileLayerType;
+    setMapType: (type: TileLayerType) => void;
+}> = ({ mapType, setMapType }) => {
+    const map = useMap();
+
+    useEffect(() => {
+        const handleZoomEnd = () => {
+            const currentZoom = map.getZoom();
+
+            if (currentZoom >= 18) {
+                // Switch to satellite view at maximum zoom
+                if (mapType !== 'satellite') {
+                    setMapType('satellite');
+                }
+            } else {
+                // Switch back to street view at lower zoom levels
+                if (mapType !== 'street') {
+                    setMapType('street');
+                }
+            }
+        };
+
+        map.on('zoomend', handleZoomEnd);
+
+        return () => {
+            map.off('zoomend', handleZoomEnd);
+        };
+    }, [map, mapType, setMapType]);
+
+    return null;
+};
+
 const MapDrawEvents: React.FC<{
     isDrawing: boolean;
     onDrawComplete: (bounds: L.LatLngBounds | null) => void;
@@ -305,18 +338,18 @@ const createSimpleMarkerIcon = (property: Property) => {
     const color = PROPERTY_TYPE_COLORS[property.propertyType] || PROPERTY_TYPE_COLORS.other;
 
     const svgHtml = `
-        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));">
-            <circle cx="20" cy="20" r="18" fill="${color}" stroke="#FFFFFF" stroke-width="2"/>
-            <text x="20" y="21" font-family="Inter, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">${price}</text>
+        <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));">
+            <circle cx="15" cy="15" r="13" fill="${color}" stroke="#FFFFFF" stroke-width="2"/>
+            <text x="15" y="16" font-family="Inter, sans-serif" font-size="8" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">${price}</text>
         </svg>
     `;
-    
+
     return L.divIcon({
         html: svgHtml,
         className: '',
-        iconSize: [40, 40],
-        iconAnchor: [20, 20],
-        popupAnchor: [0, -20]
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
+        popupAnchor: [0, -15]
     });
 };
 
@@ -325,19 +358,19 @@ const createDetailedMarkerIcon = (property: Property) => {
     const color = PROPERTY_TYPE_COLORS[property.propertyType] || PROPERTY_TYPE_COLORS.other;
 
     const svgHtml = `
-        <svg width="60" height="48" viewBox="0 0 70 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3)); transform-origin: bottom center;">
+        <svg width="45" height="36" viewBox="0 0 70 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3)); transform-origin: bottom center;">
             <path d="M35 56L25 44H45L35 56Z" fill="#003A96" />
             <path d="M65 24.5V44H5V24.5L35 5L65 24.5Z" fill="${color}" stroke="#FFFFFF" stroke-width="2" />
             <text x="35" y="30" font-family="Inter, sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">${price}</text>
         </svg>
     `;
-    
+
     return L.divIcon({
         html: svgHtml,
         className: '',
-        iconSize: [60, 48],
-        iconAnchor: [30, 48],
-        popupAnchor: [0, -48]
+        iconSize: [45, 36],
+        iconAnchor: [22.5, 36],
+        popupAnchor: [0, -36]
     });
 };
 
@@ -353,6 +386,116 @@ interface MarkersProps {
     onPopupClick: (id: string) => void;
 }
 
+const PropertyPopup: React.FC<{ property: Property; onPopupClick: (id: string) => void }> = ({ property, onPopupClick }) => {
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+    const images = property.images && property.images.length > 0
+        ? property.images.map(img => img.url)
+        : [property.imageUrl];
+
+    const nextImage = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    };
+
+    const prevImage = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    };
+
+    return (
+        <div
+            className="w-56 cursor-pointer"
+            onClick={() => onPopupClick(property.id)}
+        >
+            {/* Image carousel */}
+            <div className="relative mb-2">
+                <img
+                    src={images[currentImageIndex]}
+                    alt={property.address}
+                    className="w-full h-28 object-cover rounded"
+                />
+
+                {/* Image navigation */}
+                {images.length > 1 && (
+                    <>
+                        <button
+                            onClick={prevImage}
+                            className="absolute left-1 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-6 h-6 flex items-center justify-center transition-colors text-sm"
+                        >
+                            ‹
+                        </button>
+                        <button
+                            onClick={nextImage}
+                            className="absolute right-1 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-6 h-6 flex items-center justify-center transition-colors text-sm"
+                        >
+                            ›
+                        </button>
+
+                        {/* Image counter */}
+                        <div className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                            {currentImageIndex + 1}/{images.length}
+                        </div>
+                    </>
+                )}
+            </div>
+
+            {/* Price and property type */}
+            <div className="mb-1.5">
+                <div className="flex items-center justify-between">
+                    <p className="font-bold text-base text-primary">{formatPrice(property.price, property.country)}</p>
+                    <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-700 capitalize">
+                        {property.propertyType}
+                    </span>
+                </div>
+            </div>
+
+            {/* Address */}
+            <p className="text-xs text-neutral-600 mb-2 line-clamp-1">{property.address}, {property.city}</p>
+
+            {/* Essential information */}
+            <div className="grid grid-cols-3 gap-1.5 mb-2 text-center">
+                <div className="bg-neutral-50 rounded py-1.5">
+                    <div className="text-xs text-neutral-500">Beds</div>
+                    <div className="font-bold text-sm text-neutral-800">{property.beds}</div>
+                </div>
+                <div className="bg-neutral-50 rounded py-1.5">
+                    <div className="text-xs text-neutral-500">Baths</div>
+                    <div className="font-bold text-sm text-neutral-800">{property.baths}</div>
+                </div>
+                <div className="bg-neutral-50 rounded py-1.5">
+                    <div className="text-xs text-neutral-500">m²</div>
+                    <div className="font-bold text-sm text-neutral-800">{property.sqft}</div>
+                </div>
+            </div>
+
+            {/* Additional features */}
+            <div className="flex flex-wrap gap-1 mb-1.5">
+                {property.livingRooms > 0 && (
+                    <span className="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">
+                        {property.livingRooms} Living
+                    </span>
+                )}
+                {property.parking > 0 && (
+                    <span className="text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded">
+                        {property.parking} Parking
+                    </span>
+                )}
+                {property.yearBuilt && (
+                    <span className="text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded">
+                        {property.yearBuilt}
+                    </span>
+                )}
+            </div>
+
+            {/* View details prompt */}
+            <div className="text-center pt-1.5 border-t border-neutral-200">
+                <p className="text-xs font-semibold text-primary">Click for details →</p>
+            </div>
+        </div>
+    );
+};
+
 const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) => {
     const map = useMap();
     const [zoom, setZoom] = useState(map.getZoom());
@@ -367,15 +510,8 @@ const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) => {
         <>
             {properties.map(prop => (
                 <Marker key={prop.id} position={[prop.lat, prop.lng]} icon={createCustomMarkerIcon(prop, zoom)}>
-                    <Popup>
-                        <div 
-                            className="w-48 cursor-pointer"
-                            onClick={() => onPopupClick(prop.id)}
-                        >
-                            <img src={prop.imageUrl} alt={prop.address} className="w-full h-24 object-cover rounded-md mb-2" />
-                            <p className="font-bold text-md leading-tight">{formatPrice(prop.price, prop.country)}</p>
-                            <p className="text-sm text-neutral-600 truncate">{prop.address}, {prop.city}</p>
-                        </div>
+                    <Popup maxWidth={230} minWidth={220}>
+                        <PropertyPopup property={prop} onPopupClick={onPopupClick} />
                     </Popup>
                 </Marker>
             ))}
@@ -450,6 +586,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, user
         <FlyToController target={flyToTarget} onComplete={onFlyComplete} />
         <MapEvents onMove={onMapMove} mapBounds={mapBounds} searchMode={searchMode} />
         <MapDrawEvents isDrawing={isDrawing} onDrawComplete={onDrawComplete} />
+        <ZoomBasedTileSwitch mapType={mapType} setMapType={setMapType} />
         {drawnBounds && !isDrawing && (
             <Rectangle
                 bounds={drawnBounds}

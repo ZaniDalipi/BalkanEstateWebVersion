@@ -27,28 +27,11 @@ interface FooterProps {
 const Footer: React.FC<FooterProps> = ({ className = '' }) => {
     const currentYear = new Date().getFullYear();
     const { dispatch, state } = useAppContext();
-    const [email, setEmail] = React.useState('');
-    const [subscribeStatus, setSubscribeStatus] = React.useState<'idle' | 'success' | 'error'>('idle');
 
     const handleNavigation = (view: 'search' | 'saved-searches' | 'saved-properties' | 'inbox' | 'account' | 'create-listing' | 'agents' | 'agencies' | 'admin') => {
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: view });
         window.history.pushState({}, '', `/${view === 'search' ? '' : view}`);
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const handleSubscribe = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!email || !email.includes('@')) {
-            setSubscribeStatus('error');
-            setTimeout(() => setSubscribeStatus('idle'), 3000);
-            return;
-        }
-
-        // Here you would call your API to subscribe the user
-        // For now, we'll just show success
-        setSubscribeStatus('success');
-        setEmail('');
-        setTimeout(() => setSubscribeStatus('idle'), 3000);
     };
 
     return (
@@ -64,35 +47,6 @@ const Footer: React.FC<FooterProps> = ({ className = '' }) => {
 
             {/* Main Footer Content */}
             <div className="relative z-10 max-w-7xl mx-auto px-4 py-3 md:py-4">
-                {/* Newsletter Section */}
-                <div className="mb-6 pb-6 border-b border-white/20">
-                    <div className="max-w-2xl">
-                        <h3 className="text-lg font-bold mb-2">Stay Updated with New Properties</h3>
-                        <p className="text-xs text-white/80 mb-3">Subscribe to get notifications about new listings in your area</p>
-                        <form onSubmit={handleSubscribe} className="flex gap-2">
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="Enter your email"
-                                className="flex-grow px-3 py-2 text-sm rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent backdrop-blur-sm"
-                            />
-                            <button
-                                type="submit"
-                                className="px-4 py-2 text-sm font-bold bg-secondary text-primary-dark rounded-lg hover:bg-yellow-300 transition-colors whitespace-nowrap"
-                            >
-                                Subscribe
-                            </button>
-                        </form>
-                        {subscribeStatus === 'success' && (
-                            <p className="text-xs text-green-300 mt-2">✓ Successfully subscribed!</p>
-                        )}
-                        {subscribeStatus === 'error' && (
-                            <p className="text-xs text-red-300 mt-2">Please enter a valid email address</p>
-                        )}
-                    </div>
-                </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
                     {/* Brand Section */}
                     <div className="space-y-2">

@@ -12,6 +12,7 @@ import InboxPage from './components/BuyerFlow/InboxPage';
 import MyAccountPage from './components/shared/MyAccountPage';
 import Sidebar from './components/shared/Sidebar';
 import Header from './components/shared/Header';
+import Footer from './components/shared/Footer';
 import SubscriptionModal from './components/BuyerFlow/SubscriptionModal';
 import AgentsPage from './components/AgentsPage/AgentsPage';
 import AgenciesListPage from './components/AgenciesListPage';
@@ -309,7 +310,7 @@ const MainLayout: React.FC = () => {
                 <AppContent onToggleSidebar={() => setIsSidebarOpen(true)} />
             </main>
         </div>
-        
+
         <ListingLimitWarningModal
             isOpen={state.isListingLimitWarningOpen}
             onClose={() => {
@@ -331,7 +332,8 @@ const MainLayout: React.FC = () => {
         />
         <SubscriptionModal
             isOpen={state.isSubscriptionModalOpen}
-            onClose={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: false })}
+            onClose={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: { isOpen: false } })}
+            initialEmail={state.subscriptionEmail || undefined}
         />
         <EnterpriseCreationForm
             isOpen={state.isEnterpriseModalOpen}
