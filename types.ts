@@ -458,6 +458,7 @@ export interface AppState {
     isFirstLoginOffer: boolean;
     isAgencyCreationMode: boolean; // Flag to indicate agency creation flow (only show Enterprise plan)
     isSubscriptionModalOpen: boolean;
+    subscriptionEmail: string | null; // Email entered in subscription form
     isAuthModalOpen: boolean;
     authModalView: AuthModalView;
     properties: Property[];
@@ -492,7 +493,7 @@ export type AppAction =
     | { type: 'COMPLETE_ONBOARDING' }
     | { type: 'SET_ACTIVE_VIEW', payload: AppView }
     | { type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: boolean, isOffer?: boolean, isAgencyMode?: boolean } }
-    | { type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: boolean }
+    | { type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: { isOpen: boolean, email?: string } }
     | { type: 'TOGGLE_ENTERPRISE_MODAL', payload: boolean }
     | { type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: boolean, view?: AuthModalView } }
     | { type: 'SET_AUTH_MODAL_VIEW', payload: AuthModalView }

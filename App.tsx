@@ -332,7 +332,8 @@ const MainLayout: React.FC = () => {
         />
         <SubscriptionModal
             isOpen={state.isSubscriptionModalOpen}
-            onClose={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: false })}
+            onClose={() => dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: { isOpen: false } })}
+            initialEmail={state.subscriptionEmail || undefined}
         />
         <EnterpriseCreationForm
             isOpen={state.isEnterpriseModalOpen}

@@ -593,8 +593,41 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
 
 
                 {/* --- Right Panel: Map --- */}
-                <div className="h-full w-full md:w-2/5 relative z-0">
-                    <MapComponent {...mapProps} searchMode={searchMode} />
+                <div className="h-full w-full md:w-2/5 relative z-0 flex flex-col">
+                    <div className="flex-grow relative">
+                        <MapComponent {...mapProps} searchMode={searchMode} />
+                    </div>
+
+                    {/* Newsletter Subscription Section */}
+                    <div className="bg-gradient-to-br from-primary-dark via-primary to-primary text-white p-4 flex-shrink-0">
+                        <div className="max-w-xl mx-auto">
+                            <h3 className="text-base font-bold mb-1">Stay Updated with New Properties</h3>
+                            <p className="text-xs text-white/80 mb-3">Subscribe to get notifications about new listings in your area</p>
+                            <form onSubmit={(e) => {
+                                e.preventDefault();
+                                const emailInput = e.currentTarget.elements.namedItem('email') as HTMLInputElement;
+                                const email = emailInput.value;
+                                if (!email || !email.includes('@')) {
+                                    return;
+                                }
+                                // Open subscription modal with email
+                                dispatch({ type: 'TOGGLE_SUBSCRIPTION_MODAL', payload: { isOpen: true, email } });
+                            }} className="flex gap-2">
+                                <input
+                                    type="email"
+                                    name="email"
+                                    placeholder="Enter your email"
+                                    className="flex-grow px-3 py-2 text-sm rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent backdrop-blur-sm"
+                                />
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 text-sm font-bold bg-secondary text-primary-dark rounded-lg hover:bg-yellow-300 transition-colors whitespace-nowrap"
+                                >
+                                    Subscribe
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
                 
                 {/* --- Mobile View Overlays --- */}
