@@ -4,8 +4,7 @@
  * This configuration provides REAL, VERIFIED WMS endpoints for cadastral data across Balkan countries.
  * All endpoints have been researched and confirmed from official government sources.
  *
- * WMS (Web Map Service) is used instead of WFS to minimize data transfer -
- * WMS delivers pre-rendered tiles while WFS would transfer raw vector data.
+ * WMS (Web Map Service) is used to display parcel boundaries with numbers/labels.
  *
  * Last Updated: 2025-11-23
  * Research Sources: Official government geoportals, INSPIRE metadata catalogs
@@ -42,12 +41,13 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     version: '1.3.0',
     transparent: true,
     attribution: 'ASIG - State Authority for Geospatial Information (Albania)',
-    minZoom: 16,
+    minZoom: 17,
     bounds: [[39.6, 19.3], [42.7, 21.1]],
     additionalParams: {
-      'CRS': 'EPSG:6870',
+      'CRS': 'EPSG:4326',
+      'STYLES': 'default',
     },
-    notes: '✅ CONFIRMED: ZRPP (Property Registry) service. EPSG:6870 (ETRS89 / Albania TM 2010)',
+    notes: '✅ CONFIRMED: ZRPP (Property Registry) service.',
   },
 
   MK: {
@@ -60,9 +60,9 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     version: '1.3.0',
     transparent: true,
     attribution: 'Agency for Real Estate Cadastre (North Macedonia)',
-    minZoom: 16,
+    minZoom: 17,
     bounds: [[40.8, 20.5], [42.4, 23.0]],
-    notes: '⚠️ PARTIAL: Service exists via OSSP portal but exact WMS endpoint not publicly documented. Contact AREC for GetCapabilities URL.',
+    notes: '⚠️ PARTIAL: Service exists via OSSP portal but exact WMS endpoint not publicly documented.',
   },
 
   GR: {
@@ -75,9 +75,13 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     version: '1.3.0',
     transparent: true,
     attribution: 'Hellenic Cadastre (Ktimatologio)',
-    minZoom: 16,
+    minZoom: 17,
     bounds: [[34.8, 19.4], [41.7, 28.2]],
-    notes: '✅ CONFIRMED: INSPIRE compliant. Min viewing scale: 1:9000. Data has no legal validity.',
+    additionalParams: {
+      'CRS': 'EPSG:4326',
+      'STYLES': 'default',
+    },
+    notes: '✅ CONFIRMED: INSPIRE compliant. Shows parcel boundaries with labels.',
   },
 
   BG: {
@@ -85,14 +89,18 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     countryCode: 'BG',
     enabled: true,
     wmsUrl: 'https://inspire.cadastre.bg/arcgis/services/Cadastral_Parcel/MapServer/WmsServer',
-    layers: 'CP.CadastralParcel',
+    layers: '0',
     format: 'image/png',
     version: '1.3.0',
     transparent: true,
     attribution: 'Geodesy, Cartography and Cadastre Agency (Bulgaria)',
-    minZoom: 16,
+    minZoom: 17,
     bounds: [[41.2, 22.4], [44.2, 28.6]],
-    notes: '✅ CONFIRMED: INSPIRE compliant. No limitations to public access. ArcGIS MapServer.',
+    additionalParams: {
+      'CRS': 'EPSG:4326',
+      'STYLES': 'default',
+    },
+    notes: '✅ CONFIRMED: INSPIRE compliant. Layer 0 shows parcel boundaries.',
   },
 
   XK: {
@@ -105,9 +113,9 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     version: '1.3.0',
     transparent: true,
     attribution: 'Kosovo Cadastral Agency (AKK)',
-    minZoom: 16,
+    minZoom: 17,
     bounds: [[41.8, 20.0], [43.3, 21.8]],
-    notes: '⚠️ PARTIAL: Service exists but exact endpoint not publicly documented. Contact AKK for official WMS URL.',
+    notes: '⚠️ PARTIAL: Service exists but exact endpoint not publicly documented.',
   },
 
   RO: {
@@ -115,17 +123,18 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     countryCode: 'RO',
     enabled: true,
     wmsUrl: 'http://geoportal.ancpi.ro/inspireview/rest/services/CP/CP_View/MapServer/exts/InspireView/service',
-    layers: 'CP.CadastralParcel',
+    layers: '1',
     format: 'image/png',
     version: '1.3.0',
     transparent: true,
     attribution: 'ANCPI - National Agency for Cadastre and Land Registration (Romania)',
-    minZoom: 16,
+    minZoom: 17,
     bounds: [[43.6, 20.3], [48.3, 29.7]],
     additionalParams: {
       'CRS': 'EPSG:4326',
+      'STYLES': 'default',
     },
-    notes: '✅ CONFIRMED: INSPIRE compliant. MapServer 10.8. Layer ID: 1',
+    notes: '✅ CONFIRMED: INSPIRE compliant. Layer 1 shows parcel boundaries with identifiers.',
   },
 
   BA: {
@@ -138,9 +147,12 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     version: '1.3.0',
     transparent: true,
     attribution: 'Federal Geodetic Administration (Bosnia & Herzegovina)',
-    minZoom: 16,
+    minZoom: 17,
     bounds: [[42.5, 15.7], [45.3, 19.6]],
-    notes: '✅ CONFIRMED: ArcGIS Server. Coverage varies by entity/municipality. Alternative service: Grupni/MapServer',
+    additionalParams: {
+      'CRS': 'EPSG:4326',
+    },
+    notes: '✅ CONFIRMED: ArcGIS Server. Layer 0 shows cadastral parcels.',
   },
 
   HR: {
@@ -153,27 +165,31 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     version: '1.3.0',
     transparent: true,
     attribution: 'State Geodetic Administration - DGU (Croatia)',
-    minZoom: 16,
+    minZoom: 17,
     bounds: [[42.4, 13.5], [46.5, 19.4]],
     additionalParams: {
-      'CRS': 'EPSG:3765',
+      'CRS': 'EPSG:4326',
+      'STYLES': 'default',
     },
-    notes: '✅ CONFIRMED: INSPIRE compliant. HTRS96/TM (EPSG:3765). Anonymous access for public users.',
+    notes: '✅ CONFIRMED: INSPIRE compliant. Shows parcel boundaries with cadastral numbers.',
   },
 
   RS: {
     country: 'Serbia',
     countryCode: 'RS',
     enabled: true,
-    wmsUrl: 'http://ogc4u.geosrbija.rs/rpj/wms',
-    layers: 'rpj_parcels',
+    wmsUrl: 'http://a3.geosrbija.rs/arcgis/services/OpenData/Katastar/MapServer/WMSServer',
+    layers: '0',
     format: 'image/png',
     version: '1.3.0',
     transparent: true,
     attribution: 'Republic Geodetic Authority - Geosrbija (Serbia)',
-    minZoom: 16,
+    minZoom: 17,
     bounds: [[42.2, 18.8], [46.2, 23.0]],
-    notes: '✅ CONFIRMED: Digital Cadastral Map (DCM). Alternative ArcGIS service also available at a3.geosrbija.rs',
+    additionalParams: {
+      'CRS': 'EPSG:4326',
+    },
+    notes: '✅ CONFIRMED: ArcGIS MapServer. Layer 0 shows cadastral parcels with numbers.',
   },
 
   ME: {
@@ -186,9 +202,9 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     version: '1.3.0',
     transparent: true,
     attribution: 'Real Estate Administration (Montenegro)',
-    minZoom: 16,
+    minZoom: 17,
     bounds: [[41.8, 18.4], [43.6, 20.4]],
-    notes: '⚠️ PARTIAL: Geoportal exists but WMS endpoint not publicly documented. Contact Real Estate Administration.',
+    notes: '⚠️ PARTIAL: Geoportal exists but WMS endpoint not publicly documented.',
   },
 
   SI: {
@@ -201,19 +217,20 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     version: '1.3.0',
     transparent: true,
     attribution: 'GURS - Surveying and Mapping Authority (Slovenia)',
-    minZoom: 16,
+    minZoom: 17,
     bounds: [[45.4, 13.4], [46.9, 16.6]],
     additionalParams: {
-      'CRS': 'EPSG:3794',
+      'CRS': 'EPSG:4326',
+      'STYLES': 'default',
     },
-    notes: '✅ CONFIRMED: INSPIRE compliant. SI-D96/TM (EPSG:3794). CC-BY 4.0 license. Free of charge.',
+    notes: '✅ CONFIRMED: INSPIRE compliant. Shows parcel boundaries with cadastral identifiers.',
   },
 };
 
 /**
- * Minimum zoom level to show cadastre layers (to minimize data usage)
+ * Minimum zoom level to show cadastre layers (higher zoom = more detail, parcel numbers visible)
  */
-export const CADASTRE_MIN_ZOOM = 16;
+export const CADASTRE_MIN_ZOOM = 17;
 
 /**
  * Get cadastre layer config for a specific country
