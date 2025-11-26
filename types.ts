@@ -451,6 +451,7 @@ export interface PendingSubscription {
 }
 
 export interface AppState {
+    user: any;
     onboardingComplete: boolean;
     isAuthenticating: boolean;
     activeView: AppView;

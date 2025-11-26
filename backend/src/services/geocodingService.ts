@@ -93,7 +93,7 @@ export async function geocodeAddress(
  * Use this when geocoding multiple addresses in sequence
  */
 let lastGeocodingTime = 0;
-const GEOCODING_DELAY = 1000; // 1 second
+const GEOCODING_DELAY = 1000; 
 
 export async function geocodeAddressWithRateLimit(
   address?: string,

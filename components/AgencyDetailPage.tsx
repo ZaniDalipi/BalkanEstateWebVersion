@@ -270,6 +270,8 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
 
       // Update current user in app context
       if (dispatch && currentUser) {
+        // Cast to any to avoid TypeScript error when the action type is not declared in the reducer's Action union.
+        // Prefer updating the reducer's Action type to include 'SET_USER' if you want a stricter fix.
         dispatch({
           type: 'SET_USER',
           payload: {
@@ -277,7 +279,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
             agencyId: undefined,
             agencyName: undefined,
           }
-        });
+        } as any);
       }
 
       alert(response.message || `You have successfully left ${agencyData.name}`);

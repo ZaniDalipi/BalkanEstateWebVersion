@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { WMSTileLayer, useMap, useMapEvents } from 'react-leaflet';
+import React, { useEffect, useState, useRef } from 'react';
+import { useMap, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
 import { getCadastreLayerForLocation, CADASTRE_MIN_ZOOM, type CadastreLayerConfig } from '../../config/cadastreLayers';
 
 interface CadastreLayerProps {
@@ -23,23 +24,18 @@ interface CadastreLayerProps {
  * CadastreLayer Component
  *
  * Renders WMS cadastral parcel layers from various Balkan country cadastre agencies.
- * The layer is only visible when:
- * - enabled prop is true
- * - zoom level is >= minZoom (default 16)
- * - map is centered over a country with available cadastre data
- *
- * The component automatically detects which country's layer to show based on
- * the map center position and only loads that country's WMS layer to minimize
- * data usage.
+ * Uses native Leaflet WMS layer to avoid CRS issues with react-leaflet's WMSTileLayer.
  */
 export const CadastreLayer: React.FC<CadastreLayerProps> = ({
   enabled,
-  opacity = 0.7,
+  opacity = 1,
   minZoom = CADASTRE_MIN_ZOOM,
 }) => {
   const map = useMap();
   const [currentZoom, setCurrentZoom] = useState(map.getZoom());
   const [currentLayer, setCurrentLayer] = useState<CadastreLayerConfig | undefined>(undefined);
+  const [isMapReady, setIsMapReady] = useState(false);
+  const tileLayerRef = useRef<L.TileLayer.WMS | null>(null);
 
   // Track map events to update layer visibility
   useMapEvents({
@@ -49,45 +45,97 @@ export const CadastreLayer: React.FC<CadastreLayerProps> = ({
     moveend: () => {
       updateCurrentLayer();
     },
+    load: () => {
+      setIsMapReady(true);
+    }
   });
 
   // Update the current cadastre layer based on map center
   const updateCurrentLayer = () => {
     const center = map.getCenter();
     const layer = getCadastreLayerForLocation(center.lat, center.lng);
-    setCurrentLayer(layer);
+    
+    // Only update if layer changed
+    if (layer?.wmsUrl !== currentLayer?.wmsUrl || layer?.layers !== currentLayer?.layers) {
+      setCurrentLayer(layer);
+    }
   };
 
   // Initialize current layer on mount
   useEffect(() => {
-    updateCurrentLayer();
+    const timer = setTimeout(() => {
+      setIsMapReady(true);
+      updateCurrentLayer();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
 
-  // Don't render if disabled or zoom is too low
-  if (!enabled || currentZoom < minZoom || !currentLayer) {
-    return null;
-  }
+  // Effect to manage WMS layer
+  useEffect(() => {
+    if (!isMapReady || !map) return;
 
-  // Build WMS parameters
-  const wmsParams: Record<string, any> = {
-    layers: currentLayer.layers,
-    format: currentLayer.format || 'image/png',
-    transparent: currentLayer.transparent !== false,
-    version: currentLayer.version || '1.3.0',
-    ...currentLayer.additionalParams,
-  };
+    // Remove existing layer
+    if (tileLayerRef.current) {
+      map.removeLayer(tileLayerRef.current);
+      tileLayerRef.current = null;
+    }
 
-  return (
-    <WMSTileLayer
-      url={currentLayer.wmsUrl}
-      params={wmsParams}
-      opacity={opacity}
-      attribution={currentLayer.attribution}
-      // @ts-ignore - Leaflet types may not include all options
-      maxZoom={currentLayer.maxZoom}
-      minZoom={currentLayer.minZoom}
-    />
-  );
+    // Don't add layer if disabled or zoom is too low or no layer config
+    if (!enabled || currentZoom < minZoom || !currentLayer) {
+      return;
+    }
+
+    try {
+      // Build WMS parameters with white text styling
+      const wmsParams: Record<string, any> = {
+        layers: currentLayer.layers,
+        format: currentLayer.format || 'image/png',
+        transparent: currentLayer.transparent !== false,
+        version: currentLayer.version || '1.3.0',
+        // Try various parameters for white text
+        styles: 'default',
+        color: '0xFFFFFF',
+        textColor: '0xFFFFFF',
+        fontColor: '0xFFFFFF',
+        ...currentLayer.additionalParams,
+      };
+
+      // Create native Leaflet WMS layer
+      const tileLayer = L.tileLayer.wms(currentLayer.wmsUrl, {
+        ...wmsParams,
+        opacity: opacity,
+        attribution: currentLayer.attribution,
+        maxZoom: currentLayer.maxZoom,
+        minZoom: currentLayer.minZoom,
+      });
+
+      // Add CSS filter for white text (fallback method)
+      tileLayer.on('tileload', function(e: any) {
+        const img = e.tile as HTMLImageElement;
+        if (img && img.complete) {
+          img.style.filter = 'invert(1) hue-rotate(180deg) brightness(1.2) contrast(1.1)';
+        }
+      });
+
+      tileLayer.addTo(map);
+      tileLayerRef.current = tileLayer;
+
+    } catch (error) {
+      console.warn('Failed to create WMS layer:', error);
+    }
+
+    // Cleanup function
+    return () => {
+      if (tileLayerRef.current) {
+        map.removeLayer(tileLayerRef.current);
+        tileLayerRef.current = null;
+      }
+    };
+  }, [enabled, opacity, currentZoom, minZoom, currentLayer, isMapReady, map]);
+
+  // This component doesn't render anything directly
+  return null;
 };
 
 export default CadastreLayer;

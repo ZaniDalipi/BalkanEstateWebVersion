@@ -35,190 +35,139 @@ const Footer: React.FC<FooterProps> = ({ className = '' }) => {
     };
 
     return (
-        <footer className={`relative bg-gradient-to-br from-primary-dark via-primary to-primary text-white overflow-hidden pb-24 ${className}`}>
-            {/* Subtle Dot Pattern Background */}
-            <div className="absolute inset-0 opacity-5" style={{
+        <footer className={`relative bg-gray-50 text-gray-900 overflow-hidden border-t border-gray-200 ${className}`}>
+            {/* Subtle Background Pattern */}
+            <div className="absolute inset-0 opacity-[0.02]" style={{
                 backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
-                backgroundSize: '24px 24px'
+                backgroundSize: '32px 32px'
             }}></div>
 
-            {/* Accent Decoration */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-secondary via-yellow-400 to-secondary"></div>
-
             {/* Main Footer Content */}
-            <div className="relative z-10 max-w-7xl mx-auto px-4 py-3 md:py-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+            <div className="relative z-10 max-w-7xl mx-auto px-6 py-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12">
                     {/* Brand Section */}
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                            <div className="p-1.5 bg-white/10 rounded-lg backdrop-blur-sm">
-                                <LogoIcon className="w-5 h-5" />
+                    <div className="lg:col-span-2 space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl shadow-sm">
+                                <LogoIcon className="w-6 h-6 text-white" />
                             </div>
-                            <span className="text-lg font-bold">Balkan Estate</span>
+                            <span className="text-2xl font-semibold text-gray-900">Balkan Estate</span>
                         </div>
-                        <p className="text-xs text-white/80 leading-relaxed">
-                            Finding perfect properties across the Balkans.
+                        <p className="text-gray-600 leading-relaxed max-w-md">
+                            Finding perfect properties across the Balkans with premium service and modern technology.
                         </p>
 
                         {/* Social Media Links */}
-                        <div className="flex gap-2 pt-1">
-                            <a
-                                href="https://facebook.com"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg backdrop-blur-sm transition-all duration-300"
-                                aria-label="Facebook"
-                            >
-                                <FacebookIcon className="w-4 h-4" />
-                            </a>
-                            <a
-                                href="https://twitter.com"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg backdrop-blur-sm transition-all duration-300"
-                                aria-label="Twitter"
-                            >
-                                <TwitterIcon className="w-4 h-4" />
-                            </a>
-                            <a
-                                href="https://wa.me/383XXXXXXX"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg backdrop-blur-sm transition-all duration-300"
-                                aria-label="WhatsApp"
-                            >
-                                <WhatsappIcon className="w-4 h-4" />
-                            </a>
+                        <div className="flex gap-3 pt-2">
+                            {[
+                                { icon: FacebookIcon, href: 'https://facebook.com', label: 'Facebook' },
+                                { icon: TwitterIcon, href: 'https://twitter.com', label: 'Twitter' },
+                                { icon: WhatsappIcon, href: 'https://wa.me/383XXXXXXX', label: 'WhatsApp' }
+                            ].map(({ icon: Icon, href, label }) => (
+                                <a
+                                    key={label}
+                                    href={href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-3 bg-white hover:bg-gray-100 rounded-xl transition-all duration-300 group shadow-sm border border-gray-200 hover:shadow-md"
+                                    aria-label={label}
+                                >
+                                    <Icon className="w-5 h-5 text-gray-600 group-hover:text-gray-900 transition-colors" />
+                                </a>
+                            ))}
                         </div>
                     </div>
 
                     {/* For Buyers */}
                     <div>
-                        <h3 className="text-sm font-bold mb-2 flex items-center gap-1.5">
-                            <div className="w-0.5 h-4 bg-secondary rounded-full"></div>
+                        <h3 className="text-sm font-semibold text-gray-900 mb-4 tracking-wide uppercase">
                             For Buyers
                         </h3>
-                        <ul className="space-y-1.5">
-                            <li>
-                                <button
-                                    onClick={() => handleNavigation('search')}
-                                    className="group flex items-center gap-2 hover:translate-x-1 transition-all duration-200 text-left w-full"
-                                >
-                                    <SearchIcon className="w-3 h-3 text-secondary group-hover:text-white transition-colors" />
-                                    <span className="text-xs text-white/80 group-hover:text-white font-medium">Search Properties</span>
-                                </button>
-                            </li>
-                            <li>
-                                <button
-                                    onClick={() => handleNavigation('saved-properties')}
-                                    className="group flex items-center gap-2 hover:translate-x-1 transition-all duration-200 text-left w-full"
-                                >
-                                    <HeartIcon className="w-3 h-3 text-secondary group-hover:text-white transition-colors" />
-                                    <span className="text-xs text-white/80 group-hover:text-white font-medium">Saved Properties</span>
-                                </button>
-                            </li>
-                            <li>
-                                <button
-                                    onClick={() => handleNavigation('saved-searches')}
-                                    className="group flex items-center gap-2 hover:translate-x-1 transition-all duration-200 text-left w-full"
-                                >
-                                    <BellIcon className="w-3 h-3 text-secondary group-hover:text-white transition-colors" />
-                                    <span className="text-xs text-white/80 group-hover:text-white font-medium">Saved Searches</span>
-                                </button>
-                            </li>
-                            <li>
-                                <button
-                                    onClick={() => handleNavigation('agents')}
-                                    className="group flex items-center gap-2 hover:translate-x-1 transition-all duration-200 text-left w-full"
-                                >
-                                    <UserGroupIcon className="w-3 h-3 text-secondary group-hover:text-white transition-colors" />
-                                    <span className="text-xs text-white/80 group-hover:text-white font-medium">Find Agents</span>
-                                </button>
-                            </li>
-                            <li>
-                                <button
-                                    onClick={() => handleNavigation('agencies')}
-                                    className="group flex items-center gap-2 hover:translate-x-1 transition-all duration-200 text-left w-full"
-                                >
-                                    <BuildingLibraryIcon className="w-3 h-3 text-secondary group-hover:text-white transition-colors" />
-                                    <span className="text-xs text-white/80 group-hover:text-white font-medium">Browse Agencies</span>
-                                </button>
-                            </li>
+                        <ul className="space-y-3">
+                            {[
+                                { icon: SearchIcon, label: 'Search Properties', view: 'search' },
+                                { icon: HeartIcon, label: 'Saved Properties', view: 'saved-properties' },
+                                { icon: BellIcon, label: 'Saved Searches', view: 'saved-searches' },
+                                { icon: UserGroupIcon, label: 'Find Agents', view: 'agents' },
+                                { icon: BuildingLibraryIcon, label: 'Browse Agencies', view: 'agencies' }
+                            ].map(({ icon: Icon, label, view }) => (
+                                <li key={label}>
+                                    <button
+                                        onClick={() => handleNavigation(view as any)}
+                                        className="group flex items-center gap-3 hover:translate-x-1 transition-all duration-200 text-left w-full py-1"
+                                    >
+                                        <Icon className="w-4 h-4 text-blue-500 group-hover:text-blue-600 transition-colors" />
+                                        <span className="text-sm text-gray-600 group-hover:text-gray-900 font-medium">{label}</span>
+                                    </button>
+                                </li>
+                            ))}
                         </ul>
                     </div>
 
                     {/* For Sellers */}
                     <div>
-                        <h3 className="text-sm font-bold mb-2 flex items-center gap-1.5">
-                            <div className="w-0.5 h-4 bg-secondary rounded-full"></div>
+                        <h3 className="text-sm font-semibold text-gray-900 mb-4 tracking-wide uppercase">
                             For Sellers
                         </h3>
-                        <ul className="space-y-1.5">
-                            <li>
-                                <button
-                                    onClick={() => handleNavigation('create-listing')}
-                                    className="group flex items-center gap-2 hover:translate-x-1 transition-all duration-200 text-left w-full"
-                                >
-                                    <BuildingOfficeIcon className="w-3 h-3 text-secondary group-hover:text-white transition-colors" />
-                                    <span className="text-xs text-white/80 group-hover:text-white font-medium">List Property</span>
-                                </button>
-                            </li>
-                            <li>
-                                <button
-                                    onClick={() => handleNavigation('inbox')}
-                                    className="group flex items-center gap-2 hover:translate-x-1 transition-all duration-200 text-left w-full"
-                                >
-                                    <InboxIcon className="w-3 h-3 text-secondary group-hover:text-white transition-colors" />
-                                    <span className="text-xs text-white/80 group-hover:text-white font-medium">Messages</span>
-                                </button>
-                            </li>
-                            <li>
-                                <button
-                                    onClick={() => handleNavigation('account')}
-                                    className="group flex items-center gap-2 hover:translate-x-1 transition-all duration-200 text-left w-full"
-                                >
-                                    <UserCircleIcon className="w-3 h-3 text-secondary group-hover:text-white transition-colors" />
-                                    <span className="text-xs text-white/80 group-hover:text-white font-medium">My Account</span>
-                                </button>
-                            </li>
+                        <ul className="space-y-3">
+                            {[
+                                { icon: BuildingOfficeIcon, label: 'List Property', view: 'create-listing' },
+                                { icon: InboxIcon, label: 'Messages', view: 'inbox' },
+                                { icon: UserCircleIcon, label: 'My Account', view: 'account' }
+                            ].map(({ icon: Icon, label, view }) => (
+                                <li key={label}>
+                                    <button
+                                        onClick={() => handleNavigation(view as any)}
+                                        className="group flex items-center gap-3 hover:translate-x-1 transition-all duration-200 text-left w-full py-1"
+                                    >
+                                        <Icon className="w-4 h-4 text-green-500 group-hover:text-green-600 transition-colors" />
+                                        <span className="text-sm text-gray-600 group-hover:text-gray-900 font-medium">{label}</span>
+                                    </button>
+                                </li>
+                            ))}
                         </ul>
                     </div>
 
                     {/* Contact */}
                     <div>
-                        <h3 className="text-sm font-bold mb-2 flex items-center gap-1.5">
-                            <div className="w-0.5 h-4 bg-secondary rounded-full"></div>
+                        <h3 className="text-sm font-semibold text-gray-900 mb-4 tracking-wide uppercase">
                             Contact
                         </h3>
-                        <ul className="space-y-1.5">
+                        <ul className="space-y-3">
                             <li>
-                                <a href="tel:+383XXXXXXX" className="flex items-center gap-2 hover:translate-x-1 transition-all duration-200">
-                                    <PhoneIcon className="w-3 h-3 text-secondary flex-shrink-0" />
-                                    <span className="text-xs text-white/80 font-medium">+383 XX XXX XXX</span>
+                                <a 
+                                    href="tel:+383XXXXXXX" 
+                                    className="flex items-center gap-3 hover:translate-x-1 transition-all duration-200 group py-1"
+                                >
+                                    <PhoneIcon className="w-4 h-4 text-purple-500 group-hover:text-purple-600 transition-colors flex-shrink-0" />
+                                    <span className="text-sm text-gray-600 group-hover:text-gray-900 font-medium">+383 XX XXX XXX</span>
                                 </a>
                             </li>
                             <li>
-                                <a href="mailto:info@balkanestate.com" className="flex items-center gap-2 hover:translate-x-1 transition-all duration-200">
-                                    <EnvelopeIcon className="w-3 h-3 text-secondary flex-shrink-0" />
-                                    <span className="text-xs text-white/80 font-medium">info@balkanestate.com</span>
+                                <a 
+                                    href="mailto:info@balkanestate.com" 
+                                    className="flex items-center gap-3 hover:translate-x-1 transition-all duration-200 group py-1"
+                                >
+                                    <EnvelopeIcon className="w-4 h-4 text-purple-500 group-hover:text-purple-600 transition-colors flex-shrink-0" />
+                                    <span className="text-sm text-gray-600 group-hover:text-gray-900 font-medium">info@balkanestate.com</span>
                                 </a>
                             </li>
                         </ul>
                     </div>
                 </div>
-
             </div>
 
-            {/* Bottom Bar */}
-            <div className="relative z-10 border-t border-white/20 bg-primary-dark/50 backdrop-blur-sm">
-                <div className="max-w-7xl mx-auto px-4 py-1.5">
-                    <div className="flex flex-col md:flex-row justify-between items-center gap-1.5 text-xs">
-                        <p className="text-white/70">
-                            © {currentYear} <span className="font-semibold text-white">Balkan Estate</span>
+            {/* Bottom Bar with Enhanced Visual Hierarchy */}
+            <div className="relative z-10 border-t border-gray-300 bg-white/80 backdrop-blur-sm">
+                <div className="max-w-7xl mx-auto px-6 py-4">
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
+                        <p className="text-gray-600 text-center md:text-left">
+                            © {currentYear} <span className="font-semibold text-gray-900">Balkan Estate</span>. All rights reserved.
                         </p>
-                        <div className="flex flex-wrap gap-3 justify-center">
-                            <a href="#" className="text-white/70 hover:text-secondary transition-colors">Privacy</a>
-                            <a href="#" className="text-white/70 hover:text-secondary transition-colors">Terms</a>
+                        <div className="flex flex-wrap gap-6 justify-center">
+                            <a href="#" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">Privacy Policy</a>
+                            <a href="#" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">Terms of Service</a>
+                            <a href="#" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">Cookie Policy</a>
                         </div>
                     </div>
                 </div>

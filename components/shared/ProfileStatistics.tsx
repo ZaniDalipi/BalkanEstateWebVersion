@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { User, UserRole } from '../../types';
 import { ChartBarIcon, HomeIcon, EyeIcon, HeartIcon, ChatBubbleBottomCenterTextIcon, CalendarIcon, MapPinIcon } from '../../constants';
 
@@ -57,121 +57,216 @@ const StatCard: React.FC<{
   value: string | number;
   subtext?: string;
   color: string;
-}> = ({ icon, label, value, subtext, color }) => (
+  loading?: boolean;
+}> = ({ icon, label, value, subtext, color, loading = false }) => (
   <div className={`bg-gradient-to-br ${color} rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow`}>
     <div className="flex items-center justify-between mb-2">
       <div className="text-white/80">{icon}</div>
     </div>
-    <div className="text-3xl font-bold text-white mb-1">{value}</div>
-    <div className="text-sm font-medium text-white/90">{label}</div>
-    {subtext && <div className="text-xs text-white/70 mt-1">{subtext}</div>}
+    {loading ? (
+      <div className="animate-pulse">
+        <div className="h-8 bg-white/30 rounded mb-2"></div>
+        <div className="h-4 bg-white/20 rounded"></div>
+      </div>
+    ) : (
+      <>
+        <div className="text-3xl font-bold text-white mb-1">{value}</div>
+        <div className="text-sm font-medium text-white/90">{label}</div>
+        {subtext && <div className="text-xs text-white/70 mt-1">{subtext}</div>}
+      </>
+    )}
   </div>
 );
 
+
+
 const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
   const [stats, setStats] = useState<UserStats>({
-    activeListings: 0,
-    totalListings: 0,
+    activeListings: user.listingsCount || 0,
+    totalListings: user.totalListingsCreated || 0,
     totalViews: 0,
     totalSaves: 0,
     totalInquiries: 0,
-    propertiesSold: 0,
+    propertiesSold:  0,
     totalSalesValue: 0,
   });
+
   const [salesHistory, setSalesHistory] = useState<SalesHistoryData | null>(null);
   const [showSalesHistory, setShowSalesHistory] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  
 
-  useEffect(() => {
-    const fetchStats = async () => {
+  // Get auth token helper
+  const getAuthToken = useCallback(() => {
+    return localStorage.getItem('balkan_estate_token');
+  }, []);
+
+  // Enhanced stats fetching with fallbacks
+  const fetchStats = useCallback(async () => {
+    try {
+      setLoading(true);
+      const token = getAuthToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Try to sync stats first
+      let statsData: UserStats | null = null;
+      
       try {
-        setLoading(true);
-
-        // First, sync the stats to ensure they're up-to-date
         const syncResponse = await fetch('/api/auth/sync-stats', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
           },
         });
 
         if (syncResponse.ok) {
           const syncData = await syncResponse.json();
-          setStats(syncData.stats);
-        } else {
-          // If sync fails, fallback to just fetching stats
-          const response = await fetch('/api/auth/my-stats', {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
-            },
-          });
-          if (response.ok) {
-            const data = await response.json();
-            setStats(data.stats);
-          }
+          statsData = syncData.stats;
         }
-      } catch (error) {
-        console.error('Failed to fetch user stats:', error);
-      } finally {
-        setLoading(false);
+      } catch (syncError) {
+        console.warn('Sync failed, falling back to stats fetch:', syncError);
       }
-    };
 
-    fetchStats();
-  }, [user.id]);
+      // If sync failed or no data, fetch regular stats
+      if (!statsData) {
+        const response = await fetch('/api/auth/my-stats', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
 
+        if (response.ok) {
+          const data = await response.json();
+          statsData = data.stats;
+        } else {
+          throw new Error(`Failed to fetch stats: ${response.status}`);
+        }
+      }
+
+      // Merge with user data for fallback values
+      setStats({
+        ...statsData,
+        activeListings: statsData.activeListings ?? user.listingsCount ?? 0,
+        totalListings: statsData.totalListings ?? user.totalListingsCreated ?? 0,
+      });
+
+    } catch (error) {
+      console.error('Failed to fetch user stats:', error);
+      // Fallback to basic user data
+      setStats({
+        activeListings: user.listingsCount || 0,
+        totalListings: user.totalListingsCreated || 0,
+        totalViews: 0,
+        totalSaves: 0,
+        totalInquiries: 0,
+        propertiesSold: 0,
+        totalSalesValue: 0,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [user.listingsCount, user.totalListingsCreated, getAuthToken]);
+
+  // Enhanced refresh with retry logic
   const handleRefreshStats = async () => {
     try {
       setSyncing(true);
+      const token = getAuthToken();
+      
       const syncResponse = await fetch('/api/auth/sync-stats', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       });
 
       if (syncResponse.ok) {
         const syncData = await syncResponse.json();
-        setStats(syncData.stats);
+        setStats(prev => ({
+          ...prev,
+          ...syncData.stats
+        }));
+      } else {
+        throw new Error('Sync failed');
       }
     } catch (error) {
       console.error('Failed to sync stats:', error);
+      // Retry basic fetch
+      await fetchStats();
     } finally {
       setSyncing(false);
     }
   };
 
+  // Enhanced sales history fetch
   const fetchSalesHistory = async () => {
-    if (salesHistory) {
-      setShowSalesHistory(!showSalesHistory);
+    if (showSalesHistory) {
+      setShowSalesHistory(false);
       return;
     }
 
     try {
       setLoadingHistory(true);
+      const token = getAuthToken();
       const response = await fetch('/api/sales-history/my-sales?limit=10', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
+      
       if (response.ok) {
         const data = await response.json();
         setSalesHistory(data);
         setShowSalesHistory(true);
+      } else {
+        throw new Error(`Failed to fetch sales history: ${response.status}`);
       }
     } catch (error) {
       console.error('Failed to fetch sales history:', error);
+      // You could show a toast notification here
     } finally {
       setLoadingHistory(false);
     }
   };
 
+  // Format currency helper
+  const formatCurrency = (amount: number) => {
+    if (amount >= 1000000) {
+      return `€${(amount / 1000000).toFixed(1)}M`;
+    } else if (amount >= 1000) {
+      return `€${(amount / 1000).toFixed(0)}K`;
+    }
+    return `€${amount}`;
+  };
+
+  // Format number with abbreviations
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M`;
+    } else if (num >= 1000) {
+      return `${(num / 1000).toFixed(0)}K`;
+    }
+    return num.toLocaleString();
+  };
+
+  // Initial data load
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
   if (loading) {
     return (
-      <div className="animate-pulse space-y-4">
-        <div className="h-8 bg-neutral-200 rounded w-48"></div>
+      <div className="animate-pulse space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="h-8 bg-neutral-200 rounded w-48"></div>
+          <div className="h-10 bg-neutral-200 rounded w-32"></div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="h-32 bg-neutral-200 rounded-xl"></div>
@@ -223,20 +318,23 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
               value={stats.activeListings}
               subtext={`${stats.totalListings} total created`}
               color="from-blue-500 to-blue-600"
+              loading={loading}
             />
             <StatCard
               icon={<EyeIcon className="w-6 h-6" />}
               label="Total Views"
-              value={stats.totalViews.toLocaleString()}
+              value={formatNumber(stats.totalViews)}
               subtext="Across all listings"
               color="from-purple-500 to-purple-600"
+              loading={loading}
             />
             <StatCard
               icon={<HeartIcon className="w-6 h-6" />}
               label="Total Saves"
-              value={stats.totalSaves.toLocaleString()}
+              value={formatNumber(stats.totalSaves)}
               subtext="Properties favorited"
               color="from-pink-500 to-pink-600"
+              loading={loading}
             />
           </div>
 
@@ -245,9 +343,10 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
             <StatCard
               icon={<ChatBubbleBottomCenterTextIcon className="w-6 h-6" />}
               label="Total Inquiries"
-              value={stats.totalInquiries.toLocaleString()}
+              value={formatNumber(stats.totalInquiries)}
               subtext="Buyer messages received"
               color="from-green-500 to-green-600"
+              loading={loading}
             />
 
             {user.role === UserRole.AGENT && (
@@ -258,18 +357,21 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
                   value={stats.propertiesSold || 0}
                   subtext="Successful sales"
                   color="from-orange-500 to-orange-600"
+                  loading={loading}
                 />
                 <StatCard
                   icon={<ChartBarIcon className="w-6 h-6" />}
                   label="Total Sales Value"
-                  value={`€${((stats.totalSalesValue || 0) / 1000).toFixed(0)}K`}
+                  value={formatCurrency(stats.totalSalesValue || 0)}
                   subtext="Lifetime revenue"
                   color="from-teal-500 to-teal-600"
+                  loading={loading}
                 />
               </>
             )}
           </div>
 
+          {/* Agency Info */}
           {user.role === UserRole.AGENT && user.agencyName && (
             <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
               <div className="flex items-center gap-3 mb-3">
@@ -312,11 +414,11 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg p-4 text-white">
                       <div className="text-sm opacity-90">Total Revenue</div>
-                      <div className="text-2xl font-bold">€{(salesHistory.summary.totalRevenue / 1000).toFixed(0)}K</div>
+                      <div className="text-2xl font-bold">{formatCurrency(salesHistory.summary.totalRevenue)}</div>
                     </div>
                     <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-4 text-white">
                       <div className="text-sm opacity-90">Avg. Sale Price</div>
-                      <div className="text-2xl font-bold">€{(salesHistory.summary.averageSalePrice / 1000).toFixed(0)}K</div>
+                      <div className="text-2xl font-bold">{formatCurrency(salesHistory.summary.averageSalePrice)}</div>
                     </div>
                     <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-4 text-white">
                       <div className="text-sm opacity-90">Avg. Days on Market</div>
@@ -325,7 +427,7 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
                     {salesHistory.summary.totalCommission > 0 && (
                       <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg p-4 text-white">
                         <div className="text-sm opacity-90">Total Commission</div>
-                        <div className="text-2xl font-bold">€{(salesHistory.summary.totalCommission / 1000).toFixed(1)}K</div>
+                        <div className="text-2xl font-bold">{formatCurrency(salesHistory.summary.totalCommission)}</div>
                       </div>
                     )}
                   </div>
@@ -368,7 +470,7 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
                               </td>
                               <td className="px-4 py-3 text-right">
                                 <div className="text-sm font-semibold text-neutral-800">
-                                  €{sale.salePrice.toLocaleString()}
+                                  {formatCurrency(sale.salePrice)}
                                 </div>
                               </td>
                               <td className="px-4 py-3 text-center">

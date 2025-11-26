@@ -58,16 +58,17 @@ const RoleSelector: React.FC<{
                 <button
                     key={role.id}
                     type="button"
-                    onClick={() => !isDisabled(role.id) && onChange(role.id)} // Fix: pass role.id instead of role
-                    disabled={isDisabled(role.id)} // Fix: pass role.id instead of role
+                    onClick={() => !isDisabled(role.id) && onChange(role.id)} 
+                    disabled={isDisabled(role.id)} 
                     className={`px-2.5 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex-grow text-center ${
                         selectedRole === role.id
                         ? 'bg-white text-primary shadow'
-                        : isDisabled(role.id) // Fix: pass role.id instead of role
+                        : isDisabled(role.id) 
                         ? 'text-neutral-400 cursor-not-allowed opacity-50'
                         : 'text-neutral-600 hover:bg-neutral-200'
-                    }`}
-                    title={isDisabled(role.id) ? 'Agents cannot switch to Buyer role' : ''} // Fix: pass role.id instead of role
+                    }`
+                }
+                    title={isDisabled(role.id) ? 'Agents cannot switch to Buyer role' : ''} 
                 >
                     {role.label}
                 </button>

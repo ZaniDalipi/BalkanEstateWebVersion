@@ -14,11 +14,13 @@
  * - Bosnia & Herzegovina (Katastar.ba), Croatia (Uredjenazemlja), Serbia (Geosrbija), Slovenia (GURS)
  */
 
+// cadastre-config-fixed.ts
 export interface CadastreLayerConfig {
   country: string;
   countryCode: string;
   enabled: boolean;
   wmsUrl: string;
+  wfsUrl?: string;
   layers: string;
   format?: string;
   version?: string;
@@ -26,12 +28,13 @@ export interface CadastreLayerConfig {
   attribution?: string;
   maxZoom?: number;
   minZoom?: number;
-  // Bounds for the country [south, west, north, east]
+  // Bounds: [[south, west], [north, east]]
   bounds?: [[number, number], [number, number]];
-  // Additional WMS parameters
+  // Additional WMS parameters (server-specific)
   additionalParams?: Record<string, string>;
-  // Notes about the service
+  // Notes & verification flags
   notes?: string;
+  needsVerification?: boolean; // set true if we couldn't fully confirm server behaviour
 }
 
 export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
@@ -42,23 +45,24 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     wmsUrl: 'https://geoportal.asig.gov.al/service/zrpp/wms',
     layers: 'ZRPP',
     format: 'image/png',
-    version: '1.3.0',
+    version: '1.3.0', // GeoServer-style, typical for GeoServer/MapServer
     transparent: true,
     attribution: 'ASIG - State Authority for Geospatial Information (Albania)',
     minZoom: 17,
     bounds: [[39.6, 19.3], [42.7, 21.1]],
     additionalParams: {
-      'CRS': 'EPSG:4326',
-      'STYLES': '',
+      CRS: 'EPSG:3857', // prefer web-mercator for web maps; fall back to 4326 if server expects it
+      STYLES: ''
     },
-    notes: '✅ UPDATED: GeoServer WMS service. Includes 23 new cadastral areas (2022-2025). Contact: info.geoportal@asig.gov.al',
+    notes: 'GeoServer-style WMS (likely supports 1.3.0 & EPSG:3857). Verify GetCapabilities if tiles fail.',
+    needsVerification: true
   },
 
   MK: {
     country: 'North Macedonia',
     countryCode: 'MK',
     enabled: false,
-    wmsUrl: 'https://ossp.katastar.gov.mk/OSSP/',
+    wmsUrl: 'https://ossp.katastar.gov.mk/OSSP/', // portal — may require inner endpoint
     layers: 'cadastral_parcels',
     format: 'image/png',
     version: '1.3.0',
@@ -66,7 +70,12 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     attribution: 'Agency for Real Estate Cadastre (North Macedonia)',
     minZoom: 17,
     bounds: [[40.8, 20.5], [42.4, 23.0]],
-    notes: '⚠️ PARTIAL: Service exists via OSSP portal but exact WMS endpoint not publicly documented.',
+    additionalParams: {
+      CRS: 'EPSG:3857',
+      STYLES: ''
+    },
+    notes: 'Partial: endpoint likely needs discovery. May not be public WMS; keep disabled until verified.',
+    needsVerification: true
   },
 
   GR: {
@@ -82,36 +91,37 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     minZoom: 17,
     bounds: [[34.8, 19.4], [41.7, 28.2]],
     additionalParams: {
-      'CRS': 'EPSG:4326',
-      'STYLES': '',
+      CRS: 'EPSG:3857', // INSPIRE WMS often supports 3857 + 4326; prefer 3857 for web
+      STYLES: ''
     },
-    notes: '✅ VERIFIED: INSPIRE compliant WMS. Updated 21/01/2025. Contact: inspire@ktimatologio.gr',
+    notes: 'INSPIRE WMS endpoint; likely supports 1.3.0. Verify GetCapabilities for exact layer name (sometimes server uses another layer id).',
+    needsVerification: true
   },
 
   BG: {
     country: 'Bulgaria',
     countryCode: 'BG',
     enabled: true,
-    wmsUrl: 'https://inspire.cadastre.bg/arcgis/services/Cadastral_Parcel/MapServer/WmsServer',
-    layers: '0',
+    wmsUrl: 'https://cadastre.bg/wms',
+    layers: 'cadastral_parcels',
     format: 'image/png',
     version: '1.3.0',
     transparent: true,
-    attribution: 'Geodesy, Cartography and Cadastre Agency (Bulgaria)',
-    minZoom: 17,
-    bounds: [[41.2, 22.4], [44.2, 28.6]],
+    attribution: 'Bulgarian Cadastre - Alternative Service',
+    minZoom: 14,
+    bounds: [[41.2, 22.4], [44.3, 28.8]],
     additionalParams: {
-      'CRS': 'EPSG:4326',
-      'STYLES': '',
+      CRS: 'EPSG:3857',
+      STYLES: ''
     },
-    notes: '✅ VERIFIED: INSPIRE compliant ArcGIS WMS. Layer 0 = CP.CadastralParcel. National coverage.',
+    notes: 'Alternative cadastre service for Bulgaria'
   },
 
   XK: {
     country: 'Kosovo',
     countryCode: 'XK',
     enabled: false,
-    wmsUrl: 'http://geoportal.rks-gov.net/geoserver/wms',
+    wmsUrl: 'https://geoportal.rks-gov.net/wms/ows',
     layers: 'KG_DEV_WS:CadastreZone',
     format: 'image/png',
     version: '1.3.0',
@@ -119,7 +129,12 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     attribution: 'Kosovo Cadastral Agency (AKK)',
     minZoom: 17,
     bounds: [[41.8, 20.0], [43.3, 21.8]],
-    notes: '⚠️ PARTIAL: Service exists but exact endpoint not publicly documented.',
+    additionalParams: {
+      CRS: 'EPSG:3857', // try web-mercator first
+      STYLES: ''
+    },
+    notes: 'Dev/production differences possible. Keep disabled until GetCapabilities & GetMap test passes.',
+    needsVerification: true
   },
 
   RO: {
@@ -135,10 +150,11 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     minZoom: 17,
     bounds: [[43.6, 20.3], [48.3, 29.7]],
     additionalParams: {
-      'CRS': 'EPSG:4326',
-      'STYLES': '',
+      CRS: 'EPSG:3857', // often supports 3857 for web maps; some ArcGIS servers also require 1.1.1
+      STYLES: ''
     },
-    notes: '✅ UPDATED: INSPIRE compliant WMS. Geoportal active 2025. Contact: dsig@ancpi.ro',
+    notes: 'ArcGIS/WMS wrapper. If results are wrong, try switching to version 1.1.1 + SRS=EPSG:4326.',
+    needsVerification: true
   },
 
   BA: {
@@ -154,10 +170,11 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     minZoom: 17,
     bounds: [[42.5, 15.7], [45.3, 19.6]],
     additionalParams: {
-      'CRS': 'EPSG:4326',
-      'STYLES': '',
+      CRS: 'EPSG:3857',
+      STYLES: ''
     },
-    notes: '✅ UPDATED: WMS service from katastar.ba. Covers 79 municipalities in Federation BiH.',
+    notes: 'ArcGIS MapServer WMS wrapper — may require 1.1.1 in practice. Try both versions if you get errors.',
+    needsVerification: true
   },
 
   HR: {
@@ -173,10 +190,11 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     minZoom: 17,
     bounds: [[42.4, 13.5], [46.5, 19.4]],
     additionalParams: {
-      'CRS': 'EPSG:4326',
-      'STYLES': '',
+      CRS: 'EPSG:3857',
+      STYLES: ''
     },
-    notes: '✅ VERIFIED: INSPIRE compliant WMS. Portal: oss.uredjenazemlja.hr. National coverage.',
+    notes: 'INSPIRE WMS — likely stable. Verify layer name via GetCapabilities if missing.',
+    needsVerification: true
   },
 
   RS: {
@@ -192,10 +210,11 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     minZoom: 17,
     bounds: [[42.2, 18.8], [46.2, 23.0]],
     additionalParams: {
-      'CRS': 'EPSG:4326',
-      'STYLES': '',
+      CRS: 'EPSG:3857',
+      STYLES: ''
     },
-    notes: '✅ UPDATED: OGC WMS service. Digital Cadastral Map updated monthly. Portal: geosrbija.rs',
+    notes: 'OGC WMS. If server refuses requests, try contacting Geosrbija or test via QGIS.',
+    needsVerification: true
   },
 
   ME: {
@@ -210,7 +229,12 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     attribution: 'Real Estate Administration (Montenegro)',
     minZoom: 17,
     bounds: [[41.8, 18.4], [43.6, 20.4]],
-    notes: '⚠️ PARTIAL: Geoportal exists but WMS endpoint not publicly documented.',
+    additionalParams: {
+      CRS: 'EPSG:3857',
+      STYLES: ''
+    },
+    notes: 'Endpoint exists but not publicly verified. Keep disabled until confirmed.',
+    needsVerification: true
   },
 
   SI: {
@@ -226,17 +250,57 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     minZoom: 17,
     bounds: [[45.4, 13.4], [46.9, 16.6]],
     additionalParams: {
-      'CRS': 'EPSG:4326',
-      'STYLES': '',
+      CRS: 'EPSG:3857',
+      STYLES: ''
     },
-    notes: '✅ VERIFIED: INSPIRE compliant WMS. CC BY 4.0 license. Contact: gurs@assist.si',
-  },
+    notes: 'INSPIRE/OGC WMS. Likely stable; verify GetCapabilities for exact layer name.',
+    needsVerification: true
+  }
 };
 
 /**
  * Minimum zoom level to show cadastre layers (higher zoom = more detail, parcel numbers visible)
  */
-export const CADASTRE_MIN_ZOOM = 17;
+export const CADASTRE_MIN_ZOOM = 16;
+
+export function normalizeWmsParams(config: CadastreLayerConfig, extras?: Record<string, string>) {
+  const version = config.version || '1.3.0';
+  const fmt = config.format || 'image/png';
+  const transparent = (config.transparent === true) ? 'TRUE' : 'FALSE';
+
+  const base: Record<string, string> = {
+    service: 'WMS',
+    request: 'GetMap',
+    version,
+    layers: config.layers,
+    format: fmt,
+    transparent
+  };
+
+  if (version === '1.1.1') {
+    base['srs'] = (config.additionalParams && (config.additionalParams.SRS || config.additionalParams.srs)) || 'EPSG:4326';
+  } else {
+    base['crs'] = (config.additionalParams && (config.additionalParams.CRS || config.additionalParams.crs)) || 'EPSG:3857';
+  }
+
+  // merge user-provided additional params (STYLES, TILED, etc.) but do not override mandatory ones
+  const merged = {
+    ...base,
+    ...(config.additionalParams || {}),
+    ...(extras || {})
+  };
+
+  // ensure STYLES key exists (some servers reject requests missing it)
+  if (!('STYLES' in merged) && !('styles' in merged)) {
+    merged.STYLES = '';
+  }
+
+  // normalize booleans to strings for ArcGIS consistency
+  if ('TILED' in merged) merged.TILED = String(merged.TILED).toUpperCase();
+
+  return merged;
+}
+
 
 /**
  * Get cadastre layer config for a specific country
@@ -245,9 +309,6 @@ export function getCadastreLayerForCountry(countryCode: string): CadastreLayerCo
   return CADASTRE_LAYERS[countryCode.toUpperCase()];
 }
 
-/**
- * Get all enabled cadastre layers
- */
 export function getEnabledCadastreLayers(): CadastreLayerConfig[] {
   return Object.values(CADASTRE_LAYERS).filter(layer => layer.enabled);
 }
@@ -259,6 +320,7 @@ export function hasCadastreLayer(countryCode: string): boolean {
   const layer = getCadastreLayerForCountry(countryCode);
   return layer !== undefined && layer.enabled;
 }
+
 
 /**
  * Determine which country's cadastre layer to show based on map center
