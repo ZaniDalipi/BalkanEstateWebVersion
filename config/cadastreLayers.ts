@@ -58,34 +58,15 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     needsVerification: true
   },
 
-  MK: {
-    country: 'North Macedonia',
-    countryCode: 'MK',
-    enabled: false,
-    wmsUrl: 'https://ossp.katastar.gov.mk/OSSP/', // portal — may require inner endpoint
-    layers: 'cadastral_parcels',
-    format: 'image/png',
-    version: '1.3.0',
-    transparent: true,
-    attribution: 'Agency for Real Estate Cadastre (North Macedonia)',
-    minZoom: 17,
-    bounds: [[40.8, 20.5], [42.4, 23.0]],
-    additionalParams: {
-      CRS: 'EPSG:3857',
-      STYLES: ''
-    },
-    notes: 'Partial: endpoint likely needs discovery. May not be public WMS; keep disabled until verified.',
-    needsVerification: true
-  },
 
   GR: {
     country: 'Greece',
     countryCode: 'GR',
     enabled: true,
-    wmsUrl: 'http://gis.ktimanet.gr/inspire/rest/services/cadastralparcels/CadastralParcelWMS/MapServer/exts/InspireView/service',
+    wmsUrl: 'https://gis.ktimanet.gr/inspire/rest/services/cadastralparcels/CadastralParcelWMS/MapServer/exts/InspireView/ENG/service',
     layers: 'CP.CadastralParcel',
     format: 'image/png',
-    version: '1.3.0',
+    version: '1..0',
     transparent: true,
     attribution: 'Hellenic Cadastre (Ktimatologio)',
     minZoom: 17,
@@ -102,8 +83,8 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
   country: 'Bulgaria',
   countryCode: 'BG',
   enabled: true,
-  wmsUrl: 'https://inspire.cadastre.bg/arcgis/services/Cadastral_Parcel/MapServer/WMSServer',
-  layers: '0',  // assuming layer “0” is the parcel polygons — check in capabilities
+  wmsUrl: 'https://inspire.geoportal.bg/geoserver/wms',
+  layers: 'inspire:cp_cadastralparcel',  // assuming layer “0” is the parcel polygons — check in capabilities
   format: 'image/png',
   version: '1.3.0',
   transparent: true,
@@ -114,7 +95,7 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     CRS: 'EPSG:4258',
     STYLES: ''
   },
-  notes: 'INSPIRE cadastral parcels from GCCA – public WMS, EPSG:4258'
+  notes: 'INSPIRE compliant cadastral parcels'
 }
 ,
 
@@ -158,25 +139,6 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     needsVerification: true
   },
 
-  BA: {
-    country: 'Bosnia & Herzegovina',
-    countryCode: 'BA',
-    enabled: true,
-    wmsUrl: 'https://katastar.ba/arcgis/services/KatastarskiPodaci/MapServer/WmsServer',
-    layers: '0',
-    format: 'image/png',
-    version: '1.3.0',
-    transparent: true,
-    attribution: 'Federal Geodetic Administration (Bosnia & Herzegovina)',
-    minZoom: 17,
-    bounds: [[42.5, 15.7], [45.3, 19.6]],
-    additionalParams: {
-      CRS: 'EPSG:3857',
-      STYLES: ''
-    },
-    notes: 'ArcGIS MapServer WMS wrapper — may require 1.1.1 in practice. Try both versions if you get errors.',
-    needsVerification: true
-  },
 
   HR: {
     country: 'Croatia',
@@ -198,23 +160,69 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     needsVerification: true
   },
 
+  MK: {
+    country: 'North Macedonia',
+    countryCode: 'MK',
+    enabled: true,
+    // Use OSSP geoportal WMS (or WFS) — adjust layers/crs via GetCapabilities
+    wmsUrl: 'https://ossp.katastar.gov.mk/OSSP/ogc/wms',  // base URL — verify exact path  
+    // WFS is also available (better for vector & queries)
+    wfsUrl: 'https://ossp.katastar.gov.mk/OSSP/ogc/wfs', 
+    layers: 'CadastralParcels',   // placeholder — you need to inspect GetCapabilities for real name  
+    format: 'image/png',
+    version: '1.3.0',
+    transparent: true,
+    attribution: 'AREC – Agency for Real Estate Cadastre (North Macedonia)',
+    minZoom: 16,
+    bounds: [[40.8, 20.5], [42.4, 23.0]],
+    additionalParams: {
+      CRS: 'EPSG:3857',
+      STYLES: ''
+    },
+    notes: 'Use OSSP WMS/WFS — fetch correct layer names + CRS from GetCapabilities. Parcel labels/IDs likely only with WFS. Needs verification.',
+    needsVerification: true
+  },
+
+  BA: {
+    country: 'Bosnia & Herzegovina',
+    countryCode: 'BA',
+    enabled: true,
+    wmsUrl: 'https://servisi.katastar.ba/geoserver/katastar_parcele/wms',  // example; verify actual service for “katastarske parcele”  
+    wfsUrl: 'https://servisi.katastar.ba/geoserver/katastar_parcele/wfs', 
+    layers: 'katastarske_parcele',  // placeholder — verify via GetCapabilities  
+    format: 'image/png',
+    version: '1.3.0',
+    transparent: true,
+    attribution: 'FGU / Katastar.ba (Bosnia & Herzegovina)',
+    minZoom: 16,
+    bounds: [[42.5, 15.7], [45.3, 19.6]],
+    additionalParams: {
+      CRS: 'EPSG:3857',
+      STYLES: ''
+    },
+    notes: 'Use WMS/WFS from Katastar.ba — verify layer names & CRS. Parcel IDs & metadata likely only with WFS. Needs verification.',
+    needsVerification: false
+  },
+
   RS: {
     country: 'Serbia',
     countryCode: 'RS',
     enabled: true,
-    wmsUrl: 'http://ogc4u.geosrbija.rs/rpj/wms',
-    layers: 'rpj',
+    // There’s no simple publicly documented “WMS parcels” URL — likely needs discovery via GeoSrbija catalog
+    wmsUrl: 'https://a3.geosrbija.rs/wms',  // example — you must inspect GeoSrbija catalog & capabilities  
+    wfsUrl: 'https://a3.geosrbija.rs/wfs',  // if WFS available  
+    layers: 'CadastralParcels',  // placeholder — verify via GetCapabilities  
     format: 'image/png',
     version: '1.3.0',
     transparent: true,
-    attribution: 'Republic Geodetic Authority - Geosrbija (Serbia)',
-    minZoom: 17,
+    attribution: 'GeoSrbija / Republic Geodetic Authority (Serbia)',
+    minZoom: 16,
     bounds: [[42.2, 18.8], [46.2, 23.0]],
     additionalParams: {
       CRS: 'EPSG:3857',
       STYLES: ''
     },
-    notes: 'OGC WMS. If server refuses requests, try contacting Geosrbija or test via QGIS.',
+    notes: 'Use GeoSrbija public services — layer name & CRS must be discovered from metadata catalog. WFS preferred for parcel metadata. Needs verification.',
     needsVerification: true
   },
 
