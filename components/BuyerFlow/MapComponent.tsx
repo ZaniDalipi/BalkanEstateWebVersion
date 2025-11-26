@@ -4,7 +4,7 @@ import { Property } from '../../types';
 import L, { LeafletMouseEvent } from 'leaflet';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
-import { BellIcon, PencilIcon, XCircleIcon, Bars3Icon, CrosshairsIcon } from '../../constants';
+import { BellIcon, PencilIcon, XCircleIcon, CubeTransparentIcon, CrosshairsIcon } from '../../constants';
 import { CadastreLayer } from '../Map/CadastreLayer';
 
 
@@ -694,8 +694,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, user
                     {showCadastre ? '✓ ' : ''}Parcels
                 </button>
             )}
-            <button onClick={() => setIsLegendOpen(p => !p)} className="bg-white/80 backdrop-blur-sm p-2.5 rounded-full shadow-lg pointer-events-auto">
-                <Bars3Icon className="w-6 h-6 text-neutral-800" />
+            <button onClick={() => setIsLegendOpen(p => !p)} className="bg-white/80 backdrop-blur-sm p-2.5 rounded-full shadow-lg pointer-events-auto" title="Map Legend">
+                <CubeTransparentIcon className="w-6 h-6 text-neutral-800" />
             </button>
         </div>
       )}

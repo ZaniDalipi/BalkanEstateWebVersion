@@ -145,7 +145,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const handleSuggestionClick = (suggestion: NominatimResult) => {
         setSuggestions([]);
         const newFilters = { ...filters, query: suggestion.display_name };
-        
+
         // Use the bounding box from the API for a precise map view
         const [south, north, west, east] = suggestion.boundingbox.map(Number);
         const searchBounds = L.latLngBounds([
@@ -155,10 +155,11 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
 
         updateSearchPageState({
             filters: newFilters,
-            activeFilters: { ...initialFilters, query: '' }, // Clear text filter, use spatial only
-            drawnBoundsJSON: JSON.stringify(searchBounds),
+            activeFilters: { ...initialFilters, query: suggestion.display_name }, // Keep query in active filters for proper saving
+            mapBoundsJSON: JSON.stringify(searchBounds), // Save to mapBounds so user can modify and save current view
+            drawnBoundsJSON: null, // Don't lock to search bounds, let user modify view
         });
-        
+
         // Fly to the location's center
         setFlyToTarget({ center: [Number(suggestion.lat), Number(suggestion.lon)], zoom: 12 });
         setIsQueryInputFocused(false);
@@ -296,11 +297,13 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     }, [properties, activeFilters]);
 
     const listProperties = useMemo(() => {
-        // If a specific area is drawn or resulted from a search, use it exclusively.
+        // If a specific area is drawn, use it exclusively.
         if (drawnBounds) {
-            return baseFilteredProperties.filter(p => drawnBounds.contains([p.lat, p.lng]));
+            const withinDrawn = baseFilteredProperties.filter(p => drawnBounds.contains([p.lat, p.lng]));
+            // If drawn bounds exists but no properties inside, still return the filtered results
+            return withinDrawn;
         }
-        // Otherwise, always filter by the current map view if available.
+        // Otherwise, filter by the current map view if available.
         if (mapBounds) {
             return baseFilteredProperties.filter(p => mapBounds.contains([p.lat, p.lng]));
         }
@@ -456,7 +459,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         }
     };
 
-    const handleApplyAiFilters = useCallback((aiQuery: AiSearchQuery) => {
+    const handleApplyAiFilters = useCallback(async (aiQuery: AiSearchQuery) => {
         const newFilters: Partial<Filters> = {
             query: aiQuery.location || '',
             minPrice: aiQuery.minPrice || null,
@@ -469,7 +472,27 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         };
         const updatedFilters = { ...initialFilters, ...newFilters };
         updateSearchPageState({ filters: updatedFilters, activeFilters: updatedFilters, searchMode: 'manual', isAiChatModalOpen: false });
-        updateSearchPageState({ isFiltersOpen: false }); 
+        updateSearchPageState({ isFiltersOpen: false });
+
+        // Navigate map to the AI-provided location if available
+        if (aiQuery.location) {
+            try {
+                const results = await searchLocation(aiQuery.location);
+                if (results.length > 0) {
+                    const [south, north, west, east] = results[0].boundingbox.map(Number);
+                    const searchBounds = L.latLngBounds([
+                        [south, west],
+                        [north, east],
+                    ]);
+                    updateSearchPageState({
+                        mapBoundsJSON: JSON.stringify(searchBounds),
+                    });
+                    setFlyToTarget({ center: [Number(results[0].lat), Number(results[0].lon)], zoom: 12 });
+                }
+            } catch (error) {
+                console.error("Error searching location:", error);
+            }
+        }
     }, [updateSearchPageState]);
 
 
@@ -653,7 +676,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                             </div>
                         </div>
                         
-                        <div className="absolute bottom-0 left-0 right-0 z-[1002] p-4 pointer-events-none">
+                        <div className="absolute bottom-16 left-0 right-0 z-[1002] p-4 pointer-events-none">
                             <div className="pointer-events-auto mx-auto w-fit bg-white/80 text-neutral-800 p-2 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
                                 <button onClick={() => updateSearchPageState({ mobileView: 'list' })} className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition-colors ${mobileView === 'list' ? 'bg-primary text-white shadow' : 'hover:bg-neutral-200'}`}>
                                     <Squares2x2Icon className="w-5 h-5" />

@@ -5,6 +5,11 @@ export const filterProperties = (properties: Property[], filters: Filters): Prop
     const query = filters.query?.toLowerCase().trim();
 
     return properties.filter(p => {
+        // Ensure property has valid coordinates
+        if (p.lat == null || p.lng == null || isNaN(p.lat) || isNaN(p.lng)) {
+            return false;
+        }
+
         // Text search
         let queryMatch = true;
         if (query) {

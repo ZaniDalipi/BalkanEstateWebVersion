@@ -710,14 +710,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         setError(null);
 
         // Validation
-        if (!selectedCountry || !selectedCity) {
-            setError("Please select both country and city.");
-            setIsSubmitting(false);
-            return;
-        }
-
         if (listingData.lat === 0 || listingData.lng === 0) {
-            setError("Please select a valid city to set the location.");
+            setError("Please select a location on the map or choose a city.");
             setIsSubmitting(false);
             return;
         }
@@ -805,8 +799,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             const { lat, lng } = listingData;
             console.log('💾 SAVING PROPERTY WITH EXACT COORDINATES:', { lat, lng });
 
-            // Use street address if provided, otherwise default to city name
-            const finalAddress = listingData.streetAddress.trim() || selectedCity;
+            // Use street address if provided, otherwise default to city name, or empty if neither
+            const finalAddress = listingData.streetAddress.trim() || selectedCity || '';
 
             // Calculate distances using Gemini AI
             let distances = {
@@ -845,8 +839,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 status: 'active',
                 price: Number(listingData.price),
                 address: finalAddress,
-                city: selectedCity,
-                country: selectedCountry,
+                city: selectedCity || '',
+                country: selectedCountry || '',
                 beds: Number(listingData.bedrooms),
                 baths: Number(listingData.bathrooms),
                 livingRooms: Number(listingData.livingRooms),
@@ -1003,9 +997,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                                 value={selectedCountry}
                                 onChange={handleCountryChange}
                                 className={`${floatingInputClasses} border-neutral-300`}
-                                required
                             >
-                                <option value="">Select Country</option>
+                                <option value="">Select Country (Optional)</option>
                                 {BALKAN_LOCATIONS.map(country => (
                                     <option key={country.code} value={country.name}>
                                         {country.name}
@@ -1027,10 +1020,9 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                                 value={selectedCity}
                                 onChange={handleCityChange}
                                 className={`${floatingInputClasses} border-neutral-300`}
-                                required
                                 disabled={!selectedCountry}
                             >
-                                <option value="">Select City</option>
+                                <option value="">Select City (Optional)</option>
                                 {availableCities.map(city => (
                                     <option key={city.name} value={city.name}>
                                         {city.name}
@@ -1061,7 +1053,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
 
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('streetAddress')?.focus()}>
                             <input type="text" id="streetAddress" name="streetAddress" value={listingData.streetAddress} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " />
-                            <label htmlFor="streetAddress" className={floatingLabelClasses}>Street Address (Optional)</label>
+                            <label htmlFor="streetAddress" className={floatingLabelClasses}>Address (Optional)</label>
                             <p className="mt-1 text-xs text-neutral-500">
                                 Search on the map above to auto-fill, or type manually
                                 <br />
