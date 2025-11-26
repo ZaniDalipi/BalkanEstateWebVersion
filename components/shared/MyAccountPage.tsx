@@ -524,8 +524,8 @@ const MyAccountPage: React.FC = () => {
     };
 
     return (
-        <div className="bg-neutral-50 min-h-full">
-            <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div className="bg-neutral-50 min-h-screen flex flex-col">
+            <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 flex-grow">
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                     {/* Sidebar */}
                     <div className="lg:col-span-1">

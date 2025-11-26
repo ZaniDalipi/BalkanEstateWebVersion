@@ -653,7 +653,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                             </div>
                         </div>
                         
-                        <div className="absolute bottom-0 left-0 right-0 z-20 p-4 pointer-events-none">
+                        <div className="absolute bottom-0 left-0 right-0 z-[1002] p-4 pointer-events-none">
                             <div className="pointer-events-auto mx-auto w-fit bg-white/80 text-neutral-800 p-2 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
                                 <button onClick={() => updateSearchPageState({ mobileView: 'list' })} className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition-colors ${mobileView === 'list' ? 'bg-primary text-white shadow' : 'hover:bg-neutral-200'}`}>
                                     <Squares2x2Icon className="w-5 h-5" />

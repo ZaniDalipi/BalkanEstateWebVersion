@@ -679,11 +679,20 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, user
       )}
 
       {isMobile && (
-        <div className="absolute bottom-20 left-4 z-[1000] pointer-events-none">
+        <div className="absolute bottom-20 left-4 z-[1000] pointer-events-none flex flex-col gap-2">
             {isLegendOpen && (
                 <div className="absolute bottom-full mb-2 pointer-events-auto">
                     <Legend />
                 </div>
+            )}
+            {mapType === 'satellite' && (
+                <button
+                    onClick={() => setShowCadastre(!showCadastre)}
+                    className={`pointer-events-auto px-3 py-2 text-xs font-bold rounded-full shadow-lg transition-all animate-fade-in ${showCadastre ? 'bg-primary text-white hover:bg-primary-dark' : 'bg-white/90 text-neutral-800 hover:bg-white'}`}
+                    title="Show cadastral parcels (zoom in to see)"
+                >
+                    {showCadastre ? '✓ ' : ''}Parcels
+                </button>
             )}
             <button onClick={() => setIsLegendOpen(p => !p)} className="bg-white/80 backdrop-blur-sm p-2.5 rounded-full shadow-lg pointer-events-auto">
                 <Bars3Icon className="w-6 h-6 text-neutral-800" />

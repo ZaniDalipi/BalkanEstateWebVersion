@@ -103,9 +103,9 @@ const AgentsPage: React.FC = () => {
   }
 
   return (
-    <div className="bg-neutral-50 min-h-full">
+    <div className="bg-neutral-50 min-h-screen flex flex-col">
       <AdvertisementBanner position="top" />
-      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 flex-grow">
         <div className="text-center mb-8">
             <UserGroupIcon className="w-12 h-12 text-primary mx-auto mb-2" />
             <h1 className="text-3xl font-bold text-neutral-900">Top Agents</h1>
