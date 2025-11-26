@@ -41,7 +41,7 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
   AL: {
     country: 'Albania',
     countryCode: 'AL',
-    enabled: true,
+    enabled: false,
     wmsUrl: 'https://geoportal.asig.gov.al/service/zrpp/wms',
     layers: 'ZRPP',
     format: 'image/png',
@@ -101,7 +101,7 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
   BG: {
     country: 'Bulgaria',
     countryCode: 'BG',
-    enabled: true,
+    enabled: false,
     wmsUrl: 'https://cadastre.bg/wms',
     layers: 'cadastral_parcels',
     format: 'image/png',
@@ -140,7 +140,7 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
   RO: {
     country: 'Romania',
     countryCode: 'RO',
-    enabled: true,
+    enabled: false,
     wmsUrl: 'https://geoportal.ancpi.ro/arcgis/rest/services/InspireView/CP_View/MapServer/WmsServer',
     layers: '0',
     format: 'image/png',
@@ -160,7 +160,7 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
   BA: {
     country: 'Bosnia & Herzegovina',
     countryCode: 'BA',
-    enabled: true,
+    enabled: false,
     wmsUrl: 'https://katastar.ba/arcgis/services/KatastarskiPodaci/MapServer/WmsServer',
     layers: '0',
     format: 'image/png',
@@ -200,7 +200,7 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
   RS: {
     country: 'Serbia',
     countryCode: 'RS',
-    enabled: true,
+    enabled: false,
     wmsUrl: 'http://ogc4u.geosrbija.rs/rpj/wms',
     layers: 'rpj',
     format: 'image/png',
@@ -240,7 +240,7 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
   SI: {
     country: 'Slovenia',
     countryCode: 'SI',
-    enabled: true,
+    enabled: false,
     wmsUrl: 'https://storitve.eprostor.gov.si/ows-pub-wms/wms',
     layers: 'GJI_KAT',
     format: 'image/png',
