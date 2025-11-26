@@ -176,7 +176,7 @@ export const CADASTRE_LAYERS: Record<string, CadastreLayerConfig> = {
     minZoom: 16,
     bounds: [[42.2, 18.8], [46.2, 23.0]],
     additionalParams: {
-      CRS: 'EPSG:4326',
+      CRS: 'EPSG:3857',
       STYLES: ''
     },
     notes: '✅ OGC WMS Service. Monthly updates. Portal: geosrbija.rs, a3.geosrbija.rs/katastar'
