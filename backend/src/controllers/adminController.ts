@@ -4,6 +4,7 @@ import Agent from '../models/Agent';
 import Agency from '../models/Agency';
 import Property from '../models/Property';
 import DiscountCode from '../models/DiscountCode';
+import { runStatsReconciliation } from '../workers/statsReconciliationWorker';
 
 
 // @desc    Get admin dashboard statistics
@@ -425,5 +426,29 @@ export const getSystemConfig = async (req: Request, res: Response): Promise<void
   } catch (error: any) {
     console.error('Get system config error:', error);
     res.status(500).json({ message: 'Error fetching system config', error: error.message });
+  }
+};
+
+// @desc    Manually trigger statistics reconciliation for all sellers
+// @route   POST /api/admin/sync-all-stats
+// @access  Private/Admin
+export const syncAllStatsAdmin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    console.log('Admin triggered statistics reconciliation');
+    const result = await runStatsReconciliation();
+
+    res.json({
+      message: 'Statistics reconciliation completed',
+      result: {
+        totalProcessed: result.totalProcessed,
+        updated: result.updated,
+        errors: result.errors,
+        timestamp: new Date().toISOString(),
+        details: result.details.slice(0, 50), // Return first 50 for brevity
+      },
+    });
+  } catch (error: any) {
+    console.error('Error syncing all stats:', error);
+    res.status(500).json({ message: 'Error syncing statistics', error: error.message });
   }
 };

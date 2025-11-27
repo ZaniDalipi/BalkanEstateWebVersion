@@ -38,6 +38,7 @@ import { initializeGooglePlayService } from './services/googlePlayService';
 import { initializeAppStoreService } from './services/appStoreService';
 import { scheduleReconciliation } from './workers/reconciliationWorker';
 import { scheduleExpirationWorker } from './workers/subscriptionExpirationWorker';
+import { scheduleStatsReconciliation } from './workers/statsReconciliationWorker';
 
 // Create Express app
 const app: Application = express();
@@ -101,6 +102,10 @@ if (process.env.ENABLE_RECONCILIATION === 'true') {
 // Start subscription expiration worker (always enabled for security)
 scheduleExpirationWorker();
 console.log('✅ Subscription expiration worker started');
+
+// Start statistics reconciliation worker (always enabled to keep stats fresh)
+scheduleStatsReconciliation();
+console.log('✅ Statistics reconciliation worker started');
 
 // ============================================================================
 // MANUAL CORS MIDDLEWARE - Handle ALL CORS manually for maximum control

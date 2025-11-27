@@ -13,6 +13,7 @@ import {
   updateProperty,
   deleteProperty,
   getSystemConfig,
+  syncAllStatsAdmin,
 } from '../controllers/adminController';
 import {
   getAllDiscountCodes,
@@ -31,6 +32,7 @@ router.use(checkAdminRole);
 // ===== Dashboard & Statistics =====
 router.get('/stats', getAdminStats);
 router.get('/config', getSystemConfig);
+router.post('/sync-all-stats', logAdminAction('SYNC_STATS'), syncAllStatsAdmin);
 
 // ===== User Management =====
 router.get('/users', logAdminAction('VIEW_USERS'), getAllUsers);
