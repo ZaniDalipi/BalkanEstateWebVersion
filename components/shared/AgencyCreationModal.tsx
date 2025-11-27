@@ -55,6 +55,10 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
         country: prev.country || user.country || '',
         // If user already has an agency name (e.g., they're an agent), use it
         name: prev.name || user.agencyName || '',
+        // Auto-fill agent-specific fields if user is an agent
+        licenseNumber: prev.licenseNumber || user.licenseNumber || '',
+        // If user has years in business data, use it
+        yearsInBusiness: prev.yearsInBusiness || '',
       }));
     }
   }, [isOpen, state.currentUser]);
