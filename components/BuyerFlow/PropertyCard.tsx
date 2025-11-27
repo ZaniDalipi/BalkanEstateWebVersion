@@ -84,57 +84,57 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
             </svg>
         </div>
       </div>
-      <div className="p-4 flex flex-col flex-grow">
+      <div className="p-3 flex flex-col flex-grow">
         <button onClick={handleCardClick} className="text-left flex-grow">
             <div className="flex items-center text-neutral-600 mb-2">
-                <MapPinIcon className="w-5 h-5 mr-2 text-neutral-400 flex-shrink-0" />
-                <span className="truncate text-base font-medium">{property.address}, {property.city}</span>
+                <MapPinIcon className="w-4 h-4 mr-1.5 text-neutral-400 flex-shrink-0" />
+                <span className="truncate text-sm font-medium">{property.address}, {property.city}</span>
             </div>
-            <p className="text-3xl font-bold text-neutral-900 my-3">{formatPrice(property.price, property.country)}</p>
-            <div className="flex items-center flex-wrap gap-x-4 gap-y-2 text-neutral-700 mb-3">
-                <div className="flex items-center gap-2" title={`${property.beds} bedrooms`}>
-                    <BedIcon className="w-6 h-6 text-neutral-500" />
-                    <span className="font-semibold text-base">{property.beds}</span>
+            <p className="text-2xl font-bold text-neutral-900 my-2">{formatPrice(property.price, property.country)}</p>
+            <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-neutral-700 mb-2">
+                <div className="flex items-center gap-1.5" title={`${property.beds} bedrooms`}>
+                    <BedIcon className="w-5 h-5 text-neutral-500" />
+                    <span className="font-semibold text-sm">{property.beds}</span>
                 </div>
-                <div className="flex items-center gap-2" title={`${property.baths} bathrooms`}>
-                    <BathIcon className="w-6 h-6 text-neutral-500" />
-                    <span className="font-semibold text-base">{property.baths}</span>
+                <div className="flex items-center gap-1.5" title={`${property.baths} bathrooms`}>
+                    <BathIcon className="w-5 h-5 text-neutral-500" />
+                    <span className="font-semibold text-sm">{property.baths}</span>
                 </div>
-                <div className="flex items-center gap-2" title={`${property.livingRooms} living rooms`}>
-                    <LivingRoomIcon className="w-6 h-6 text-neutral-500" />
-                    <span className="font-semibold text-base">{property.livingRooms}</span>
+                <div className="flex items-center gap-1.5" title={`${property.livingRooms} living rooms`}>
+                    <LivingRoomIcon className="w-5 h-5 text-neutral-500" />
+                    <span className="font-semibold text-sm">{property.livingRooms}</span>
                 </div>
-                <div className="flex items-center gap-2" title={`${property.sqft} square meters`}>
-                    <SqftIcon className="w-6 h-6 text-neutral-500" />
-                    <span className="font-semibold text-base">{property.sqft} m²</span>
+                <div className="flex items-center gap-1.5" title={`${property.sqft} square meters`}>
+                    <SqftIcon className="w-5 h-5 text-neutral-500" />
+                    <span className="font-semibold text-sm">{property.sqft} m²</span>
                 </div>
             </div>
         </button>
 
         <div className="flex-grow"></div>
 
-        <div className="mt-4 pt-4 border-t border-neutral-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+        <div className="mt-3 pt-3 border-t border-neutral-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
             {showCompareButton && (
                 <button
                     onClick={handleCompareClick}
-                    className={`flex items-center justify-center gap-2 px-5 py-3 rounded-full text-base font-semibold transition-all shadow-sm hover:shadow-md w-full sm:w-auto ${
+                    className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-full text-sm font-semibold transition-all shadow-sm hover:shadow-md w-full sm:w-auto ${
                         isInComparison
                             ? 'bg-primary-light text-primary-dark border-2 border-primary/50'
                             : 'bg-white text-neutral-700 border-2 border-neutral-300 hover:bg-neutral-100'
                     }`}
                 >
-                    <ScaleIcon className="w-6 h-6" />
+                    <ScaleIcon className="w-5 h-5" />
                     <span>{isInComparison ? 'Selected' : 'Compare'}</span>
                 </button>
             )}
              <button
                 onClick={handleCardClick}
-                className="bg-primary text-white px-5 py-3 rounded-full text-base font-semibold hover:bg-primary-dark transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 w-full sm:w-auto"
+                className="bg-primary text-white px-3 py-2 rounded-full text-sm font-semibold hover:bg-primary-dark transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-1.5 w-full sm:w-auto"
             >
                 {property.seller.avatarUrl ? (
-                    <img src={property.seller.avatarUrl} alt={property.seller.name} className="w-7 h-7 rounded-full object-cover border-2 border-white/50" />
+                    <img src={property.seller.avatarUrl} alt={property.seller.name} className="w-5 h-5 rounded-full object-cover border-2 border-white/50" />
                 ) : (
-                    <UserCircleIcon className="w-7 h-7" />
+                    <UserCircleIcon className="w-5 h-5" />
                 )}
                 <span>View Details</span>
             </button>
