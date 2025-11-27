@@ -304,7 +304,7 @@ const MainLayout: React.FC = () => {
     <div className="min-h-screen bg-neutral-50 font-sans flex flex-col">
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-        <div className={`relative transition-all duration-300 ease-in-out h-[calc(100vh-theme(spacing.0))] flex flex-col md:pl-20 ${isOverlayVisible ? 'blur-sm pointer-events-none' : ''}`}>
+        <div className={`relative transition-all duration-300 ease-in-out flex-1 flex flex-col md:pl-20 ${isOverlayVisible ? 'blur-sm pointer-events-none' : ''}`}>
             {showHeader && <Header onToggleSidebar={() => setIsSidebarOpen(true)} isFloating={isSearchPage} />}
             <main className={`flex flex-col flex-1 min-h-0 ${isFullHeightView ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                 <AppContent onToggleSidebar={() => setIsSidebarOpen(true)} />
