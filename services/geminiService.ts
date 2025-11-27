@@ -503,15 +503,25 @@ export const generateSearchNameFromCoords = async (lat: number, lng: number): Pr
         if (location && location.address) {
             const address = location.address;
 
-            // Priority: city/town > village > county > state > country
-            const city = address.city || address.town || address.village || address.county || address.state || address.country;
+            // Priority: Prefer larger administrative areas over small villages
+            // state/region > county/district > municipality > city > town > village > country
+            const area =
+                address.state ||
+                address.region ||
+                address.county ||
+                address.district ||
+                address.municipality ||
+                address.city ||
+                address.town ||
+                address.village;
+
             const country = address.country;
 
-            // Format as "City, Country" if both available and different
-            if (city && country && city !== country) {
-                return `${city}, ${country}`;
-            } else if (city) {
-                return city;
+            // Format as "Area, Country" if both available and different
+            if (area && country && area !== country) {
+                return `${area}, ${country}`;
+            } else if (area) {
+                return area;
             } else if (country) {
                 return country;
             }
