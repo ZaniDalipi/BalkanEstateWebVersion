@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, StarIcon, ArrowLeftIcon, UserCircleIcon, BellIcon, TrophyIcon, ChartBarIcon, HomeIcon, UsersIcon, XMarkIcon, ShieldCheckIcon } from '../constants';
+import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, StarIcon, ArrowLeftIcon, UserCircleIcon, BellIcon, TrophyIcon, ChartBarIcon, HomeIcon, UsersIcon, XMarkIcon, ShieldCheckIcon, PencilIcon } from '../constants';
 import PropertyCard from './BuyerFlow/PropertyCard';
 import PropertyCardSkeleton from './BuyerFlow/PropertyCardSkeleton';
 import AgencyJoinRequestsModal from './AgencyJoinRequestsModal';
@@ -47,6 +47,36 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const [removingAgentId, setRemovingAgentId] = useState<string | null>(null);
   const [showAllMembers, setShowAllMembers] = useState(true);
   const [isLeavingAgency, setIsLeavingAgency] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    description: '',
+    website: '',
+    phone: '',
+    email: '',
+    address: '',
+    city: '',
+    country: '',
+    zipCode: '',
+    lat: 0,
+    lng: 0,
+    facebookUrl: '',
+    instagramUrl: '',
+    linkedinUrl: '',
+    twitterUrl: '',
+    yearsInBusiness: 0,
+    specialties: [] as string[],
+    certifications: [] as string[],
+    businessHours: {
+      monday: '',
+      tuesday: '',
+      wednesday: '',
+      thursday: '',
+      friday: '',
+      saturday: '',
+      sunday: '',
+    },
+  });
 
   // Check if current user is owner - handle both populated and unpopulated ownerId
   const agencyOwnerId = typeof agencyData.ownerId === 'object' && agencyData.ownerId !== null
@@ -291,6 +321,67 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
       alert(error.message || 'Failed to leave agency');
     } finally {
       setIsLeavingAgency(false);
+    }
+  };
+
+  const handleOpenEditModal = () => {
+    setEditForm({
+      name: agencyData.name,
+      description: agencyData.description || '',
+      website: agencyData.website || '',
+      phone: agencyData.phone || '',
+      email: agencyData.email || '',
+      address: agencyData.address || '',
+      city: agencyData.city || '',
+      country: agencyData.country || '',
+      zipCode: agencyData.zipCode || '',
+      lat: agencyData.lat || 0,
+      lng: agencyData.lng || 0,
+      facebookUrl: agencyData.facebookUrl || '',
+      instagramUrl: agencyData.instagramUrl || '',
+      linkedinUrl: agencyData.linkedinUrl || '',
+      twitterUrl: agencyData.twitterUrl || '',
+      yearsInBusiness: agencyData.yearsInBusiness || 0,
+      specialties: agencyData.specialties || [],
+      certifications: agencyData.certifications || [],
+      businessHours: {
+        monday: agencyData.businessHours?.monday || '',
+        tuesday: agencyData.businessHours?.tuesday || '',
+        wednesday: agencyData.businessHours?.wednesday || '',
+        thursday: agencyData.businessHours?.thursday || '',
+        friday: agencyData.businessHours?.friday || '',
+        saturday: agencyData.businessHours?.saturday || '',
+        sunday: agencyData.businessHours?.sunday || '',
+      },
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveAgency = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('balkan_estate_token');
+      const response = await fetch(`${API_URL}/agencies/${agencyData._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(editForm),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update agency');
+      }
+
+      const data = await response.json();
+      setAgencyData(data.agency);
+      setIsEditModalOpen(false);
+      alert('Agency updated successfully!');
+    } catch (error) {
+      console.error('Error updating agency:', error);
+      alert(error instanceof Error ? error.message : 'Failed to update agency');
     }
   };
 
@@ -650,13 +741,22 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
           {/* Action Buttons */}
           <div className="mt-6 flex flex-wrap gap-3">
             {isAdmin && (
-              <button
-                onClick={() => setIsJoinRequestsModalOpen(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-dark transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              >
-                <BellIcon className="w-5 h-5" />
-                Manage Join Requests
-              </button>
+              <>
+                <button
+                  onClick={handleOpenEditModal}
+                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                >
+                  <PencilIcon className="w-5 h-5" />
+                  Edit Agency
+                </button>
+                <button
+                  onClick={() => setIsJoinRequestsModalOpen(true)}
+                  className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-dark transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                >
+                  <BellIcon className="w-5 h-5" />
+                  Manage Join Requests
+                </button>
+              </>
             )}
 
             {canRequestToJoin && (
@@ -916,6 +1016,321 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
         onSubmit={handleSubmitInvitationCode}
         agencyName={agency.name}
       />
+
+      {/* Edit Agency Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white z-10">
+              <h3 className="text-2xl font-bold text-gray-900">Edit Agency</h3>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveAgency} className="p-6 space-y-6">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-900">Basic Information</h4>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Agency Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={editForm.description}
+                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    rows={4}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      value={editForm.email}
+                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone *
+                    </label>
+                    <input
+                      type="tel"
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Website
+                  </label>
+                  <input
+                    type="url"
+                    value={editForm.website}
+                    onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder="https://example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Years in Business
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.yearsInBusiness}
+                    onChange={(e) => setEditForm({ ...editForm, yearsInBusiness: Number(e.target.value) })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Location */}
+              <div className="space-y-4 border-t pt-6">
+                <h4 className="text-lg font-semibold text-gray-900">Location</h4>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Address
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.address}
+                    onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      City
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.city}
+                      onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Country
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.country}
+                      onChange={(e) => setEditForm({ ...editForm, country: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Zip Code
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.zipCode}
+                      onChange={(e) => setEditForm({ ...editForm, zipCode: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Latitude
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={editForm.lat}
+                      onChange={(e) => setEditForm({ ...editForm, lat: Number(e.target.value) })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      placeholder="e.g., 42.6629"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Longitude
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={editForm.lng}
+                      onChange={(e) => setEditForm({ ...editForm, lng: Number(e.target.value) })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      placeholder="e.g., 21.1655"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Social Media */}
+              <div className="space-y-4 border-t pt-6">
+                <h4 className="text-lg font-semibold text-gray-900">Social Media</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Facebook URL
+                    </label>
+                    <input
+                      type="url"
+                      value={editForm.facebookUrl}
+                      onChange={(e) => setEditForm({ ...editForm, facebookUrl: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      placeholder="https://facebook.com/..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Instagram URL
+                    </label>
+                    <input
+                      type="url"
+                      value={editForm.instagramUrl}
+                      onChange={(e) => setEditForm({ ...editForm, instagramUrl: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      placeholder="https://instagram.com/..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      LinkedIn URL
+                    </label>
+                    <input
+                      type="url"
+                      value={editForm.linkedinUrl}
+                      onChange={(e) => setEditForm({ ...editForm, linkedinUrl: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      placeholder="https://linkedin.com/..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Twitter URL
+                    </label>
+                    <input
+                      type="url"
+                      value={editForm.twitterUrl}
+                      onChange={(e) => setEditForm({ ...editForm, twitterUrl: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      placeholder="https://twitter.com/..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Specialties & Certifications */}
+              <div className="space-y-4 border-t pt-6">
+                <h4 className="text-lg font-semibold text-gray-900">Specialties & Certifications</h4>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Specialties (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.specialties.join(', ')}
+                    onChange={(e) => setEditForm({
+                      ...editForm,
+                      specialties: e.target.value.split(',').map(s => s.trim()).filter(s => s)
+                    })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder="Residential, Commercial, Luxury Properties"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Certifications (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.certifications.join(', ')}
+                    onChange={(e) => setEditForm({
+                      ...editForm,
+                      certifications: e.target.value.split(',').map(s => s.trim()).filter(s => s)
+                    })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder="Licensed Real Estate Agency, ISO Certified"
+                  />
+                </div>
+              </div>
+
+              {/* Business Hours */}
+              <div className="space-y-4 border-t pt-6">
+                <h4 className="text-lg font-semibold text-gray-900">Business Hours</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
+                    <div key={day}>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
+                        {day}
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.businessHours[day as keyof typeof editForm.businessHours]}
+                        onChange={(e) => setEditForm({
+                          ...editForm,
+                          businessHours: { ...editForm.businessHours, [day]: e.target.value }
+                        })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                        placeholder="9:00 AM - 6:00 PM"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-6 border-t sticky bottom-0 bg-white">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark font-medium transition-colors"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

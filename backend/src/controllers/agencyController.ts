@@ -419,9 +419,13 @@ export const updateAgency = async (
       return;
     }
 
-    // Check ownership
-    if (agency.ownerId.toString() !== String((req.user as IUser)._id)) {
-      res.status(403).json({ message: 'Not authorized to update this agency' });
+    // Check if user is owner or admin
+    const userId = String((req.user as IUser)._id);
+    const isOwner = agency.ownerId.toString() === userId;
+    const isAdmin = agency.admins && agency.admins.some(adminId => adminId.toString() === userId);
+
+    if (!isOwner && !isAdmin) {
+      res.status(403).json({ message: 'Not authorized to update this agency. Only the owner or agency admins can edit.' });
       return;
     }
 
