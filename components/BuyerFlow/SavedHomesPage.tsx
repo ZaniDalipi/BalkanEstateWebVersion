@@ -135,7 +135,7 @@ const SavedHomesPage: React.FC = () => {
           onClose={() => setComparisonModalOpen(false)}
           properties={selectedForComparison}
       />
-      <main className={`py-8 flex-grow ${comparisonList.length > 0 ? 'pb-20' : ''}`}>
+      <main className={`py-8 flex-grow ${comparisonList.length > 0 ? 'pb-44' : 'pb-8'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-neutral-900">Saved Properties</h1>
@@ -155,7 +155,7 @@ const SavedHomesPage: React.FC = () => {
           />
       )}
 
-      {/* Footer */}
+      {/* Footer - Always visible, pushed above comparison bar */}
       <Footer />
     </div>
   );
