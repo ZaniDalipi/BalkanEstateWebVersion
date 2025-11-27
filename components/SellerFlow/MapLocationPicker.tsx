@@ -31,6 +31,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
   const [searchResults, setSearchResults] = useState<NominatimResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [mapType, setMapType] = useState<'street' | 'satellite'>('street');
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const streetLayerRef = useRef<L.TileLayer | null>(null);
   const satelliteLayerRef = useRef<L.TileLayer | null>(null);
@@ -63,25 +64,6 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
     streetLayer.addTo(map);
     streetLayerRef.current = streetLayer;
     satelliteLayerRef.current = satelliteLayer;
-
-    // Switch to satellite view when zoomed in close (zoom level 18+)
-    map.on('zoomend', () => {
-      const currentZoom = map.getZoom();
-
-      if (currentZoom >= 18) {
-        // Switch to satellite view at maximum zoom
-        if (map.hasLayer(streetLayer)) {
-          map.removeLayer(streetLayer);
-          map.addLayer(satelliteLayer);
-        }
-      } else {
-        // Switch back to street view at lower zoom levels
-        if (map.hasLayer(satelliteLayer)) {
-          map.removeLayer(satelliteLayer);
-          map.addLayer(streetLayer);
-        }
-      }
-    });
 
     // Add draggable marker
     const marker = L.marker([lat, lng], {
@@ -301,6 +283,25 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
     setSearchResults([]);
   };
 
+  // Handle map type toggle (street/satellite)
+  const handleMapTypeToggle = (newMapType: 'street' | 'satellite') => {
+    setMapType(newMapType);
+
+    if (mapRef.current && streetLayerRef.current && satelliteLayerRef.current) {
+      if (newMapType === 'satellite') {
+        if (mapRef.current.hasLayer(streetLayerRef.current)) {
+          mapRef.current.removeLayer(streetLayerRef.current);
+        }
+        mapRef.current.addLayer(satelliteLayerRef.current);
+      } else {
+        if (mapRef.current.hasLayer(satelliteLayerRef.current)) {
+          mapRef.current.removeLayer(satelliteLayerRef.current);
+        }
+        mapRef.current.addLayer(streetLayerRef.current);
+      }
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -351,11 +352,37 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
       </div>
 
       {/* Map */}
-      <div
-        ref={mapContainerRef}
-        className="w-full h-96 rounded-lg border-2 border-neutral-300 shadow-sm"
-        style={{ zIndex: 0 }}
-      />
+      <div className="relative">
+        <div
+          ref={mapContainerRef}
+          className="w-full h-96 rounded-lg border-2 border-neutral-300 shadow-sm"
+          style={{ zIndex: 0 }}
+        />
+
+        {/* Map type toggle buttons */}
+        <div className="absolute top-3 right-3 z-[999] bg-white rounded-lg shadow-md border border-neutral-200 flex p-1 gap-1">
+          <button
+            onClick={() => handleMapTypeToggle('street')}
+            className={`px-3 py-1.5 rounded text-xs font-semibold transition-all ${
+              mapType === 'street'
+                ? 'bg-primary text-white shadow'
+                : 'text-neutral-600 hover:bg-neutral-100'
+            }`}
+          >
+            Street
+          </button>
+          <button
+            onClick={() => handleMapTypeToggle('satellite')}
+            className={`px-3 py-1.5 rounded text-xs font-semibold transition-all ${
+              mapType === 'satellite'
+                ? 'bg-primary text-white shadow'
+                : 'text-neutral-600 hover:bg-neutral-100'
+            }`}
+          >
+            Satellite
+          </button>
+        </div>
+      </div>
 
       {/* Instructions */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
