@@ -103,7 +103,7 @@ const PRODUCTS = [
       'Custom branding options',
       'Advanced reporting',
     ],
-    targetRole: 'agent' as const,
+    targetRole: 'seller' as const,
     displayOrder: 3,
     highlighted: false,
     cardStyle: {

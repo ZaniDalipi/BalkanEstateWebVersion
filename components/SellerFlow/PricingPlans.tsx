@@ -496,6 +496,10 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
           onClose={() => {
             setShowPaymentWindow(false);
             setSelectedPlan(null);
+            // If in agency mode, also close the pricing modal when payment is cancelled
+            if (isAgencyMode || state.pendingAgencyData) {
+              onClose();
+            }
           }}
           planName={selectedPlan.name}
           planPrice={selectedPlan.price}
