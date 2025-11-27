@@ -274,7 +274,11 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
             </div>
 
             {/* Plan Summary */}
-            <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-xl p-6 border border-neutral-200">
+            <div className={`rounded-xl p-6 border ${
+              finalPrice === 0 || finalPrice < 0.01
+                ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200'
+                : 'bg-gradient-to-br from-neutral-50 to-neutral-100 border-neutral-200'
+            }`}>
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-lg font-bold text-neutral-800">{planName}</h3>
@@ -284,8 +288,14 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
                   {(discountPercent > 0 || codeValidation?.valid) && (
                     <>
                       <p className="text-sm text-neutral-400 line-through">€{planPrice.toFixed(2)}</p>
-                      <p className="text-2xl font-bold text-primary">€{finalPrice.toFixed(2)}</p>
-                      <p className="text-xs text-green-600 font-semibold">Save €{savings.toFixed(2)}</p>
+                      <p className={`text-2xl font-bold ${
+                        finalPrice === 0 || finalPrice < 0.01 ? 'text-green-600' : 'text-primary'
+                      }`}>
+                        {finalPrice === 0 || finalPrice < 0.01 ? 'FREE' : `€${finalPrice.toFixed(2)}`}
+                      </p>
+                      <p className="text-xs text-green-600 font-semibold">
+                        {finalPrice === 0 || finalPrice < 0.01 ? '100% OFF!' : `Save €${savings.toFixed(2)}`}
+                      </p>
                     </>
                   )}
                   {discountPercent === 0 && !codeValidation?.valid && (
@@ -356,32 +366,52 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
             </div>
 
             {/* Security Notice */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
-              <LockClosedIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-blue-900 mb-1">Secure External Payment</p>
-                <p className="text-xs text-blue-700 leading-relaxed">
-                  You'll be redirected to our secure payment partner (Stripe) to complete your purchase.
-                  We never store your card details - they're handled entirely by our certified payment processor.
-                </p>
+            {finalPrice === 0 || finalPrice < 0.01 ? (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex gap-3">
+                <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-green-900 mb-1">Free Subscription Activated</p>
+                  <p className="text-xs text-green-700 leading-relaxed">
+                    Your discount code provides 100% off! Click the button below to activate your free subscription immediately. No payment required.
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
+                <LockClosedIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-blue-900 mb-1">Secure External Payment</p>
+                  <p className="text-xs text-blue-700 leading-relaxed">
+                    You'll be redirected to our secure payment partner (Stripe) to complete your purchase.
+                    We never store your card details - they're handled entirely by our certified payment processor.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Payment Button */}
             <button
               onClick={handlePayment}
               disabled={isProcessing}
-              className="w-full bg-gradient-to-r from-primary to-primary-dark text-white py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+              className={`w-full py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 ${
+                finalPrice === 0 || finalPrice < 0.01
+                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
+                  : 'bg-gradient-to-r from-primary to-primary-dark text-white'
+              }`}
             >
               {isProcessing ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                  <span>Redirecting to payment...</span>
+                  <span>{finalPrice === 0 || finalPrice < 0.01 ? 'Activating free subscription...' : 'Redirecting to payment...'}</span>
                 </>
               ) : (
                 <>
-                  <span>Continue to Payment</span>
-                  <ArrowTopRightOnSquareIcon className="w-5 h-5" />
+                  <span>{finalPrice === 0 || finalPrice < 0.01 ? 'Activate Free Subscription' : 'Continue to Payment'}</span>
+                  {finalPrice === 0 || finalPrice < 0.01 ? (
+                    <CheckCircleIcon className="w-5 h-5" />
+                  ) : (
+                    <ArrowTopRightOnSquareIcon className="w-5 h-5" />
+                  )}
                 </>
               )}
             </button>

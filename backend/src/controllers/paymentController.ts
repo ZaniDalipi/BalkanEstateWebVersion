@@ -635,13 +635,7 @@ export const applyFreeSubscription = async (req: Request, res: Response): Promis
       return;
     }
 
-    // Verify this is a 100% off discount
-    if (discount.discountType !== 'percentage' || discount.discountValue !== 100) {
-      res.status(400).json({ message: 'This discount code is not a 100% off coupon' });
-      return;
-    }
-
-    // Find or create product
+    // Find or create product (need to check price for fixed discounts)
     let product = await Product.findOne({ productId });
 
     if (!product) {
@@ -655,6 +649,18 @@ export const applyFreeSubscription = async (req: Request, res: Response): Promis
         billingPeriod: planInterval === 'year' ? 'yearly' : 'monthly',
         isActive: true,
       });
+    }
+
+    // Verify this is a free discount (100% off or fixed amount >= price)
+    const isFreeDiscount =
+      (discount.discountType === 'percentage' && discount.discountValue === 100) ||
+      (discount.discountType === 'fixed' && discount.discountValue >= product.price);
+
+    if (!isFreeDiscount) {
+      res.status(400).json({
+        message: 'This discount code does not provide a free subscription. Only 100% off or fixed discounts equal to the price are accepted.'
+      });
+      return;
     }
 
     // Process the subscription payment with 0 amount
