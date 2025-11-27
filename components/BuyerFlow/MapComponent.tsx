@@ -571,17 +571,18 @@ const MapComponent: React.FC<MapComponentProps> = ({ properties, onMapMove, user
   };
 
   return (
-    <div className="w-full h-full relative">
-      <MapContainer 
-        center={center} 
-        zoom={zoom} 
-        scrollWheelZoom={true} 
-        className="w-full h-full" 
-        maxZoom={18} 
-        minZoom={7} 
+    <div className="w-full h-full relative overflow-hidden">
+      <MapContainer
+        center={center}
+        zoom={zoom}
+        scrollWheelZoom={true}
+        className="w-full h-full"
+        maxZoom={18}
+        minZoom={7}
         zoomControl={false}
         maxBounds={BALKAN_BOUNDS}
         maxBoundsViscosity={1.0}
+        dragging={true}
       >
         <FlyToController target={flyToTarget} onComplete={onFlyComplete} />
         <MapEvents onMove={onMapMove} mapBounds={mapBounds} searchMode={searchMode} />
