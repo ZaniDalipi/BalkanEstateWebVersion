@@ -231,9 +231,15 @@ async function seedAgencies() {
           });
         }
 
+        // Generate unique invitation code for each agency
+        const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const nameCode = agencyData.name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 6).toUpperCase();
+        const invitationCode = `AGY-${nameCode}-${randomCode}`;
+
         return {
           ...agencyData,
           ownerId: owner._id,
+          invitationCode, // Add unique invitation code
           agents: [], // Will be populated when agents join
         };
       })
