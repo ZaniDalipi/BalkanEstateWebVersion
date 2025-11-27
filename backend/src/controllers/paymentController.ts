@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import User from '../models/User';
 import Product from '../models/Product';
 import Subscription from '../models/Subscription';
+import DiscountCode from '../models/DiscountCode';
 import { processSubscriptionPayment } from '../services/subscriptionPaymentService';
 
 // Initialize Stripe with your secret key
@@ -611,9 +612,6 @@ export const applyFreeSubscription = async (req: Request, res: Response): Promis
       res.status(400).json({ message: 'Discount code is required for free subscriptions' });
       return;
     }
-
-    // Import DiscountCode model dynamically
-    const DiscountCode = require('../models/DiscountCode').default;
 
     const discount = await DiscountCode.findOne({
       code: discountCode.toUpperCase(),
