@@ -1048,15 +1048,25 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                         {/* Show interactive map when city is selected */}
                         {selectedCity && listingData.lat !== 0 && listingData.lng !== 0 && (
                             <div className="md:col-span-2">
-                                <MapLocationPicker
-                                    lat={listingData.lat}
-                                    lng={listingData.lng}
-                                    address={listingData.streetAddress || `${selectedCity}, ${selectedCountry}`}
-                                    zoom={getZoomLevel}
-                                    country={selectedCountry}
-                                    onLocationChange={handleMapLocationChange}
-                                    onAddressChange={handleMapAddressChange}
-                                />
+                                {(() => {
+                                  // Get city coordinates for filtering
+                                  const countryData = BALKAN_LOCATIONS.find(c => c.name === selectedCountry);
+                                  const cityData = countryData?.cities.find(c => c.name === selectedCity);
+                                  return (
+                                    <MapLocationPicker
+                                      lat={listingData.lat}
+                                      lng={listingData.lng}
+                                      address={listingData.streetAddress || `${selectedCity}, ${selectedCountry}`}
+                                      zoom={getZoomLevel}
+                                      country={selectedCountry}
+                                      city={selectedCity}
+                                      cityLat={cityData?.lat}
+                                      cityLng={cityData?.lng}
+                                      onLocationChange={handleMapLocationChange}
+                                      onAddressChange={handleMapAddressChange}
+                                    />
+                                  );
+                                })()}
                             </div>
                         )}
 

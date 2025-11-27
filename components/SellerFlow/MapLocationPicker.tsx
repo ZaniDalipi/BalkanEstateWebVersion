@@ -18,11 +18,14 @@ interface MapLocationPickerProps {
   address: string;
   zoom?: number;
   country?: string;
+  city?: string;
+  cityLat?: number;
+  cityLng?: number;
   onLocationChange: (lat: number, lng: number) => void;
   onAddressChange?: (address: string) => void;
 }
 
-const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address, zoom = 15, country, onLocationChange, onAddressChange }) => {
+const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address, zoom = 15, country, city, cityLat, cityLng, onLocationChange, onAddressChange }) => {
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -35,6 +38,18 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const streetLayerRef = useRef<L.TileLayer | null>(null);
   const satelliteLayerRef = useRef<L.TileLayer | null>(null);
+
+  // Calculate distance between two coordinates in kilometers
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
@@ -235,7 +250,18 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
           'Greece': 'GR',
         };
         const countryCode = country ? countryCodeMap[country] : undefined;
-        const results = await searchLocation(query, countryCode);
+        let results = await searchLocation(query, countryCode);
+
+        // If city is selected, filter results to only show locations within ~30km of the city center
+        if (city && cityLat && cityLng) {
+          results = results.filter(result => {
+            const resultLat = parseFloat(result.lat);
+            const resultLng = parseFloat(result.lon);
+            const distance = calculateDistance(cityLat, cityLng, resultLat, resultLng);
+            return distance <= 30; // Only show results within 30km of city center
+          });
+        }
+
         setSearchResults(results.slice(0, 8)); // Show top 8 results
       } catch (error) {
         console.error('Search error:', error);
@@ -250,6 +276,15 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
   const handleResultSelect = (result: NominatimResult) => {
     const newLat = parseFloat(result.lat);
     const newLng = parseFloat(result.lon);
+
+    // If city is selected, validate that the location is within the city area
+    if (city && cityLat && cityLng) {
+      const distance = calculateDistance(cityLat, cityLng, newLat, newLng);
+      if (distance > 30) {
+        alert(`This location is ${distance.toFixed(1)}km away from ${city}. Please select a location within ${city} or nearby areas.`);
+        return;
+      }
+    }
 
     // Update marker and map
     onLocationChange(newLat, newLng);
