@@ -67,26 +67,8 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
     }
   }, [isOpen, isOffer, onClose]);
 
-  // Auto-select Enterprise and show payment when modal opens with pending agency data
-  useEffect(() => {
-    if (isOpen && state.pendingAgencyData && !selectedPlan && products.length > 0) {
-      const enterpriseProduct = products.find(p => p.productId === 'seller_enterprise_yearly');
-      const enterprisePrice = enterpriseProduct?.price || 1000;
-      const enterpriseDiscount = isOffer && activeDiscount ? activeDiscount.enterprise : 0;
-
-      // Auto-select Enterprise plan
-      setSelectedPlan({
-        name: 'Enterprise',
-        price: enterprisePrice,
-        interval: 'year',
-        discount: enterpriseDiscount,
-        productId: enterpriseProduct?.productId || 'seller_enterprise_yearly',
-      });
-
-      // Show payment window
-      setShowPaymentWindow(true);
-    }
-  }, [isOpen, state.pendingAgencyData, selectedPlan, products, isOffer, activeDiscount]);
+  // Remove auto-show payment - now user must click "Continue" button first
+  // useEffect removed - we'll show the enterprise plan first, then payment on button click
 
   // Reset state when modal closes
   useEffect(() => {
@@ -98,11 +80,21 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
   }, [isOpen]);
 
   const handleCloseAttempt = () => {
-    if (isOffer) {
+    // Show confirmation for offers OR when there's pending agency data
+    if (isOffer || state.pendingAgencyData) {
       setShowConfirmation(true);
     } else {
       onClose();
     }
+  };
+
+  const handleConfirmExit = () => {
+    // Clear pending agency data if user exits
+    if (state.pendingAgencyData) {
+      dispatch({ type: 'SET_PENDING_AGENCY_DATA', payload: null });
+    }
+    setShowConfirmation(false);
+    onClose();
   };
 
   const formatTime = (seconds: number) => {
@@ -269,11 +261,20 @@ const PricingPlans: React.FC<PricingPlansProps> = ({ isOpen, onClose, onSubscrib
             )}
             {showConfirmation && (
                 <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-10 flex flex-col justify-center items-center p-8 text-center rounded-2xl">
-                    <h3 className="text-2xl font-bold text-red-600">Are you sure?</h3>
-                    <p className="mt-2 text-neutral-700 max-w-sm text-sm sm:text-base">This is a one-time offer. If you leave now, you won't see these amazing discounts again.</p>
+                    <h3 className="text-2xl font-bold text-red-600">Are you sure you want to exit?</h3>
+                    <p className="mt-2 text-neutral-700 max-w-sm text-sm sm:text-base">
+                      {state.pendingAgencyData
+                        ? "If you exit now, all agency information you entered will be lost and you'll need to start over."
+                        : "This is a one-time offer. If you leave now, you won't see these amazing discounts again."
+                      }
+                    </p>
                     <div className="mt-6 flex gap-4">
-                        <button onClick={onClose} className="px-8 py-2.5 border border-red-600 text-red-600 font-semibold rounded-lg hover:bg-red-50 transition-colors">Leave Offer</button>
-                        <button onClick={() => setShowConfirmation(false)} className="px-8 py-2.5 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition-colors">Stay & Save!</button>
+                        <button onClick={handleConfirmExit} className="px-8 py-2.5 border border-red-600 text-red-600 font-semibold rounded-lg hover:bg-red-50 transition-colors">
+                          Yes, Leave
+                        </button>
+                        <button onClick={() => setShowConfirmation(false)} className="px-8 py-2.5 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition-colors">
+                          {state.pendingAgencyData ? "Continue Setup" : "Stay & Save!"}
+                        </button>
                     </div>
                 </div>
             )}

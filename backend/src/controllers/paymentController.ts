@@ -584,3 +584,112 @@ export const verifySession = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ message: 'Error verifying session', error: error.message });
   }
 };
+
+/**
+ * @desc    Apply free subscription with 100% off coupon
+ * @route   POST /api/payment/apply-free-subscription
+ * @access  Private
+ */
+export const applyFreeSubscription = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { planName, planInterval, productId, discountCode } = req.body;
+    const userId = (req as any).user?._id;
+
+    if (!userId) {
+      res.status(401).json({ message: 'User not authenticated' });
+      return;
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Verify discount code is valid and provides 100% off
+    if (!discountCode) {
+      res.status(400).json({ message: 'Discount code is required for free subscriptions' });
+      return;
+    }
+
+    // Import DiscountCode model dynamically
+    const DiscountCode = require('../models/DiscountCode').default;
+
+    const discount = await DiscountCode.findOne({
+      code: discountCode.toUpperCase(),
+      isActive: true,
+    });
+
+    if (!discount) {
+      res.status(400).json({ message: 'Invalid or inactive discount code' });
+      return;
+    }
+
+    // Check if discount is expired
+    if (discount.validUntil && new Date(discount.validUntil) < new Date()) {
+      res.status(400).json({ message: 'Discount code has expired' });
+      return;
+    }
+
+    // Check usage limit
+    if (discount.usageLimit && discount.usedCount >= discount.usageLimit) {
+      res.status(400).json({ message: 'Discount code has reached maximum usage limit' });
+      return;
+    }
+
+    // Verify this is a 100% off discount
+    if (discount.discountType !== 'percentage' || discount.discountValue !== 100) {
+      res.status(400).json({ message: 'This discount code is not a 100% off coupon' });
+      return;
+    }
+
+    // Find or create product
+    let product = await Product.findOne({ productId });
+
+    if (!product) {
+      // Create a default product
+      product = await Product.create({
+        productId: productId || 'default',
+        name: planName || 'Subscription',
+        description: `${planName} subscription`,
+        price: 0, // Free with 100% off
+        currency: 'EUR',
+        billingPeriod: planInterval === 'year' ? 'yearly' : 'monthly',
+        isActive: true,
+      });
+    }
+
+    // Process the subscription payment with 0 amount
+    const result = await processSubscriptionPayment({
+      userId,
+      productId: productId || 'default',
+      store: 'web',
+      amount: 0,
+      currency: 'EUR',
+    });
+
+    // Increment discount code usage
+    discount.usedCount = (discount.usedCount || 0) + 1;
+    await discount.save();
+
+    console.log(`✅ Free subscription activated for user ${user.email} with coupon ${discountCode}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Free subscription activated successfully',
+      subscriptionId: result.subscription._id.toString(),
+      subscription: {
+        id: result.subscription._id,
+        plan: productId,
+        productName: product.name,
+        source: 'web',
+        couponCode: discountCode,
+        expiresAt: result.subscription.expirationDate,
+        status: result.subscription.status,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error applying free subscription:', error);
+    res.status(500).json({ message: 'Error applying free subscription', error: error.message });
+  }
+};

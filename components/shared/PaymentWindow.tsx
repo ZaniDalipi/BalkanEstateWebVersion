@@ -154,6 +154,37 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
         throw new Error('Please log in to complete your purchase');
       }
 
+      // Check if this is a 100% off coupon (free subscription)
+      if (finalPrice === 0 || finalPrice < 0.01) {
+        // Handle free subscription with 100% off coupon
+        const response = await fetch('http://localhost:5001/api/payment/apply-free-subscription', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            planName,
+            planInterval,
+            productId: productId,
+            discountCode: appliedDiscountCode,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to apply free subscription');
+        }
+
+        // Success! Call the success handler with a special ID for free subscriptions
+        setShowSuccess(true);
+        setTimeout(() => {
+          onSuccess(data.subscriptionId || 'free_subscription_' + Date.now());
+        }, 1000);
+        return;
+      }
+
       // Determine product ID if not provided
       let finalProductId = productId;
       if (!finalProductId) {
