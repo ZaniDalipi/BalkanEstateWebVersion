@@ -596,7 +596,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             {/* Main Content Wrapper */}
             <div className={`flex h-full w-full flex-col md:flex-row transition-all duration-300 relative ${isMobile && isFiltersOpen ? 'blur-sm pointer-events-none' : ''}`}>
                 {/* --- Left Panel: List & Filters --- */}
-                 <div className={`absolute inset-0 z-10 h-full w-full bg-white md:relative md:w-3/5 md:flex-shrink-0 md:border-r md:border-neutral-200 md:flex md:flex-col ${ isMobile && mobileView === 'list' ? 'translate-x-0' : 'translate-x-full md:translate-x-0' } transition-transform duration-300`}>
+                 <div className={`absolute inset-0 z-10 h-full w-full bg-white md:relative md:w-2/5 md:flex-shrink-0 md:border-r md:border-neutral-200 md:flex md:flex-col ${ isMobile && mobileView === 'list' ? 'translate-x-0' : 'translate-x-full md:translate-x-0' } transition-transform duration-300`}>
                     <div className="hidden md:block p-3 border-b border-neutral-200 flex-shrink-0">
                         <h2 className="text-base font-semibold text-neutral-800 mb-3">Properties for Sale</h2>
                         <div className="flex gap-2 items-start">
@@ -620,7 +620,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
 
 
                 {/* --- Right Panel: Map --- */}
-                <div className="h-full w-full md:w-2/5 relative z-0 flex flex-col">
+                <div className="h-full w-full md:w-3/5 relative z-0 flex flex-col">
                     <div className="flex-grow relative">
                         <MapComponent {...mapProps} searchMode={searchMode} />
                     </div>
