@@ -59,7 +59,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       generatedAgentId = `AG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     }
 
-    // Create user
+    // Create user with initialized stats
     const user = await User.create({
       email,
       password,
@@ -70,6 +70,14 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       agencyName: agencyName,
       agencyId: agencyId,
       agentId: generatedAgentId,
+      stats: {
+        totalViews: 0,
+        totalSaves: 0,
+        totalInquiries: 0,
+        propertiesSold: 0,
+        totalSalesValue: 0,
+        lastUpdated: new Date()
+      }
     });
 
     // If agent, create Agent record and add to agency

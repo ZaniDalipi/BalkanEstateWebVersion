@@ -49,7 +49,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             return done(null, existingUser);
           }
 
-          // Create new user
+          // Create new user with initialized stats
           user = await User.create({
             email: profile.emails?.[0]?.value,
             name: profile.displayName || profile.name?.givenName || 'User',
@@ -58,6 +58,14 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             isEmailVerified: true,
             avatarUrl: profile.photos?.[0]?.value,
             role: 'buyer',
+            stats: {
+              totalViews: 0,
+              totalSaves: 0,
+              totalInquiries: 0,
+              propertiesSold: 0,
+              totalSalesValue: 0,
+              lastUpdated: new Date()
+            }
           });
 
           done(null, user);
@@ -106,7 +114,7 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
             return done(null, existingUser);
           }
 
-          // Create new user
+          // Create new user with initialized stats
           user = await User.create({
             email: profile.emails?.[0]?.value,
             name: profile.displayName || `${profile.name?.givenName || ''} ${profile.name?.familyName || ''}`.trim() || 'User',
@@ -115,6 +123,14 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
             isEmailVerified: true,
             avatarUrl: profile.photos?.[0]?.value,
             role: 'buyer',
+            stats: {
+              totalViews: 0,
+              totalSaves: 0,
+              totalInquiries: 0,
+              propertiesSold: 0,
+              totalSalesValue: 0,
+              lastUpdated: new Date()
+            }
           });
 
           done(null, user);
@@ -167,7 +183,7 @@ if (
             return done(null, existingUser);
           }
 
-          // Create new user
+          // Create new user with initialized stats
           user = await User.create({
             email: profile.email,
             name: `${profile.name?.firstName || ''} ${profile.name?.lastName || ''}`.trim() || 'User',
@@ -175,6 +191,14 @@ if (
             providerId: profile.id,
             isEmailVerified: true,
             role: 'buyer',
+            stats: {
+              totalViews: 0,
+              totalSaves: 0,
+              totalInquiries: 0,
+              propertiesSold: 0,
+              totalSalesValue: 0,
+              lastUpdated: new Date()
+            }
           });
 
           done(null, user);

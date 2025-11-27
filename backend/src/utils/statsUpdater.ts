@@ -3,6 +3,49 @@ import Property from '../models/Property';
 import Conversation from '../models/Conversation';
 
 /**
+ * Initialize stats object for a user if it doesn't exist
+ */
+export const initializeUserStats = async (userId: string): Promise<void> => {
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      console.error(`User not found: ${userId}`);
+      return;
+    }
+
+    // Check if stats object exists and has all required fields
+    if (!user.stats ||
+        user.stats.totalViews === undefined ||
+        user.stats.totalSaves === undefined ||
+        user.stats.totalInquiries === undefined ||
+        user.stats.propertiesSold === undefined ||
+        user.stats.totalSalesValue === undefined) {
+
+      await User.findByIdAndUpdate(
+        userId,
+        {
+          $set: {
+            stats: {
+              totalViews: user.stats?.totalViews || 0,
+              totalSaves: user.stats?.totalSaves || 0,
+              totalInquiries: user.stats?.totalInquiries || 0,
+              propertiesSold: user.stats?.propertiesSold || 0,
+              totalSalesValue: user.stats?.totalSalesValue || 0,
+              lastUpdated: new Date()
+            }
+          }
+        }
+      );
+
+      console.log(`Stats initialized for user ${userId}`);
+    }
+  } catch (error) {
+    console.error('Error initializing user stats:', error);
+  }
+};
+
+/**
  * Increment property view count for a seller
  */
 export const incrementViewCount = async (sellerId: string, count: number = 1): Promise<void> => {

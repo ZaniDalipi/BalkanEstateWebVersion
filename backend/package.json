@@ -15,6 +15,7 @@
     "cleanup:conversations": "ts-node src/scripts/cleanupConversations.ts",
     "remove:agents": "ts-node src/scripts/removeAllAgents.ts",
     "migrate:agency-owners": "ts-node src/scripts/addOwnersToAgencyMembers.ts",
+    "init:stats": "ts-node src/scripts/initializeAllUserStats.ts",
     "set-admin": "ts-node src/scripts/setAdminRole.ts",
     "test": "jest --detectOpenHandles --forceExit",
     "test:watch": "jest --watch",

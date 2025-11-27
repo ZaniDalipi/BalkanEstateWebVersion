@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import User, { IUser } from '../models/User';
 import Property from '../models/Property';
-import { syncUserStats } from '../utils/statsUpdater';
+import { syncUserStats, initializeUserStats } from '../utils/statsUpdater';
 
 // Get all agents with their statistics
 export const getAllAgents = async (req: Request, res: Response): Promise<void> => {
@@ -69,6 +69,9 @@ export const getUserStats = async (req: Request, res: Response): Promise<void> =
 
     const userId = String((req.user as IUser)._id);
 
+    // Ensure stats are initialized for this user
+    await initializeUserStats(userId);
+
     // Get user with stats
     const user = await User.findById(userId);
     if (!user) {
@@ -109,6 +112,9 @@ export const syncStats = async (req: Request, res: Response): Promise<void> => {
     }
 
     const userId = String((req.user as IUser)._id);
+
+    // Ensure stats are initialized first
+    await initializeUserStats(userId);
 
     // Call the sync function
     await syncUserStats(userId);
