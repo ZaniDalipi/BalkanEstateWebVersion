@@ -361,13 +361,21 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('balkan_estate_token');
+
+      // Filter out empty strings from arrays before submitting
+      const sanitizedForm = {
+        ...editForm,
+        specialties: editForm.specialties.filter(s => s),
+        certifications: editForm.certifications.filter(s => s),
+      };
+
       const response = await fetch(`${API_URL}/agencies/${agencyData._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(sanitizedForm),
       });
 
       if (!response.ok) {
@@ -1264,7 +1272,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
                     value={editForm.specialties.join(', ')}
                     onChange={(e) => setEditForm({
                       ...editForm,
-                      specialties: e.target.value.split(',').map(s => s.trim()).filter(s => s)
+                      specialties: e.target.value.split(',').map(s => s.trim())
                     })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="Residential, Commercial, Luxury Properties"
@@ -1279,7 +1287,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
                     value={editForm.certifications.join(', ')}
                     onChange={(e) => setEditForm({
                       ...editForm,
-                      certifications: e.target.value.split(',').map(s => s.trim()).filter(s => s)
+                      certifications: e.target.value.split(',').map(s => s.trim())
                     })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="Licensed Real Estate Agency, ISO Certified"

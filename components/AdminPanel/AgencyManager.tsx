@@ -190,13 +190,20 @@ const AgencyManager: React.FC = () => {
       const token = localStorage.getItem('balkan_estate_token');
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
+      // Filter out empty strings from arrays before submitting
+      const sanitizedForm = {
+        ...editForm,
+        specialties: editForm.specialties.filter(s => s),
+        certifications: editForm.certifications.filter(s => s),
+      };
+
       const response = await fetch(`${API_URL}/admin/agencies/${editingAgency._id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(sanitizedForm),
       });
 
       if (!response.ok) throw new Error('Failed to update agency');
@@ -907,7 +914,7 @@ const AgencyManager: React.FC = () => {
                   value={editForm.specialties.join(', ')}
                   onChange={(e) => setEditForm({
                     ...editForm,
-                    specialties: e.target.value.split(',').map(s => s.trim()).filter(s => s)
+                    specialties: e.target.value.split(',').map(s => s.trim())
                   })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                   placeholder="Residential, Commercial, Luxury Properties"
@@ -924,7 +931,7 @@ const AgencyManager: React.FC = () => {
                   value={editForm.certifications.join(', ')}
                   onChange={(e) => setEditForm({
                     ...editForm,
-                    certifications: e.target.value.split(',').map(s => s.trim()).filter(s => s)
+                    certifications: e.target.value.split(',').map(s => s.trim())
                   })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                   placeholder="Licensed Real Estate Agency, ISO Certified"
