@@ -7,15 +7,19 @@ import Conversation from '../models/Conversation';
  */
 export const incrementViewCount = async (sellerId: string, count: number = 1): Promise<void> => {
   try {
-    await User.findByIdAndUpdate(
+    const result = await User.findByIdAndUpdate(
       sellerId,
       {
         $inc: { 'stats.totalViews': count },
         $set: { 'stats.lastUpdated': new Date() }
-      }
+      },
+      { new: true }
     );
+    if (process.env.DEBUG_STATS === 'true') {
+      console.log(`📊 View count incremented for seller ${sellerId}: totalViews=${result?.stats?.totalViews}`);
+    }
   } catch (error) {
-    console.error('Error incrementing view count:', error);
+    console.error(`❌ Error incrementing view count for seller ${sellerId}:`, error);
   }
 };
 
@@ -24,15 +28,19 @@ export const incrementViewCount = async (sellerId: string, count: number = 1): P
  */
 export const incrementSaveCount = async (sellerId: string, count: number = 1): Promise<void> => {
   try {
-    await User.findByIdAndUpdate(
+    const result = await User.findByIdAndUpdate(
       sellerId,
       {
         $inc: { 'stats.totalSaves': count },
         $set: { 'stats.lastUpdated': new Date() }
-      }
+      },
+      { new: true }
     );
+    if (process.env.DEBUG_STATS === 'true') {
+      console.log(`❤️ Save count incremented for seller ${sellerId}: totalSaves=${result?.stats?.totalSaves}`);
+    }
   } catch (error) {
-    console.error('Error incrementing save count:', error);
+    console.error(`❌ Error incrementing save count for seller ${sellerId}:`, error);
   }
 };
 
@@ -41,15 +49,19 @@ export const incrementSaveCount = async (sellerId: string, count: number = 1): P
  */
 export const decrementSaveCount = async (sellerId: string, count: number = 1): Promise<void> => {
   try {
-    await User.findByIdAndUpdate(
+    const result = await User.findByIdAndUpdate(
       sellerId,
       {
         $inc: { 'stats.totalSaves': -count },
         $set: { 'stats.lastUpdated': new Date() }
-      }
+      },
+      { new: true }
     );
+    if (process.env.DEBUG_STATS === 'true') {
+      console.log(`💔 Save count decremented for seller ${sellerId}: totalSaves=${result?.stats?.totalSaves}`);
+    }
   } catch (error) {
-    console.error('Error decrementing save count:', error);
+    console.error(`❌ Error decrementing save count for seller ${sellerId}:`, error);
   }
 };
 
@@ -58,15 +70,19 @@ export const decrementSaveCount = async (sellerId: string, count: number = 1): P
  */
 export const incrementInquiryCount = async (sellerId: string, count: number = 1): Promise<void> => {
   try {
-    await User.findByIdAndUpdate(
+    const result = await User.findByIdAndUpdate(
       sellerId,
       {
         $inc: { 'stats.totalInquiries': count },
         $set: { 'stats.lastUpdated': new Date() }
-      }
+      },
+      { new: true }
     );
+    if (process.env.DEBUG_STATS === 'true') {
+      console.log(`💬 Inquiry count incremented for seller ${sellerId}: totalInquiries=${result?.stats?.totalInquiries}`);
+    }
   } catch (error) {
-    console.error('Error incrementing inquiry count:', error);
+    console.error(`❌ Error incrementing inquiry count for seller ${sellerId}:`, error);
   }
 };
 
@@ -75,7 +91,7 @@ export const incrementInquiryCount = async (sellerId: string, count: number = 1)
  */
 export const updateSoldStats = async (sellerId: string, propertyPrice: number): Promise<void> => {
   try {
-    await User.findByIdAndUpdate(
+    const result = await User.findByIdAndUpdate(
       sellerId,
       {
         $inc: {
@@ -83,10 +99,14 @@ export const updateSoldStats = async (sellerId: string, propertyPrice: number): 
           'stats.totalSalesValue': propertyPrice
         },
         $set: { 'stats.lastUpdated': new Date() }
-      }
+      },
+      { new: true }
     );
+    if (process.env.DEBUG_STATS === 'true') {
+      console.log(`🏆 Sold stats updated for seller ${sellerId}: propertiesSold=${result?.stats?.propertiesSold}, totalSalesValue=${result?.stats?.totalSalesValue}`);
+    }
   } catch (error) {
-    console.error('Error updating sold stats:', error);
+    console.error(`❌ Error updating sold stats for seller ${sellerId}:`, error);
   }
 };
 
@@ -126,7 +146,7 @@ export const syncUserStats = async (userId: string): Promise<void> => {
       }
     );
 
-    console.log(`Stats synced for user ${userId}`);
+    console.log(`✅ Stats synced for user ${userId}: Views=${totalViews}, Saves=${totalSaves}, Inquiries=${totalInquiries}, Sold=${propertiesSold}, Revenue=${totalSalesValue}`);
   } catch (error) {
     console.error('Error syncing user stats:', error);
     throw error;

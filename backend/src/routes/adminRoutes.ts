@@ -14,6 +14,7 @@ import {
   deleteProperty,
   getSystemConfig,
   syncAllStatsAdmin,
+  verifyUserStats,
 } from '../controllers/adminController';
 import {
   getAllDiscountCodes,
@@ -33,6 +34,7 @@ router.use(checkAdminRole);
 router.get('/stats', getAdminStats);
 router.get('/config', getSystemConfig);
 router.post('/sync-all-stats', logAdminAction('SYNC_STATS'), syncAllStatsAdmin);
+router.get('/verify-stats/:userId', logAdminAction('VERIFY_STATS'), verifyUserStats);
 
 // ===== User Management =====
 router.get('/users', logAdminAction('VIEW_USERS'), getAllUsers);

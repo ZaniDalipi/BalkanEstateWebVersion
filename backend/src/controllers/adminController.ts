@@ -452,3 +452,70 @@ export const syncAllStatsAdmin = async (req: Request, res: Response): Promise<vo
     res.status(500).json({ message: 'Error syncing statistics', error: error.message });
   }
 };
+
+// @desc    Get detailed stats for a specific user (for debugging)
+// @route   GET /api/admin/verify-stats/:userId
+// @access  Private/Admin
+export const verifyUserStats = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId).select(
+      'name email role stats listingsCount totalListingsCreated'
+    );
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Get property stats
+    const properties = await Property.find({ sellerId: userId }).select(
+      'views saves status price title'
+    );
+
+    const propertyStats = {
+      total: properties.length,
+      active: properties.filter(p => p.status === 'active').length,
+      sold: properties.filter(p => p.status === 'sold').length,
+      totalViews: properties.reduce((sum, p) => sum + (p.views || 0), 0),
+      totalSaves: properties.reduce((sum, p) => sum + (p.saves || 0), 0),
+      totalValue: properties.filter(p => p.status === 'sold').reduce((sum, p) => sum + (p.price || 0), 0),
+    };
+
+    // Get conversation stats
+    const conversationCount = await Property.countDocuments({ sellerId: userId });
+
+    res.json({
+      user: {
+        id: String(user._id),
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        listingsCount: user.listingsCount,
+        totalListingsCreated: user.totalListingsCreated,
+      },
+      storedStats: user.stats || {
+        totalViews: 0,
+        totalSaves: 0,
+        totalInquiries: 0,
+        propertiesSold: 0,
+        totalSalesValue: 0,
+        lastUpdated: null,
+      },
+      calculatedStats: {
+        fromProperties: propertyStats,
+        totalInquiries: conversationCount,
+      },
+      verification: {
+        viewsMatch: user.stats?.totalViews === propertyStats.totalViews,
+        savesMatch: user.stats?.totalSaves === propertyStats.totalSaves,
+        soldMatch: user.stats?.propertiesSold === propertyStats.sold,
+        message: 'Stats verification complete - compare storedStats vs calculatedStats',
+      },
+    });
+  } catch (error: any) {
+    console.error('Error verifying user stats:', error);
+    res.status(500).json({ message: 'Error verifying statistics', error: error.message });
+  }
+};
