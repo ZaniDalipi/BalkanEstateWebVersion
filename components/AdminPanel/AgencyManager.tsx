@@ -29,7 +29,21 @@ interface Agency {
   linkedinUrl?: string;
   twitterUrl?: string;
   yearsInBusiness?: number;
+  specialties?: string[];
+  certifications?: string[];
   isFeatured?: boolean;
+  featuredStartDate?: string;
+  featuredEndDate?: string;
+  adRotationOrder?: number;
+  businessHours?: {
+    monday?: string;
+    tuesday?: string;
+    wednesday?: string;
+    thursday?: string;
+    friday?: string;
+    saturday?: string;
+    sunday?: string;
+  };
   ownerId?: User;
   agents: User[];
   totalAgents: number;
@@ -68,7 +82,21 @@ const AgencyManager: React.FC = () => {
     linkedinUrl: '',
     twitterUrl: '',
     yearsInBusiness: 0,
+    specialties: [] as string[],
+    certifications: [] as string[],
     isFeatured: false,
+    featuredStartDate: '',
+    featuredEndDate: '',
+    adRotationOrder: 0,
+    businessHours: {
+      monday: '',
+      tuesday: '',
+      wednesday: '',
+      thursday: '',
+      friday: '',
+      saturday: '',
+      sunday: '',
+    },
   });
 
   // Pagination
@@ -135,7 +163,21 @@ const AgencyManager: React.FC = () => {
       linkedinUrl: agency.linkedinUrl || '',
       twitterUrl: agency.twitterUrl || '',
       yearsInBusiness: agency.yearsInBusiness || 0,
+      specialties: agency.specialties || [],
+      certifications: agency.certifications || [],
       isFeatured: agency.isFeatured || false,
+      featuredStartDate: agency.featuredStartDate ? agency.featuredStartDate.split('T')[0] : '',
+      featuredEndDate: agency.featuredEndDate ? agency.featuredEndDate.split('T')[0] : '',
+      adRotationOrder: agency.adRotationOrder || 0,
+      businessHours: {
+        monday: agency.businessHours?.monday || '',
+        tuesday: agency.businessHours?.tuesday || '',
+        wednesday: agency.businessHours?.wednesday || '',
+        thursday: agency.businessHours?.thursday || '',
+        friday: agency.businessHours?.friday || '',
+        saturday: agency.businessHours?.saturday || '',
+        sunday: agency.businessHours?.sunday || '',
+      },
     });
     setIsEditModalOpen(true);
   };
@@ -464,6 +506,82 @@ const AgencyManager: React.FC = () => {
                 </div>
               )}
 
+              {/* Specialties & Certifications */}
+              {(viewingAgency.specialties && viewingAgency.specialties.length > 0) ||
+               (viewingAgency.certifications && viewingAgency.certifications.length > 0) ? (
+                <div className="border-t pt-4">
+                  <h5 className="font-semibold text-gray-900 mb-3">Specialties & Certifications</h5>
+                  <div className="grid grid-cols-2 gap-4">
+                    {viewingAgency.specialties && viewingAgency.specialties.length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Specialties</label>
+                        <div className="flex flex-wrap gap-2">
+                          {viewingAgency.specialties.map((specialty, idx) => (
+                            <span key={idx} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                              {specialty}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {viewingAgency.certifications && viewingAgency.certifications.length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Certifications</label>
+                        <div className="flex flex-wrap gap-2">
+                          {viewingAgency.certifications.map((cert, idx) => (
+                            <span key={idx} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                              {cert}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Featured Settings */}
+              {viewingAgency.isFeatured && (
+                <div className="border-t pt-4">
+                  <h5 className="font-semibold text-gray-900 mb-3">Featured Settings</h5>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                      <div className="text-gray-900">
+                        {viewingAgency.featuredStartDate ? formatDate(viewingAgency.featuredStartDate) : '-'}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                      <div className="text-gray-900">
+                        {viewingAgency.featuredEndDate ? formatDate(viewingAgency.featuredEndDate) : '-'}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Rotation Order</label>
+                      <div className="text-gray-900">{viewingAgency.adRotationOrder || 0}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Business Hours */}
+              {viewingAgency.businessHours && Object.values(viewingAgency.businessHours).some(h => h) && (
+                <div className="border-t pt-4">
+                  <h5 className="font-semibold text-gray-900 mb-3">Business Hours</h5>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(viewingAgency.businessHours).map(([day, hours]) => (
+                      hours && (
+                        <div key={day} className="flex justify-between text-sm">
+                          <span className="font-medium text-gray-700 capitalize">{day}:</span>
+                          <span className="text-gray-600">{hours}</span>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Agents List */}
               <div className="border-t pt-4">
                 <h5 className="font-semibold text-gray-900 mb-3">Agents ({viewingAgency.totalAgents})</h5>
@@ -732,6 +850,108 @@ const AgencyManager: React.FC = () => {
                   <label htmlFor="isFeatured" className="ml-2 text-sm text-gray-700">
                     Featured Agency
                   </label>
+                </div>
+              </div>
+
+              {/* Featured Agency Settings */}
+              {editForm.isFeatured && (
+                <div className="border-t pt-4">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Featured Settings</h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Featured Start Date
+                      </label>
+                      <input
+                        type="date"
+                        value={editForm.featuredStartDate}
+                        onChange={(e) => setEditForm({ ...editForm, featuredStartDate: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Featured End Date
+                      </label>
+                      <input
+                        type="date"
+                        value={editForm.featuredEndDate}
+                        onChange={(e) => setEditForm({ ...editForm, featuredEndDate: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Ad Rotation Order
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editForm.adRotationOrder}
+                        onChange={(e) => setEditForm({ ...editForm, adRotationOrder: Number(e.target.value) })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Specialties */}
+              <div className="border-t pt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Specialties (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={editForm.specialties.join(', ')}
+                  onChange={(e) => setEditForm({
+                    ...editForm,
+                    specialties: e.target.value.split(',').map(s => s.trim()).filter(s => s)
+                  })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  placeholder="Residential, Commercial, Luxury Properties"
+                />
+              </div>
+
+              {/* Certifications */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Certifications (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={editForm.certifications.join(', ')}
+                  onChange={(e) => setEditForm({
+                    ...editForm,
+                    certifications: e.target.value.split(',').map(s => s.trim()).filter(s => s)
+                  })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  placeholder="Licensed Real Estate Agency, ISO Certified"
+                />
+              </div>
+
+              {/* Business Hours */}
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Business Hours</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
+                    <div key={day}>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
+                        {day}
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.businessHours[day as keyof typeof editForm.businessHours]}
+                        onChange={(e) => setEditForm({
+                          ...editForm,
+                          businessHours: { ...editForm.businessHours, [day]: e.target.value }
+                        })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        placeholder="9:00 AM - 6:00 PM"
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
 
