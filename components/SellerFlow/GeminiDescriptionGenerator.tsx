@@ -1051,8 +1051,9 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                                 <MapLocationPicker
                                     lat={listingData.lat}
                                     lng={listingData.lng}
-                                    address={`${selectedCity}, ${selectedCountry}`}
+                                    address={listingData.streetAddress || `${selectedCity}, ${selectedCountry}`}
                                     zoom={getZoomLevel}
+                                    country={selectedCountry}
                                     onLocationChange={handleMapLocationChange}
                                     onAddressChange={handleMapAddressChange}
                                 />

@@ -17,11 +17,12 @@ interface MapLocationPickerProps {
   lng: number;
   address: string;
   zoom?: number;
+  country?: string;
   onLocationChange: (lat: number, lng: number) => void;
   onAddressChange?: (address: string) => void;
 }
 
-const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address, zoom = 15, onLocationChange, onAddressChange }) => {
+const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address, zoom = 15, country, onLocationChange, onAddressChange }) => {
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -107,11 +108,8 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
         try {
           const result = await reverseGeocode(position.lat, position.lng);
           if (result) {
-            // Extract the most specific address component available
-            const address = result.address;
-            const locationName = address?.road || address?.street || address?.suburb ||
-                                address?.neighbourhood || result.name ||
-                                result.display_name.split(',')[0].trim();
+            // Use the full display_name to preserve complete location information
+            const locationName = result.display_name;
             onAddressChange(locationName);
           }
         } catch (error) {
@@ -240,7 +238,22 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
     searchTimeoutRef.current = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const results = await searchLocation(query);
+        // Get country code from country name if available
+        const countryCodeMap: { [key: string]: string } = {
+          'Serbia': 'RS',
+          'Kosovo': 'XK',
+          'Albania': 'AL',
+          'North Macedonia': 'MK',
+          'Bosnia and Herzegovina': 'BA',
+          'Montenegro': 'ME',
+          'Croatia': 'HR',
+          'Slovenia': 'SI',
+          'Bulgaria': 'BG',
+          'Romania': 'RO',
+          'Greece': 'GR',
+        };
+        const countryCode = country ? countryCodeMap[country] : undefined;
+        const results = await searchLocation(query, countryCode);
         setSearchResults(results.slice(0, 8)); // Show top 8 results
       } catch (error) {
         console.error('Search error:', error);
@@ -259,9 +272,9 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
     // Update marker and map
     onLocationChange(newLat, newLng);
 
-    // Extract location name (first part of display_name, usually the most specific location)
-    // For example: "Dragash, Gjakova, Kosovo" -> "Dragash"
-    const locationName = result.name || result.display_name.split(',')[0].trim();
+    // Use the full display_name as the address to preserve complete location information
+    // For example: "20, Nazmi Mustafa, Qyteza Pejton, Prishtinë, Komuna e Prishtinës / Opština Priština, Rajoni i Prishtinës / Prištinski okrug, 10000, Kosova / Kosovo"
+    const locationName = result.display_name;
 
     // Update address if callback is provided
     if (onAddressChange) {

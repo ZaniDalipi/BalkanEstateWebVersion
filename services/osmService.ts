@@ -2,12 +2,17 @@ import { NominatimResult } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
-export const searchLocation = async (query: string): Promise<NominatimResult[]> => {
+export const searchLocation = async (query: string, countryCode?: string): Promise<NominatimResult[]> => {
   if (query.trim().length < 3) {
     return [];
   }
 
   const params = new URLSearchParams({ query });
+
+  // If country is specified, add it to the search to restrict results
+  if (countryCode) {
+    params.append('countryCode', countryCode);
+  }
 
   try {
     const response = await fetch(`${API_URL}/geocoding/search?${params.toString()}`);
