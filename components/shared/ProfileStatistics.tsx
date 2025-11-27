@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { User, UserRole } from '../../types';
 import { ChartBarIcon, HomeIcon, EyeIcon, HeartIcon, ChatBubbleBottomCenterTextIcon, CalendarIcon, MapPinIcon } from '../../constants';
+import AnimatedNumber from './AnimatedNumber';
 
 interface ProfileStatisticsProps {
   user: User;
@@ -58,7 +59,9 @@ const StatCard: React.FC<{
   subtext?: string;
   color: string;
   loading?: boolean;
-}> = ({ icon, label, value, subtext, color, loading = false }) => (
+  rawValue?: number;
+  formatter?: (num: number) => string;
+}> = ({ icon, label, value, subtext, color, loading = false, rawValue, formatter }) => (
   <div className={`bg-gradient-to-br ${color} rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow`}>
     <div className="flex items-center justify-between mb-2">
       <div className="text-white/80">{icon}</div>
@@ -70,7 +73,13 @@ const StatCard: React.FC<{
       </div>
     ) : (
       <>
-        <div className="text-3xl font-bold text-white mb-1">{value}</div>
+        <div className="text-3xl font-bold text-white mb-1">
+          {rawValue !== undefined && formatter ? (
+            <AnimatedNumber value={rawValue} formatter={formatter} />
+          ) : (
+            value
+          )}
+        </div>
         <div className="text-sm font-medium text-white/90">{label}</div>
         {subtext && <div className="text-xs text-white/70 mt-1">{subtext}</div>}
       </>
@@ -324,6 +333,8 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
               icon={<EyeIcon className="w-6 h-6" />}
               label="Total Views"
               value={formatNumber(stats.totalViews)}
+              rawValue={stats.totalViews}
+              formatter={formatNumber}
               subtext="Across all listings"
               color="from-purple-500 to-purple-600"
               loading={loading}
@@ -332,6 +343,8 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
               icon={<HeartIcon className="w-6 h-6" />}
               label="Total Saves"
               value={formatNumber(stats.totalSaves)}
+              rawValue={stats.totalSaves}
+              formatter={formatNumber}
               subtext="Properties favorited"
               color="from-pink-500 to-pink-600"
               loading={loading}
@@ -344,6 +357,8 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
               icon={<ChatBubbleBottomCenterTextIcon className="w-6 h-6" />}
               label="Total Inquiries"
               value={formatNumber(stats.totalInquiries)}
+              rawValue={stats.totalInquiries}
+              formatter={formatNumber}
               subtext="Buyer messages received"
               color="from-green-500 to-green-600"
               loading={loading}
@@ -355,6 +370,8 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
                   icon={<HomeIcon className="w-6 h-6" />}
                   label="Properties Sold"
                   value={stats.propertiesSold || 0}
+                  rawValue={stats.propertiesSold || 0}
+                  formatter={formatNumber}
                   subtext="Successful sales"
                   color="from-orange-500 to-orange-600"
                   loading={loading}
@@ -363,6 +380,8 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
                   icon={<ChartBarIcon className="w-6 h-6" />}
                   label="Total Sales Value"
                   value={formatCurrency(stats.totalSalesValue || 0)}
+                  rawValue={stats.totalSalesValue || 0}
+                  formatter={formatCurrency}
                   subtext="Lifetime revenue"
                   color="from-teal-500 to-teal-600"
                   loading={loading}
