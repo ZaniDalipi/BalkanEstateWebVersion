@@ -1,5 +1,5 @@
 import User from '../models/User';
-import { syncUserStats, syncAllSellerStats } from '../utils/statsUpdater';
+import { syncUserStats } from '../utils/statsUpdater';
 
 /**
  * Statistics reconciliation worker
