@@ -165,7 +165,7 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
         console.log('🎁 Processing free subscription with discount code:', appliedDiscountCode);
 
         // Handle free subscription with 100% off coupon
-        const response = await fetch('http://localhost:5001/api/payment/apply-free-subscription', {
+        const response = await fetch('http://localhost:5001/api/payments/apply-free-subscription', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -224,7 +224,7 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
       console.log('Amount:', finalPrice);
 
       // Create checkout session with backend
-      const response = await fetch('http://localhost:5001/api/payment/create-checkout-session', {
+      const response = await fetch('http://localhost:5001/api/payments/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

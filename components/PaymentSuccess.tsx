@@ -37,7 +37,7 @@ const PaymentSuccess: React.FC = () => {
         throw new Error('Please log in to verify your payment');
       }
 
-      const response = await fetch(`http://localhost:5001/api/payment/verify-session/${sessionId}`, {
+      const response = await fetch(`http://localhost:5001/api/payments/verify-session/${sessionId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
