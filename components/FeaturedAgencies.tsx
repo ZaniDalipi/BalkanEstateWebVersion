@@ -31,11 +31,11 @@ const FeaturedAgencies: React.FC<FeaturedAgenciesProps> = ({ limit = 3 }) => {
   }
 
   return (
-    <div className="bg-gradient-to-r from-primary to-primary-dark py-12 px-4">
+    <div className="bg-gradient-to-r from-primary to-primary-dark py-8 md:py-12 px-4">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-white mb-2">Featured Real Estate Agencies</h2>
-          <p className="text-white/90">Premium agencies trusted by thousands of clients</p>
+        <div className="text-center mb-6 md:mb-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Featured Real Estate Agencies</h2>
+          <p className="text-white/90 text-sm md:text-base">Premium agencies trusted by thousands of clients</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -46,7 +46,7 @@ const FeaturedAgencies: React.FC<FeaturedAgenciesProps> = ({ limit = 3 }) => {
             >
               {/* Agency Logo/Cover */}
               {agency.coverImage || agency.logo ? (
-                <div className="h-48 bg-neutral-200 relative overflow-hidden">
+                <div className="h-40 md:h-48 bg-neutral-200 relative overflow-hidden">
                   <img
                     src={agency.coverImage || agency.logo}
                     alt={agency.name}
@@ -54,30 +54,30 @@ const FeaturedAgencies: React.FC<FeaturedAgenciesProps> = ({ limit = 3 }) => {
                   />
                 </div>
               ) : (
-                <div className="h-48 bg-gradient-to-br from-primary/20 to-primary-dark/20 flex items-center justify-center">
-                  <BuildingOfficeIcon className="w-24 h-24 text-primary/40" />
+                <div className="h-40 md:h-48 bg-gradient-to-br from-primary/20 to-primary-dark/20 flex items-center justify-center">
+                  <BuildingOfficeIcon className="w-16 h-16 md:w-24 md:h-24 text-primary/40" />
                 </div>
               )}
 
               {/* Agency Info */}
-              <div className="p-6">
-                <div className="flex items-center gap-3 mb-3">
+              <div className="p-4 md:p-6">
+                <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
                   {agency.logo && !agency.coverImage && (
                     <img
                       src={agency.logo}
                       alt={agency.name}
-                      className="w-12 h-12 rounded-full border-2 border-primary"
+                      className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-primary flex-shrink-0"
                     />
                   )}
-                  <h3 className="text-xl font-bold text-neutral-800">{agency.name}</h3>
+                  <h3 className="text-lg md:text-xl font-bold text-neutral-800">{agency.name}</h3>
                 </div>
 
                 {agency.description && (
-                  <p className="text-neutral-600 text-sm line-clamp-2 mb-4">{agency.description}</p>
+                  <p className="text-neutral-600 text-xs md:text-sm line-clamp-2 mb-3 md:mb-4">{agency.description}</p>
                 )}
 
                 {/* Stats */}
-                <div className="flex gap-4 mb-4 text-sm">
+                <div className="flex gap-3 md:gap-4 mb-3 md:mb-4 text-xs md:text-sm">
                   <div>
                     <span className="font-bold text-primary">{agency.totalProperties || 0}</span>
                     <span className="text-neutral-600 ml-1">Properties</span>
@@ -89,21 +89,21 @@ const FeaturedAgencies: React.FC<FeaturedAgenciesProps> = ({ limit = 3 }) => {
                 </div>
 
                 {/* Contact */}
-                <div className="border-t pt-4 space-y-2">
+                <div className="border-t pt-3 md:pt-4 space-y-1 md:space-y-2">
                   {agency.phone && (
-                    <p className="text-sm text-neutral-700">
-                      <span className="font-semibold">Phone:</span> {agency.phone}
+                    <p className="text-xs md:text-sm text-neutral-700">
+                      <span className="font-semibold hidden sm:inline">Phone:</span> {agency.phone}
                     </p>
                   )}
                   {agency.email && (
-                    <p className="text-sm text-neutral-700">
-                      <span className="font-semibold">Email:</span> {agency.email}
+                    <p className="text-xs md:text-sm text-neutral-700">
+                      <span className="font-semibold hidden sm:inline">Email:</span> {agency.email}
                     </p>
                   )}
                 </div>
 
                 {/* View Agency Button */}
-                <button className="mt-4 w-full bg-primary text-white py-2 px-4 rounded-lg font-semibold hover:bg-primary-dark transition-colors flex items-center justify-center gap-2">
+                <button className="mt-3 md:mt-4 w-full bg-primary text-white py-2 px-3 md:px-4 rounded-lg font-semibold text-sm hover:bg-primary-dark transition-colors flex items-center justify-center gap-2">
                   View Agency
                   <ArrowRightIcon className="w-4 h-4" />
                 </button>
