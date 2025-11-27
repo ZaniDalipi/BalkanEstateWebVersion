@@ -87,61 +87,61 @@ const AgencyPage: React.FC<AgencyPageProps> = ({ agencyId }) => {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-6 md:py-8">
         {/* Agency Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 -mt-20 relative z-10">
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 -mt-20 relative z-10">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-6">
             {/* Logo */}
             {agency.logo && (
-              <img src={agency.logo} alt={agency.name} className="w-24 h-24 rounded-full border-4 border-white shadow-lg" />
+              <img src={agency.logo} alt={agency.name} className="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-white shadow-lg flex-shrink-0" />
             )}
 
-            <div className="flex-1 text-center md:text-left">
-              <div className="flex items-center gap-2 justify-center md:justify-start mb-2">
-                <BuildingOfficeIcon className="w-6 h-6 text-primary" />
-                <h1 className="text-3xl font-bold text-neutral-800">{agency.name}</h1>
+            <div className="flex-1 text-center md:text-left w-full md:w-auto">
+              <div className="flex items-center gap-2 justify-center md:justify-start mb-2 flex-wrap">
+                <BuildingOfficeIcon className="w-6 h-6 text-primary flex-shrink-0" />
+                <h1 className="text-2xl md:text-3xl font-bold text-neutral-800">{agency.name}</h1>
               </div>
 
               {agency.description && (
-                <p className="text-neutral-600 mt-2 max-w-3xl">{agency.description}</p>
+                <p className="text-neutral-600 mt-2 max-w-3xl text-sm md:text-base line-clamp-2">{agency.description}</p>
               )}
 
               {/* Contact Info */}
-              <div className="flex flex-wrap gap-4 mt-4 justify-center md:justify-start">
+              <div className="flex flex-wrap gap-3 md:gap-4 mt-4 justify-center md:justify-start text-sm md:text-base">
                 {agency.phone && (
-                  <a href={`tel:${agency.phone}`} className="flex items-center gap-2 text-neutral-700 hover:text-primary">
-                    <PhoneIcon className="w-5 h-5" />
-                    <span>{agency.phone}</span>
+                  <a href={`tel:${agency.phone}`} className="flex items-center gap-1 text-neutral-700 hover:text-primary whitespace-nowrap">
+                    <PhoneIcon className="w-5 h-5 flex-shrink-0" />
+                    <span className="hidden sm:inline">{agency.phone}</span>
                   </a>
                 )}
                 {agency.email && (
-                  <a href={`mailto:${agency.email}`} className="flex items-center gap-2 text-neutral-700 hover:text-primary">
-                    <EnvelopeIcon className="w-5 h-5" />
-                    <span>{agency.email}</span>
+                  <a href={`mailto:${agency.email}`} className="flex items-center gap-1 text-neutral-700 hover:text-primary whitespace-nowrap">
+                    <EnvelopeIcon className="w-5 h-5 flex-shrink-0" />
+                    <span className="hidden sm:inline">{agency.email}</span>
                   </a>
                 )}
                 {agency.website && (
-                  <a href={agency.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-neutral-700 hover:text-primary">
-                    <GlobeAltIcon className="w-5 h-5" />
-                    <span>Visit Website</span>
+                  <a href={agency.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-neutral-700 hover:text-primary whitespace-nowrap">
+                    <GlobeAltIcon className="w-5 h-5 flex-shrink-0" />
+                    <span className="hidden sm:inline">Website</span>
                   </a>
                 )}
               </div>
 
               {/* Stats */}
-              <div className="flex gap-6 mt-6 justify-center md:justify-start">
+              <div className="flex flex-wrap gap-4 md:gap-6 mt-4 md:mt-6 justify-center md:justify-start">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">{agency.totalProperties || 0}</p>
-                  <p className="text-sm text-neutral-600">Properties</p>
+                  <p className="text-xl md:text-2xl font-bold text-primary">{agency.totalProperties || 0}</p>
+                  <p className="text-xs md:text-sm text-neutral-600">Properties</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">{agency.totalAgents || 0}</p>
-                  <p className="text-sm text-neutral-600">Agents</p>
+                  <p className="text-xl md:text-2xl font-bold text-primary">{agency.totalAgents || 0}</p>
+                  <p className="text-xs md:text-sm text-neutral-600">Agents</p>
                 </div>
                 {agency.yearsInBusiness && (
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-primary">{agency.yearsInBusiness}</p>
-                    <p className="text-sm text-neutral-600">Years in Business</p>
+                    <p className="text-xl md:text-2xl font-bold text-primary">{agency.yearsInBusiness}</p>
+                    <p className="text-xs md:text-sm text-neutral-600">Years</p>
                   </div>
                 )}
               </div>

@@ -360,9 +360,9 @@ const AgenciesListPage: React.FC = () => {
                   onClick={() => handleViewAgency(agency)}
                   className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer"
                 >
-                  <div className="flex flex-col lg:flex-row">
+                  <div className="flex flex-col md:flex-row">
                     {/* Logo Section */}
-                    <div className="lg:w-80 h-64 lg:h-auto bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center relative overflow-hidden">
+                    <div className="md:w-64 h-48 md:h-auto bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center relative overflow-hidden flex-shrink-0">
                       {agency.logo ? (
                         <img
                           src={agency.logo}
@@ -391,51 +391,53 @@ const AgenciesListPage: React.FC = () => {
                     </div>
 
                     {/* Content Section */}
-                    <div className="flex-1 p-8">
-                      <h2 className="text-3xl font-semibold text-gray-900 mb-3">{agency.name}</h2>
+                    <div className="flex-1 p-6 md:p-8 flex flex-col justify-between">
+                      <div>
+                        <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-3">{agency.name}</h2>
 
-                      {agency.description && (
-                        <p className="text-gray-600 mb-6 leading-relaxed">{agency.description}</p>
-                      )}
+                        {agency.description && (
+                          <p className="text-gray-600 mb-6 leading-relaxed line-clamp-2">{agency.description}</p>
+                        )}
 
-                      {/* Stats */}
-                      <div className="flex flex-wrap gap-8 mb-6">
-                        <div>
-                          <span className="text-3xl font-bold text-gray-900">{agency.totalProperties}</span>
-                          <span className="text-sm text-gray-500 ml-2">Properties</span>
-                        </div>
-                        <div>
-                          <span className="text-3xl font-bold text-gray-900">{agency.totalAgents}</span>
-                          <span className="text-sm text-gray-500 ml-2">Agents</span>
-                        </div>
-                        {agency.yearsInBusiness && (
+                        {/* Stats */}
+                        <div className="flex flex-wrap gap-6 md:gap-8 mb-6">
                           <div>
-                            <span className="text-3xl font-bold text-gray-900">{agency.yearsInBusiness}</span>
-                            <span className="text-sm text-gray-500 ml-2">Years</span>
+                            <span className="text-2xl md:text-3xl font-bold text-gray-900">{agency.totalProperties}</span>
+                            <span className="text-sm text-gray-500 ml-2">Properties</span>
                           </div>
-                        )}
-                      </div>
-
-                      {/* Contact Info */}
-                      <div className="flex flex-wrap gap-6 text-sm text-gray-600 mb-6">
-                        {agency.city && (
-                          <div className="flex items-center gap-2">
-                            <MapPinIcon className="w-5 h-5 text-gray-400" />
-                            <span>{agency.city}, {agency.country}</span>
+                          <div>
+                            <span className="text-2xl md:text-3xl font-bold text-gray-900">{agency.totalAgents}</span>
+                            <span className="text-sm text-gray-500 ml-2">Agents</span>
                           </div>
-                        )}
-                        <div className="flex items-center gap-2">
-                          <PhoneIcon className="w-5 h-5 text-gray-400" />
-                          <a href={`tel:${agency.phone}`} className="hover:text-gray-900">{agency.phone}</a>
+                          {agency.yearsInBusiness && (
+                            <div>
+                              <span className="text-2xl md:text-3xl font-bold text-gray-900">{agency.yearsInBusiness}</span>
+                              <span className="text-sm text-gray-500 ml-2">Years</span>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <EnvelopeIcon className="w-5 h-5 text-gray-400" />
-                          <a href={`mailto:${agency.email}`} className="hover:text-gray-900">{agency.email}</a>
+
+                        {/* Contact Info */}
+                        <div className="flex flex-wrap gap-4 md:gap-6 text-sm text-gray-600 mb-6">
+                          {agency.city && (
+                            <div className="flex items-center gap-2">
+                              <MapPinIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                              <span>{agency.city}, {agency.country}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <PhoneIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                            <a href={`tel:${agency.phone}`} className="hover:text-gray-900">{agency.phone}</a>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <EnvelopeIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                            <a href={`mailto:${agency.email}`} className="hover:text-gray-900">{agency.email}</a>
+                          </div>
                         </div>
                       </div>
 
                       {/* CTA Button */}
-                      <button className="bg-gray-900 text-white px-8 py-3 rounded-full font-medium hover:bg-gray-800 transition-all">
+                      <button className="bg-gray-900 text-white px-8 py-3 rounded-full font-medium hover:bg-gray-800 transition-all w-full md:w-auto">
                         View Agency
                       </button>
                     </div>
