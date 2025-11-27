@@ -431,7 +431,9 @@ export const getAiChatResponse = async (history: ChatMessage[], properties: Prop
 
 export const generateSearchName = async (filters: Filters): Promise<string> => {
     const relevantFilters: Partial<Filters> = {};
+    // Prioritize location fields
     if (filters.query) relevantFilters.query = filters.query;
+    if (filters.country) relevantFilters.country = filters.country;
     if (filters.minPrice) relevantFilters.minPrice = filters.minPrice;
     if (filters.maxPrice) relevantFilters.maxPrice = filters.maxPrice;
     if (filters.beds) relevantFilters.beds = filters.beds;
@@ -444,7 +446,8 @@ export const generateSearchName = async (filters: Filters): Promise<string> => {
     const prompt = `
         You are a helpful real estate assistant. Given the following JSON object of search filters, generate a concise, human-readable name for a saved search. The name should be a single, descriptive phrase.
 
-        - If there's a query (location), start with that.
+        - **IMPORTANT:** Always start with the location. If there's a 'query' field (city/region), use it. Otherwise use 'country'.
+        - If both query and country are present and different, format as "City, Country".
         - Describe price ranges like "€50k - €100k" or "over €200k" or "under €150k".
         - Describe beds/baths/living rooms like "3+ beds", "2+ baths", "1+ living rooms".
         - Describe size like "over 100m²" or "50-100m²".
@@ -453,24 +456,24 @@ export const generateSearchName = async (filters: Filters): Promise<string> => {
         - Be concise.
 
         Example 1 Input:
-        { "query": "Bitola", "maxPrice": 100000, "sellerType": "agent", "beds": 3, "baths": 2 }
+        { "query": "Bitola", "country": "Macedonia", "maxPrice": 100000, "sellerType": "agent", "beds": 3, "baths": 2 }
         Example 1 Output:
-        Bitola, under €100k, by agent, 3+ beds, 2+ baths
+        Bitola, Macedonia, under €100k, by agent, 3+ beds, 2+ baths
 
         Example 2 Input:
-        { "minPrice": 250010, "beds": 4, "livingRooms": 2 }
+        { "country": "Serbia", "minPrice": 250010, "beds": 4, "livingRooms": 2 }
         Example 2 Output:
-        Over €250k, 4+ beds, 2+ living rooms
+        Serbia, over €250k, 4+ beds, 2+ living rooms
 
         Example 3 Input:
-        { "query": "Belgrade", "sellerType": "private" }
+        { "query": "Belgrade", "country": "Serbia", "sellerType": "private" }
         Example 3 Output:
-        Belgrade, private listings
+        Belgrade, Serbia, private listings
 
         Example 4 Input:
-        { "query": "Zagreb", "minSqft": 100 }
+        { "query": "Zagreb", "country": "Croatia", "minSqft": 100 }
         Example 4 Output:
-        Zagreb, over 100m²
+        Zagreb, Croatia, over 100m²
 
         Now, generate a name for this filter object:
         ${JSON.stringify(relevantFilters)}
@@ -492,31 +495,35 @@ export const generateSearchName = async (filters: Filters): Promise<string> => {
 };
 
 export const generateSearchNameFromCoords = async (lat: number, lng: number): Promise<string> => {
-    const prompt = `
-        You are a helpful real estate assistant. Given the following latitude and longitude coordinates, generate a concise, human-readable name for the geographic area they represent. The name should be suitable for a saved search.
+    try {
+        // Use reverse geocoding to get the actual location name from coordinates
+        const { reverseGeocode } = await import('./osmService');
+        const location = await reverseGeocode(lat, lng);
 
-        - Identify the most prominent feature at or very near these coordinates. This could be a village, a specific neighborhood, a mountain, a well-known park, or a coastal area.
-        - The name should be short and descriptive, under 5 words.
-        - For example: "Sirogojno Village Area", "Zlatibor Mountain Center", "Near Partizanska Street, Zlatibor", "Krani lakeside".
+        if (location && location.address) {
+            const address = location.address;
 
-        Coordinates:
-        Latitude: ${lat}
-        Longitude: ${lng}
+            // Priority: city/town > village > county > state > country
+            const city = address.city || address.town || address.village || address.county || address.state || address.country;
+            const country = address.country;
 
-        Return only the generated name string, without any markdown or extra text.
-    `;
+            // Format as "City, Country" if both available and different
+            if (city && country && city !== country) {
+                return `${city}, ${country}`;
+            } else if (city) {
+                return city;
+            } else if (country) {
+                return country;
+            }
+        }
 
-    const result = await retryWithBackoff(() =>
-        ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                timeout: 15000, // 15 second timeout
-            },
-        })
-    );
-
-    return result.text.trim();
+        // Fallback if reverse geocoding fails or returns no address
+        return `Area (${lat.toFixed(2)}, ${lng.toFixed(2)})`;
+    } catch (error) {
+        console.error("Error reverse geocoding coordinates:", error);
+        // Fallback to coordinates if everything fails
+        return `Area (${lat.toFixed(2)}, ${lng.toFixed(2)})`;
+    }
 };
 
 export const getNeighborhoodInsights = async (lat: number, lng: number, city: string, country: string): Promise<string> => {
