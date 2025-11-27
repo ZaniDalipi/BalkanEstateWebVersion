@@ -319,7 +319,10 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         if (name === 'country' && value && value !== 'any') {
             const countryData = BALKAN_COUNTRIES[value as string];
             if (countryData) {
-                const bounds = L.latLngBounds(countryData.bounds);
+                const bounds = L.latLngBounds(
+                    L.latLng(countryData.bounds[0][0], countryData.bounds[0][1]),
+                    L.latLng(countryData.bounds[1][0], countryData.bounds[1][1])
+                );
                 setFlyToTarget({ center: countryData.center, zoom: countryData.zoom });
                 updateSearchPageState({
                     filters: newFilters,
