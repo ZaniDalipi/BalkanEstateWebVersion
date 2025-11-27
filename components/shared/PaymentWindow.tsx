@@ -144,6 +144,10 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
   };
 
   const handlePayment = async () => {
+    console.log('💳 Payment button clicked');
+    console.log('Final price:', finalPrice);
+    console.log('Applied discount code:', appliedDiscountCode);
+
     setIsProcessing(true);
 
     try {
@@ -154,8 +158,12 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
         throw new Error('Please log in to complete your purchase');
       }
 
+      console.log('✅ Token found, proceeding with payment');
+
       // Check if this is a 100% off coupon (free subscription)
       if (finalPrice === 0 || finalPrice < 0.01) {
+        console.log('🎁 Processing free subscription with discount code:', appliedDiscountCode);
+
         // Handle free subscription with 100% off coupon
         const response = await fetch('http://localhost:5001/api/payment/apply-free-subscription', {
           method: 'POST',
@@ -172,10 +180,14 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
         });
 
         const data = await response.json();
+        console.log('Free subscription API response:', data);
 
         if (!response.ok) {
+          console.error('❌ Free subscription error:', data);
           throw new Error(data.message || 'Failed to apply free subscription');
         }
+
+        console.log('✅ Free subscription activated successfully!');
 
         // Success! Call the success handler with a special ID for free subscriptions
         setShowSuccess(true);
@@ -207,6 +219,10 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
         }
       }
 
+      console.log('💰 Processing paid subscription');
+      console.log('Product ID:', finalProductId);
+      console.log('Amount:', finalPrice);
+
       // Create checkout session with backend
       const response = await fetch('http://localhost:5001/api/payment/create-checkout-session', {
         method: 'POST',
@@ -224,13 +240,17 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
       });
 
       const data = await response.json();
+      console.log('Checkout session API response:', data);
 
       if (!response.ok) {
+        console.error('❌ Checkout session error:', data);
         throw new Error(data.message || 'Failed to create payment session');
       }
 
       // Redirect to Stripe Checkout page
       if (data.url) {
+        console.log('✅ Redirecting to Stripe:', data.url);
+
         // Store payment intent info for callback
         sessionStorage.setItem('pending_payment', JSON.stringify({
           sessionId: data.sessionId,
@@ -246,6 +266,7 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
       }
 
     } catch (error) {
+      console.error('❌ Payment error:', error);
       onError(error instanceof Error ? error.message : 'Failed to initialize payment');
       setIsProcessing(false);
     }
@@ -391,7 +412,13 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
 
             {/* Payment Button */}
             <button
-              onClick={handlePayment}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Button clicked event triggered');
+                handlePayment();
+              }}
               disabled={isProcessing}
               className={`w-full py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 ${
                 finalPrice === 0 || finalPrice < 0.01

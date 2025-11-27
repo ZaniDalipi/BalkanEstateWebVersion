@@ -596,16 +596,25 @@ export const applyFreeSubscription = async (req: Request, res: Response): Promis
     const { planName, planInterval, productId, discountCode } = req.body;
     const userId = (req as any).user?._id;
 
+    console.log('🎁 Free subscription request received');
+    console.log('User ID:', userId);
+    console.log('Product ID:', productId);
+    console.log('Discount Code:', discountCode);
+
     if (!userId) {
+      console.error('❌ User not authenticated');
       res.status(401).json({ message: 'User not authenticated' });
       return;
     }
 
     const user = await User.findById(userId);
     if (!user) {
+      console.error('❌ User not found:', userId);
       res.status(404).json({ message: 'User not found' });
       return;
     }
+
+    console.log('✅ User found:', user.email);
 
     // Verify discount code is valid and provides 100% off
     if (!discountCode) {
@@ -663,6 +672,8 @@ export const applyFreeSubscription = async (req: Request, res: Response): Promis
       return;
     }
 
+    console.log('💾 Creating free subscription in database...');
+
     // Process the subscription payment with 0 amount
     const result = await processSubscriptionPayment({
       userId,
@@ -672,11 +683,16 @@ export const applyFreeSubscription = async (req: Request, res: Response): Promis
       currency: 'EUR',
     });
 
+    console.log('✅ Subscription created with ID:', result.subscription._id);
+    console.log('Subscription status:', result.subscription.status);
+    console.log('Expires at:', result.subscription.expirationDate);
+
     // Increment discount code usage
     discount.usedCount = (discount.usedCount || 0) + 1;
     await discount.save();
 
     console.log(`✅ Free subscription activated for user ${user.email} with coupon ${discountCode}`);
+    console.log('📊 Discount code usage updated:', discount.usedCount);
 
     res.status(200).json({
       success: true,
@@ -693,7 +709,8 @@ export const applyFreeSubscription = async (req: Request, res: Response): Promis
       },
     });
   } catch (error: any) {
-    console.error('Error applying free subscription:', error);
+    console.error('❌ Error applying free subscription:', error);
+    console.error('Stack trace:', error.stack);
     res.status(500).json({ message: 'Error applying free subscription', error: error.message });
   }
 };

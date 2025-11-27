@@ -75,6 +75,7 @@ export async function processSubscriptionPayment(
     }
 
     // 4. Create or update subscription
+    console.log('🔍 Checking for existing subscription...');
     let subscription = await Subscription.findOne({
       userId,
       productId,
@@ -82,6 +83,7 @@ export async function processSubscriptionPayment(
     }).session(session);
 
     if (subscription) {
+      console.log('🔄 Renewing existing subscription:', subscription._id);
       // Renew existing subscription
       subscription.expirationDate = expirationDate;
       subscription.renewalDate = expirationDate;
@@ -89,7 +91,9 @@ export async function processSubscriptionPayment(
       subscription.autoRenewing = true;
       subscription.lastUpdated = new Date();
       await subscription.save({ session });
+      console.log('✅ Subscription renewed successfully');
     } else {
+      console.log('➕ Creating new subscription...');
       // Create new subscription
       const [newSubscription] = await Subscription.create(
         [
@@ -114,9 +118,11 @@ export async function processSubscriptionPayment(
         { session }
       );
       subscription = newSubscription;
+      console.log('✅ New subscription created:', subscription._id);
     }
 
     // 5. Create payment record
+    console.log('💳 Creating payment record...');
     const [paymentRecord] = await PaymentRecord.create(
       [
         {
@@ -135,8 +141,10 @@ export async function processSubscriptionPayment(
       ],
       { session }
     );
+    console.log('✅ Payment record created:', paymentRecord._id);
 
     // 6. Update user with subscription info
+    console.log('👤 Updating user subscription info...');
     user.isSubscribed = true;
     user.subscriptionPlan = productId; // Product ID (e.g., 'buyer_pro_monthly')
     user.subscriptionProductName = product.name; // Human-readable name
@@ -149,6 +157,7 @@ export async function processSubscriptionPayment(
     user.totalPaid = (user.totalPaid || 0) + amount;
     user.subscriptionStatus = 'active';
     await user.save({ session });
+    console.log('✅ User updated with subscription info');
 
     // 7. Create subscription event
     await SubscriptionEvent.create(
