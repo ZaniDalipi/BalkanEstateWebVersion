@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { SavedSearch } from '../../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { SavedSearch, Property } from '../../types';
 import PropertyCard from './PropertyCard';
 import { ChevronUpIcon, ChevronDownIcon, TrashIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
@@ -16,13 +16,38 @@ interface SavedSearchAccordionProps {
 const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onOpen }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [loadedProperties, setLoadedProperties] = useState<Property[]>([]);
+  const [isLoadingSearchProperties, setIsLoadingSearchProperties] = useState(false);
   const { state, dispatch } = useAppContext();
-  const { isLoadingProperties, allMunicipalities, properties } = state;
+  const { isLoadingProperties, allMunicipalities } = state;
+
+  // Load properties for this specific search when accordion opens
+  useEffect(() => {
+    if (isOpen && loadedProperties.length === 0) {
+      loadPropertiesForSearch();
+    }
+  }, [isOpen]);
+
+  const loadPropertiesForSearch = async () => {
+    setIsLoadingSearchProperties(true);
+    try {
+      // Load properties using the search filters
+      const properties = await api.getProperties(search.filters);
+      setLoadedProperties(properties);
+    } catch (error) {
+      console.error('Failed to load properties for saved search:', error);
+      setLoadedProperties([]);
+    } finally {
+      setIsLoadingSearchProperties(false);
+    }
+  };
 
   const matchingProperties = useMemo(() => {
+      // Use loaded properties if available, otherwise fall back to state properties
+      const propertiesToFilter = loadedProperties.length > 0 ? loadedProperties : [];
+
       // Start with base filters
-      // FIX: The filterProperties function expects 2 arguments, not 3.
-      let filtered = filterProperties(properties, search.filters);
+      let filtered = filterProperties(propertiesToFilter, search.filters);
 
       // If there's a drawn area, filter by it
       if (search.drawnBoundsJSON) {
@@ -34,9 +59,9 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onO
               console.error("Failed to parse drawnBoundsJSON in SavedSearchAccordion", e);
           }
       }
-      
+
       return filtered;
-  }, [properties, search.filters, search.drawnBoundsJSON, allMunicipalities]);
+  }, [loadedProperties, search.filters, search.drawnBoundsJSON, allMunicipalities]);
 
   const propertyCount = matchingProperties.length;
 
@@ -66,6 +91,8 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onO
       setIsDeleting(false);
     }
   };
+
+  const isLoading = isLoadingSearchProperties || isLoadingProperties;
 
   return (
     <div className="bg-white rounded-xl shadow-md border border-neutral-200 overflow-hidden">
@@ -98,7 +125,7 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onO
       {/* Expanded Content */}
       {isOpen && (
         <div className="p-4 bg-neutral-50/70 border-t border-neutral-200 animate-fade-in">
-          {isLoadingProperties ? (
+          {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {Array.from({ length: 4 }).map((_, index) => (
                    <PropertyCardSkeleton key={index} />
