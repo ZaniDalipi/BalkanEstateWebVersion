@@ -625,8 +625,8 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                         <MapComponent {...mapProps} searchMode={searchMode} />
                     </div>
 
-                    {/* Newsletter Subscription Section */}
-                    <div className="bg-gradient-to-br from-primary-dark via-primary to-primary text-white p-3 flex-shrink-0">
+                    {/* Newsletter Subscription Section - Absolutely positioned */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-br from-primary-dark via-primary to-primary text-white p-3 z-10">
                         <div className="max-w-xl mx-auto">
                             <h3 className="text-sm font-semibold mb-1">Stay Updated with New Properties</h3>
                             <p className="text-xs text-white/80 mb-2">Subscribe to get notifications about new listings in your area</p>
