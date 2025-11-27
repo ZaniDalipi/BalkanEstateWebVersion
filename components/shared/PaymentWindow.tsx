@@ -66,8 +66,8 @@ const PaymentWindow: React.FC<PaymentWindowProps> = ({
   }
 
   // Apply discount code if validated
-  if (codeValidation?.valid && codeValidation.discountAmount) {
-    finalPrice = codeValidation.finalPrice || finalPrice;
+  if (codeValidation?.valid && codeValidation.discountAmount !== undefined) {
+    finalPrice = codeValidation.finalPrice ?? finalPrice;
     savings = planPrice - finalPrice;
   }
 
