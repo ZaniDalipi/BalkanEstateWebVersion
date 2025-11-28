@@ -2,9 +2,9 @@
 // Orchestrates all property detail subcomponents
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Property, PropertyImageTag } from '../../types';
-import { useAppContext } from '../../context/AppContext';
-import { ArrowLeftIcon } from '../../constants';
+import { Property, PropertyImageTag } from '../../../types';
+import { useAppContext } from '../../../context/AppContext';
+import { ArrowLeftIcon } from '../../../constants';
 import ImageViewerModal from '../Modals/ImageViewerModal';
 import FloorPlanViewerModal from '../Modals/FloorPlanViewerModal';
 import {
@@ -15,7 +15,7 @@ import {
   PropertyContact,
   PropertyPhotos,
   PropertyMapLink,
-} from '../../src/components/property';
+} from '../../../src/components/property';
 
 /**
  * PropertyDetailsPage Component

@@ -1,17 +1,17 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { useAppContext } from '../../context/AppContext';
+import { useAppContext } from '../../../context/AppContext';
 import MapComponent from '../Maps/MapComponent';
 import PropertyList from './PropertyList';
-import { SavedSearch, ChatMessage, AiSearchQuery, Filters, initialFilters, SearchPageState, Property, NominatimResult } from '../../types';
-import { getAiChatResponse, generateSearchName, generateSearchNameFromCoords } from '../../services/geminiService';
-import { searchLocation } from '../../services/osmService';
+import { SavedSearch, ChatMessage, AiSearchQuery, Filters, initialFilters, SearchPageState, Property, NominatimResult } from '../../../types';
+import { getAiChatResponse, generateSearchName, generateSearchNameFromCoords } from '../../../services/geminiService';
+import { searchLocation } from '../../../services/osmService';
 import Toast from '../shared/Toast';
 import L from 'leaflet';
-import { Bars3Icon, SearchIcon, UserCircleIcon, XMarkIcon, AdjustmentsHorizontalIcon, MapPinIcon, Squares2x2Icon, BellIcon, PencilIcon, PlusIcon, SparklesIcon, CrosshairsIcon, XCircleIcon, MapIcon, SpinnerIcon } from '../../constants';
-import { filterProperties } from '../../utils/propertyUtils';
+import { Bars3Icon, SearchIcon, UserCircleIcon, XMarkIcon, AdjustmentsHorizontalIcon, MapPinIcon, Squares2x2Icon, BellIcon, PencilIcon, PlusIcon, SparklesIcon, CrosshairsIcon, XCircleIcon, MapIcon, SpinnerIcon } from '../../../constants';
+import { filterProperties } from '../../../utils/propertyUtils';
 import AiSearch from './AiSearch';
 import Modal from '../shared/Modal';
-import { COUNTRY_OPTIONS, BALKAN_COUNTRIES } from '../../constants/countries';
+import { COUNTRY_OPTIONS, BALKAN_COUNTRIES } from '../../../constants/countries';
 
 interface SearchPageProps {
     onToggleSidebar: () => void;
