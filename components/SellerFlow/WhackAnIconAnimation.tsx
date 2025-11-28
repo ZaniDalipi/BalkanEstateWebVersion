@@ -30,7 +30,7 @@ const WhackAnIconAnimation: React.FC<WhackAnIconAnimationProps> = ({ mode = 'loa
 
     const scoreRef = useRef(0);
     const totalMolesRef = useRef(0);
-    const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // This function sets the next active mole with proper timing
     const popUp = useCallback(() => {

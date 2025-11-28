@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Property, PropertyImageTag, ChatMessage, AiSearchQuery, Filters } from '../types';
-import L from 'leaflet';
+import type { LatLngBounds } from 'leaflet';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -492,7 +492,7 @@ export const generateSearchName = async (filters: Filters): Promise<string> => {
     return result.text.trim();
 };
 
-export const generateSearchNameFromCoords = async (lat: number, lng: number, bounds?: L.LatLngBounds): Promise<string> => {
+export const generateSearchNameFromCoords = async (lat: number, lng: number, bounds?: LatLngBounds): Promise<string> => {
     // Use reverse geocoding to get actual location name
     try {
         const { reverseGeocode } = await import('./osmService');
