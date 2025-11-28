@@ -10,14 +10,14 @@ import {
   CubeTransparentIcon,
   CrosshairsIcon,
 } from '../../../constants';
-import { CadastreLayer } from '../Map/CadastreLayer';
+import { CadastreLayer } from '../../Map/CadastreLayer';
 import {
   FlyToController,
   MapEvents,
   ZoomBasedTileSwitch,
   MapDrawEvents,
-} from '../../src/components/map/MapHelpers';
-import { Markers, Legend } from '../../src/components/map/MapPropertyMarker';
+} from '../../../src/components/map/MapHelpers';
+import { Markers, Legend } from '../../../src/components/map/MapPropertyMarker';
 
 // Fix for default icon issue with bundlers
 let DefaultIcon = L.icon({

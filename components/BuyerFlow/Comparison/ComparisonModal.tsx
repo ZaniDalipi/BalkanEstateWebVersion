@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Modal from '../shared/Modal';
+import Modal from '../../shared/Modal';
 import { Property } from '../../../types';
 import { formatPrice } from '../../../utils/currency';
 import { BuildingOfficeIcon } from '../../../constants';

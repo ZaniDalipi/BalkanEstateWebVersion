@@ -5,12 +5,12 @@ import PropertyList from './PropertyList';
 import { SavedSearch, ChatMessage, AiSearchQuery, Filters, initialFilters, SearchPageState, Property, NominatimResult } from '../../../types';
 import { getAiChatResponse, generateSearchName, generateSearchNameFromCoords } from '../../../services/geminiService';
 import { searchLocation } from '../../../services/osmService';
-import Toast from '../shared/Toast';
+import Toast from '@/components/shared/Toast';
 import L from 'leaflet';
 import { Bars3Icon, SearchIcon, UserCircleIcon, XMarkIcon, AdjustmentsHorizontalIcon, MapPinIcon, Squares2x2Icon, BellIcon, PencilIcon, PlusIcon, SparklesIcon, CrosshairsIcon, XCircleIcon, MapIcon, SpinnerIcon } from '../../../constants';
 import { filterProperties } from '../../../utils/propertyUtils';
 import AiSearch from './AiSearch';
-import Modal from '../shared/Modal';
+import Modal from '../../shared/Modal';
 import { COUNTRY_OPTIONS, BALKAN_COUNTRIES } from '../../../constants/countries';
 
 interface SearchPageProps {
@@ -319,7 +319,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         if (name === 'country' && value && value !== 'any') {
             const countryData = BALKAN_COUNTRIES[value as string];
             if (countryData) {
-                const bounds = L.latLngBounds(countryData.bounds);
+                const bounds = L.latLngBounds(countryData.bounds[0], countryData.bounds[1]);
                 setFlyToTarget({ center: countryData.center, zoom: countryData.zoom });
                 updateSearchPageState({
                     filters: newFilters,

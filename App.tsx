@@ -4,23 +4,23 @@ import { QueryProvider } from './src/app/providers/QueryProvider';
 import { ErrorBoundary } from './src/app/components/ErrorBoundary';
 import { UserRole } from './types';
 import Onboarding from './components/Onboarding';
-import SearchPage from './components/BuyerFlow/SearchPage';
+import { SearchPage } from './components/BuyerFlow/Search';
 import CreateListingPage from './components/SellerFlow/SellerDashboard';
 import AuthPage from './components/auth/AuthModal';
 import PricingPlans from './components/SellerFlow/PricingPlans';
-import SavedSearchesPage from './components/BuyerFlow/SavedSearchesPage';
-import SavedPropertiesPage from './components/BuyerFlow/SavedHomesPage';
-import InboxPage from './components/BuyerFlow/InboxPage';
+import { SavedSearchesPage } from './components/BuyerFlow/Saved';
+import SavedPropertiesPage from './components/BuyerFlow/Saved/SavedHomesPage';
+import InboxPage from './components/BuyerFlow/Messaging/InboxPage';
 import MyAccountPage from './components/shared/MyAccountPage';
 import Sidebar from './components/shared/Sidebar';
 import Header from './components/shared/Header';
 import Footer from './components/shared/Footer';
-import SubscriptionModal from './components/BuyerFlow/SubscriptionModal';
+import SubscriptionModal from './components/BuyerFlow/Modals/SubscriptionModal';
 import AgentsPage from './components/AgentsPage/AgentsPage';
 import AgenciesListPage from './components/AgenciesListPage';
 import AgencyDetailPage from './components/AgencyDetailPage';
 import EnterpriseCreationForm from './components/EnterpriseCreationForm';
-import PropertyDetailsPage from './components/BuyerFlow/PropertyDetailsPage';
+import PropertyDetailsPage from './components/BuyerFlow/PropertyDisplay/PropertyDetailsPage';
 import PaymentSuccess from './components/PaymentSuccess';
 import PaymentCancel from './components/PaymentCancel';
 import { LogoIcon } from './constants';
@@ -128,10 +128,9 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
     const fetchAgency = async () => {
       if (state.selectedAgencyId) {
         // Check if selectedAgencyId is already an agency object
-        const agencyId = state.selectedAgencyId;
-        if (typeof agencyId === 'object' && agencyId._id) {
-          console.log('✅ Agency object already loaded:', agencyId.name);
-          setSelectedAgency(agencyId);
+        if (typeof state.selectedAgencyId === 'object' && state.selectedAgencyId._id) {
+          console.log('✅ Agency object already loaded:', state.selectedAgencyId.name);
+          setSelectedAgency(state.selectedAgencyId);
           setIsLoadingAgency(false);
           return;
         }

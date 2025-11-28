@@ -5,12 +5,12 @@ import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon, Che
 import AiSearch from './AiSearch';
 import PropertyCardSkeleton from '../PropertyDisplay/PropertyCardSkeleton';
 import { useAppContext } from '../../../context/AppContext';
-import Footer from '../shared/Footer';
+import Footer from '../../shared/Footer';
 
 interface PropertyListProps {
   properties: Property[];
   filters: Filters;
-  onFilterChange: (name: keyof Filters, value: string | number | null) => void;
+onFilterChange: (name: keyof Filters, value: string | number | boolean | null) => void;
   onSearchClick: () => void;
   onResetFilters: () => void;
   onSortChange: (value: string) => void;
