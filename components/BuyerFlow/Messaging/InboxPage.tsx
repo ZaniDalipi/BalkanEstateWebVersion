@@ -3,8 +3,8 @@ import { useAppContext } from '../../context/AppContext';
 import ConversationList from './ConversationList';
 import ConversationView from './ConversationView';
 import { EnvelopeIcon } from '../../constants';
-import PropertyCard from './PropertyCard';
-import Footer from '../shared/Footer';
+import PropertyCard from '../PropertyDisplay/PropertyCard';
+import Footer from '../../shared/Footer';
 
 const InboxPage: React.FC = () => {
     const { state, dispatch } = useAppContext();

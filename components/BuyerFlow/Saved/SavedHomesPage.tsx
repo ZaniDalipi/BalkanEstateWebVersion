@@ -1,14 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { Property } from '../../types';
-import PropertyCard from './PropertyCard';
+import PropertyCard from '../PropertyDisplay/PropertyCard';
 import { HeartIcon } from '../../constants';
-import ComparisonBar from './ComparisonBar';
-import ComparisonModal from './ComparisonModal';
-import Toast from '../shared/Toast';
-import PropertyCardSkeleton from './PropertyCardSkeleton';
-import AdvertisementBanner from '../AdvertisementBanner';
-import Footer from '../shared/Footer';
+import ComparisonBar from '../Comparison/ComparisonBar';
+import ComparisonModal from '../Comparison/ComparisonModal';
+import Toast from '../../shared/Toast';
+import PropertyCardSkeleton from '../PropertyDisplay/PropertyCardSkeleton';
+import AdvertisementBanner from '../../AdvertisementBanner';
+import Footer from '../../shared/Footer';
 
 const SavedPropertiesPage: React.FC = () => {
   const { state, dispatch } = useAppContext();

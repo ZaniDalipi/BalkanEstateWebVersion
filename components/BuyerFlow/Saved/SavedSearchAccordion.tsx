@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { SavedSearch } from '../../types';
-import PropertyCard from './PropertyCard';
+import PropertyCard from '../PropertyDisplay/PropertyCard';
 import { ChevronUpIcon, ChevronDownIcon, TrashIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { filterProperties } from '../../utils/propertyUtils';
-import PropertyCardSkeleton from './PropertyCardSkeleton';
+import PropertyCardSkeleton from '../PropertyDisplay/PropertyCardSkeleton';
 import L from 'leaflet';
 import * as api from '../../services/apiService';
 

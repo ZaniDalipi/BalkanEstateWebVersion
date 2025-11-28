@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, StarIcon, ArrowLeftIcon, UserCircleIcon, BellIcon, TrophyIcon, ChartBarIcon, HomeIcon, UsersIcon, XMarkIcon, ShieldCheckIcon, PencilIcon } from '../constants';
-import PropertyCard from './BuyerFlow/PropertyCard';
-import PropertyCardSkeleton from './BuyerFlow/PropertyCardSkeleton';
+import PropertyCard from './BuyerFlow/PropertyDisplay/PropertyCard';
+import PropertyCardSkeleton from './BuyerFlow/PropertyDisplay/PropertyCardSkeleton';
 import AgencyJoinRequestsModal from './AgencyJoinRequestsModal';
 import InvitationCodeModal from './InvitationCodeModal';
 import { formatPrice } from '../utils/currency';
