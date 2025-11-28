@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../../../context/AppContext';
 import { SparklesIcon } from '../../../constants';
-import { parseMarkdown } from '../../src/utils/markdown';
+import { parseMarkdown } from '@/src/utils/markdown';
 
 interface NeighborhoodInsightsProps {
   lat: number;
