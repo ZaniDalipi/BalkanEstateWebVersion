@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useAppContext } from '../../context/AppContext';
+import { useAppContext } from '../../../context/AppContext';
 import ConversationList from './ConversationList';
 import ConversationView from './ConversationView';
-import { EnvelopeIcon } from '../../constants';
+import { EnvelopeIcon } from '../../../constants';
 import PropertyCard from '../PropertyDisplay/PropertyCard';
 import Footer from '../../shared/Footer';
 

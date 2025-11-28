@@ -1,12 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Conversation, Message } from '../../types';
-import { useAppContext } from '../../context/AppContext';
+import { Conversation, Message } from '../../../types';
+import { useAppContext } from '../../../context/AppContext';
 import MessageInput from './MessageInput';
-import { formatPrice } from '../../utils/currency';
-import { CalendarIcon, UserCircleIcon, ChevronLeftIcon, BuildingOfficeIcon, ShieldExclamationIcon, TrashIcon } from '../../constants';
-import { getConversation, sendMessage as sendMessageAPI, uploadMessageImage, getSecurityWarning } from '../../services/apiService';
-import { socketService } from '../../services/socketService';
-import { notificationService } from '../../services/notificationService';
+import { formatPrice } from '../../../utils/currency';
+import { CalendarIcon, UserCircleIcon, ChevronLeftIcon, BuildingOfficeIcon, ShieldExclamationIcon, TrashIcon } from '../../../constants';
+import { getConversation, sendMessage as sendMessageAPI, uploadMessageImage, getSecurityWarning } from '../../../services/apiService';
+import { socketService } from '../../../services/socketService';
+import { notificationService } from '../../../services/notificationService';
 
 interface ConversationViewProps {
     conversation: Conversation;

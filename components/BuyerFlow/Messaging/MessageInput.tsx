@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { PaperAirplaneIcon, PhotoIcon, XMarkIcon } from '../../constants';
+import { PaperAirplaneIcon, PhotoIcon, XMarkIcon } from '../../../constants';
 
 interface MessageInputProps {
     onSendMessage: (text: string, imageFile?: File) => Promise<void>;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Property } from '../../types';
-import { BuildingOfficeIcon } from '../../constants';
+import { Property } from '../../../types';
+import { BuildingOfficeIcon } from '../../../constants';
 
 interface ComparisonBarProps {
     properties: Property[];

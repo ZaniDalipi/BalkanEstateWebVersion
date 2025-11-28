@@ -1,15 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { MapContainer, TileLayer, Rectangle } from 'react-leaflet';
-import { Property } from '../../types';
+import { Property } from '../../../types';
 import L from 'leaflet';
-import { useAppContext } from '../../context/AppContext';
+import { useAppContext } from '../../../context/AppContext';
 import {
   BellIcon,
   PencilIcon,
   XCircleIcon,
   CubeTransparentIcon,
   CrosshairsIcon,
-} from '../../constants';
+} from '../../../constants';
 import { CadastreLayer } from '../Map/CadastreLayer';
 import {
   FlyToController,
