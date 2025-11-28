@@ -10,7 +10,7 @@ import PropertyCardSkeleton from './PropertyCardSkeleton';
 import AdvertisementBanner from '../AdvertisementBanner';
 import Footer from '../shared/Footer';
 
-const SavedHomesPage: React.FC = () => {
+const SavedPropertiesPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const { savedHomes, comparisonList, properties, isAuthenticated, isLoadingUserData } = state;
   const [isComparisonModalOpen, setComparisonModalOpen] = useState(false);
@@ -161,4 +161,4 @@ const SavedHomesPage: React.FC = () => {
   );
 };
 
-export default SavedHomesPage;
+export default SavedPropertiesPage;
