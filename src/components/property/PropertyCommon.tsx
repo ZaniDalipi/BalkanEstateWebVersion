@@ -2,7 +2,7 @@
 // Reusable UI components for property displays
 
 import React from 'react';
-import { Property } from '../../types';
+import { Property } from '../../../types';
 
 interface DetailItemProps {
   icon: React.ReactNode;

@@ -2,7 +2,7 @@
 // Image gallery with carousel, street view, and interactive controls
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { Property, PropertyImageTag } from '@/types';
+import { Property, PropertyImageTag } from '../../../types';
 import { SharePopover } from './SharePopover';
 import {
   ChevronLeftIcon,
@@ -12,7 +12,7 @@ import {
   VideoCameraIcon,
   BuildingOfficeIcon,
   StreetViewIcon,
-} from '@/constants';
+} from '../../../constants';
 
 interface PropertyGalleryProps {
   property: Property;

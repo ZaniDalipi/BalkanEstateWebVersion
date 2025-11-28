@@ -2,10 +2,10 @@
 // Extracted from PropertyDetailsPage for better modularity
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Property } from '../../types';
-import { useAppContext } from '../../context/AppContext';
-import { createConversation, sendMessage, uploadMessageImage } from '../../services/apiService';
-import { ArrowUturnLeftIcon, XMarkIcon, PencilIcon, ArrowDownTrayIcon } from '../../constants';
+import { Property } from '../../../types';
+import { useAppContext } from '../../../context/AppContext';
+import { createConversation, sendMessage, uploadMessageImage } from '../../../services/apiService';
+import { ArrowUturnLeftIcon, XMarkIcon, PencilIcon, ArrowDownTrayIcon } from '../../../constants';
 
 type Point = { x: number; y: number };
 type Path = { points: Point[]; color: string; lineWidth: number };

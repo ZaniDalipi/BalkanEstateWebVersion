@@ -2,7 +2,7 @@
 // Photo gallery with category filters and thumbnails
 
 import React, { useMemo } from 'react';
-import { Property, PropertyImageTag } from '../../types';
+import { Property, PropertyImageTag } from '../../../types';
 import { Thumbnail } from './PropertyCommon';
 
 interface PropertyPhotosProps {

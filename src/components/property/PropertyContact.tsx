@@ -2,10 +2,10 @@
 // Seller contact sidebar with calculators
 
 import React from 'react';
-import { Property } from '@/types';
-import { PhoneIcon, UserCircleIcon } from 'lucide-react';
-import MortgageCalculator from '@/components/BuyerFlow/MortgageCalculator';
-import RentVsBuyCalculator from '@/components/BuyerFlow/RentVsBuyCalculator';
+import { Property } from '../../../types';
+import { PhoneIcon, UserCircleIcon } from '../../../constants';
+import MortgageCalculator from '../../../components/BuyerFlow/MortgageCalculator';
+import RentVsBuyCalculator from '../../../components/BuyerFlow/RentVsBuyCalculator';
 
 interface PropertyContactProps {
   property: Property;

@@ -2,7 +2,7 @@
 // Initial AI upload screen with language/property type selection
 
 import React from 'react';
-import { SparklesIcon } from '../../constants';
+import { SparklesIcon } from '../../../constants';
 import {
   UploadIcon,
   ImageTagSelector,
