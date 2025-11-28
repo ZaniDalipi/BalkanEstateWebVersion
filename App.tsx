@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { QueryProvider } from './src/app/providers/QueryProvider';
+import { ErrorBoundary } from './src/app/components/ErrorBoundary';
 import { UserRole } from './types';
 import Onboarding from './components/Onboarding';
 import SearchPage from './components/BuyerFlow/SearchPage';
@@ -412,11 +413,13 @@ const AppWrapper: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <QueryProvider>
-      <AppProvider>
-        <AppWrapper />
-      </AppProvider>
-    </QueryProvider>
+    <ErrorBoundary level="app">
+      <QueryProvider>
+        <AppProvider>
+          <AppWrapper />
+        </AppProvider>
+      </QueryProvider>
+    </ErrorBoundary>
   );
 };
 
