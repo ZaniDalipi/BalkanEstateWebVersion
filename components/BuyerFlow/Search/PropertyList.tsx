@@ -1,9 +1,9 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { Property, ChatMessage, AiSearchQuery, Filters, SellerType, FurnishingStatus, HeatingType, PropertyCondition, ViewType, EnergyRating } from '../../types';
-import PropertyCard from './PropertyCard';
+import PropertyCard from '../PropertyDisplay/PropertyCard';
 import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon, ChevronUpIcon, ChevronDownIcon, PencilIcon, XCircleIcon, MapPinIcon, SpinnerIcon } from '../../constants';
 import AiSearch from './AiSearch';
-import PropertyCardSkeleton from './PropertyCardSkeleton';
+import PropertyCardSkeleton from '../PropertyDisplay/PropertyCardSkeleton';
 import { useAppContext } from '../../context/AppContext';
 import Footer from '../shared/Footer';
 

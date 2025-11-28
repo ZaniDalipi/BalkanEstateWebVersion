@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
+import { Agency } from '../types';
 import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, StarIcon } from '../constants';
 
 // Fix for default icon issue with bundlers
@@ -19,24 +20,6 @@ const BALKAN_BOUNDS = L.latLngBounds(
     [34, 13], // Southwest corner (Southern Greece, Western Croatia)
     [49, 31]  // Northeast corner (Northern Romania, Eastern Bulgaria)
 );
-
-interface Agency {
-  _id: string;
-  name: string;
-  description?: string;
-  logo?: string;
-  email: string;
-  phone: string;
-  city?: string;
-  country?: string;
-  address?: string;
-  lat?: number;
-  lng?: number;
-  totalProperties: number;
-  totalAgents: number;
-  yearsInBusiness?: number;
-  isFeatured: boolean;
-}
 
 interface AgenciesMapProps {
   agencies: Agency[];

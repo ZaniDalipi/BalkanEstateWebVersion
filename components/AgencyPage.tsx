@@ -1,34 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Agency, Property } from '../types';
 import { getAgency } from '../services/apiService';
 import PropertyCard from './shared/PropertyCard';
 import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, GlobeAltIcon } from '../constants';
-import { Property } from '../types';
-
-interface Agency {
-  _id: string;
-  name: string;
-  slug?: string;
-  description?: string;
-  logo?: string;
-  coverImage?: string;
-  email: string;
-  phone: string;
-  city?: string;
-  country?: string;
-  address?: string;
-  website?: string;
-  totalProperties: number;
-  totalAgents: number;
-  yearsInBusiness?: number;
-  isFeatured: boolean;
-  agents?: Array<{
-    _id: string;
-    name: string;
-    email: string;
-    phone?: string;
-    avatarUrl?: string;
-  }>;
-}
 
 interface AgencyPageProps {
   agencyId: string;

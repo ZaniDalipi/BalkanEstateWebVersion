@@ -4,8 +4,8 @@ import { useAppContext } from '../../context/AppContext';
 import { ArrowLeftIcon, BuildingOfficeIcon, ChartBarIcon, ChatBubbleBottomCenterTextIcon, EnvelopeIcon, PhoneIcon, UserCircleIcon } from '../../constants';
 import StarRating from '../shared/StarRating';
 import { formatPrice } from '../../utils/currency';
-import PropertyCard from '../BuyerFlow/PropertyCard';
-import PropertyCardSkeleton from '../BuyerFlow/PropertyCardSkeleton';
+import PropertyCard from '../BuyerFlow/PropertyDisplay/PropertyCard';
+import PropertyCardSkeleton from '../BuyerFlow/PropertyDisplay/PropertyCardSkeleton';
 import AgentReviewForm from '../shared/AgentReviewForm';
 import { slugify } from '../../utils/slug';
 

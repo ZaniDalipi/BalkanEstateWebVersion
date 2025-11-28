@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import MapComponent from './MapComponent';
+import MapComponent from '../Maps/MapComponent';
 import PropertyList from './PropertyList';
 import { SavedSearch, ChatMessage, AiSearchQuery, Filters, initialFilters, SearchPageState, Property, NominatimResult } from '../../types';
 import { getAiChatResponse, generateSearchName, generateSearchNameFromCoords } from '../../services/geminiService';

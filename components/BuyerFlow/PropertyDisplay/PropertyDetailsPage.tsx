@@ -5,8 +5,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Property, PropertyImageTag } from '../../types';
 import { useAppContext } from '../../context/AppContext';
 import { ArrowLeftIcon } from '../../constants';
-import ImageViewerModal from './ImageViewerModal';
-import FloorPlanViewerModal from './FloorPlanViewerModal';
+import ImageViewerModal from '../Modals/ImageViewerModal';
+import FloorPlanViewerModal from '../Modals/FloorPlanViewerModal';
 import {
   ImageEditorModal,
   NeighborhoodInsights,

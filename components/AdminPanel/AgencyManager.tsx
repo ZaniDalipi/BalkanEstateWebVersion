@@ -1,55 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { PencilIcon, TrashIcon, XMarkIcon, EyeIcon, BuildingOfficeIcon } from '../../constants';
+import { Agency } from '../../types';
 
 interface User {
   _id: string;
   name: string;
   email: string;
   role: string;
-}
-
-interface Agency {
-  _id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  logo?: string;
-  coverImage?: string;
-  website?: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  city?: string;
-  country?: string;
-  zipCode?: string;
-  lat?: number;
-  lng?: number;
-  facebookUrl?: string;
-  instagramUrl?: string;
-  linkedinUrl?: string;
-  twitterUrl?: string;
-  yearsInBusiness?: number;
-  specialties?: string[];
-  certifications?: string[];
-  isFeatured?: boolean;
-  featuredStartDate?: string;
-  featuredEndDate?: string;
-  adRotationOrder?: number;
-  businessHours?: {
-    monday?: string;
-    tuesday?: string;
-    wednesday?: string;
-    thursday?: string;
-    friday?: string;
-    saturday?: string;
-    sunday?: string;
-  };
-  ownerId?: User;
-  agents: User[];
-  totalAgents: number;
-  totalListings?: number;
-  createdAt: string;
-  updatedAt: string;
 }
 
 const AgencyManager: React.FC = () => {
@@ -133,7 +90,7 @@ const AgencyManager: React.FC = () => {
       setTotalAgencies(data.pagination?.totalItems || 0);
     } catch (err) {
       setError('Failed to load agencies');
-      console.error(err);
+      console.error('Failed to fetch agencies:', err);
     } finally {
       setIsLoading(false);
     }

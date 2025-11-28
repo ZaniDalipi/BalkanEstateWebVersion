@@ -1,8 +1,8 @@
 import React, { useState, useCallback, memo } from 'react';
-import { Property } from '../../types';
-import { MapPinIcon, BedIcon, BathIcon, SqftIcon, UserCircleIcon, ScaleIcon, LivingRoomIcon, BuildingOfficeIcon } from '../../constants';
-import { useAppContext } from '../../context/AppContext';
-import { formatPrice } from '../../utils/currency';
+import { Property } from '../../../types';
+import { MapPinIcon, BedIcon, BathIcon, SqftIcon, UserCircleIcon, ScaleIcon, LivingRoomIcon, BuildingOfficeIcon } from '../../../constants';
+import { useAppContext } from '../../../context/AppContext';
+import { formatPrice } from '../../../utils/currency';
 
 interface PropertyCardProps {
   property: Property;
