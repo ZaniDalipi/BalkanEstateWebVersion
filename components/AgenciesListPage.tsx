@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Agency } from '../types';
 import { getAgencies } from '../services/apiService';
 import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, StarIcon, SearchIcon } from '../constants';
 import { useAppContext } from '../context/AppContext';
@@ -6,26 +7,6 @@ import AgenciesMap from './AgenciesMap';
 import Footer from './shared/Footer';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-
-interface Agency {
-  _id: string;
-  slug?: string;
-  name: string;
-  description?: string;
-  logo?: string;
-  coverImage?: string;
-  email: string;
-  phone: string;
-  city?: string;
-  country?: string;
-  address?: string;
-  lat?: number;
-  lng?: number;
-  totalProperties: number;
-  totalAgents: number;
-  yearsInBusiness?: number;
-  isFeatured: boolean;
-}
 
 const AgenciesListPage: React.FC = () => {
   const { dispatch, state } = useAppContext();

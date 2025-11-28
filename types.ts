@@ -94,6 +94,7 @@ export interface Agency {
     city?: string;
     country?: string;
     address?: string;
+    zipCode?: string;
     website?: string;
     lat?: number;
     lng?: number;
@@ -101,12 +102,31 @@ export interface Agency {
     totalAgents: number;
     yearsInBusiness?: number;
     isFeatured: boolean;
+    featuredStartDate?: string;
+    featuredEndDate?: string;
+    adRotationOrder?: number;
     specialties?: string[];
     certifications?: string[];
+    facebookUrl?: string;
+    instagramUrl?: string;
+    linkedinUrl?: string;
+    twitterUrl?: string;
+    businessHours?: {
+        monday?: string;
+        tuesday?: string;
+        wednesday?: string;
+        thursday?: string;
+        friday?: string;
+        saturday?: string;
+        sunday?: string;
+    };
     agents?: any[]; // Array of agent objects
     ownerId?: string; // Owner user ID (also the creator/admin)
     admins?: string[]; // Array of admin user IDs
     invitationCode?: string; // Code required to join agency
+    createdAt?: string;
+    updatedAt?: string;
+    totalListings?: number;
 }
 
 export interface PropertyImage {
