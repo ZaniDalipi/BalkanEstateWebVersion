@@ -2,8 +2,8 @@
 // Displays property details, description, and amenities
 
 import React from 'react';
-import { Property } from '../../types';
-import { formatPrice } from '../../utils/currency';
+import { Property } from '@/types';
+import { formatPrice } from '@/utils/currency';
 import {
   MapPinIcon,
   BedIcon,
@@ -17,7 +17,7 @@ import {
   CubeTransparentIcon,
   LivingRoomIcon,
   CheckCircleIcon,
-} from '../../constants';
+} from '@/constants';
 import { DetailItem } from './PropertyCommon';
 
 interface PropertyInfoProps {

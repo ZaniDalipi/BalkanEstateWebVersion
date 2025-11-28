@@ -2,8 +2,8 @@
 // Navigate to search map focused on property location
 
 import React from 'react';
-import { Property } from '../../types';
-import { MapPinIcon } from '../../constants';
+import { Property } from '@/types';
+import { MapPinIcon } from 'lucide-react';
 
 interface PropertyMapLinkProps {
   property: Property;

@@ -2,13 +2,13 @@
 // Social sharing functionality for properties
 
 import React, { useState } from 'react';
-import { Property } from '../../types';
+import { Property } from '@/types';
 import {
   FacebookIcon,
   TwitterIcon,
   WhatsappIcon,
   EnvelopeIcon,
-} from '../../constants';
+} from '@/constants';
 
 interface SharePopoverProps {
   property: Property;
