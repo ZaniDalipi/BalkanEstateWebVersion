@@ -9,7 +9,7 @@ import CreateListingPage from './components/SellerFlow/SellerDashboard';
 import AuthPage from './components/auth/AuthModal';
 import PricingPlans from './components/SellerFlow/PricingPlans';
 import SavedSearchesPage from './components/BuyerFlow/SavedSearchesPage';
-import SavedHomesPage from './components/BuyerFlow/SavedHomesPage';
+import SavedPropertiesPage from './components/BuyerFlow/SavedHomesPage';
 import InboxPage from './components/BuyerFlow/InboxPage';
 import MyAccountPage from './components/shared/MyAccountPage';
 import Sidebar from './components/shared/Sidebar';
@@ -217,7 +217,7 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
     case 'saved-searches':
       return <SavedSearchesPage />;
     case 'saved-properties':
-      return <SavedHomesPage />;
+      return <SavedPropertiesPage />;
     case 'inbox':
       return <InboxPage />;
     case 'account':
