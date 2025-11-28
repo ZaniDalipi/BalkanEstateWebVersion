@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../shared/Modal';
 import PaymentWindow from '../shared/PaymentWindow';
-import { AtSymbolIcon, UserIcon, BuildingOfficeIcon, CheckCircleIcon } from '../../constants';
-import { useAppContext } from '../../context/AppContext';
-import { fetchBuyerProducts, Product } from '../../utils/api';
+import { AtSymbolIcon, UserIcon, BuildingOfficeIcon, CheckCircleIcon } from '../../../constants';
+import { useAppContext } from '../../../context/AppContext';
+import { fetchBuyerProducts, Product } from '../../../utils/api';
 
 interface SubscriptionModalProps {
   isOpen: boolean;
