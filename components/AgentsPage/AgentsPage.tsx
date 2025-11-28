@@ -104,15 +104,22 @@ const AgentsPage: React.FC = () => {
 
   return (
     <div className="bg-neutral-50 min-h-screen flex flex-col">
-      <AdvertisementBanner position="top" />
-      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 flex-grow">
-        <div className="text-center mb-8">
-            <UserGroupIcon className="w-12 h-12 text-primary mx-auto mb-2" />
-            <h1 className="text-3xl font-bold text-neutral-900">Top Agents</h1>
-            <p className="text-lg text-neutral-600 mt-2">
-                Discover the best real estate agents in the Balkans.
-            </p>
+      <AdvertisementBanner position="top" disableGameTrigger={true} />
+
+      {/* Hero Banner */}
+      <div className="bg-gradient-to-r from-primary via-primary-dark to-primary text-white py-12 px-4 sm:px-6 lg:px-8 shadow-lg">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full mb-4">
+            <TrophyIcon className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold mb-3">Top Agents</h1>
+          <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto">
+            Connect with the Balkans' most successful real estate professionals
+          </p>
         </div>
+      </div>
+
+      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 flex-grow">
         
         <div className="mb-6 bg-white p-3 rounded-lg shadow-sm border flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex flex-wrap items-center gap-4">

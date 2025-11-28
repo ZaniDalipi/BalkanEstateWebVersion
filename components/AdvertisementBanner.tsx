@@ -19,9 +19,10 @@ interface FeaturedAgency {
 
 interface AdvertisementBannerProps {
   position?: 'top' | 'bottom' | 'sidebar';
+  disableGameTrigger?: boolean;
 }
 
-const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 'top' }) => {
+const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 'top', disableGameTrigger = false }) => {
   const { dispatch } = useAppContext();
   const [currentAd, setCurrentAd] = useState<FeaturedAgency | null>(null);
   const [ads, setAds] = useState<FeaturedAgency[]>([]);
@@ -66,8 +67,8 @@ const AdvertisementBanner: React.FC<AdvertisementBannerProps> = ({ position = 't
     setAdViewCount(newCount);
     localStorage.setItem(AD_VIEW_STORAGE_KEY, newCount.toString());
 
-    // Trigger gamification after threshold reached
-    if (newCount === AD_VIEW_THRESHOLD) {
+    // Trigger gamification after threshold reached (unless disabled for this banner)
+    if (!disableGameTrigger && newCount === AD_VIEW_THRESHOLD) {
       console.log('🎮 Ad view threshold reached! Triggering gamification...');
       triggerGamification();
     }

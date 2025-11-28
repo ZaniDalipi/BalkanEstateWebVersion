@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Property, PropertyImageTag, ChatMessage, AiSearchQuery, Filters } from '../types';
+import L from 'leaflet';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -491,7 +492,41 @@ export const generateSearchName = async (filters: Filters): Promise<string> => {
     return result.text.trim();
 };
 
-export const generateSearchNameFromCoords = async (lat: number, lng: number): Promise<string> => {
+export const generateSearchNameFromCoords = async (lat: number, lng: number, bounds?: L.LatLngBounds): Promise<string> => {
+    // Use reverse geocoding to get actual location name
+    try {
+        const { reverseGeocode } = await import('./osmService');
+        const result = await reverseGeocode(lat, lng);
+
+        if (result && result.address) {
+            const address = result.address;
+
+            // Determine the appropriate granularity based on bounds size if provided
+            if (bounds) {
+                const boundsSize = bounds.getNorthEast().distanceTo(bounds.getSouthWest()) / 1000; // km
+
+                // Large area (>100km diagonal) - likely whole country or region
+                if (boundsSize > 100) {
+                    return address.country || 'Large Area';
+                }
+                // Medium area (10-100km) - likely city or municipality
+                else if (boundsSize > 10) {
+                    return address.city || address.town || address.village || address.county || address.state || 'City Area';
+                }
+                // Small area (<10km) - likely suburb or neighborhood
+                else {
+                    return address.suburb || address.neighbourhood || address.city || address.town || address.village || 'Neighborhood';
+                }
+            }
+
+            // Fallback: use the most specific available
+            return address.suburb || address.neighbourhood || address.city || address.town || address.village || address.county || address.state || address.country || 'Area';
+        }
+    } catch (error) {
+        console.error('Reverse geocoding failed, falling back to AI:', error);
+    }
+
+    // Fallback to AI if reverse geocoding fails
     const prompt = `
         You are a helpful real estate assistant. Given the following latitude and longitude coordinates, generate a concise, human-readable name for the geographic area they represent. The name should be suitable for a saved search.
 
@@ -506,7 +541,7 @@ export const generateSearchNameFromCoords = async (lat: number, lng: number): Pr
         Return only the generated name string, without any markdown or extra text.
     `;
 
-    const result = await retryWithBackoff(() =>
+    const aiResult = await retryWithBackoff(() =>
         ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
@@ -516,7 +551,7 @@ export const generateSearchNameFromCoords = async (lat: number, lng: number): Pr
         })
     );
 
-    return result.text.trim();
+    return aiResult.text.trim();
 };
 
 export const getNeighborhoodInsights = async (lat: number, lng: number, city: string, country: string): Promise<string> => {

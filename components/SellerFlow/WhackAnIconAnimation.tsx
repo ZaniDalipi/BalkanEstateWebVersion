@@ -116,6 +116,9 @@ const WhackAnIconAnimation: React.FC<WhackAnIconAnimationProps> = ({ mode = 'loa
         // If the clicked mole is not the active one, do nothing.
         if (index !== activeMole) return;
 
+        // Only allow whacking if game is active (for game mode) or if in loading mode
+        if (mode === 'game' && !isGameActive) return;
+
         // Clear the hide timer since the mole was hit
         if (hideTimerRef.current) {
             clearTimeout(hideTimerRef.current);
@@ -127,10 +130,12 @@ const WhackAnIconAnimation: React.FC<WhackAnIconAnimationProps> = ({ mode = 'loa
         setHitIndex(index);
         setTimeout(() => setHitIndex(null), 300);
 
-        if (isGameActive) {
-            setScore(s => {
-                const newScore = s + 1;
+        // Increment score
+        if (isGameActive && mode === 'game') {
+            setScore(prev => {
+                const newScore = prev + 1;
                 scoreRef.current = newScore;
+                console.log('Score incremented:', newScore); // Debug log
                 return newScore;
             });
         }
@@ -159,12 +164,14 @@ const WhackAnIconAnimation: React.FC<WhackAnIconAnimationProps> = ({ mode = 'loa
                         <div key={index} className="relative w-full h-full bg-green-800/20 rounded-full flex items-center justify-center overflow-hidden">
                             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black/20 rounded-full" />
                             <div
-                                onClick={() => handleWhack(index)}
-                                className={`absolute bottom-0 w-full flex justify-center transition-transform duration-150 ease-out ${
+                                className={`absolute bottom-0 w-full flex justify-center transition-transform duration-150 ease-out pointer-events-none ${
                                     activeMole === index ? 'translate-y-0' : 'translate-y-full'
                                 }`}
                             >
-                                <div className="p-2 bg-white rounded-full shadow-lg border-2 border-primary-light cursor-pointer hover:scale-110">
+                                <div
+                                    onClick={() => handleWhack(index)}
+                                    className="p-2 bg-white rounded-full shadow-lg border-2 border-primary-light cursor-pointer hover:scale-110 active:scale-95 pointer-events-auto transition-transform"
+                                >
                                     {getRandomIcon(index)}
                                 </div>
                             </div>

@@ -11,7 +11,7 @@ interface PropertyCardProps {
 }
 
 const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCompareButton }) => {
-  const { state, dispatch } = useAppContext();
+  const { state, dispatch, toggleSavedHome } = useAppContext();
   const [imageError, setImageError] = useState(false);
   const isFavorited = state.savedHomes.some(p => p.id === property.id);
   const isInComparison = state.comparisonList.includes(property.id);
@@ -25,14 +25,19 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
     window.history.pushState({ propertyId: property.id }, '', `/property/${property.id}`);
   }, [dispatch, property.id]);
 
-  const handleFavoriteClick = useCallback((e: React.MouseEvent) => {
+  const handleFavoriteClick = useCallback(async (e: React.MouseEvent) => {
       e.stopPropagation(); // Prevent card click
       if (!state.isAuthenticated && !state.user) {
           dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
       } else {
-          dispatch({ type: 'TOGGLE_SAVED_HOME', payload: property });
+          try {
+              await toggleSavedHome(property);
+          } catch (error) {
+              console.error('Failed to toggle saved home:', error);
+              showToast?.('Failed to save property. Please try again.', 'error');
+          }
       }
-  }, [state.isAuthenticated, state.user, dispatch, property]);
+  }, [state.isAuthenticated, state.user, dispatch, property, toggleSavedHome, showToast]);
 
   const handleCompareClick = useCallback((e: React.MouseEvent) => {
       e.stopPropagation();

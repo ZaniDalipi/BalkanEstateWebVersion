@@ -223,23 +223,26 @@ const AgenciesListPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      {/* Hero Section - Apple Style */}
-      <div className="bg-white border-b border-gray-200">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-primary via-primary-dark to-primary text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
-            <h1 className="text-5xl sm:text-6xl font-semibold tracking-tight text-gray-900 mb-4">
-              Premium Agencies
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl mb-6">
+              <BuildingOfficeIcon className="w-12 h-12 text-white" />
+            </div>
+            <h1 className="text-5xl sm:text-6xl font-bold tracking-tight mb-4">
+              Top Real Estate Agencies
             </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-              Discover the finest real estate agencies across the Balkans
+            <p className="text-xl text-white/90 max-w-2xl mx-auto mb-8">
+              Partner with the Balkans' most trusted and successful agencies
             </p>
 
             <button
               onClick={handleCreateEnterprise}
-              className="inline-flex items-center gap-2 bg-black text-white px-8 py-4 rounded-full font-medium hover:bg-gray-900 transition-all hover:scale-105 shadow-lg"
+              className="inline-flex items-center gap-2 bg-white text-primary px-8 py-4 rounded-full font-semibold hover:bg-gray-100 transition-all hover:scale-105 shadow-xl"
             >
               <BuildingOfficeIcon className="w-5 h-5" />
-              Create Agency
+              Create Your Agency
             </button>
           </div>
         </div>
