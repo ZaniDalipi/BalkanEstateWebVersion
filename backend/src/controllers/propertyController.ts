@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Property from '../models/Property';
 import User, { IUser } from '../models/User';
 import Agent from '../models/Agent';
+import Agency from '../models/Agency';
 import SalesHistory from '../models/SalesHistory';
 import { geocodeProperty } from '../services/geocodingService';
 import { incrementViewCount, updateSoldStats } from '../utils/statsUpdater';
@@ -213,11 +214,42 @@ export const createProperty = async (
       }
     };
 
-    const userPlan = user.subscriptionPlan || 'free';
-    const tierLimit = getTierLimit(userPlan);
+    let userPlan = user.subscriptionPlan || 'free';
+    let tierLimit = getTierLimit(userPlan);
+    let subscriptionSource = 'personal';
+
+    // Check if agent can benefit from agency subscription
+    if (user.role === 'agent' && user.agencyId) {
+      const agency = await Agency.findById(user.agencyId);
+      if (agency && agency.agentDetails) {
+        // Find active agents sorted by join date
+        const activeAgents = agency.agentDetails
+          .filter((ad: any) => ad.isActive)
+          .sort((a: any, b: any) => new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime());
+
+        // Check if user is in first 5 agents
+        const agentIndex = activeAgents.findIndex((ad: any) => ad.userId.toString() === String(user._id));
+
+        if (agentIndex !== -1 && agentIndex < 5) {
+          // Agent is in first 5, check agency subscription
+          const agencyPlan = agency.subscriptionPlan || 'free';
+          const agencyLimit = getTierLimit(agencyPlan);
+
+          // Check if agency subscription is active
+          const isAgencySubActive = !agency.subscriptionExpiresAt || agency.subscriptionExpiresAt > new Date();
+
+          // Use higher limit (agency or personal)
+          if (isAgencySubActive && agencyLimit > tierLimit) {
+            tierLimit = agencyLimit;
+            userPlan = agencyPlan;
+            subscriptionSource = 'agency';
+          }
+        }
+      }
+    }
 
     // Check if subscription is expired for paid tiers
-    if (userPlan !== 'free' && user.subscriptionExpiresAt && user.subscriptionExpiresAt < new Date()) {
+    if (subscriptionSource === 'personal' && userPlan !== 'free' && user.subscriptionExpiresAt && user.subscriptionExpiresAt < new Date()) {
       // Subscription expired, revert to free tier limits
       user.subscriptionPlan = 'free';
       user.isSubscribed = false;
@@ -236,12 +268,17 @@ export const createProperty = async (
 
     // Check tier-based listing limit
     if (user.listingsCount >= tierLimit) {
+      const message = subscriptionSource === 'agency'
+        ? `You have reached the limit of ${tierLimit} listings covered by your agency's ${userPlan} subscription.`
+        : `You have reached the limit of ${tierLimit} listings for your ${userPlan} tier. Please upgrade to create more listings.`;
+
       res.status(403).json({
-        message: `You have reached the limit of ${tierLimit} listings for your ${userPlan} tier. Please upgrade to create more listings.`,
+        message,
         code: 'LISTING_LIMIT_REACHED',
         limit: tierLimit,
         current: user.listingsCount,
         tier: userPlan,
+        source: subscriptionSource,
       });
       return;
     }

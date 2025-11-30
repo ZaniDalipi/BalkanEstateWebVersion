@@ -348,13 +348,25 @@ export const leaveAgency = async (req: Request, res: Response): Promise<void> =>
       await agentProfile.save();
     }
 
-    // Remove agent from agency's agents array
+    // Remove agent from agency's agents array and mark as inactive in agentDetails
     const agency = await Agency.findById(agencyId);
     if (agency) {
       agency.agents = agency.agents.filter(
         (id) => id.toString() !== String(currentUser._id)
       );
       agency.totalAgents = agency.agents.length;
+
+      // Mark agent as inactive in agentDetails (preserve join history)
+      if (agency.agentDetails) {
+        const agentDetail = agency.agentDetails.find(
+          (ad: any) => ad.userId.toString() === String(currentUser._id)
+        );
+        if (agentDetail) {
+          agentDetail.isActive = false;
+          agentDetail.leftAt = new Date();
+        }
+      }
+
       await agency.save();
 
       // Emit socket event to notify agency members
