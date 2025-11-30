@@ -128,9 +128,10 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
     const fetchAgency = async () => {
       if (state.selectedAgencyId) {
         // Check if selectedAgencyId is already an agency object
-        if (typeof state.selectedAgencyId === 'object' && state.selectedAgencyId._id) {
-          console.log('✅ Agency object already loaded:', state.selectedAgencyId.name);
-          setSelectedAgency(state.selectedAgencyId);
+        const agencyId = state.selectedAgencyId;
+        if (typeof agencyId === 'object' && agencyId !== null && '_id' in agencyId && 'name' in agencyId) {
+          console.log('✅ Agency object already loaded:', agencyId.name);
+          setSelectedAgency(agencyId);
           setIsLoadingAgency(false);
           return;
         }

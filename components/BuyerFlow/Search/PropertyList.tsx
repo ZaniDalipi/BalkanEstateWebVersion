@@ -10,7 +10,7 @@ import Footer from '../../shared/Footer';
 interface PropertyListProps {
   properties: Property[];
   filters: Filters;
-onFilterChange: (name: keyof Filters, value: string | number | boolean | null) => void;
+  onFilterChange: <K extends keyof Filters>(name: K, value: Filters[K]) => void;
   onSearchClick: () => void;
   onResetFilters: () => void;
   onSortChange: (value: string) => void;

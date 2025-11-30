@@ -496,7 +496,7 @@ export interface AppState {
     conversations: Conversation[];
     activeConversationId: string | null;
     selectedAgentId: string | null;
-    selectedAgencyId: string | null;
+    selectedAgencyId: string | Agency | null;
     pendingProperty: Property | null;
     pendingSubscription: PendingSubscription | null;
     pendingAgencyData: any | null; // Agency form data to be created after payment
