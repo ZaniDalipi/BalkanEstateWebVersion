@@ -316,6 +316,7 @@ export interface SavedSearch {
     drawnBoundsJSON: string | null;
     createdAt: number;
     lastAccessed: number;
+    seenPropertyIds?: string[];
 }
 
 export interface ChatMessage {
@@ -553,4 +554,4 @@ export type AppAction =
     | { type: 'SET_ACTIVE_DISCOUNT', payload: { proYearly: number; proMonthly: number; enterprise: number; } | null }
     | { type: 'TOGGLE_LISTING_LIMIT_WARNING', payload: boolean }
     | { type: 'TOGGLE_DISCOUNT_GAME', payload: boolean }
-    | { type: 'UPDATE_SAVED_SEARCH_ACCESS_TIME', payload: string };
+    | { type: 'UPDATE_SAVED_SEARCH_ACCESS_TIME', payload: { searchId: string; seenPropertyIds?: string[] } };

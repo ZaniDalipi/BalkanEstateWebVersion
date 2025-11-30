@@ -248,7 +248,11 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         return {
             ...state,
             savedSearches: state.savedSearches.map(s =>
-                s.id === action.payload ? { ...s, lastAccessed: Date.now() } : s
+                s.id === action.payload.searchId ? {
+                    ...s,
+                    lastAccessed: Date.now(),
+                    seenPropertyIds: action.payload.seenPropertyIds || s.seenPropertyIds || []
+                } : s
             ),
         };
     default:
@@ -280,7 +284,7 @@ interface AppContextType {
     updateListing: (property: Property) => Promise<Property>;
     updateUser: (userData: Partial<User>) => Promise<User>;
     updateSearchPageState: (newState: Partial<SearchPageState>) => void;
-    updateSavedSearchAccessTime: (searchId: string) => Promise<void>;
+    updateSavedSearchAccessTime: (searchId: string, seenPropertyIds?: string[]) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -511,9 +515,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'UPDATE_SEARCH_PAGE_STATE', payload: newState });
   }, []);
 
-  const updateSavedSearchAccessTime = useCallback(async (searchId: string) => {
-    await api.updateSavedSearchAccessTime(searchId);
-    dispatch({ type: 'UPDATE_SAVED_SEARCH_ACCESS_TIME', payload: searchId });
+  const updateSavedSearchAccessTime = useCallback(async (searchId: string, seenPropertyIds?: string[]) => {
+    await api.updateSavedSearchAccessTime(searchId, seenPropertyIds);
+    dispatch({ type: 'UPDATE_SAVED_SEARCH_ACCESS_TIME', payload: { searchId, seenPropertyIds } });
   }, []);
 
   // Listen for user updates from WebSocket (agency joins, profile changes, etc.)

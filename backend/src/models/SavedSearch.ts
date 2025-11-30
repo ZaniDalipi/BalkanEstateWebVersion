@@ -20,6 +20,7 @@ export interface ISavedSearch extends Document {
   filters: IFilters;
   drawnBoundsJSON: string | null;
   lastAccessed: Date;
+  seenPropertyIds: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -64,6 +65,10 @@ const SavedSearchSchema: Schema = new Schema(
     lastAccessed: {
       type: Date,
       default: Date.now,
+    },
+    seenPropertyIds: {
+      type: [String],
+      default: [],
     },
   },
   {

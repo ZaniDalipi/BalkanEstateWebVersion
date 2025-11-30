@@ -410,10 +410,11 @@ export const getSavedSearches = async (): Promise<SavedSearch[]> => {
   return response.savedSearches.map(transformBackendSavedSearch);
 };
 
-export const updateSavedSearchAccessTime = async (searchId: string): Promise<{ success: true }> => {
+export const updateSavedSearchAccessTime = async (searchId: string, seenPropertyIds?: string[]): Promise<{ success: true }> => {
   await apiRequest(`/saved-searches/${searchId}/access`, {
     method: 'PATCH',
     requiresAuth: true,
+    body: seenPropertyIds ? { seenPropertyIds } : undefined,
   });
 
   return { success: true };
@@ -682,6 +683,7 @@ function transformBackendSavedSearch(backendSearch: any): SavedSearch {
     drawnBoundsJSON: backendSearch.drawnBoundsJSON,
     createdAt: new Date(backendSearch.createdAt).getTime(),
     lastAccessed: new Date(backendSearch.lastAccessed).getTime(),
+    seenPropertyIds: backendSearch.seenPropertyIds || [],
   };
 }
 

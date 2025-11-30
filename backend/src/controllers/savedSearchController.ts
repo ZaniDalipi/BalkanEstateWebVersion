@@ -60,7 +60,7 @@ export const createSavedSearch = async (
   }
 };
 
-// @desc    Update saved search access time
+// @desc    Update saved search access time and seen properties
 // @route   PATCH /api/saved-searches/:id/access
 // @access  Private
 export const updateAccessTime = async (
@@ -87,6 +87,12 @@ export const updateAccessTime = async (
     }
 
     savedSearch.lastAccessed = new Date();
+
+    // Update seen property IDs if provided
+    if (req.body.seenPropertyIds && Array.isArray(req.body.seenPropertyIds)) {
+      savedSearch.seenPropertyIds = req.body.seenPropertyIds;
+    }
+
     await savedSearch.save();
 
     res.json({ savedSearch });

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { SavedSearch } from '../../../types';
 import PropertyCard from '../PropertyDisplay/PropertyCard';
 import { ChevronUpIcon, ChevronDownIcon, TrashIcon } from '../../../constants';
@@ -7,6 +7,7 @@ import { filterProperties } from '../../../utils/propertyUtils';
 import PropertyCardSkeleton from '../PropertyDisplay/PropertyCardSkeleton';
 import L from 'leaflet';
 import * as api from '../../../services/apiService';
+import { MapContainer, TileLayer, Rectangle } from 'react-leaflet';
 
 interface SavedSearchAccordionProps {
   search: SavedSearch;
@@ -16,12 +17,11 @@ interface SavedSearchAccordionProps {
 const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onOpen }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const { state, dispatch } = useAppContext();
+  const { state, dispatch, updateSavedSearchAccessTime } = useAppContext();
   const { isLoadingProperties, allMunicipalities, properties } = state;
 
   const matchingProperties = useMemo(() => {
       // Start with base filters
-      // FIX: The filterProperties function expects 2 arguments, not 3.
       let filtered = filterProperties(properties, search.filters);
 
       // If there's a drawn area, filter by it
@@ -34,16 +34,26 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onO
               console.error("Failed to parse drawnBoundsJSON in SavedSearchAccordion", e);
           }
       }
-      
+
       return filtered;
   }, [properties, search.filters, search.drawnBoundsJSON, allMunicipalities]);
 
-  const propertyCount = matchingProperties.length;
+  // Calculate new properties (properties not in seenPropertyIds)
+  const newProperties = useMemo(() => {
+    const seenIds = search.seenPropertyIds || [];
+    return matchingProperties.filter(p => !seenIds.includes(p.id));
+  }, [matchingProperties, search.seenPropertyIds]);
 
-  const handleToggle = () => {
+  const propertyCount = matchingProperties.length;
+  const newPropertyCount = newProperties.length;
+
+  const handleToggle = async () => {
     const nextIsOpen = !isOpen;
     if (nextIsOpen) {
-      onOpen();
+      // Mark all matching properties as seen when opening
+      const allPropertyIds = matchingProperties.map(p => p.id);
+      await updateSavedSearchAccessTime(search.id, allPropertyIds);
+      onOpen(); // Call onOpen after updating (in case parent needs to do something)
     }
     setIsOpen(nextIsOpen);
   };
@@ -76,12 +86,19 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onO
           className="flex-1 flex justify-between items-center text-left"
         >
           <h3 className="text-lg font-bold text-neutral-800">{search.name}</h3>
-          <div className="flex items-center bg-indigo-600 text-white rounded-full transition-colors hover:bg-indigo-700">
-            <span className="text-sm font-bold px-3 py-1.5 text-center">
-              {propertyCount}
-            </span>
-            <div className="border-l border-indigo-400 p-1.5">
-              {isOpen ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
+          <div className="flex items-center gap-2">
+            {newPropertyCount > 0 && (
+              <div className="bg-red-500 text-white rounded-full px-3 py-1.5">
+                <span className="text-sm font-bold">{newPropertyCount} new</span>
+              </div>
+            )}
+            <div className="flex items-center bg-indigo-600 text-white rounded-full transition-colors hover:bg-indigo-700">
+              <span className="text-sm font-bold px-3 py-1.5 text-center">
+                {propertyCount}
+              </span>
+              <div className="border-l border-indigo-400 p-1.5">
+                {isOpen ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
+              </div>
             </div>
           </div>
         </button>
@@ -98,6 +115,43 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onO
       {/* Expanded Content */}
       {isOpen && (
         <div className="p-4 bg-neutral-50/70 border-t border-neutral-200 animate-fade-in">
+          {/* Map display for drawn area */}
+          {search.drawnBoundsJSON && (() => {
+            try {
+              const parsed = JSON.parse(search.drawnBoundsJSON);
+              const drawnBounds = L.latLngBounds(parsed._southWest, parsed._northEast);
+              const center = drawnBounds.getCenter();
+
+              return (
+                <div className="mb-4 rounded-lg overflow-hidden border border-neutral-300 shadow-sm">
+                  <MapContainer
+                    center={[center.lat, center.lng]}
+                    zoom={13}
+                    style={{ height: '300px', width: '100%' }}
+                    scrollWheelZoom={false}
+                  >
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    />
+                    <Rectangle
+                      bounds={drawnBounds}
+                      pathOptions={{
+                        color: '#4f46e5',
+                        weight: 2,
+                        fillColor: '#4f46e5',
+                        fillOpacity: 0.1,
+                      }}
+                    />
+                  </MapContainer>
+                </div>
+              );
+            } catch (e) {
+              console.error("Failed to render map for saved search", e);
+              return null;
+            }
+          })()}
+
           {isLoadingProperties ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {Array.from({ length: 4 }).map((_, index) => (

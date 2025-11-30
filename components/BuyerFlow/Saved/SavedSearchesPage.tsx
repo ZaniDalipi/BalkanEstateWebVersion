@@ -62,7 +62,7 @@ const SortButton: React.FC<{
 
 
 const SavedSearchesPage: React.FC = () => {
-  const { state, dispatch, updateSavedSearchAccessTime } = useAppContext();
+  const { state, dispatch } = useAppContext();
   const { savedSearches, isAuthenticated } = state;
   const [sortBy, setSortBy] = useState<'createdAt' | 'name' | 'lastAccessed'>('createdAt');
 
@@ -110,6 +110,7 @@ const SavedSearchesPage: React.FC = () => {
                 drawnBoundsJSON: null,
                 createdAt: now,
                 lastAccessed: now,
+                seenPropertyIds: [],
             };
             dispatch({ type: 'ADD_SAVED_SEARCH', payload: exampleSearch });
         };
@@ -151,10 +152,10 @@ const SavedSearchesPage: React.FC = () => {
             </div>
             <div className="space-y-4">
               {sortedSearches.map((search) => (
-                <SavedSearchAccordion 
-                    key={search.id} 
+                <SavedSearchAccordion
+                    key={search.id}
                     search={search}
-                    onOpen={() => updateSavedSearchAccessTime(search.id)}
+                    onOpen={() => {}} // SavedSearchAccordion handles updating access time itself
                 />
               ))}
             </div>

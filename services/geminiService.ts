@@ -501,26 +501,24 @@ export const generateSearchNameFromCoords = async (lat: number, lng: number, bou
         if (result && result.address) {
             const address = result.address;
 
-            // Determine the appropriate granularity based on bounds size if provided
-            if (bounds) {
-                const boundsSize = bounds.getNorthEast().distanceTo(bounds.getSouthWest()) / 1000; // km
+            // Prioritize the most specific location name based on what's available
+            // Check for suburb/neighbourhood first (most specific)
+            if (address.suburb) return address.suburb;
+            if (address.neighbourhood) return address.neighbourhood;
 
-                // Large area (>100km diagonal) - likely whole country or region
-                if (boundsSize > 100) {
-                    return address.country || 'Large Area';
-                }
-                // Medium area (10-100km) - likely city or municipality
-                else if (boundsSize > 10) {
-                    return address.city || address.town || address.village || address.county || address.state || 'City Area';
-                }
-                // Small area (<10km) - likely suburb or neighborhood
-                else {
-                    return address.suburb || address.neighbourhood || address.city || address.town || address.village || 'Neighborhood';
-                }
-            }
+            // Then check for city/town/village
+            if (address.city) return address.city;
+            if (address.town) return address.town;
+            if (address.village) return address.village;
 
-            // Fallback: use the most specific available
-            return address.suburb || address.neighbourhood || address.city || address.town || address.village || address.county || address.state || address.country || 'Area';
+            // Fall back to larger areas if no specific location found
+            if (address.municipality) return address.municipality;
+            if (address.county) return address.county;
+            if (address.state) return address.state;
+            if (address.country) return address.country;
+
+            // Last resort
+            return 'Area';
         }
     } catch (error) {
         console.error('Reverse geocoding failed, falling back to AI:', error);

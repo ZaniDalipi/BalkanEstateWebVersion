@@ -404,6 +404,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                     drawnBoundsJSON: drawnBoundsJSON,
                     createdAt: now,
                     lastAccessed: now,
+                    seenPropertyIds: [],
                 };
             } else if (isFormSearchActive) { // Priority 2: Active text/form filters
                 const name = await generateSearchName(filters);
@@ -414,6 +415,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                     drawnBoundsJSON: null,
                     createdAt: now,
                     lastAccessed: now,
+                    seenPropertyIds: [],
                 };
             } else if (mapBounds) { // Priority 3: The current map view
                 const center = mapBounds.getCenter();
@@ -425,6 +427,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                     drawnBoundsJSON: JSON.stringify(mapBounds), // Save the current map view as the search area
                     createdAt: now,
                     lastAccessed: now,
+                    seenPropertyIds: [],
                 };
             }
             else {
