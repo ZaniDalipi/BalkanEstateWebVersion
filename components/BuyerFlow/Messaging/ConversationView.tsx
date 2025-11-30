@@ -166,10 +166,17 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, onBac
         try {
             const result = await sendMessageAPI(conversation.id, messageData);
 
-            // Add the sent message to the list
-            setMessages(prev => [...prev, result.message]);
+            // Add the sent message to the list with duplicate check
+            // (WebSocket message may have already arrived due to race condition)
+            setMessages(prev => {
+                if (prev.some(m => m.id === result.message.id)) {
+                    return prev;
+                }
+                return [...prev, result.message];
+            });
 
             // Update conversation in AppContext so the list updates
+            // (WebSocket handler may have already dispatched this, but duplicate check in reducer would be ideal)
             dispatch({ type: 'ADD_MESSAGE', payload: { conversationId: conversation.id, message: result.message } });
 
             // Note: Backend will emit WebSocket event to conversation room for real-time delivery

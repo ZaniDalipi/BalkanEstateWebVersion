@@ -183,8 +183,20 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     case 'SET_ACTIVE_CONVERSATION':
         console.log('Setting active conversation in reducer:', action.payload);
         return { ...state, activeConversationId: action.payload };
-    case 'ADD_MESSAGE':
-        return { ...state, conversations: state.conversations.map(c => c.id === action.payload.conversationId ? { ...c, messages: [...c.messages, action.payload.message] } : c ) };
+    case 'ADD_MESSAGE': {
+        const { conversationId, message } = action.payload;
+        return {
+            ...state,
+            conversations: state.conversations.map(c => {
+                if (c.id !== conversationId) return c;
+                // Avoid adding duplicate messages
+                if (c.messages.some(m => m.id === message.id)) {
+                    return c;
+                }
+                return { ...c, messages: [...c.messages, message] };
+            })
+        };
+    }
     // FIX: Add missing reducer case for creating a new conversation or adding a message to an existing one.
     case 'CREATE_OR_ADD_MESSAGE': {
         const { propertyId, message } = action.payload;
