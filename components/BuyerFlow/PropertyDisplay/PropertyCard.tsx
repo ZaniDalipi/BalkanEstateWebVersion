@@ -1,6 +1,6 @@
 import React, { useState, useCallback, memo } from 'react';
 import { Property } from '../../../types';
-import { MapPinIcon, BedIcon, BathIcon, SqftIcon, UserCircleIcon, ScaleIcon, LivingRoomIcon, BuildingOfficeIcon } from '../../../constants';
+import { MapPinIcon, BedIcon, BathIcon, SqftIcon, UserCircleIcon, ScaleIcon, LivingRoomIcon, BuildingOfficeIcon, EnvelopeIcon } from '../../../constants';
 import { useAppContext } from '../../../context/AppContext';
 import { formatPrice } from '../../../utils/currency';
 
@@ -11,8 +11,9 @@ interface PropertyCardProps {
 }
 
 const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCompareButton }) => {
-  const { state, dispatch, toggleSavedHome } = useAppContext();
+  const { state, dispatch, toggleSavedHome, createConversation } = useAppContext();
   const [imageError, setImageError] = useState(false);
+  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const isFavorited = state.savedHomes.some(p => p.id === property.id);
   const isInComparison = state.comparisonList.includes(property.id);
   const isNew = property.createdAt && (Date.now() - property.createdAt < 3 * 24 * 60 * 60 * 1000);
@@ -51,6 +52,29 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
           }
       }
   }, [isInComparison, dispatch, property.id, state.comparisonList.length, showToast]);
+
+  const handleMessageSeller = useCallback(async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!state.isAuthenticated && !state.user) {
+          dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
+          return;
+      }
+
+      try {
+          setIsCreatingConversation(true);
+          const conversation = await createConversation(property.id);
+          dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: conversation.id });
+          // Navigate to inbox
+          window.history.pushState({ page: 'inbox' }, '', '/inbox');
+          // Trigger a navigation event to update the app routing
+          dispatch({ type: 'SET_CURRENT_PAGE', payload: 'inbox' });
+      } catch (error) {
+          console.error('Failed to create conversation:', error);
+          showToast?.('Failed to start conversation. Please try again.', 'error');
+      } finally {
+          setIsCreatingConversation(false);
+      }
+  }, [state.isAuthenticated, state.user, dispatch, property.id, createConversation, showToast]);
 
   return (
     <div
@@ -118,30 +142,40 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
 
         <div className="flex-grow"></div>
 
-        <div className="mt-4 pt-4 border-t border-neutral-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
-            {showCompareButton && (
-                <button
-                    onClick={handleCompareClick}
-                    className={`flex items-center justify-center gap-2 px-5 py-3 rounded-full text-base font-semibold transition-all shadow-sm hover:shadow-md w-full sm:w-auto ${
-                        isInComparison
-                            ? 'bg-primary-light text-primary-dark border-2 border-primary/50'
-                            : 'bg-white text-neutral-700 border-2 border-neutral-300 hover:bg-neutral-100'
-                    }`}
-                >
-                    <ScaleIcon className="w-6 h-6" />
-                    <span>{isInComparison ? 'Selected' : 'Compare'}</span>
-                </button>
-            )}
-             <button
-                onClick={handleCardClick}
-                className="bg-primary text-white px-5 py-3 rounded-full text-base font-semibold hover:bg-primary-dark transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 w-full sm:w-auto"
-            >
-                {property.seller.avatarUrl ? (
-                    <img src={property.seller.avatarUrl} alt={property.seller.name} className="w-7 h-7 rounded-full object-cover border-2 border-white/50" />
-                ) : (
-                    <UserCircleIcon className="w-7 h-7" />
+        <div className="mt-4 pt-4 border-t border-neutral-100 flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+                {showCompareButton && (
+                    <button
+                        onClick={handleCompareClick}
+                        className={`flex items-center justify-center gap-2 px-5 py-3 rounded-full text-base font-semibold transition-all shadow-sm hover:shadow-md w-full sm:w-auto ${
+                            isInComparison
+                                ? 'bg-primary-light text-primary-dark border-2 border-primary/50'
+                                : 'bg-white text-neutral-700 border-2 border-neutral-300 hover:bg-neutral-100'
+                        }`}
+                    >
+                        <ScaleIcon className="w-6 h-6" />
+                        <span>{isInComparison ? 'Selected' : 'Compare'}</span>
+                    </button>
                 )}
-                <span>View Details</span>
+                <button
+                    onClick={handleCardClick}
+                    className="bg-primary text-white px-5 py-3 rounded-full text-base font-semibold hover:bg-primary-dark transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 w-full sm:w-auto"
+                >
+                    {property.seller.avatarUrl ? (
+                        <img src={property.seller.avatarUrl} alt={property.seller.name} className="w-7 h-7 rounded-full object-cover border-2 border-white/50" />
+                    ) : (
+                        <UserCircleIcon className="w-7 h-7" />
+                    )}
+                    <span>View Details</span>
+                </button>
+            </div>
+            <button
+                onClick={handleMessageSeller}
+                disabled={isCreatingConversation}
+                className="bg-white text-primary px-5 py-3 rounded-full text-base font-semibold border-2 border-primary hover:bg-primary-light transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 w-full disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                <EnvelopeIcon className="w-6 h-6" />
+                <span>{isCreatingConversation ? 'Creating...' : 'Message Seller'}</span>
             </button>
         </div>
       </div>
