@@ -5,7 +5,7 @@ import PropertyCard from '../PropertyDisplay/PropertyCard';
 import { HeartIcon } from '../../../constants';
 import ComparisonBar from '../Comparison/ComparisonBar';
 import ComparisonModal from '../Comparison/ComparisonModal';
-import Toast from '../../../shared/Toast';
+import Toast from '@/components/shared/Toast';
 import PropertyCardSkeleton from '../PropertyDisplay/PropertyCardSkeleton';
 import AdvertisementBanner from '../../AdvertisementBanner';
 import Footer from '../../shared/Footer';
