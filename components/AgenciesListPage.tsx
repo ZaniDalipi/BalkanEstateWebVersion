@@ -203,9 +203,10 @@ const AgenciesListPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-primary via-primary-dark to-primary text-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex flex-col">
+      <div className="flex-grow">
+        {/* Hero Section */}
+        <div className="bg-gradient-to-br from-primary via-primary-dark to-primary text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl mb-6">
@@ -429,6 +430,7 @@ const AgenciesListPage: React.FC = () => {
             })}
           </div>
         )}
+      </div>
       </div>
 
       {/* Footer */}

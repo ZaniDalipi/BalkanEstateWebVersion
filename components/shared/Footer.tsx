@@ -35,7 +35,7 @@ const Footer: React.FC<FooterProps> = ({ className = '' }) => {
     };
 
     return (
-        <footer className={`relative bg-gray-50 text-gray-900 overflow-hidden border-t border-gray-200 ${className}`}>
+        <footer className={`relative bg-gray-50 text-gray-900 border-t border-gray-200 mt-auto pb-4 ${className}`}>
             {/* Subtle Background Pattern */}
             <div className="absolute inset-0 opacity-[0.02]" style={{
                 backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',

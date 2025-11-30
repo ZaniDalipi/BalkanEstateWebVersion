@@ -2,7 +2,7 @@ import React from 'react';
 
 const FooterCityscape: React.FC = () => {
     return (
-        <div className="relative w-full min-h-[80px] overflow-visible bg-gradient-to-b from-transparent to-primary-dark/50 pb-2">
+        <div className="relative w-full min-h-[100px] overflow-visible bg-gradient-to-b from-transparent to-primary-dark/50 pb-0">
             {/* Sky background with better contrast */}
             <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/90 to-indigo-600/60"></div>
 
