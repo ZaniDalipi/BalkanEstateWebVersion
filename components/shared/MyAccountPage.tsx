@@ -161,18 +161,24 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
         setError('');
         try {
             const roleToSwitch = pendingRole || formData.role;
-            console.log('🔄 Switching to role:', roleToSwitch, 'with data:', licenseData);
+            console.log('🔄 Switching to role:', roleToSwitch);
             const updatedUser = await switchRole(roleToSwitch, licenseData);
-            console.log('✅ Role switch successful, updated user:', updatedUser);
+            console.log('✅ Role switch successful');
+
+            // Update context and form data
             dispatch({ type: 'UPDATE_USER', payload: updatedUser });
             setFormData(updatedUser);
+
+            // Close modal and show success
             setIsLicenseModalOpen(false);
             setPendingRole(null);
             setIsSaved(true);
             setTimeout(() => setIsSaved(false), 2000);
         } catch (err) {
             console.error('❌ Role switch failed:', err);
-            setError(err instanceof Error ? err.message : 'Failed to switch role');
+            const errorMessage = err instanceof Error ? err.message : 'Failed to switch role';
+            setError(errorMessage);
+            // Re-throw so modal can catch and display error
             throw err;
         } finally {
             setIsSaving(false);

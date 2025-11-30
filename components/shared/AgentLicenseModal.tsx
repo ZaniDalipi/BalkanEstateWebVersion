@@ -61,6 +61,7 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent event bubbling
 
     // Validate license number is provided
     if (!licenseNumber.trim()) {
@@ -84,9 +85,9 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
     setIsSubmitting(true);
 
     try {
-      console.log('📤 Submitting agency join/switch:', {
-        selectedAgencyId: selectedAgency,
-        hasInvitationCode: !!agencyInvitationCode,
+      console.log('📤 Submitting agent license with data:', {
+        licenseNumber: licenseNumber.trim(),
+        agencyInvitationCode: agencyInvitationCode.trim() || '(none)',
         isJoiningAgency
       });
 
@@ -96,6 +97,8 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
         agentId: agentId.trim() || undefined,
         selectedAgencyId: selectedAgency || undefined,
       });
+
+      console.log('✅ Agent license verification successful');
 
       // Only reset form and close on success
       if (!isJoiningAgency) {
@@ -107,7 +110,10 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
       setError('');
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to verify license. Please check your information and try again.');
+      console.error('❌ Agent license verification failed:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to verify license. Please check your information and try again.';
+      setError(errorMessage);
+      // Modal stays open - don't close, don't navigate, just show error
     } finally {
       setIsSubmitting(false);
     }
