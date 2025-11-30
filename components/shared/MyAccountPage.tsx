@@ -158,9 +158,12 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
 
     const handleLicenseSubmit = async (licenseData: { licenseNumber: string; agencyInvitationCode?: string; agentId?: string; selectedAgencyId?: string }) => {
         setIsSaving(true);
+        setError('');
         try {
             const roleToSwitch = pendingRole || formData.role;
+            console.log('🔄 Switching to role:', roleToSwitch, 'with data:', licenseData);
             const updatedUser = await switchRole(roleToSwitch, licenseData);
+            console.log('✅ Role switch successful, updated user:', updatedUser);
             dispatch({ type: 'UPDATE_USER', payload: updatedUser });
             setFormData(updatedUser);
             setIsLicenseModalOpen(false);
@@ -168,6 +171,8 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
             setIsSaved(true);
             setTimeout(() => setIsSaved(false), 2000);
         } catch (err) {
+            console.error('❌ Role switch failed:', err);
+            setError(err instanceof Error ? err.message : 'Failed to switch role');
             throw err;
         } finally {
             setIsSaving(false);
@@ -299,6 +304,11 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 <fieldset>
                     <legend className="block text-sm font-medium text-neutral-700 mb-2">Your Role</legend>
                     <RoleSelector selectedRole={formData.role} originalRole={user.role} onChange={handleRoleChange} />
+                    {error && (
+                        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                            {error}
+                        </div>
+                    )}
                 </fieldset>
 
             {/* Avatar Upload Section */}
