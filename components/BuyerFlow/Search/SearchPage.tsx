@@ -312,7 +312,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     }, [baseFilteredProperties, mapBounds, drawnBounds]);
 
 
-    const handleFilterChange = useCallback((name: keyof Filters, value: string | number | null) => {
+    const handleFilterChange = useCallback(<K extends keyof Filters>(name: K, value: Filters[K]) => {
         const newFilters = { ...filters, [name]: value };
 
         // If country filter is changed, fly to the country bounds
