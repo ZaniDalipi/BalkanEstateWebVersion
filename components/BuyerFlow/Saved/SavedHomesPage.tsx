@@ -123,7 +123,11 @@ const SavedPropertiesPage: React.FC = () => {
 
   return (
     <div className="bg-neutral-50 min-h-screen flex flex-col">
-      <AdvertisementBanner position="top" />
+      {/* Advertisement Banner */}
+      <div className="sticky top-0 z-50">
+        <AdvertisementBanner position="top" />
+      </div>
+
       <Toast
           show={toast.show}
           message={toast.message}
@@ -135,30 +139,54 @@ const SavedPropertiesPage: React.FC = () => {
           onClose={() => setComparisonModalOpen(false)}
           properties={selectedForComparison}
       />
-      <main className={`py-8 flex-grow ${comparisonList.length > 0 ? 'pb-20' : ''}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Colorful Header Section */}
-          <div className="text-center mb-8 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 rounded-2xl opacity-50 blur-2xl -z-10"></div>
-            <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 rounded-xl p-8 shadow-lg border border-blue-200/50">
-              <div className="flex items-center justify-center gap-3 mb-3">
-                <HeartIcon className="w-10 h-10 text-red-500 fill-current animate-pulse" />
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  Saved Properties
-                </h1>
-                <HeartIcon className="w-10 h-10 text-red-500 fill-current animate-pulse" />
-              </div>
-              <p className="text-lg text-neutral-700 font-medium">
-                Your favorite properties, all in one place.
-              </p>
-              {savedHomes.length > 0 && (
-                <div className="mt-4 inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm border border-blue-200">
-                  <span className="text-2xl font-bold text-blue-600">{savedHomes.length}</span>
-                  <span className="text-sm text-neutral-600 font-medium">
-                    {savedHomes.length === 1 ? 'Property Saved' : 'Properties Saved'}
-                  </span>
+      <main className={`flex-grow ${comparisonList.length > 0 ? 'pb-20' : 'pb-8'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Modern Colorful Header Section */}
+          <div className="text-center mb-10 relative overflow-visible">
+            {/* Animated gradient background glow */}
+            <div className="absolute inset-0 bg-gradient-to-r from-rose-200 via-fuchsia-200 to-indigo-200 rounded-3xl opacity-40 blur-3xl -z-10 animate-pulse"></div>
+
+            {/* Main header card with glass morphism effect */}
+            <div className="relative bg-gradient-to-br from-white via-purple-50/30 to-pink-50/30 backdrop-blur-sm rounded-2xl p-10 shadow-2xl border border-white/60 overflow-hidden">
+              {/* Decorative elements */}
+              <div className="absolute -top-10 -left-10 w-40 h-40 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-2xl"></div>
+              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-gradient-to-br from-pink-400/20 to-rose-400/20 rounded-full blur-2xl"></div>
+
+              {/* Content */}
+              <div className="relative z-10">
+                <div className="flex items-center justify-center gap-4 mb-4">
+                  <div className="relative">
+                    <HeartIcon className="w-12 h-12 text-rose-500 fill-current animate-bounce" />
+                    <div className="absolute inset-0 w-12 h-12 bg-rose-400 rounded-full blur-xl opacity-50 animate-pulse"></div>
+                  </div>
+
+                  <h1 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent drop-shadow-sm">
+                    Saved Properties
+                  </h1>
+
+                  <div className="relative">
+                    <HeartIcon className="w-12 h-12 text-rose-500 fill-current animate-bounce" style={{ animationDelay: '0.3s' }} />
+                    <div className="absolute inset-0 w-12 h-12 bg-rose-400 rounded-full blur-xl opacity-50 animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+                  </div>
                 </div>
-              )}
+
+                <p className="text-xl text-gray-700 font-semibold mb-1">
+                  Your favorite properties, all in one place.
+                </p>
+                <p className="text-sm text-gray-500 italic">
+                  Curated collection of homes you love ✨
+                </p>
+
+                {savedHomes.length > 0 && (
+                  <div className="mt-6 inline-flex items-center gap-3 bg-gradient-to-r from-rose-500 to-fuchsia-600 text-white px-6 py-3 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 border-2 border-white/30">
+                    <span className="text-3xl font-black">{savedHomes.length}</span>
+                    <div className="h-8 w-px bg-white/30"></div>
+                    <span className="text-sm font-bold uppercase tracking-wide">
+                      {savedHomes.length === 1 ? 'Property Saved' : 'Properties Saved'}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           {renderContent()}
