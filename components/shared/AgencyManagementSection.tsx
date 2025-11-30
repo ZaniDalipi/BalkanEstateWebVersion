@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { User } from '../../types';
-import { getAgencies, createJoinRequest, leaveAgency } from '../../services/apiService';
+import { findAgencyByInvitationCode, createJoinRequest, leaveAgency } from '../../services/apiService';
 import { useAppContext } from '../../context/AppContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
@@ -8,9 +8,12 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 interface Agency {
   _id: string;
   name: string;
+  description?: string;
   city?: string;
   country?: string;
   slug?: string;
+  logo?: string;
+  totalAgents?: number;
 }
 
 interface AgencyManagementSectionProps {
@@ -20,59 +23,62 @@ interface AgencyManagementSectionProps {
 
 const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ currentUser, onAgencyChange }) => {
   const { dispatch } = useAppContext();
-  const [agencies, setAgencies] = useState<Agency[]>([]);
-  const [selectedAgencyId, setSelectedAgencyId] = useState('');
   const [invitationCode, setInvitationCode] = useState('');
+  const [foundAgency, setFoundAgency] = useState<Agency | null>(null);
   const [loading, setLoading] = useState(false);
-  const [loadingAgencies, setLoadingAgencies] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
 
-  // Fetch agencies when form is shown
-  useEffect(() => {
-    if (showForm && agencies.length === 0) {
-      fetchAgencies();
-    }
-  }, [showForm]);
-
-  const fetchAgencies = async () => {
-    try {
-      setLoadingAgencies(true);
-      const response = await getAgencies({ limit: 100 });
-      setAgencies(response.agencies || []);
-      console.log('✅ Loaded', response.agencies?.length || 0, 'agencies');
-    } catch (err) {
-      console.error('❌ Failed to load agencies:', err);
-      setError('Failed to load agencies. Please try again.');
-    } finally {
-      setLoadingAgencies(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleFindAgency = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setFoundAgency(null);
 
     // Validation
-    if (!selectedAgencyId) {
-      setError('Please select an agency');
+    if (!invitationCode.trim()) {
+      setError('Please enter an invitation code');
       return;
     }
 
     try {
+      setSearching(true);
+      console.log('🔍 Looking up agency with code:', invitationCode.trim().toUpperCase());
+
+      const response = await findAgencyByInvitationCode(invitationCode.trim());
+
+      if (response.success && response.agency) {
+        console.log('✅ Found agency:', response.agency.name);
+        setFoundAgency(response.agency);
+      }
+    } catch (err: any) {
+      console.error('❌ Failed to find agency:', err);
+      setError(err.message || 'Invalid invitation code. Please check and try again.');
+      setFoundAgency(null);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleSendJoinRequest = async () => {
+    if (!foundAgency) return;
+
+    try {
       setLoading(true);
-      console.log('📤 Sending join request to agency:', selectedAgencyId);
+      setError('');
+      console.log('📤 Sending join request to agency:', foundAgency.name);
 
-      // Create join request with optional invitation code as message
-      const message = invitationCode.trim()
-        ? `Join request with invitation code: ${invitationCode.trim().toUpperCase()}`
-        : 'Join request from profile';
-
-      const joinRequestResponse = await createJoinRequest(selectedAgencyId, message);
+      // Create join request
+      await createJoinRequest(foundAgency._id, `Join request with invitation code: ${invitationCode.trim().toUpperCase()}`);
       console.log('✅ Join request sent successfully');
 
-      // Fetch agency details to navigate to agency page
-      const agencyResponse = await fetch(`${API_URL}/agencies/${selectedAgencyId}`);
+      // Fetch full agency details to navigate to agency page
+      const agencyResponse = await fetch(`${API_URL}/agencies/${foundAgency._id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
+        },
+      });
+
       if (agencyResponse.ok) {
         const agencyData = await agencyResponse.json();
 
@@ -84,26 +90,26 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
 
         // Show success message
         alert(
-          `✅ Join request sent to ${agencyData.agency.name}!\n\n` +
+          `✅ Join request sent to ${foundAgency.name}!\n\n` +
           `📋 Your request is pending approval from the agency.\n` +
           `🔔 You will be notified when they respond.\n\n` +
           `Navigating to agency page...`
         );
 
         // Reset form
-        setSelectedAgencyId('');
         setInvitationCode('');
+        setFoundAgency(null);
         setShowForm(false);
       } else {
         // Request sent but couldn't fetch agency details
         alert(
-          `✅ Join request sent successfully!\n\n` +
-          `📋 Your request is pending approval from the agency.\n` +
+          `✅ Join request sent to ${foundAgency.name}!\n\n` +
+          `📋 Your request is pending approval.\n` +
           `🔔 You will be notified when they respond.`
         );
 
-        setSelectedAgencyId('');
         setInvitationCode('');
+        setFoundAgency(null);
         setShowForm(false);
       }
 
@@ -117,8 +123,8 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
 
   const handleCancel = () => {
     setShowForm(false);
-    setSelectedAgencyId('');
     setInvitationCode('');
+    setFoundAgency(null);
     setError('');
   };
 
@@ -214,42 +220,11 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Agency Selection */}
-            <div>
-              <label htmlFor="agency-select" className="block text-sm font-medium text-gray-700 mb-2">
-                Select Agency <span className="text-red-500">*</span>
-              </label>
-              {loadingAgencies ? (
-                <div className="px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-500 text-sm">
-                  Loading agencies...
-                </div>
-              ) : (
-                <select
-                  id="agency-select"
-                  value={selectedAgencyId}
-                  onChange={(e) => {
-                    setSelectedAgencyId(e.target.value);
-                    setError('');
-                  }}
-                  disabled={loading}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
-                  required
-                >
-                  <option value="">-- Choose an agency --</option>
-                  {agencies.map((agency) => (
-                    <option key={agency._id} value={agency._id}>
-                      {agency.name} {agency.city ? `(${agency.city}${agency.country ? ', ' + agency.country : ''})` : ''}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            {/* Invitation Code (Optional) */}
+          {/* Step 1: Enter Invitation Code */}
+          <form onSubmit={handleFindAgency} className="space-y-4">
             <div>
               <label htmlFor="invitation-code" className="block text-sm font-medium text-gray-700 mb-2">
-                Agency Invitation Code <span className="text-gray-500">(Optional)</span>
+                Agency Invitation Code <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -258,13 +233,15 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
                 onChange={(e) => {
                   setInvitationCode(e.target.value.toUpperCase());
                   setError('');
+                  setFoundAgency(null);
                 }}
-                disabled={loading}
+                disabled={searching || loading}
                 placeholder="e.g., AGY-BELGRAD-A1B2C3"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed font-mono text-sm"
+                required
               />
               <p className="text-xs text-gray-600 mt-1">
-                Optional: Include an invitation code if you have one from the agency
+                Enter the invitation code provided by the agency
               </p>
             </div>
 
@@ -275,23 +252,72 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
               </div>
             )}
 
+            {/* Agency Preview */}
+            {foundAgency && (
+              <div className="p-4 bg-white border-2 border-green-200 rounded-lg">
+                <div className="flex items-start gap-4">
+                  {foundAgency.logo ? (
+                    <img
+                      src={foundAgency.logo}
+                      alt={foundAgency.name}
+                      className="w-16 h-16 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <span className="text-2xl">🏢</span>
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <h5 className="font-bold text-gray-900 text-lg">{foundAgency.name}</h5>
+                    {foundAgency.city && foundAgency.country && (
+                      <p className="text-sm text-gray-600">
+                        📍 {foundAgency.city}, {foundAgency.country}
+                      </p>
+                    )}
+                    {foundAgency.totalAgents !== undefined && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        👥 {foundAgency.totalAgents} agents
+                      </p>
+                    )}
+                    {foundAgency.description && (
+                      <p className="text-sm text-gray-700 mt-2 line-clamp-2">
+                        {foundAgency.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
                 onClick={handleCancel}
-                disabled={loading}
+                disabled={searching || loading}
                 className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 Cancel
               </button>
-              <button
-                type="submit"
-                disabled={loading || !selectedAgencyId}
-                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                {loading ? 'Sending Request...' : 'Send Join Request'}
-              </button>
+
+              {!foundAgency ? (
+                <button
+                  type="submit"
+                  disabled={searching || !invitationCode.trim()}
+                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  {searching ? 'Searching...' : 'Find Agency'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSendJoinRequest}
+                  disabled={loading}
+                  className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  {loading ? 'Sending Request...' : 'Send Join Request'}
+                </button>
+              )}
             </div>
           </form>
         </div>

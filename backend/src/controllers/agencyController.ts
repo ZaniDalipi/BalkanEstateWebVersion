@@ -957,6 +957,55 @@ export const verifyInvitationCode = async (
   }
 };
 
+// @desc    Find agency by invitation code
+// @route   POST /api/agencies/find-by-code
+// @access  Private
+export const findAgencyByInvitationCode = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { code } = req.body;
+
+    if (!code) {
+      res.status(400).json({ message: 'Invitation code is required' });
+      return;
+    }
+
+    console.log(`🔍 Looking up agency with invitation code: ${code.toUpperCase()}`);
+
+    // Find agency by invitation code
+    const agency = await Agency.findOne({ invitationCode: code.toUpperCase() })
+      .populate('ownerId', 'name email');
+
+    if (!agency) {
+      console.log(`❌ No agency found with invitation code: ${code.toUpperCase()}`);
+      res.status(404).json({ message: 'Invalid invitation code. Please check and try again.' });
+      return;
+    }
+
+    console.log(`✅ Found agency: ${agency.name} (${agency._id})`);
+
+    res.json({
+      success: true,
+      agency: {
+        _id: agency._id,
+        name: agency.name,
+        description: agency.description,
+        city: agency.city,
+        country: agency.country,
+        slug: agency.slug,
+        logo: agency.logo,
+        coverImage: agency.coverImage,
+        totalAgents: agency.totalAgents || 0,
+      }
+    });
+  } catch (error: any) {
+    console.error('Find agency by invitation code error:', error);
+    res.status(500).json({ message: 'Error looking up agency', error: error.message });
+  }
+};
+
 // @desc    Add admin to agency
 // @route   POST /api/agencies/:id/admins
 // @access  Private (Owner only)

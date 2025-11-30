@@ -863,6 +863,14 @@ export const verifyInvitationCode = async (agencyId: string, code: string): Prom
   });
 };
 
+export const findAgencyByInvitationCode = async (code: string): Promise<{success: boolean; agency: any}> => {
+  return await apiRequest('/agencies/find-by-code', {
+    method: 'POST',
+    body: { code },
+    requiresAuth: true,
+  });
+};
+
 // --- PROMOTION API ---
 
 export const promoteProperty = async (propertyId: string): Promise<any> => {
