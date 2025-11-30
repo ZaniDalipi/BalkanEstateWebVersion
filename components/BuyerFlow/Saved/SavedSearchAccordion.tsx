@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { SavedSearch } from '../../../types';
 import PropertyCard from '../PropertyDisplay/PropertyCard';
 import { ChevronUpIcon, ChevronDownIcon, TrashIcon } from '../../../constants';
@@ -7,7 +7,7 @@ import { filterProperties } from '../../../utils/propertyUtils';
 import PropertyCardSkeleton from '../PropertyDisplay/PropertyCardSkeleton';
 import L from 'leaflet';
 import * as api from '../../../services/apiService';
-import { MapContainer, TileLayer, Rectangle } from 'react-leaflet';
+import MapComponent from '../Maps/MapComponent';
 
 interface SavedSearchAccordionProps {
   search: SavedSearch;
@@ -17,6 +17,7 @@ interface SavedSearchAccordionProps {
 const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onOpen }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [mapFlyTarget, setMapFlyTarget] = useState<{ center: [number, number]; zoom: number } | null>(null);
   const { state, dispatch, updateSavedSearchAccessTime } = useAppContext();
   const { isLoadingProperties, allMunicipalities, properties } = state;
 
@@ -54,6 +55,18 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onO
       const allPropertyIds = matchingProperties.map(p => p.id);
       await updateSavedSearchAccessTime(search.id, allPropertyIds);
       onOpen(); // Call onOpen after updating (in case parent needs to do something)
+
+      // Set fly target for map when opening
+      if (search.drawnBoundsJSON) {
+        try {
+          const parsed = JSON.parse(search.drawnBoundsJSON);
+          const bounds = L.latLngBounds(parsed._southWest, parsed._northEast);
+          const center = bounds.getCenter();
+          setMapFlyTarget({ center: [center.lat, center.lng], zoom: 13 });
+        } catch (e) {
+          console.error("Failed to parse bounds for fly target", e);
+        }
+      }
     }
     setIsOpen(nextIsOpen);
   };
@@ -115,35 +128,32 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onO
       {/* Expanded Content */}
       {isOpen && (
         <div className="p-4 bg-neutral-50/70 border-t border-neutral-200 animate-fade-in">
-          {/* Map display for drawn area */}
+          {/* Map display for saved search area */}
           {search.drawnBoundsJSON && (() => {
             try {
               const parsed = JSON.parse(search.drawnBoundsJSON);
-              const drawnBounds = L.latLngBounds(parsed._southWest, parsed._northEast);
-              const center = drawnBounds.getCenter();
+              const bounds = L.latLngBounds(parsed._southWest, parsed._northEast);
 
               return (
-                <div className="mb-4 rounded-lg overflow-hidden border border-neutral-300 shadow-sm">
-                  <MapContainer
-                    center={[center.lat, center.lng]}
-                    zoom={13}
-                    style={{ height: '300px', width: '100%' }}
-                    scrollWheelZoom={false}
-                  >
-                    <TileLayer
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    />
-                    <Rectangle
-                      bounds={drawnBounds}
-                      pathOptions={{
-                        color: '#4f46e5',
-                        weight: 2,
-                        fillColor: '#4f46e5',
-                        fillOpacity: 0.1,
-                      }}
-                    />
-                  </MapContainer>
+                <div className="mb-4 rounded-lg overflow-hidden border border-neutral-300 shadow-sm" style={{ height: '400px' }}>
+                  <MapComponent
+                    properties={matchingProperties}
+                    onMapMove={() => {}}
+                    userLocation={null}
+                    onSaveSearch={() => {}}
+                    isSaving={false}
+                    isAuthenticated={false}
+                    mapBounds={null}
+                    drawnBounds={bounds}
+                    onDrawComplete={() => {}}
+                    isDrawing={false}
+                    onDrawStart={() => {}}
+                    flyToTarget={mapFlyTarget}
+                    onFlyComplete={() => setMapFlyTarget(null)}
+                    onRecenter={() => {}}
+                    isMobile={false}
+                    searchMode="manual"
+                  />
                 </div>
               );
             } catch (e) {
@@ -152,6 +162,7 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onO
             }
           })()}
 
+          {/* Property List */}
           {isLoadingProperties ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {Array.from({ length: 4 }).map((_, index) => (
