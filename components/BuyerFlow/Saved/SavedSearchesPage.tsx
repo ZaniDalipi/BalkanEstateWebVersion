@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { useAppContext } from '../../context/AppContext';
+import { useAppContext } from '../../../context/AppContext';
 import SavedSearchAccordion from './SavedSearchAccordion';
-import { MagnifyingGlassPlusIcon } from '../../constants';
-import { SavedSearch, Filters, SellerType } from '../../types';
-import AdvertisementBanner from '../AdvertisementBanner';
-import Footer from '../shared/Footer';
+import { MagnifyingGlassPlusIcon } from '../../../constants';
+import { SavedSearch, Filters, SellerType } from '../../../types';
+import AdvertisementBanner from '../../AdvertisementBanner';
+import Footer from '../../shared/Footer';
 
 const initialFilters: Filters = {
     query: '',

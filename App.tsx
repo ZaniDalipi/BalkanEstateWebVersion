@@ -8,7 +8,7 @@ import SearchPage from './components/BuyerFlow/SearchPage';
 import CreateListingPage from './components/SellerFlow/SellerDashboard';
 import AuthPage from './components/auth/AuthModal';
 import PricingPlans from './components/SellerFlow/PricingPlans';
-import SavedSearchesPage from './components/BuyerFlow/SavedSearchesPage';
+import SavedSearchesPage from './components/BuyerFlow/Saved/SavedSearchesPage';
 import SavedPropertiesPage from './components/BuyerFlow/SavedHomesPage';
 import InboxPage from './components/BuyerFlow/InboxPage';
 import MyAccountPage from './components/shared/MyAccountPage';

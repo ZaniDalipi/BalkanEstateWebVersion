@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { SavedSearch } from '../../types';
+import { SavedSearch } from '../../../types';
 import PropertyCard from '../PropertyDisplay/PropertyCard';
-import { ChevronUpIcon, ChevronDownIcon, TrashIcon } from '../../constants';
-import { useAppContext } from '../../context/AppContext';
-import { filterProperties } from '../../utils/propertyUtils';
+import { ChevronUpIcon, ChevronDownIcon, TrashIcon } from '../../../constants';
+import { useAppContext } from '../../../context/AppContext';
+import { filterProperties } from '../../../utils/propertyUtils';
 import PropertyCardSkeleton from '../PropertyDisplay/PropertyCardSkeleton';
 import L from 'leaflet';
-import * as api from '../../services/apiService';
+import * as api from '../../../services/apiService';
 
 interface SavedSearchAccordionProps {
   search: SavedSearch;
