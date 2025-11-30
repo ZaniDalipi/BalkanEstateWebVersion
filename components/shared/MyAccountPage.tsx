@@ -294,22 +294,12 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const floatingLabelClasses = "absolute text-base text-neutral-700 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1";
 
     return (
-        <form onSubmit={handleSaveChanges}>
-            <AgentLicenseModal
-                isOpen={isLicenseModalOpen}
-                onClose={() => {
-                    setIsLicenseModalOpen(false);
-                    setPendingRole(null);
-                }}
-                onSubmit={handleLicenseSubmit}
-                currentLicenseNumber={user.licenseNumber}
-                currentAgentId={user.agentId}
-            />
-
-            <fieldset>
-                <legend className="block text-sm font-medium text-neutral-700 mb-2">Your Role</legend>
-                <RoleSelector selectedRole={formData.role} originalRole={user.role} onChange={handleRoleChange} />
-            </fieldset>
+        <>
+            <form onSubmit={handleSaveChanges}>
+                <fieldset>
+                    <legend className="block text-sm font-medium text-neutral-700 mb-2">Your Role</legend>
+                    <RoleSelector selectedRole={formData.role} originalRole={user.role} onChange={handleRoleChange} />
+                </fieldset>
 
             {/* Avatar Upload Section */}
             <fieldset className="border-t pt-6">
@@ -449,6 +439,18 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 </button>
             </div>
         </form>
+
+        <AgentLicenseModal
+            isOpen={isLicenseModalOpen}
+            onClose={() => {
+                setIsLicenseModalOpen(false);
+                setPendingRole(null);
+            }}
+            onSubmit={handleLicenseSubmit}
+            currentLicenseNumber={user.licenseNumber}
+            currentAgentId={user.agentId}
+        />
+        </>
     );
 };
 
