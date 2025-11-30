@@ -581,19 +581,36 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     );
     
     return (
-        <div className={`relative flex h-full w-full flex-col md:flex-row ${isMobile && isFiltersOpen ? 'overflow-hidden' : ''}`}>
-             <div className="absolute inset-0 z-0 bg-neutral-50"></div>
-            <Toast show={toast.show} message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, show: false })} />
-            <AiChatModal
-                isOpen={isAiChatModalOpen}
-                onClose={() => updateSearchPageState({ isAiChatModalOpen: false })}
-                properties={properties}
-                onApplyFilters={handleApplyAiFilters}
-                history={aiChatHistory}
-                onHistoryChange={(newHistory: ChatMessage[]) => updateSearchPageState({ aiChatHistory: newHistory })}
-            />
-            
-            {/* Main Content Wrapper */}
+        <div className="flex h-full w-full flex-col bg-neutral-50">
+            {/* Hero Banner - Desktop Only */}
+            {!isMobile && (
+                <div className="bg-gradient-to-r from-primary via-primary-dark to-primary text-white py-12 px-4 sm:px-6 lg:px-8 shadow-lg flex-shrink-0">
+                    <div className="max-w-7xl mx-auto text-center">
+                        <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full mb-4">
+                            <SearchIcon className="w-10 h-10 text-white" />
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-bold mb-3">Find Your Dream Property</h1>
+                        <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto">
+                            Search thousands of properties across the Balkans
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Search Interface */}
+            <div className={`relative flex flex-grow w-full flex-col md:flex-row ${isMobile && isFiltersOpen ? 'overflow-hidden' : ''}`}>
+                <div className="absolute inset-0 z-0 bg-neutral-50"></div>
+                <Toast show={toast.show} message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, show: false })} />
+                <AiChatModal
+                    isOpen={isAiChatModalOpen}
+                    onClose={() => updateSearchPageState({ isAiChatModalOpen: false })}
+                    properties={properties}
+                    onApplyFilters={handleApplyAiFilters}
+                    history={aiChatHistory}
+                    onHistoryChange={(newHistory: ChatMessage[]) => updateSearchPageState({ aiChatHistory: newHistory })}
+                />
+
+            {/* --- Main Content Wrapper --- */}
             <div className={`flex h-full w-full flex-col md:flex-row transition-all duration-300 relative ${isMobile && isFiltersOpen ? 'blur-sm pointer-events-none' : ''}`}>
                 {/* --- Left Panel: List & Filters --- */}
                  <div className={`absolute inset-0 z-10 h-full w-full bg-white md:relative md:w-3/5 md:flex-shrink-0 md:border-r md:border-neutral-200 md:flex md:flex-col ${ isMobile && mobileView === 'list' ? 'translate-x-0' : 'translate-x-full md:translate-x-0' } transition-transform duration-300`}>
