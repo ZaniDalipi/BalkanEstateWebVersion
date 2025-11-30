@@ -388,12 +388,11 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                         )}
                      </div>
 
-                     {formData.licenseVerified && (
-                        <AgencyManagementSection
-                            currentUser={formData}
-                            onAgencyChange={() => window.location.reload()}
-                        />
-                     )}
+                     {/* Agency Management - Always visible for agents */}
+                     <AgencyManagementSection
+                        currentUser={formData}
+                        onAgencyChange={() => window.location.reload()}
+                     />
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="relative">
                             <div className="relative">
