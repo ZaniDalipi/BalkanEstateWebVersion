@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../../types';
-import { getAgencies, joinAgencyByInvitationCode, leaveAgency } from '../../services/apiService';
+import { getAgencies, createJoinRequest, leaveAgency } from '../../services/apiService';
 import { useAppContext } from '../../context/AppContext';
+import { API_URL } from '../../constants';
 
 interface Agency {
   _id: string;
@@ -57,54 +58,57 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
       return;
     }
 
-    if (!invitationCode.trim()) {
-      setError('Please enter the agency invitation code');
-      return;
-    }
-
     try {
       setLoading(true);
-      console.log('📤 Joining agency:', selectedAgencyId, 'with code:', invitationCode);
+      console.log('📤 Sending join request to agency:', selectedAgencyId);
 
-      const response = await joinAgencyByInvitationCode(
-        invitationCode.trim().toUpperCase(),
-        selectedAgencyId
-      );
+      // Create join request with optional invitation code as message
+      const message = invitationCode.trim()
+        ? `Join request with invitation code: ${invitationCode.trim().toUpperCase()}`
+        : 'Join request from profile';
 
-      console.log('✅ Successfully joined agency:', response.agency.name);
+      const joinRequestResponse = await createJoinRequest(selectedAgencyId, message);
+      console.log('✅ Join request sent successfully');
 
-      // Update user context immediately with new agency data
-      dispatch({
-        type: 'UPDATE_USER',
-        payload: {
-          agencyName: response.user.agencyName,
-          agencyId: response.user.agencyId,
-          agentId: response.user.agentId,
-        }
-      });
+      // Fetch agency details to navigate to agency page
+      const agencyResponse = await fetch(`${API_URL}/agencies/${selectedAgencyId}`);
+      if (agencyResponse.ok) {
+        const agencyData = await agencyResponse.json();
 
-      // Show success message
-      const wasIndependent = !currentUser.agencyName || currentUser.agencyName === 'Independent Agent';
-      const actionText = wasIndependent ? 'joined' : 'switched to';
+        // Set selected agency in context
+        dispatch({ type: 'SET_SELECTED_AGENCY', payload: agencyData.agency });
 
-      alert(
-        `✅ Successfully ${actionText} ${response.agency.name}!\n\n` +
-        `🏢 You are now affiliated with ${response.agency.name}\n` +
-        `🎯 Total Agents: ${response.agency.totalAgents}\n\n` +
-        `Your profile has been updated!`
-      );
+        // Navigate to agency detail view
+        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
 
-      // Reset form
-      setSelectedAgencyId('');
-      setInvitationCode('');
-      setShowForm(false);
+        // Show success message
+        alert(
+          `✅ Join request sent to ${agencyData.agency.name}!\n\n` +
+          `📋 Your request is pending approval from the agency.\n` +
+          `🔔 You will be notified when they respond.\n\n` +
+          `Navigating to agency page...`
+        );
 
-      // Trigger refresh callback
-      onAgencyChange();
+        // Reset form
+        setSelectedAgencyId('');
+        setInvitationCode('');
+        setShowForm(false);
+      } else {
+        // Request sent but couldn't fetch agency details
+        alert(
+          `✅ Join request sent successfully!\n\n` +
+          `📋 Your request is pending approval from the agency.\n` +
+          `🔔 You will be notified when they respond.`
+        );
+
+        setSelectedAgencyId('');
+        setInvitationCode('');
+        setShowForm(false);
+      }
 
     } catch (err: any) {
-      console.error('❌ Failed to join agency:', err);
-      setError(err.message || 'Failed to join agency. Please check your invitation code.');
+      console.error('❌ Failed to send join request:', err);
+      setError(err.message || 'Failed to send join request. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -241,10 +245,10 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
               )}
             </div>
 
-            {/* Invitation Code */}
+            {/* Invitation Code (Optional) */}
             <div>
               <label htmlFor="invitation-code" className="block text-sm font-medium text-gray-700 mb-2">
-                Agency Invitation Code <span className="text-red-500">*</span>
+                Agency Invitation Code <span className="text-gray-500">(Optional)</span>
               </label>
               <input
                 type="text"
@@ -257,10 +261,9 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
                 disabled={loading}
                 placeholder="e.g., AGY-BELGRAD-A1B2C3"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed font-mono text-sm"
-                required
               />
               <p className="text-xs text-gray-600 mt-1">
-                Enter the invitation code provided by the agency
+                Optional: Include an invitation code if you have one from the agency
               </p>
             </div>
 
@@ -283,10 +286,10 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
               </button>
               <button
                 type="submit"
-                disabled={loading || !selectedAgencyId || !invitationCode.trim()}
+                disabled={loading || !selectedAgencyId}
                 className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
-                {loading ? 'Processing...' : (isIndependent ? 'Join Agency' : 'Switch Agency')}
+                {loading ? 'Sending Request...' : 'Send Join Request'}
               </button>
             </div>
           </form>
