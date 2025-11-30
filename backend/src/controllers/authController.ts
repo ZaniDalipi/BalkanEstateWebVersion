@@ -500,15 +500,18 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
 
       // If agency invitation code is provided, verify it
       if (agencyInvitationCode) {
+        console.log(`🔍 Looking for agency with invitation code: ${agencyInvitationCode.toUpperCase()}`);
         agency = await Agency.findOne({ invitationCode: agencyInvitationCode.toUpperCase() });
 
         if (!agency) {
+          console.log(`❌ Agency not found with code: ${agencyInvitationCode.toUpperCase()}`);
           res.status(404).json({
             message: 'Invalid agency invitation code. Please check the code and try again.'
           });
           return;
         }
 
+        console.log(`✅ Found agency: ${agency.name} (ID: ${agency._id})`);
         agencyName = agency.name; // Use verified agency name
       }
 
@@ -608,6 +611,8 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
       user.role = role;
       await user.save();
     }
+
+    console.log(`✅ Role switch successful for user ${user._id}: ${user.role} ${user.agencyId ? `(Agency: ${user.agencyName})` : ''}`);
 
     res.json({
       message: 'Role updated successfully',
