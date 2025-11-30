@@ -166,12 +166,31 @@ const SavedSearchesPage: React.FC = () => {
   return (
     <div className="bg-neutral-50 min-h-screen flex flex-col">
       <AdvertisementBanner position="top" />
+
+      {/* Hero Banner */}
+      <div className="bg-gradient-to-r from-primary via-primary-dark to-primary text-white py-10 px-4 sm:px-6 lg:px-8 shadow-lg">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full mb-3">
+            <MagnifyingGlassPlusIcon className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">Saved Searches</h1>
+          <p className="text-base md:text-lg text-white/90 max-w-2xl mx-auto">
+            Track your favorite search criteria and get updates
+          </p>
+          {savedSearches.length > 0 && (
+            <div className="mt-5 inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-5 py-2 rounded-full border border-white/30">
+              <span className="text-xl font-bold text-white">{savedSearches.length}</span>
+              <div className="h-5 w-px bg-white/30"></div>
+              <span className="text-xs font-semibold text-white/90">
+                {savedSearches.length === 1 ? 'Saved Search' : 'Saved Searches'}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
       <main className="py-8 flex-grow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-neutral-900">Updates</h1>
-                <h2 className="text-xl font-semibold text-neutral-700 mt-1">Saved Searches</h2>
-            </div>
             {renderContent()}
         </div>
       </main>
