@@ -32,6 +32,7 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
 
   const handleFindAgency = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setError('');
     setFoundAgency(null);
 
@@ -46,13 +47,22 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
       console.log('🔍 Looking up agency with code:', invitationCode.trim().toUpperCase());
 
       const response = await findAgencyByInvitationCode(invitationCode.trim());
+      console.log('📦 API Response:', response);
 
       if (response.success && response.agency) {
         console.log('✅ Found agency:', response.agency.name);
         setFoundAgency(response.agency);
+      } else {
+        console.warn('⚠️ No agency found in response:', response);
+        setError('Invalid invitation code. Please check and try again.');
       }
     } catch (err: any) {
       console.error('❌ Failed to find agency:', err);
+      console.error('Error details:', {
+        message: err.message,
+        response: err.response,
+        status: err.status,
+      });
       setError(err.message || 'Invalid invitation code. Please check and try again.');
       setFoundAgency(null);
     } finally {
