@@ -28,13 +28,30 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onO
       if (search.drawnBoundsJSON) {
           try {
               const parsed = JSON.parse(search.drawnBoundsJSON);
-              const drawnBounds = L.latLngBounds(parsed._southWest, parsed._northEast);
+
+              // Handle both old format (with _southWest/_northEast) and new format (array)
+              let southWest, northEast;
+
+              if (Array.isArray(parsed) && parsed.length === 4) {
+                  // New format: [swLat, swLng, neLat, neLng]
+                  southWest = { lat: parsed[0], lng: parsed[1] };
+                  northEast = { lat: parsed[2], lng: parsed[3] };
+              } else if (parsed._southWest && parsed._northEast) {
+                  // Old format: {_southWest: {lat, lng}, _northEast: {lat, lng}}
+                  southWest = parsed._southWest;
+                  northEast = parsed._northEast;
+              } else {
+                  console.warn("Unknown bounds format:", parsed);
+                  return filtered;
+              }
+
+              const drawnBounds = L.latLngBounds(southWest, northEast);
               filtered = filtered.filter(p => drawnBounds.contains([p.lat, p.lng]));
           } catch (e) {
               console.error("Failed to parse drawnBoundsJSON in SavedSearchAccordion", e);
           }
       }
-      
+
       return filtered;
   }, [properties, search.filters, search.drawnBoundsJSON, allMunicipalities]);
 

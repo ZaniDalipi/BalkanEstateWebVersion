@@ -85,6 +85,19 @@ const MobileFilters: React.FC<{
 );
 
 
+// Helper function to serialize Leaflet bounds to a simple array format
+const serializeBounds = (bounds: L.LatLngBounds | null): string | null => {
+    if (!bounds) return null;
+    try {
+        const sw = bounds.getSouthWest();
+        const ne = bounds.getNorthEast();
+        return JSON.stringify([sw.lat, sw.lng, ne.lat, ne.lng]);
+    } catch (e) {
+        console.error('Error serializing bounds:', e);
+        return null;
+    }
+};
+
 const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const { state, dispatch, fetchProperties, updateSearchPageState, addSavedSearch } = useAppContext();
     const { properties, isAuthenticated, currentUser, searchPageState } = state;
@@ -199,7 +212,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     };
 
     const handleDrawComplete = useCallback((bounds: L.LatLngBounds | null) => {
-        updateSearchPageState({ drawnBoundsJSON: bounds ? JSON.stringify(bounds) : null, activeFilters: {...filters, query: ''} });
+        updateSearchPageState({ drawnBoundsJSON: serializeBounds(bounds), activeFilters: {...filters, query: ''} });
         setIsDrawing(false);
     }, [updateSearchPageState, filters]);
     
@@ -217,7 +230,15 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         if (!drawnBoundsJSON) return null;
         try {
             const parsed = JSON.parse(drawnBoundsJSON);
-            return L.latLngBounds(parsed._southWest, parsed._northEast);
+            // Handle both old format (with _southWest/_northEast) and new format (array)
+            if (Array.isArray(parsed) && parsed.length === 4) {
+                // New format: [swLat, swLng, neLat, neLng]
+                return L.latLngBounds([parsed[0], parsed[1]], [parsed[2], parsed[3]]);
+            } else if (parsed._southWest && parsed._northEast) {
+                // Old format: {_southWest: {lat, lng}, _northEast: {lat, lng}}
+                return L.latLngBounds(parsed._southWest, parsed._northEast);
+            }
+            return null;
         } catch (e) {
             return null;
         }
@@ -324,7 +345,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                 updateSearchPageState({
                     filters: newFilters,
                     activeFilters: newFilters,
-                    drawnBoundsJSON: JSON.stringify(bounds), // Set the country bounds as the search area
+                    drawnBoundsJSON: serializeBounds(bounds), // Set the country bounds as the search area
                 });
                 return;
             }
@@ -422,7 +443,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                     id: `ss-${now}`,
                     name: `Area near ${name}`,
                     filters: initialFilters, // Save only the area, not other empty filters
-                    drawnBoundsJSON: JSON.stringify(mapBounds), // Save the current map view as the search area
+                    drawnBoundsJSON: serializeBounds(mapBounds), // Save the current map view as the search area
                     createdAt: now,
                     lastAccessed: now,
                 };
