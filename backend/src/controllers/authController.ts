@@ -621,6 +621,7 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
         city: user.city,
         country: user.country,
         agencyName: user.agencyName,
+        agencyId: user.agencyId ? String(user.agencyId) : undefined,
         agentId: user.agentId,
         licenseNumber: user.licenseNumber,
         licenseVerified: user.licenseVerified,
