@@ -93,9 +93,9 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
     const handleAgencyClick = async () => {
-        if (user?.agencyId) {
+        if (formData?.agencyId) {
             try {
-                const response = await fetch(`${API_URL}/agencies/${user.agencyId}`);
+                const response = await fetch(`${API_URL}/agencies/${formData.agencyId}`);
                 if (response.ok) {
                     const data = await response.json();
                     dispatch({ type: 'SET_SELECTED_AGENCY', payload: data.agency });
@@ -375,16 +375,16 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 <fieldset className="space-y-6 animate-fade-in border-t pt-8">
                      <div className="flex items-center justify-between -mt-2 mb-4">
                         <legend className="text-lg font-semibold text-neutral-700">Agent Information</legend>
-                        {user.licenseVerified && (
+                        {formData.licenseVerified && (
                             <span className="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-full font-medium">
                                 ✓ License Verified
                             </span>
                         )}
                      </div>
 
-                     {user.licenseVerified && (
+                     {formData.licenseVerified && (
                         <AgencyManagementSection
-                            currentUser={user}
+                            currentUser={formData}
                             onAgencyChange={() => window.location.reload()}
                         />
                      )}
@@ -404,7 +404,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                             </div>
 
                             {/* View Agency Button */}
-                            {user.agencyId && (
+                            {formData.agencyId && (
                                 <button
                                     type="button"
                                     onClick={handleAgencyClick}
