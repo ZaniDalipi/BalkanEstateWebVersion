@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '../../../context/AppContext';
 import SavedSearchAccordion from './SavedSearchAccordion';
 import { MagnifyingGlassPlusIcon } from '../../../constants';
@@ -62,9 +62,14 @@ const SortButton: React.FC<{
 
 
 const SavedSearchesPage: React.FC = () => {
-  const { state, dispatch, updateSavedSearchAccessTime } = useAppContext();
+  const { state, dispatch, fetchProperties, updateSavedSearchAccessTime } = useAppContext();
   const { savedSearches, isAuthenticated } = state;
   const [sortBy, setSortBy] = useState<'createdAt' | 'name' | 'lastAccessed'>('createdAt');
+
+  // Fetch all properties when the page loads so we can filter them in each accordion
+  useEffect(() => {
+    fetchProperties();
+  }, [fetchProperties]);
 
   const sortedSearches = useMemo(() => {
     const sorted = [...savedSearches];
