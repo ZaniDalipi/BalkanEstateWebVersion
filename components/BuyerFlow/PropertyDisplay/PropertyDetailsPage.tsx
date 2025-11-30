@@ -2,9 +2,9 @@
 // Orchestrates all property detail subcomponents
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Property, PropertyImageTag } from '../../types';
-import { useAppContext } from '../../context/AppContext';
-import { ArrowLeftIcon } from '../../constants';
+import { Property, PropertyImageTag } from '../../../types';
+import { useAppContext } from '../../../context/AppContext';
+import { ArrowLeftIcon } from '../../../constants';
 import ImageViewerModal from '../Modals/ImageViewerModal';
 import FloorPlanViewerModal from '../Modals/FloorPlanViewerModal';
 import {
@@ -15,7 +15,7 @@ import {
   PropertyContact,
   PropertyPhotos,
   PropertyMapLink,
-} from '../../src/components/property';
+} from '../../../src/components/property';
 
 /**
  * PropertyDetailsPage Component
@@ -32,7 +32,7 @@ import {
  * All major sections have been extracted into focused components <200 lines.
  */
 const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => {
-  const { state, dispatch, createConversation } = useAppContext();
+  const { state, dispatch, createConversation, toggleSavedHome } = useAppContext();
 
   // State for image gallery
   const [activeCategory, setActiveCategory] = useState<PropertyImageTag | 'all'>('all');
@@ -83,11 +83,16 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
     window.history.pushState({}, '', '/search');
   };
 
-  const handleFavoriteClick = () => {
+  const handleFavoriteClick = async () => {
     if (!state.isAuthenticated && !state.user) {
       dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
     } else {
-      dispatch({ type: 'TOGGLE_SAVED_HOME', payload: property });
+      try {
+        await toggleSavedHome(property);
+      } catch (error) {
+        console.error('Failed to toggle saved home:', error);
+        alert('Failed to save property. Please try again.');
+      }
     }
   };
 

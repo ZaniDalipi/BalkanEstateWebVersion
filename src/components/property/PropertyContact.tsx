@@ -4,8 +4,8 @@
 import React from 'react';
 import { Property } from '../../../types';
 import { PhoneIcon, UserCircleIcon } from '../../../constants';
-import MortgageCalculator from '../../../components/BuyerFlow/MortgageCalculator';
-import RentVsBuyCalculator from '../../../components/BuyerFlow/RentVsBuyCalculator';
+import MortgageCalculator from '../../../components/BuyerFlow/Calculators/MortgageCalculator';
+import RentVsBuyCalculator from '../../../components/BuyerFlow/Calculators/RentVsBuyCalculator';
 
 interface PropertyContactProps {
   property: Property;

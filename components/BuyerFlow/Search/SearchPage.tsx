@@ -1,17 +1,17 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { useAppContext } from '../../context/AppContext';
+import { useAppContext } from '../../../context/AppContext';
 import MapComponent from '../Maps/MapComponent';
 import PropertyList from './PropertyList';
-import { SavedSearch, ChatMessage, AiSearchQuery, Filters, initialFilters, SearchPageState, Property, NominatimResult } from '../../types';
-import { getAiChatResponse, generateSearchName, generateSearchNameFromCoords } from '../../services/geminiService';
-import { searchLocation } from '../../services/osmService';
-import Toast from '../shared/Toast';
+import { SavedSearch, ChatMessage, AiSearchQuery, Filters, initialFilters, SearchPageState, Property, NominatimResult } from '../../../types';
+import { getAiChatResponse, generateSearchName, generateSearchNameFromCoords } from '../../../services/geminiService';
+import { searchLocation } from '../../../services/osmService';
+import Toast from '@/components/shared/Toast';
 import L from 'leaflet';
-import { Bars3Icon, SearchIcon, UserCircleIcon, XMarkIcon, AdjustmentsHorizontalIcon, MapPinIcon, Squares2x2Icon, BellIcon, PencilIcon, PlusIcon, SparklesIcon, CrosshairsIcon, XCircleIcon, MapIcon, SpinnerIcon } from '../../constants';
-import { filterProperties } from '../../utils/propertyUtils';
+import { Bars3Icon, SearchIcon, UserCircleIcon, XMarkIcon, AdjustmentsHorizontalIcon, MapPinIcon, Squares2x2Icon, BellIcon, PencilIcon, PlusIcon, SparklesIcon, CrosshairsIcon, XCircleIcon, MapIcon, SpinnerIcon } from '../../../constants';
+import { filterProperties } from '../../../utils/propertyUtils';
 import AiSearch from './AiSearch';
-import Modal from '../shared/Modal';
-import { COUNTRY_OPTIONS, BALKAN_COUNTRIES } from '../../constants/countries';
+import Modal from '../../shared/Modal';
+import { COUNTRY_OPTIONS, BALKAN_COUNTRIES } from '../../../constants/countries';
 
 interface SearchPageProps {
     onToggleSidebar: () => void;
@@ -312,14 +312,14 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     }, [baseFilteredProperties, mapBounds, drawnBounds]);
 
 
-    const handleFilterChange = useCallback((name: keyof Filters, value: string | number | null) => {
+    const handleFilterChange = useCallback(<K extends keyof Filters>(name: K, value: Filters[K]) => {
         const newFilters = { ...filters, [name]: value };
 
         // If country filter is changed, fly to the country bounds
         if (name === 'country' && value && value !== 'any') {
             const countryData = BALKAN_COUNTRIES[value as string];
             if (countryData) {
-                const bounds = L.latLngBounds(countryData.bounds);
+                const bounds = L.latLngBounds(countryData.bounds[0], countryData.bounds[1]);
                 setFlyToTarget({ center: countryData.center, zoom: countryData.zoom });
                 updateSearchPageState({
                     filters: newFilters,
@@ -396,7 +396,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
 
             if (drawnBounds) { // Priority 1: A user-drawn area
                 const center = drawnBounds.getCenter();
-                const name = await generateSearchNameFromCoords(center.lat, center.lng);
+                const name = await generateSearchNameFromCoords(center.lat, center.lng, drawnBounds);
                 newSearch = {
                     id: `ss-${now}`,
                     name,
@@ -417,7 +417,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                 };
             } else if (mapBounds) { // Priority 3: The current map view
                 const center = mapBounds.getCenter();
-                const name = await generateSearchNameFromCoords(center.lat, center.lng);
+                const name = await generateSearchNameFromCoords(center.lat, center.lng, mapBounds);
                 newSearch = {
                     id: `ss-${now}`,
                     name: `Area near ${name}`,

@@ -1,16 +1,16 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
-import { Property, ChatMessage, AiSearchQuery, Filters, SellerType, FurnishingStatus, HeatingType, PropertyCondition, ViewType, EnergyRating } from '../../types';
+import { Property, ChatMessage, AiSearchQuery, Filters, SellerType, FurnishingStatus, HeatingType, PropertyCondition, ViewType, EnergyRating } from '../../../types';
 import PropertyCard from '../PropertyDisplay/PropertyCard';
-import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon, ChevronUpIcon, ChevronDownIcon, PencilIcon, XCircleIcon, MapPinIcon, SpinnerIcon } from '../../constants';
+import { SearchIcon, SparklesIcon, XMarkIcon, BellIcon, BuildingLibraryIcon, ChevronUpIcon, ChevronDownIcon, PencilIcon, XCircleIcon, MapPinIcon, SpinnerIcon } from '../../../constants';
 import AiSearch from './AiSearch';
 import PropertyCardSkeleton from '../PropertyDisplay/PropertyCardSkeleton';
-import { useAppContext } from '../../context/AppContext';
-import Footer from '../shared/Footer';
+import { useAppContext } from '../../../context/AppContext';
+import Footer from '../../shared/Footer';
 
 interface PropertyListProps {
   properties: Property[];
   filters: Filters;
-  onFilterChange: (name: keyof Filters, value: string | number | null) => void;
+  onFilterChange: <K extends keyof Filters>(name: K, value: Filters[K]) => void;
   onSearchClick: () => void;
   onResetFilters: () => void;
   onSortChange: (value: string) => void;
@@ -47,19 +47,24 @@ const FilterButton: React.FC<{
   </button>
 );
 
-const FilterButtonGroup: React.FC<{
+const FilterButtonGroup = <T extends string | number | null>({
+  label,
+  options,
+  selectedValue,
+  onChange
+}: {
   label: string;
-  options: { value: string | number | null; label: string }[];
-  selectedValue: string | number | null;
-  onChange: (value: string | number | null) => void;
-}> = ({ label, options, selectedValue, onChange }) => (
+  options: { value: T; label: string }[];
+  selectedValue: T;
+  onChange: (value: T) => void;
+}) => (
   <div>
     <label className="block text-xs font-medium text-neutral-700 mb-1">{label}</label>
     <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200">
       {options.map(({ value, label: optionLabel }) => (
         <FilterButton
           key={optionLabel}
-          onClick={() => onChange(selectedValue === value ? null : value)}
+          onClick={() => onChange(selectedValue === value ? null as T : value)}
           isActive={selectedValue === value}
         >
           {optionLabel}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { formatPrice, getCurrencySymbol } from '../../utils/currency';
-import { CurrencyDollarIcon } from '../../constants';
+import { formatPrice, getCurrencySymbol } from '../../../utils/currency';
+import { CurrencyDollarIcon } from '../../../constants';
 
 interface MortgageCalculatorProps {
   propertyPrice: number;

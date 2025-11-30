@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { formatPrice, getCurrencySymbol } from '../../utils/currency';
-import { ScaleIcon, ChevronDownIcon, ChevronUpIcon, KeyIcon, BuildingOfficeIcon } from '../../constants';
+import { formatPrice, getCurrencySymbol } from '../../../utils/currency';
+import { ScaleIcon, ChevronDownIcon, ChevronUpIcon, KeyIcon, BuildingOfficeIcon } from '../../../constants';
 import { InfoIcon } from 'lucide-react';
 
 interface RentVsBuyCalculatorProps {

@@ -1,23 +1,23 @@
 import React, { useState, useMemo } from 'react';
 import { MapContainer, TileLayer, Rectangle } from 'react-leaflet';
-import { Property } from '../../types';
+import { Property } from '../../../types';
 import L from 'leaflet';
-import { useAppContext } from '../../context/AppContext';
+import { useAppContext } from '../../../context/AppContext';
 import {
   BellIcon,
   PencilIcon,
   XCircleIcon,
   CubeTransparentIcon,
   CrosshairsIcon,
-} from '../../constants';
-import { CadastreLayer } from '../Map/CadastreLayer';
+} from '../../../constants';
+import { CadastreLayer } from '../../Map/CadastreLayer';
 import {
   FlyToController,
   MapEvents,
   ZoomBasedTileSwitch,
   MapDrawEvents,
-} from '../../src/components/map/MapHelpers';
-import { Markers, Legend } from '../../src/components/map/MapPropertyMarker';
+} from '../../../src/components/map/MapHelpers';
+import { Markers, Legend } from '../../../src/components/map/MapPropertyMarker';
 
 // Fix for default icon issue with bundlers
 let DefaultIcon = L.icon({
