@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { User } from '../../types';
 import { getAgencies, createJoinRequest, leaveAgency } from '../../services/apiService';
 import { useAppContext } from '../../context/AppContext';
-import { API_URL } from '../../constants';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 interface Agency {
   _id: string;
