@@ -759,6 +759,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                     </div>
                 </div>
             )}
+            </div>
         </div>
     );
 };
