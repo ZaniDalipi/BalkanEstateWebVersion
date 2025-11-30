@@ -207,15 +207,15 @@ const AgenciesListPage: React.FC = () => {
       <div className="flex-grow">
         {/* Hero Section */}
         <div className="bg-gradient-to-br from-primary via-primary-dark to-primary text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 shadow-lg">
           <div className="text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl mb-6">
-              <BuildingOfficeIcon className="w-12 h-12 text-white" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full mb-4">
+              <BuildingOfficeIcon className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-5xl sm:text-6xl font-bold tracking-tight mb-4">
+            <h1 className="text-4xl md:text-5xl font-bold mb-3">
               Top Real Estate Agencies
             </h1>
-            <p className="text-xl text-white/90 max-w-2xl mx-auto mb-8">
+            <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto mb-8">
               Partner with the Balkans' most trusted and successful agencies
             </p>
 
