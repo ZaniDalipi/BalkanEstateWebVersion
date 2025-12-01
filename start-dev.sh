@@ -51,13 +51,13 @@ cd ..
 sleep 3
 
 # Start frontend
-echo "🎨 Starting Frontend (http://localhost:5173)..."
+echo "🎨 Starting Frontend (http://localhost:3000)..."
 echo ""
 echo "================================================"
 echo "✅ Development environment is starting!"
 echo ""
 echo "Backend:  http://localhost:5001"
-echo "Frontend: http://localhost:5173"
+echo "Frontend: http://localhost:3000"
 echo ""
 echo "Backend logs: tail -f backend.log"
 echo "Backend PID: $BACKEND_PID"
