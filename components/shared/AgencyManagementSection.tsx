@@ -30,6 +30,12 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
   const [loadingAgencies, setLoadingAgencies] = useState(false);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+
+  // Fetch pending join requests on mount
+  useEffect(() => {
+    fetchPendingRequests();
+  }, []);
 
   // Fetch agencies when form is shown
   useEffect(() => {
@@ -37,6 +43,25 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
       fetchAgencies();
     }
   }, [showForm]);
+
+  const fetchPendingRequests = async () => {
+    try {
+      const response = await fetch(`${API_URL}/agency-join-requests/my-requests`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Filter for pending requests
+        const pending = data.requests?.filter((req: any) => req.status === 'pending') || [];
+        setPendingRequests(pending);
+        console.log('📋 Pending join requests:', pending.length);
+      }
+    } catch (err) {
+      console.error('Failed to fetch pending requests:', err);
+    }
+  };
 
   const fetchAgencies = async () => {
     try {
@@ -88,47 +113,23 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
       await createJoinRequest(selectedAgencyId, `Join request with invitation code: ${invitationCode.trim().toUpperCase()}`);
       console.log('✅ Join request sent successfully');
 
-      // Step 3: Fetch agency details and navigate
-      const agencyResponse = await fetch(`${API_URL}/agencies/${selectedAgencyId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
-        },
-      });
+      // Step 3: Show success and refresh page to update status
+      alert(
+        `✅ Join request sent to ${agencies.find(a => a._id === selectedAgencyId)?.name}!\n\n` +
+        `📋 Your request is pending approval from the agency.\n` +
+        `🔔 You will be notified when they respond.`
+      );
 
-      if (agencyResponse.ok) {
-        const agencyData = await agencyResponse.json();
+      // Reset form and refresh page to show updated status
+      setSelectedAgencyId('');
+      setInvitationCode('');
+      setShowForm(false);
 
-        // Set selected agency in context
-        dispatch({ type: 'SET_SELECTED_AGENCY', payload: agencyData.agency });
+      // Trigger the callback to refresh parent component
+      onAgencyChange();
 
-        // Navigate to agency detail view
-        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
-
-        // Show success message
-        alert(
-          `✅ Join request sent to ${agencyData.agency.name}!\n\n` +
-          `📋 Your request is pending approval from the agency.\n` +
-          `🔔 You will be notified when they respond.\n\n` +
-          `Navigating to agency page...`
-        );
-
-        // Reset form
-        setSelectedAgencyId('');
-        setInvitationCode('');
-        setShowForm(false);
-      } else {
-        // Request sent but couldn't fetch agency details
-        const selectedAgency = agencies.find(a => a._id === selectedAgencyId);
-        alert(
-          `✅ Join request sent to ${selectedAgency?.name || 'the agency'}!\n\n` +
-          `📋 Your request is pending approval.\n` +
-          `🔔 You will be notified when they respond.`
-        );
-
-        setSelectedAgencyId('');
-        setInvitationCode('');
-        setShowForm(false);
-      }
+      // Reload the page to show updated status
+      window.location.reload();
 
     } catch (err: any) {
       console.error('❌ Failed to process join request:', err);
@@ -225,6 +226,26 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
           )}
         </div>
       </div>
+
+      {/* Pending Join Requests */}
+      {pendingRequests.length > 0 && (
+        <div className="p-4 bg-yellow-50 border-2 border-yellow-200 rounded-lg">
+          <h4 className="text-sm font-semibold text-yellow-900 mb-2">Pending Join Requests</h4>
+          <div className="space-y-2">
+            {pendingRequests.map((request) => (
+              <div key={request._id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-yellow-200">
+                <div>
+                  <p className="font-medium text-gray-900">{request.agencyId?.name || 'Unknown Agency'}</p>
+                  <p className="text-xs text-gray-600">Sent: {new Date(request.createdAt).toLocaleDateString()}</p>
+                </div>
+                <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">
+                  Pending Approval
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Agency Join/Switch Form */}
       {showForm && (

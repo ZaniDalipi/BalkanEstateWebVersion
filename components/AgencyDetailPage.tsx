@@ -48,6 +48,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const [showAllMembers, setShowAllMembers] = useState(true);
   const [isLeavingAgency, setIsLeavingAgency] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'myAgency'>('overview');
   const [editForm, setEditForm] = useState({
     name: '',
     description: '',
@@ -669,8 +670,37 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
           </div>
         </div>
 
-        {/* About Section */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
+        {/* Tab Navigation - Show only for agency members */}
+        {isAlreadyMember && (
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 mb-8">
+            <div className="flex border-b border-gray-200">
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors ${
+                  activeTab === 'overview'
+                    ? 'text-primary border-b-2 border-primary bg-primary/5'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Agency Overview
+              </button>
+              <button
+                onClick={() => setActiveTab('myAgency')}
+                className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors ${
+                  activeTab === 'myAgency'
+                    ? 'text-primary border-b-2 border-primary bg-primary/5'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                My Agency
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* About Section - Show in Overview tab */}
+        {(!isAlreadyMember || activeTab === 'overview') && (
+          <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">About {agencyData.name}</h2>
           {agencyData.description && (
             <p className="text-gray-600 text-lg leading-relaxed mb-6">{agencyData.description}</p>
@@ -778,8 +808,9 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
           </div>
         </div>
 
-        {/* Team Members Section */}
-        <div className="mb-8">
+        {/* Team Members Section - Show in Overview tab */}
+        {(!isAlreadyMember || activeTab === 'overview') && (
+          <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-3xl font-bold text-gray-900">Team Members</h2>
             <div className="flex items-center gap-4">
@@ -981,9 +1012,11 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
             </div>
           )}
         </div>
+        )}
 
-        {/* Active Properties Section */}
-        <div>
+        {/* Active Properties Section - Show in Overview tab */}
+        {(!isAlreadyMember || activeTab === 'overview') && (
+          <div>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-3xl font-bold text-gray-900">Active Listings</h2>
             <span className="text-sm text-gray-500">{agencyProperties.length} properties</span>
@@ -1007,6 +1040,141 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
             </div>
           )}
         </div>
+        )}
+
+        {/* My Agency Tab Content */}
+        {isAlreadyMember && activeTab === 'myAgency' && (
+          <div className="space-y-6">
+            {/* My Status Card */}
+            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">My Status</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">Role</p>
+                  <p className="text-lg font-bold text-blue-900">
+                    {isOwner ? 'Owner' : isAdmin ? 'Admin' : 'Agent'}
+                  </p>
+                </div>
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">Agency</p>
+                  <p className="text-lg font-bold text-green-900">{agencyData.name}</p>
+                </div>
+                <div className="p-4 bg-purple-50 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">Member Since</p>
+                  <p className="text-lg font-bold text-purple-900">
+                    {new Date().toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Invitation Code - For Admins/Owners */}
+            {isAdmin && agencyData.invitationCode && (
+              <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                <h3 className="text-xl font-bold text-gray-900 mb-3">Invitation Code</h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  Share this code with agents to join your agency
+                </p>
+                <div className="flex items-center gap-3">
+                  <code className="flex-1 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg font-mono text-lg font-semibold text-primary">
+                    {agencyData.invitationCode}
+                  </code>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(agencyData.invitationCode || '');
+                      alert('Code copied to clipboard!');
+                    }}
+                    className="px-4 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark transition-colors"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Quick Actions */}
+            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {isAdmin && (
+                  <>
+                    <button
+                      onClick={() => setIsJoinRequestsModalOpen(true)}
+                      className="flex items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                    >
+                      <BellIcon className="w-6 h-6 text-blue-600" />
+                      <div className="text-left">
+                        <p className="font-semibold text-gray-900">Manage Join Requests</p>
+                        <p className="text-xs text-gray-600">Review pending applications</p>
+                      </div>
+                    </button>
+                    <button
+                      onClick={handleOpenEditModal}
+                      className="flex items-center gap-3 p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                    >
+                      <PencilIcon className="w-6 h-6 text-purple-600" />
+                      <div className="text-left">
+                        <p className="font-semibold text-gray-900">Edit Agency Profile</p>
+                        <p className="text-xs text-gray-600">Update information</p>
+                      </div>
+                    </button>
+                  </>
+                )}
+                {!isOwner && (
+                  <button
+                    onClick={handleLeaveAgency}
+                    disabled={isLeavingAgency}
+                    className="flex items-center gap-3 p-4 bg-red-50 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    <XMarkIcon className="w-6 h-6 text-red-600" />
+                    <div className="text-left">
+                      <p className="font-semibold text-gray-900">Leave Agency</p>
+                      <p className="text-xs text-gray-600">Become independent</p>
+                    </div>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* My Team - Show other agents */}
+            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">My Team ({agents.length} agents)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {agents.slice(0, 4).map((agent) => (
+                  <div
+                    key={agent.id || agent._id}
+                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                    onClick={() => handleAgentClick(agent.id || agent._id || '')}
+                  >
+                    {agent.avatarUrl ? (
+                      <img
+                        src={agent.avatarUrl}
+                        alt={agent.name}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                        <UserCircleIcon className="w-8 h-8 text-primary" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">{agent.name}</p>
+                      <p className="text-xs text-gray-600">{agent.email}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {agents.length > 4 && (
+                <button
+                  onClick={() => setActiveTab('overview')}
+                  className="mt-4 w-full px-4 py-2 bg-primary/10 text-primary font-medium rounded-lg hover:bg-primary/20 transition-colors"
+                >
+                  View All {agents.length} Agents
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Join Requests Modal */}
