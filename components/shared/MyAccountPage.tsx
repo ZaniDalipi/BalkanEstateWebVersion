@@ -391,7 +391,23 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                      {/* Agency Management - Always visible for agents */}
                      <AgencyManagementSection
                         currentUser={formData}
-                        onAgencyChange={() => window.location.reload()}
+                        onAgencyChange={async () => {
+                           // Fetch updated user data instead of reloading the page
+                           try {
+                              const response = await fetch(`${API_URL}/auth/me`, {
+                                 headers: {
+                                    'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
+                                 },
+                              });
+                              if (response.ok) {
+                                 const data = await response.json();
+                                 dispatch({ type: 'UPDATE_USER', payload: data.user });
+                                 setFormData(data.user);
+                              }
+                           } catch (err) {
+                              console.error('Failed to refresh user data:', err);
+                           }
+                        }}
                      />
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="relative">

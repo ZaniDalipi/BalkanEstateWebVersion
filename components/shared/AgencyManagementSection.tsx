@@ -95,49 +95,57 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
 
     try {
       setLoading(true);
-      console.log('🔍 Verifying invitation code for agency:', selectedAgencyId);
+      console.log('🔍 Step 1: Verifying invitation code for agency:', selectedAgencyId);
+      console.log('📝 Agency name:', agencies.find(a => a._id === selectedAgencyId)?.name);
+      console.log('🔑 Code entered:', invitationCode.trim().toUpperCase());
 
       // Step 1: Verify the invitation code matches the selected agency
       const verification = await verifyInvitationCode(selectedAgencyId, invitationCode.trim());
       console.log('📦 Verification result:', verification);
 
       if (!verification.valid) {
-        setError(verification.message || 'Invalid invitation code for this agency');
+        const errorMsg = verification.message || 'Invalid invitation code for this agency';
+        console.error('❌ Verification failed:', errorMsg);
+        setError(errorMsg);
+        setLoading(false);
         return;
       }
 
-      console.log('✅ Invitation code verified successfully');
+      console.log('✅ Step 1 complete: Invitation code verified successfully');
 
       // Step 2: Send join request
-      console.log('📤 Sending join request to agency:', selectedAgencyId);
-      await createJoinRequest(selectedAgencyId, `Join request with invitation code: ${invitationCode.trim().toUpperCase()}`);
-      console.log('✅ Join request sent successfully');
+      console.log('📤 Step 2: Sending join request to agency:', selectedAgencyId);
+      const joinResponse = await createJoinRequest(selectedAgencyId, `Join request with invitation code: ${invitationCode.trim().toUpperCase()}`);
+      console.log('✅ Step 2 complete: Join request response:', joinResponse);
 
-      // Step 3: Show success and refresh page to update status
+      // Step 3: Show success and update UI
+      const agencyName = agencies.find(a => a._id === selectedAgencyId)?.name || 'the agency';
+      console.log('✅ All steps complete! Request sent to:', agencyName);
+
       alert(
-        `✅ Join request sent to ${agencies.find(a => a._id === selectedAgencyId)?.name}!\n\n` +
+        `✅ Join request sent to ${agencyName}!\n\n` +
         `📋 Your request is pending approval from the agency.\n` +
         `🔔 You will be notified when they respond.`
       );
 
-      // Reset form and refresh page to show updated status
+      // Reset form
       setSelectedAgencyId('');
       setInvitationCode('');
       setShowForm(false);
 
+      // Fetch updated pending requests
+      await fetchPendingRequests();
+
       // Trigger the callback to refresh parent component
       onAgencyChange();
 
-      // Reload the page to show updated status
-      window.location.reload();
-
     } catch (err: any) {
-      console.error('❌ Failed to process join request:', err);
-      console.error('Error details:', {
-        message: err.message,
-        response: err.response,
-        status: err.status,
-      });
+      console.error('❌ ERROR in handleSubmit:', err);
+      console.error('Error type:', typeof err);
+      console.error('Error message:', err.message);
+      console.error('Error stack:', err.stack);
+      console.error('Full error object:', JSON.stringify(err, null, 2));
+
       setError(err.message || 'Failed to process join request. Please check the invitation code and try again.');
     } finally {
       setLoading(false);
