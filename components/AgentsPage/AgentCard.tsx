@@ -89,11 +89,11 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent }) => {
       onClick={handleSelectAgent}
     >
       <div className="p-6">
-        {/* Team Badge */}
+        {/* Agency Badge */}
         {isTeam && (
           <div className="inline-flex items-center bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 text-xs font-bold px-3 py-1.5 rounded-full mb-4 shadow-sm">
-            <UserCircleIcon className="w-3.5 h-3.5 mr-1" />
-            TEAM
+            <BuildingOfficeIcon className="w-3.5 h-3.5 mr-1" />
+            AGENCY
           </div>
         )}
 
@@ -164,7 +164,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent }) => {
                 {getPriceRange()}
               </span>
               {isTeam && (
-                <span className="text-xs text-neutral-500 italic">team</span>
+                <span className="text-xs text-neutral-500 italic">agency</span>
               )}
             </div>
           </div>
@@ -192,12 +192,12 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent }) => {
             </div>
           </div>
 
-          {/* Team Sales Badge (if part of team) */}
+          {/* Agency Sales Badge (if part of agency) */}
           {isTeam && agent.city && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2.5 text-center">
               <p className="text-sm text-yellow-900">
                 <span className="font-bold text-lg">{agent.propertiesSold * 3}</span>
-                <span className="text-xs font-medium ml-1">team sales in {agent.city}</span>
+                <span className="text-xs font-medium ml-1">agency sales in {agent.city}</span>
               </p>
             </div>
           )}

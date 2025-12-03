@@ -21,6 +21,16 @@ const AgentsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
+  // Contact form state
+  const [contactForm, setContactForm] = useState({
+    email: '',
+    phone: '',
+    location: '',
+    propertyDescription: ''
+  });
+  const [isSubmittingContact, setIsSubmittingContact] = useState(false);
+  const [contactSubmitSuccess, setContactSubmitSuccess] = useState(false);
+
   useEffect(() => {
     if (activeView === 'agents') {
       fetchAgents();
@@ -48,6 +58,40 @@ const AgentsPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch agencies:', error);
       setAgencies([]);
+    }
+  };
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingContact(true);
+
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+      const response = await fetch(`${API_URL}/agent-requests`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(contactForm),
+      });
+
+      if (response.ok) {
+        setContactSubmitSuccess(true);
+        setContactForm({
+          email: '',
+          phone: '',
+          location: '',
+          propertyDescription: ''
+        });
+        setTimeout(() => setContactSubmitSuccess(false), 5000);
+      } else {
+        alert('Failed to submit request. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error submitting contact form:', error);
+      alert('An error occurred. Please try again later.');
+    } finally {
+      setIsSubmittingContact(false);
     }
   };
 
@@ -293,21 +337,110 @@ const AgentsPage: React.FC = () => {
           </div>
         )}
 
-        {/* CTA Section */}
-        <div className="relative h-64 rounded-xl overflow-hidden mb-16 shadow-lg" style={{
+        {/* Contact Form Section */}
+        <div className="relative rounded-xl overflow-hidden mb-16 shadow-lg" style={{
           backgroundImage: 'url(https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1600&h=400&fit=crop)',
           backgroundPosition: 'center'
         }}>
-          <div className="absolute inset-0 bg-gradient-to-r from-neutral-900/70 to-neutral-900/50"></div>
-          <div className="relative h-full flex flex-col justify-center items-start max-w-2xl mx-auto px-8">
-            <h2 className="text-3xl font-bold text-white mb-3">Get help finding an agent</h2>
-            <p className="text-lg text-white/90 mb-6">
-              We'll pair you with a BalkanEstate Premier Agent who has the inside scoop on your market.
-            </p>
-            <button className="bg-white text-neutral-900 px-8 py-3 rounded-md font-semibold hover:bg-neutral-100 transition-colors flex items-center gap-2">
-              <PhoneIcon className="w-5 h-5" />
-              Connect with a local agent
-            </button>
+          <div className="absolute inset-0 bg-gradient-to-r from-neutral-900/80 to-neutral-900/70"></div>
+          <div className="relative max-w-4xl mx-auto px-8 py-12">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-white mb-3">Get help finding an agent</h2>
+              <p className="text-lg text-white/90">
+                We'll pair you with a BalkanEstate Premier Agent who has the inside scoop on your market.
+              </p>
+            </div>
+
+            {contactSubmitSuccess ? (
+              <div className="bg-green-50 border-2 border-green-500 rounded-lg p-6 text-center max-w-2xl mx-auto">
+                <div className="text-green-600 text-5xl mb-3">✓</div>
+                <h3 className="text-2xl font-bold text-green-900 mb-2">Request Submitted!</h3>
+                <p className="text-green-800">
+                  Thank you! We'll match you with local agents and they'll contact you soon.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleContactSubmit} className="bg-white rounded-lg shadow-xl p-6 md:p-8 max-w-2xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-semibold text-neutral-700 mb-2">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      required
+                      value={contactForm.email}
+                      onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                      className="w-full px-4 py-3 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      placeholder="your.email@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-semibold text-neutral-700 mb-2">
+                      Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      required
+                      value={contactForm.phone}
+                      onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
+                      className="w-full px-4 py-3 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      placeholder="+381 11 234 5678"
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <label htmlFor="location" className="block text-sm font-semibold text-neutral-700 mb-2">
+                    Location / Address *
+                  </label>
+                  <input
+                    type="text"
+                    id="location"
+                    required
+                    value={contactForm.location}
+                    onChange={(e) => setContactForm({ ...contactForm, location: e.target.value })}
+                    className="w-full px-4 py-3 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder="Belgrade, Serbia"
+                  />
+                </div>
+
+                <div className="mb-6">
+                  <label htmlFor="propertyDescription" className="block text-sm font-semibold text-neutral-700 mb-2">
+                    Property Description *
+                  </label>
+                  <textarea
+                    id="propertyDescription"
+                    required
+                    rows={4}
+                    value={contactForm.propertyDescription}
+                    onChange={(e) => setContactForm({ ...contactForm, propertyDescription: e.target.value })}
+                    className="w-full px-4 py-3 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                    placeholder="Describe the property you're looking for (type, size, budget, features, etc.)"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmittingContact}
+                  className="w-full bg-primary text-white px-8 py-4 rounded-md font-bold text-lg hover:bg-primary-dark transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmittingContact ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <PhoneIcon className="w-5 h-5" />
+                      Connect with a local agent
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
           </div>
         </div>
 
