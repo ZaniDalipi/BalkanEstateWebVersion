@@ -94,27 +94,45 @@ export async function processSubscriptionPayment(
       console.log('✅ Subscription renewed successfully');
     } else {
       console.log('➕ Creating new subscription...');
+
+      // Generate unique tokens for web subscriptions if not provided
+      // This prevents duplicate key errors when multiple users create free subscriptions
+      const webPurchaseToken = store === 'web' && !purchaseToken
+        ? `web_${userId}_${Date.now()}_${Math.random().toString(36).substring(7)}`
+        : purchaseToken;
+
+      const webTransactionId = store === 'web' && !transactionId
+        ? `web_txn_${userId}_${Date.now()}_${Math.random().toString(36).substring(7)}`
+        : transactionId;
+
       // Create new subscription
+      const subscriptionData: any = {
+        userId,
+        store,
+        productId,
+        googlePlayProductId: product.googlePlayProductId,
+        appStoreProductId: product.appStoreProductId,
+        stripeProductId: product.stripeProductId,
+        startDate,
+        expirationDate,
+        renewalDate: expirationDate,
+        status: 'active',
+        autoRenewing: true,
+        price: amount,
+        currency,
+      };
+
+      // Only include purchaseToken/transactionId if they exist
+      // This prevents setting null values that would violate unique constraints
+      if (webPurchaseToken) {
+        subscriptionData.purchaseToken = webPurchaseToken;
+      }
+      if (webTransactionId) {
+        subscriptionData.transactionId = webTransactionId;
+      }
+
       const [newSubscription] = await Subscription.create(
-        [
-          {
-            userId,
-            store,
-            productId,
-            googlePlayProductId: product.googlePlayProductId,
-            appStoreProductId: product.appStoreProductId,
-            stripeProductId: product.stripeProductId,
-            purchaseToken,
-            transactionId,
-            startDate,
-            expirationDate,
-            renewalDate: expirationDate,
-            status: 'active',
-            autoRenewing: true,
-            price: amount,
-            currency,
-          },
-        ],
+        [subscriptionData],
         { session }
       );
       subscription = newSubscription;
@@ -123,13 +141,19 @@ export async function processSubscriptionPayment(
 
     // 5. Create payment record
     console.log('💳 Creating payment record...');
+
+    // Use the subscription's tokens or generate a unique transaction ID
+    const paymentTransactionId = subscription.transactionId
+      || subscription.purchaseToken
+      || `web_payment_${userId}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
     const [paymentRecord] = await PaymentRecord.create(
       [
         {
           userId,
           subscriptionId: subscription._id,
           store,
-          storeTransactionId: transactionId || purchaseToken || `web_${Date.now()}`,
+          storeTransactionId: paymentTransactionId,
           transactionType: 'charge',
           transactionDate: new Date(),
           amount,
