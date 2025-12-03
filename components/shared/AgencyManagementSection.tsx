@@ -32,10 +32,10 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
   const [showForm, setShowForm] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
 
-  // Fetch pending join requests on mount
+  // Fetch pending join requests on mount and when showing the form
   useEffect(() => {
     fetchPendingRequests();
-  }, []);
+  }, [showForm]); // Refresh when form visibility changes
 
   // Fetch agencies when form is shown
   useEffect(() => {
@@ -120,20 +120,34 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
 
       // Step 3: Show success and update UI
       const agencyName = agencies.find(a => a._id === selectedAgencyId)?.name || 'the agency';
+      const selectedAgencyData = agencies.find(a => a._id === selectedAgencyId);
       console.log('✅ All steps complete! Request sent to:', agencyName);
 
-      alert(
-        `✅ Join request sent to ${agencyName}!\n\n` +
-        `📋 Your request is pending approval from the agency.\n` +
-        `🔔 You will be notified when they respond.`
-      );
+      // Immediately add to pending requests for instant UI feedback
+      const newPendingRequest = {
+        _id: `temp_${Date.now()}`, // Temporary ID
+        agencyId: selectedAgencyData,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        message: `Join request with invitation code: ${invitationCode.trim().toUpperCase()}`
+      };
+      setPendingRequests([...pendingRequests, newPendingRequest]);
 
       // Reset form
       setSelectedAgencyId('');
       setInvitationCode('');
       setShowForm(false);
 
-      // Fetch updated pending requests
+      // Show success message with better formatting
+      alert(
+        `✅ SUCCESS!\n\n` +
+        `Your join request has been sent to ${agencyName}.\n\n` +
+        `📋 Status: Pending Approval\n` +
+        `🔔 You will be notified when the agency responds.\n\n` +
+        `You can check your pending requests in the "Pending Join Requests" section above.`
+      );
+
+      // Fetch updated pending requests from server (to get real IDs)
       await fetchPendingRequests();
 
       // Trigger the callback to refresh parent component

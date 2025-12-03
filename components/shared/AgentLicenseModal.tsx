@@ -29,10 +29,10 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
   // Check if user is already an agent (joining agency) vs becoming new agent
   const isJoiningAgency = Boolean(currentLicenseNumber && currentAgentId);
 
-  // Fetch agencies when modal opens (for joining agency scenario)
+  // Fetch agencies when modal opens
   useEffect(() => {
-    // Only fetch if modal is open, user is joining agency, and we haven't fetched yet
-    if (isOpen && isJoiningAgency && agencies.length === 0 && !loadingAgencies) {
+    // Fetch agencies when modal opens (for both new agents and joining scenarios)
+    if (isOpen && agencies.length === 0 && !loadingAgencies) {
       fetchAgencies();
     }
     // Cleanup when modal closes
@@ -40,7 +40,7 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
       setAgencies([]);
       setSelectedAgency('');
     }
-  }, [isOpen, isJoiningAgency]);
+  }, [isOpen]);
 
   const fetchAgencies = async () => {
     try {
@@ -69,16 +69,16 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
       return;
     }
 
-    // If joining agency, agency selection and code are mandatory
-    if (isJoiningAgency) {
-      if (!selectedAgency) {
-        setError('Please select an agency to join');
-        return;
-      }
-      if (!agencyInvitationCode.trim()) {
-        setError('Agency invitation code is required to join an agency');
-        return;
-      }
+    // If user selected an agency, require the invitation code
+    if (selectedAgency && !agencyInvitationCode.trim()) {
+      setError('Please enter the invitation code for the selected agency');
+      return;
+    }
+
+    // If user entered a code, require agency selection
+    if (agencyInvitationCode.trim() && !selectedAgency) {
+      setError('Please select an agency to use the invitation code');
+      return;
     }
 
     setError('');
@@ -88,6 +88,7 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
       console.log('📤 Submitting agent license with data:', {
         licenseNumber: licenseNumber.trim(),
         agencyInvitationCode: agencyInvitationCode.trim() || '(none)',
+        selectedAgency: selectedAgency || '(independent)',
         isJoiningAgency
       });
 
@@ -100,7 +101,7 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
 
       console.log('✅ Agent license verification successful');
 
-      // Only reset form and close on success
+      // Reset form and close
       if (!isJoiningAgency) {
         setLicenseNumber('');
         setAgentId('');
@@ -219,38 +220,38 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
               </p>
             </div>
 
-            {/* Agency Selection - Only shown when joining agency */}
-            {isJoiningAgency && (
-              <div>
-                <label htmlFor="agencySelect" className="block text-sm font-medium text-gray-700 mb-1">
-                  Select Agency <span className="text-red-500">*</span>
-                </label>
-                {loadingAgencies ? (
-                  <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 text-sm">
-                    Loading agencies...
-                  </div>
-                ) : (
-                  <select
-                    id="agencySelect"
-                    value={selectedAgency}
-                    onChange={(e) => handleAgencySelect(e.target.value)}
-                    disabled={isSubmitting}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    required={isJoiningAgency}
-                  >
-                    <option value="">-- Select an agency --</option>
-                    {agencies.map((agency) => (
-                      <option key={agency._id} value={agency._id}>
-                        {agency.name} ({agency.city || 'Location N/A'})
-                      </option>
-                    ))}
-                  </select>
-                )}
-                <p className="text-xs text-gray-500 mt-1">
-                  Choose the agency you want to join
-                </p>
-              </div>
-            )}
+            {/* Agency Selection - Always shown but optional for new agents */}
+            <div>
+              <label htmlFor="agencySelect" className="block text-sm font-medium text-gray-700 mb-1">
+                Select Agency {isJoiningAgency ? <span className="text-red-500">*</span> : <span className="text-gray-400">(Optional)</span>}
+              </label>
+              {loadingAgencies ? (
+                <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 text-sm">
+                  Loading agencies...
+                </div>
+              ) : (
+                <select
+                  id="agencySelect"
+                  value={selectedAgency}
+                  onChange={(e) => handleAgencySelect(e.target.value)}
+                  disabled={isSubmitting}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  required={isJoiningAgency}
+                >
+                  <option value="">{isJoiningAgency ? '-- Select an agency --' : '-- Independent Agent (No Agency) --'}</option>
+                  {agencies.map((agency) => (
+                    <option key={agency._id} value={agency._id}>
+                      {agency.name} ({agency.city || 'Location N/A'})
+                    </option>
+                  ))}
+                </select>
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                {isJoiningAgency
+                  ? 'Choose the agency you want to join'
+                  : 'Select an agency to join, or leave as independent'}
+              </p>
+            </div>
 
             {/* Agency Invitation Code */}
             <div>
