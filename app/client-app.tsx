@@ -230,7 +230,8 @@ const ClientApp: React.FC = () => {
           {state.activeView === 'create-listing' && <CreateListingPage />}
           {state.activeView === 'admin' && state.currentUser?.role === UserRole.ADMIN && <AdminDashboard />}
         </main>
-        <Footer />
+        {/* Footer only for non-search pages (SearchPage has its own footer in property list) */}
+        {state.activeView !== 'search' && <Footer />}
       </div>
 
       {/* Global modals */}
