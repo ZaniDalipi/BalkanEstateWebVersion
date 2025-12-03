@@ -807,8 +807,9 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
             )}
           </div>
         </div>
+        )}
 
-        {/* Team Members Section - Show in Overview tab */}
+      
         {(!isAlreadyMember || activeTab === 'overview') && (
           <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
