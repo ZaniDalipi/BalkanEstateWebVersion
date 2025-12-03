@@ -34,8 +34,12 @@ const nextConfig = {
 
   // Environment variables available to the browser
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
-    NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001',
+    // Your existing variable names
+    VITE_API_URL: process.env.VITE_API_URL || 'http://localhost:5001/api',
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+    API_KEY: process.env.GEMINI_API_KEY || '', // Alias
+    GOOGLE_MAPS_KEY: process.env.GOOGLE_MAPS_KEY || '',
+    STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY || '',
   },
 
   // Experimental features for better performance

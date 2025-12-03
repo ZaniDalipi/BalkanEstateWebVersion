@@ -3,7 +3,7 @@ import { Property, PropertyImageTag, ChatMessage, AiSearchQuery, Filters } from 
 import type { LatLngBounds } from 'leaflet';
 
 const ai = new GoogleGenAI({
-  apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY || ''
+  apiKey: process.env.GEMINI_API_KEY || process.env.API_KEY || ''
 });
 
 // Retry configuration for handling 503 and other transient errors

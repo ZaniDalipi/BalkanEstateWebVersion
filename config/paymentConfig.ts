@@ -267,7 +267,7 @@ export function getRecommendedPaymentMethod(
 
 export const STRIPE_CONFIG = {
   // Use environment variable for publishable key
-  publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
+  publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
 
   // Stripe API version
   apiVersion: '2023-10-16' as const,
