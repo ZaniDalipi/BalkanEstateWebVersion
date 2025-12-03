@@ -164,6 +164,21 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     return scoreB - scoreA;
   });
 
+  // Calculate sales statistics
+  const soldProperties = agencyProperties.filter(p => p.status === 'sold');
+  const soldPropertiesLast12Months = soldProperties.filter(p => {
+    if (!p.soldAt) return false;
+    const twelveMonthsAgo = Date.now() - (365 * 24 * 60 * 60 * 1000);
+    return p.soldAt >= twelveMonthsAgo;
+  });
+
+  const soldPrices = soldProperties.map(p => p.price).filter(Boolean);
+  const minPrice = soldPrices.length > 0 ? Math.min(...soldPrices) : 0;
+  const maxPrice = soldPrices.length > 0 ? Math.max(...soldPrices) : 0;
+  const averagePrice = soldPrices.length > 0
+    ? soldPrices.reduce((sum, price) => sum + price, 0) / soldPrices.length
+    : 0;
+
   const handleBack = () => {
     dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
     // Go back to the previous view (could be agencies or agents)
@@ -669,6 +684,41 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
             </div>
           </div>
         </div>
+
+        {/* Sales Statistics */}
+        {soldProperties.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Sales Performance</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div>
+                <p className="text-sm text-gray-500 font-medium mb-2">Sales last 12 months</p>
+                <p className="text-3xl font-bold text-primary">{soldPropertiesLast12Months.length}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 font-medium mb-2">Total sales</p>
+                <p className="text-3xl font-bold text-green-600">{soldProperties.length}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 font-medium mb-2">Price range</p>
+                <p className="text-lg font-bold text-blue-600">
+                  {minPrice > 0 && maxPrice > 0 ? (
+                    <>
+                      {formatPrice(minPrice, agencyData.country || 'Serbia')} - {formatPrice(maxPrice, agencyData.country || 'Serbia')}
+                    </>
+                  ) : (
+                    'N/A'
+                  )}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 font-medium mb-2">Average price</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {averagePrice > 0 ? formatPrice(averagePrice, agencyData.country || 'Serbia') : 'N/A'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* About Section */}
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
