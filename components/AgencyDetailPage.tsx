@@ -49,6 +49,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const [isLeavingAgency, setIsLeavingAgency] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'myAgency'>('overview');
+  const [propertyView, setPropertyView] = useState<'active' | 'sold'>('active');
   const [editForm, setEditForm] = useState({
     name: '',
     description: '',
@@ -1015,29 +1016,71 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
         </div>
         )}
 
-        {/* Active Properties Section - Show in Overview tab */}
+        {/* Agency Stats Cards */}
+        {(!isAlreadyMember || activeTab === 'overview') && (
+          <div className="mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div
+                className={`text-center p-6 rounded-lg cursor-pointer transition-all ${
+                  propertyView === 'active' ? 'bg-primary text-white shadow-lg' : 'bg-white hover:bg-neutral-50 border border-neutral-200'
+                }`}
+                onClick={() => setPropertyView('active')}
+              >
+                <p className={`text-sm font-semibold mb-2 ${propertyView === 'active' ? 'text-white' : 'text-neutral-600'}`}>
+                  ACTIVE LISTINGS
+                </p>
+                <p className={`text-3xl font-bold ${propertyView === 'active' ? 'text-white' : 'text-neutral-900'}`}>
+                  {agencyProperties.filter(p => p.status === 'active').length}
+                </p>
+              </div>
+              <div
+                className={`text-center p-6 rounded-lg cursor-pointer transition-all ${
+                  propertyView === 'sold' ? 'bg-primary text-white shadow-lg' : 'bg-white hover:bg-neutral-50 border border-neutral-200'
+                }`}
+                onClick={() => setPropertyView('sold')}
+              >
+                <p className={`text-sm font-semibold mb-2 ${propertyView === 'sold' ? 'text-white' : 'text-neutral-600'}`}>
+                  SOLD PROPERTIES
+                </p>
+                <p className={`text-3xl font-bold ${propertyView === 'sold' ? 'text-white' : 'text-neutral-900'}`}>
+                  {agencyProperties.filter(p => p.status === 'sold').length}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Properties Section - Show in Overview tab */}
         {(!isAlreadyMember || activeTab === 'overview') && (
           <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold text-gray-900">Active Listings</h2>
-            <span className="text-sm text-gray-500">{agencyProperties.length} properties</span>
+            <h2 className="text-3xl font-bold text-gray-900">
+              {propertyView === 'active' ? 'Active Listings' : 'Sold Properties'}
+            </h2>
+            <span className="text-sm text-gray-500">
+              {agencyProperties.filter(p => p.status === propertyView).length} properties
+            </span>
           </div>
 
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map(i => <PropertyCardSkeleton key={i} />)}
             </div>
-          ) : agencyProperties.length > 0 ? (
+          ) : agencyProperties.filter(p => p.status === propertyView).length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {agencyProperties.map(property => (
+              {agencyProperties.filter(p => p.status === propertyView).map(property => (
                 <PropertyCard key={property.id || property._id} property={property} />
               ))}
             </div>
           ) : (
             <div className="bg-white p-12 rounded-2xl border border-gray-200 text-center">
               <HomeIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 text-lg">No active listings at the moment</p>
-              <p className="text-gray-400 text-sm mt-2">Check back soon for new properties</p>
+              <p className="text-gray-500 text-lg">
+                {propertyView === 'active' ? 'No active listings at the moment' : 'No sold properties yet'}
+              </p>
+              <p className="text-gray-400 text-sm mt-2">
+                {propertyView === 'active' ? 'Check back soon for new properties' : 'Sold properties will appear here'}
+              </p>
             </div>
           )}
         </div>
