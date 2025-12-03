@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../shared/Modal';
 import { BuildingOfficeIcon, CheckCircleIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
+import { BALKAN_LOCATIONS } from '../../utils/balkanLocations';
 
 interface AgencyCreationModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
   const { state, dispatch } = useAppContext();
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState('');
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -46,13 +48,15 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
   useEffect(() => {
     if (isOpen && state.currentUser) {
       const user = state.currentUser;
+      const userCountry = user.country || '';
+
       setFormData(prev => ({
         ...prev,
         // Pre-fill with user data, but allow it to be overridden if already set
         email: prev.email || user.email || '',
         phone: prev.phone || user.phone || '',
         city: prev.city || user.city || '',
-        country: prev.country || user.country || '',
+        country: prev.country || userCountry,
         // If user already has an agency name (e.g., they're an agent), use it
         name: prev.name || user.agencyName || '',
         // Auto-fill agent-specific fields if user is an agent
@@ -60,12 +64,40 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
         // If user has years in business data, use it
         yearsInBusiness: prev.yearsInBusiness || '',
       }));
+
+      // Set available cities if user has a country
+      if (userCountry) {
+        const countryData = BALKAN_LOCATIONS.find(c => c.name === userCountry);
+        if (countryData) {
+          setAvailableCities(countryData.cities.map(city => city.name));
+        }
+      }
     }
   }, [isOpen, state.currentUser]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  // Update available cities when country changes
+  useEffect(() => {
+    if (formData.country) {
+      const countryData = BALKAN_LOCATIONS.find(c => c.name === formData.country);
+      if (countryData) {
+        setAvailableCities(countryData.cities.map(city => city.name));
+      } else {
+        setAvailableCities([]);
+      }
+    } else {
+      setAvailableCities([]);
+    }
+  }, [formData.country]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+
+    // If country changes, reset city
+    if (name === 'country') {
+      setFormData(prev => ({ ...prev, country: value, city: '' }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleBusinessHoursChange = (day: string, value: string) => {
@@ -109,8 +141,9 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
     dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: false, isAgencyMode: true } });
   };
 
-  const inputClasses = "w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm";
-  const labelClasses = "block text-sm font-medium text-neutral-700 mb-1";
+  const inputClasses = "w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm transition-all duration-200 hover:border-neutral-400";
+  const labelClasses = "block text-sm font-semibold text-neutral-700 mb-2";
+  const selectClasses = "w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm transition-all duration-200 hover:border-neutral-400 cursor-pointer bg-white";
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="" size="4xl">
@@ -131,187 +164,243 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Agency Name */}
-          <div>
-            <label htmlFor="name" className={labelClasses}>
-              Agency Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              placeholder="e.g., Premier Real Estate"
-              className={inputClasses}
-              required
-              disabled={isCreating}
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Information Section */}
+          <div className="bg-gradient-to-r from-neutral-50 to-neutral-100 p-5 rounded-xl border border-neutral-200">
+            <h3 className="text-base font-bold text-neutral-800 mb-4 flex items-center gap-2">
+              <span className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-bold">1</span>
+              Basic Information
+            </h3>
 
-          {/* Description */}
-          <div>
-            <label htmlFor="description" className={labelClasses}>
-              Description
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              placeholder="Brief description of your agency..."
-              rows={3}
-              className={inputClasses}
-              disabled={isCreating}
-            />
-          </div>
-
-          {/* Location */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="city" className={labelClasses}>
-                City <span className="text-red-500">*</span>
+            {/* Agency Name */}
+            <div className="mb-4">
+              <label htmlFor="name" className={labelClasses}>
+                Agency Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                id="city"
-                name="city"
-                value={formData.city}
+                id="name"
+                name="name"
+                value={formData.name}
                 onChange={handleInputChange}
-                placeholder="e.g., Belgrade"
+                placeholder="e.g., Premier Real Estate Agency"
                 className={inputClasses}
                 required
                 disabled={isCreating}
               />
+              <p className="text-xs text-neutral-500 mt-1">Choose a professional name that represents your brand</p>
             </div>
+
+            {/* Description */}
             <div>
-              <label htmlFor="country" className={labelClasses}>
-                Country <span className="text-red-500">*</span>
+              <label htmlFor="description" className={labelClasses}>
+                Description
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                placeholder="Tell potential clients about your agency, your expertise, and what makes you unique..."
+                rows={3}
+                className={inputClasses}
+                disabled={isCreating}
+              />
+              <p className="text-xs text-neutral-500 mt-1">A compelling description helps clients understand your value</p>
+            </div>
+          </div>
+
+          {/* Location Section */}
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-5 rounded-xl border border-blue-200">
+            <h3 className="text-base font-bold text-neutral-800 mb-4 flex items-center gap-2">
+              <span className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">2</span>
+              Location
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label htmlFor="country" className={labelClasses}>
+                  Country <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="country"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleInputChange}
+                  className={selectClasses}
+                  required
+                  disabled={isCreating}
+                >
+                  <option value="">🌍 Select a country</option>
+                  {BALKAN_LOCATIONS.map((country) => (
+                    <option key={country.code} value={country.name}>
+                      {country.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="city" className={labelClasses}>
+                  City <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="city"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleInputChange}
+                  className={selectClasses}
+                  required
+                  disabled={isCreating || !formData.country}
+                >
+                  <option value="">
+                    {formData.country ? '🏙️ Select a city' : '⚠️ Select country first'}
+                  </option>
+                  {availableCities.map((city) => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Address */}
+            <div>
+              <label htmlFor="address" className={labelClasses}>
+                Street Address
               </label>
               <input
                 type="text"
-                id="country"
-                name="country"
-                value={formData.country}
+                id="address"
+                name="address"
+                value={formData.address}
                 onChange={handleInputChange}
-                placeholder="e.g., Serbia"
+                placeholder="e.g., 123 Main Street, Building A"
                 className={inputClasses}
-                required
                 disabled={isCreating}
               />
+              <p className="text-xs text-neutral-500 mt-1">Optional: Full street address for office location</p>
             </div>
           </div>
 
-          {/* Address */}
-          <div>
-            <label htmlFor="address" className={labelClasses}>
-              Address
-            </label>
-            <input
-              type="text"
-              id="address"
-              name="address"
-              value={formData.address}
-              onChange={handleInputChange}
-              placeholder="Street address"
-              className={inputClasses}
-              disabled={isCreating}
-            />
-          </div>
+          {/* Contact Information Section */}
+          <div className="bg-gradient-to-r from-green-50 to-green-100 p-5 rounded-xl border border-green-200">
+            <h3 className="text-base font-bold text-neutral-800 mb-4 flex items-center gap-2">
+              <span className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white text-sm font-bold">3</span>
+              Contact Information
+            </h3>
 
-          {/* Contact Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label htmlFor="email" className={labelClasses}>
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="📧 contact@agency.com"
+                  className={inputClasses}
+                  required
+                  disabled={isCreating}
+                />
+                <p className="text-xs text-neutral-500 mt-1">Primary contact email for inquiries</p>
+              </div>
+              <div>
+                <label htmlFor="phone" className={labelClasses}>
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  placeholder="📞 +381 11 123 4567"
+                  className={inputClasses}
+                  disabled={isCreating}
+                />
+                <p className="text-xs text-neutral-500 mt-1">Include country code</p>
+              </div>
+            </div>
+
+            {/* Website */}
             <div>
-              <label htmlFor="email" className={labelClasses}>
-                Email <span className="text-red-500">*</span>
+              <label htmlFor="website" className={labelClasses}>
+                Website URL
               </label>
               <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
+                type="url"
+                id="website"
+                name="website"
+                value={formData.website}
                 onChange={handleInputChange}
-                placeholder="contact@agency.com"
-                className={inputClasses}
-                required
-                disabled={isCreating}
-              />
-            </div>
-            <div>
-              <label htmlFor="phone" className={labelClasses}>
-                Phone
-              </label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                placeholder="+381 11 123 4567"
+                placeholder="🌐 https://yourwebsite.com"
                 className={inputClasses}
                 disabled={isCreating}
               />
+              <p className="text-xs text-neutral-500 mt-1">Optional: Your agency's website</p>
             </div>
           </div>
 
-          {/* Website */}
-          <div>
-            <label htmlFor="website" className={labelClasses}>
-              Website
-            </label>
-            <input
-              type="url"
-              id="website"
-              name="website"
-              value={formData.website}
-              onChange={handleInputChange}
-              placeholder="https://yourwebsite.com"
-              className={inputClasses}
-              disabled={isCreating}
-            />
-          </div>
+          {/* Professional Details Section */}
+          <div className="bg-gradient-to-r from-amber-50 to-amber-100 p-5 rounded-xl border border-amber-200">
+            <h3 className="text-base font-bold text-neutral-800 mb-4 flex items-center gap-2">
+              <span className="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center text-white text-sm font-bold">4</span>
+              Professional Details
+            </h3>
 
-          {/* License Number */}
-          <div>
-            <label htmlFor="licenseNumber" className={labelClasses}>
-              Agent License Number <span className="text-neutral-500 text-xs">(Required for agency registration)</span>
-            </label>
-            <input
-              type="text"
-              id="licenseNumber"
-              name="licenseNumber"
-              value={formData.licenseNumber}
-              onChange={handleInputChange}
-              placeholder="e.g., RE-123456"
-              className={inputClasses}
-              disabled={isCreating}
-            />
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* License Number */}
+              <div>
+                <label htmlFor="licenseNumber" className={labelClasses}>
+                  Agent License Number
+                </label>
+                <input
+                  type="text"
+                  id="licenseNumber"
+                  name="licenseNumber"
+                  value={formData.licenseNumber}
+                  onChange={handleInputChange}
+                  placeholder="e.g., RE-123456"
+                  className={inputClasses}
+                  disabled={isCreating}
+                />
+                <p className="text-xs text-neutral-500 mt-1">Required for agency registration</p>
+              </div>
 
-          {/* Years in Business */}
-          <div>
-            <label htmlFor="yearsInBusiness" className={labelClasses}>
-              Years in Business
-            </label>
-            <input
-              type="number"
-              id="yearsInBusiness"
-              name="yearsInBusiness"
-              value={formData.yearsInBusiness}
-              onChange={handleInputChange}
-              placeholder="e.g., 5"
-              min="0"
-              className={inputClasses}
-              disabled={isCreating}
-            />
+              {/* Years in Business */}
+              <div>
+                <label htmlFor="yearsInBusiness" className={labelClasses}>
+                  Years in Business
+                </label>
+                <input
+                  type="number"
+                  id="yearsInBusiness"
+                  name="yearsInBusiness"
+                  value={formData.yearsInBusiness}
+                  onChange={handleInputChange}
+                  placeholder="e.g., 5"
+                  min="0"
+                  max="100"
+                  className={inputClasses}
+                  disabled={isCreating}
+                />
+                <p className="text-xs text-neutral-500 mt-1">How long you've been in real estate</p>
+              </div>
+            </div>
           </div>
 
           {/* Social Media Links */}
-          <div className="bg-neutral-50 p-4 rounded-lg space-y-3">
-            <h3 className="font-semibold text-neutral-800 text-sm">Social Media (Optional)</h3>
+          <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-5 rounded-xl border border-purple-200">
+            <h3 className="text-base font-bold text-neutral-800 mb-4 flex items-center gap-2">
+              <span className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">5</span>
+              Social Media (Optional)
+            </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label htmlFor="facebookUrl" className={labelClasses}>
                   Facebook
@@ -322,7 +411,7 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
                   name="facebookUrl"
                   value={formData.facebookUrl}
                   onChange={handleInputChange}
-                  placeholder="https://facebook.com/yourpage"
+                  placeholder="facebook.com/yourpage"
                   className={inputClasses}
                   disabled={isCreating}
                 />
@@ -338,7 +427,7 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
                   name="instagramUrl"
                   value={formData.instagramUrl}
                   onChange={handleInputChange}
-                  placeholder="https://instagram.com/yourpage"
+                  placeholder="instagram.com/yourpage"
                   className={inputClasses}
                   disabled={isCreating}
                 />
@@ -354,19 +443,23 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
                   name="linkedinUrl"
                   value={formData.linkedinUrl}
                   onChange={handleInputChange}
-                  placeholder="https://linkedin.com/company/yourcompany"
+                  placeholder="linkedin.com/company/..."
                   className={inputClasses}
                   disabled={isCreating}
                 />
               </div>
             </div>
+            <p className="text-xs text-neutral-500 mt-3">Connect your social profiles to increase visibility</p>
           </div>
 
           {/* Business Hours */}
-          <div className="bg-neutral-50 p-4 rounded-lg space-y-3">
-            <h3 className="font-semibold text-neutral-800 text-sm">Business Hours (Optional)</h3>
+          <div className="bg-gradient-to-r from-indigo-50 to-indigo-100 p-5 rounded-xl border border-indigo-200">
+            <h3 className="text-base font-bold text-neutral-800 mb-4 flex items-center gap-2">
+              <span className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-bold">6</span>
+              Business Hours (Optional)
+            </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
                 <div key={day}>
                   <label htmlFor={day} className={labelClasses}>
@@ -384,39 +477,73 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
                 </div>
               ))}
             </div>
+            <p className="text-xs text-neutral-500 mt-3">Let clients know when you're available</p>
           </div>
 
           {/* Info Box */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
-            <CheckCircleIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-blue-900 mb-1">What you'll get:</p>
-              <ul className="text-xs text-blue-700 space-y-1">
-                <li>• Dedicated agency page on our platform</li>
-                <li>• Display all your agents and properties</li>
-                <li>• Featured in rotating homepage ads</li>
-                <li>• Full contact information displayed</li>
-                <li>• Unique invitation code for agents</li>
-              </ul>
+          <div className="bg-gradient-to-br from-blue-50 via-blue-100 to-cyan-100 border-2 border-blue-300 rounded-xl p-6 shadow-sm">
+            <div className="flex gap-4">
+              <div className="flex-shrink-0">
+                <CheckCircleIcon className="w-10 h-10 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-base font-bold text-blue-900 mb-3">🎉 What You'll Get</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="flex items-start gap-2">
+                    <span className="text-blue-600 font-bold">✓</span>
+                    <p className="text-sm text-blue-800">Dedicated agency page on platform</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-blue-600 font-bold">✓</span>
+                    <p className="text-sm text-blue-800">Display all agents & properties</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-blue-600 font-bold">✓</span>
+                    <p className="text-sm text-blue-800">Featured in homepage ads</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-blue-600 font-bold">✓</span>
+                    <p className="text-sm text-blue-800">Full contact info displayed</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-blue-600 font-bold">✓</span>
+                    <p className="text-sm text-blue-800">Unique invitation code for agents</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-blue-600 font-bold">✓</span>
+                    <p className="text-sm text-blue-800">Priority customer support</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Buttons */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-4 pt-2 sticky bottom-0 bg-white py-4 border-t border-neutral-200">
             <button
               type="button"
               onClick={onClose}
               disabled={isCreating}
-              className="flex-1 py-3 px-4 border border-neutral-300 text-neutral-700 rounded-lg font-medium hover:bg-neutral-50 transition-colors disabled:opacity-50"
+              className="flex-1 py-3.5 px-6 border-2 border-neutral-300 text-neutral-700 rounded-xl font-bold hover:bg-neutral-50 hover:border-neutral-400 transition-all disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isCreating}
-              className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg font-bold hover:from-amber-600 hover:to-amber-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 py-3.5 px-6 bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white rounded-xl font-bold hover:from-amber-600 hover:via-amber-700 hover:to-orange-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              <span>Continue to Payment</span>
+              {isCreating ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  <span>Continue to Payment</span>
+                  <span className="text-xl">→</span>
+                </>
+              )}
             </button>
           </div>
         </form>

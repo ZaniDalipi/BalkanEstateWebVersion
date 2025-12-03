@@ -4,15 +4,7 @@ import { protect } from '../middleware/auth';
 
 const router = express.Router();
 
-// ============================================================================
-// PUBLIC ROUTES
-// ============================================================================
 
-/**
- * @desc    Get all available products
- * @route   GET /api/products?role=buyer|seller|agent&store=google|apple|web&active=true
- * @access  Public
- */
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const { store, active, role } = req.query;
@@ -155,11 +147,7 @@ router.get('/admin/all', protect, async (_req: Request, res: Response): Promise<
   }
 });
 
-/**
- * @desc    Create new product - Admin only
- * @route   POST /api/products/admin
- * @access  Private/Admin
- */
+
 router.post('/admin', protect, async (req: Request, res: Response): Promise<void> => {
   try {
     const product = await Product.create(req.body);

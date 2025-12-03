@@ -12,6 +12,7 @@ import {
   uploadAgencyCover,
   joinAgencyByInvitationCode,
   verifyInvitationCode,
+  findAgencyByInvitationCode,
   addAgencyAdmin,
   removeAgencyAdmin,
   leaveAgency,
@@ -48,6 +49,7 @@ router.put('/:id', protect, updateAgency);
 router.post('/:id/agents', protect, addAgentToAgency);
 router.delete('/:id/agents/:agentId', protect, removeAgentFromAgency);
 router.post('/join-by-code', protect, joinAgencyByInvitationCode);
+router.post('/find-by-code', protect, findAgencyByInvitationCode);
 router.post('/leave', protect, leaveAgency);
 
 // Admin management routes

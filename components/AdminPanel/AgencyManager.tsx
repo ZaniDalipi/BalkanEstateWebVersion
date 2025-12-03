@@ -281,8 +281,12 @@ const AgencyManager: React.FC = () => {
                 <td className="px-6 py-4">
                   {agency.ownerId ? (
                     <div>
-                      <div className="text-sm text-gray-900">{typeof agency.ownerId === 'string' ? agency.ownerId : (agency.ownerId as any).name}</div>
-                      <div className="text-xs text-gray-500">{typeof agency.ownerId === 'string' ? '' : (agency.ownerId as any).email}</div>
+                      <div className="text-sm text-gray-900">
+                        {typeof agency.ownerId === 'object' ? agency.ownerId.name : 'Owner'}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {typeof agency.ownerId === 'object' ? agency.ownerId.email : agency.ownerId}
+                      </div>
                     </div>
                   ) : (
                     <span className="text-gray-400 text-sm">-</span>
@@ -459,13 +463,15 @@ const AgencyManager: React.FC = () => {
               </div>
 
               {/* Owner Info */}
-              {viewingAgency.ownerId && (
+              {viewingAgency.ownerId && typeof viewingAgency.ownerId === 'object' && (
                 <div className="border-t pt-4">
                   <h5 className="font-semibold text-gray-900 mb-3">Owner</h5>
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="font-medium text-gray-900">{typeof viewingAgency.ownerId === 'string' ? viewingAgency.ownerId : (viewingAgency.ownerId as any).name}</div>
-                    <div className="text-sm text-gray-600">{typeof viewingAgency.ownerId === 'string' ? '' : (viewingAgency.ownerId as any).email}</div>
-                    <div className="text-xs text-gray-500 mt-1">Role: {typeof viewingAgency.ownerId === 'string' ? '' : (viewingAgency.ownerId as any).role}</div>
+                    <div className="font-medium text-gray-900">{viewingAgency.ownerId.name}</div>
+                    <div className="text-sm text-gray-600">{viewingAgency.ownerId.email}</div>
+                    {viewingAgency.ownerId.role && (
+                      <div className="text-xs text-gray-500 mt-1">Role: {viewingAgency.ownerId.role}</div>
+                    )}
                   </div>
                 </div>
               )}

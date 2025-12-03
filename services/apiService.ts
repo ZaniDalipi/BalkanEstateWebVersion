@@ -433,11 +433,21 @@ export const deleteSavedSearch = async (searchId: string): Promise<void> => {
 // --- CONVERSATIONS/MESSAGING API ---
 
 export const getConversations = async (): Promise<Conversation[]> => {
-  const response = await apiRequest<{ conversations: any[] }>('/conversations', {
-    requiresAuth: true,
-  });
+  try {
+    const response = await apiRequest<{ conversations: any[] }>('/conversations', {
+      requiresAuth: true,
+    });
 
-  return response.conversations.map(transformBackendConversation);
+    // Filter out any null or invalid conversations
+    const validConversations = response.conversations?.filter(
+      (conv: any) => conv && conv._id
+    ) || [];
+
+    return validConversations.map(transformBackendConversation);
+  } catch (error) {
+    console.error('Error fetching conversations:', error);
+    return [];
+  }
 };
 
 export const getConversation = async (conversationId: string): Promise<{ conversation: Conversation; messages: Message[] }> => {
@@ -690,24 +700,24 @@ function transformBackendSavedSearch(backendSearch: any): SavedSearch {
   };
 }
 
-// Transform backend conversation to frontend Conversation type
 function transformBackendConversation(backendConv: any): Conversation {
-  const property = backendConv.propertyId;
-  const buyer = backendConv.buyerId;
-  const seller = backendConv.sellerId;
+  // Add null checks for all nested objects
+  const property = backendConv.propertyId || null;
+  const buyer = backendConv.buyerId || null;
+  const seller = backendConv.sellerId || null;
 
   return {
     id: backendConv._id,
-    propertyId: property._id || property,
-    property: property._id ? transformBackendProperty(property) : undefined,
-    buyerId: buyer._id || buyer,
-    sellerId: seller._id || seller,
-    buyer: buyer._id ? {
+    propertyId: property ? (property._id || property) : null,
+    property: property && property._id ? transformBackendProperty(property) : undefined,
+    buyerId: buyer ? (buyer._id || buyer) : null,
+    sellerId: seller ? (seller._id || seller) : null,
+    buyer: buyer && buyer._id ? {
       id: buyer._id,
       name: buyer.name,
       avatarUrl: buyer.avatarUrl,
     } : undefined,
-    seller: seller._id ? {
+    seller: seller && seller._id ? {
       id: seller._id,
       name: seller.name,
       avatarUrl: seller.avatarUrl,
@@ -725,9 +735,11 @@ function transformBackendConversation(backendConv: any): Conversation {
 
 // Transform backend message to frontend Message type
 function transformBackendMessage(backendMsg: any): Message {
+  const sender = backendMsg.senderId || null;
+  
   return {
     id: backendMsg._id,
-    senderId: backendMsg.senderId._id || backendMsg.senderId,
+    senderId: sender ? (sender._id || sender) : null,
     text: backendMsg.text,
     imageUrl: backendMsg.imageUrl,
     encryptedMessage: backendMsg.encryptedMessage,
@@ -860,6 +872,14 @@ export const removeAgencyAdmin = async (agencyId: string, userId: string): Promi
 
 export const verifyInvitationCode = async (agencyId: string, code: string): Promise<{valid: boolean; message?: string}> => {
   return await apiRequest(`/agencies/${agencyId}/verify-code`, {
+    method: 'POST',
+    body: { code },
+    requiresAuth: true,
+  });
+};
+
+export const findAgencyByInvitationCode = async (code: string): Promise<{success: boolean; agency: any}> => {
+  return await apiRequest('/agencies/find-by-code', {
     method: 'POST',
     body: { code },
     requiresAuth: true,
