@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Agency, Property } from '../types';
 import { getAgency } from '../services/apiService';
-import PropertyCard from './shared/PropertyCard';
+import PropertyCard from './BuyerFlow/PropertyDisplay/PropertyCard';
 import { BuildingOfficeIcon, PhoneIcon, EnvelopeIcon, GlobeAltIcon } from '../constants';
 
 interface AgencyPageProps {
