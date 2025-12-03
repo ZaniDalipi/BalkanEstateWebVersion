@@ -50,7 +50,7 @@ export class AuthApiClient {
   }
 
   getOAuthUrl(provider: 'google' | 'facebook' | 'apple'): string {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+    const API_URL = '/api';
     const baseUrl = API_URL.replace('/api', '');
     return `${baseUrl}/api/auth/${provider}`;
   }

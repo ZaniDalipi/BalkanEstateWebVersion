@@ -57,7 +57,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error to console in development
-    if (import.meta.env.DEV) {
+    if (process.env.NODE_ENV === 'development') {
       console.error('ErrorBoundary caught an error:', error, errorInfo);
     }
 
@@ -153,7 +153,7 @@ function ErrorFallback({ error, errorInfo, onReset, level = 'app' }: FallbackPro
         </p>
 
         {/* Error details (development only) */}
-        {import.meta.env.DEV && error && (
+        {process.env.NODE_ENV === 'development' && error && (
           <div className="mb-6">
             <details className="bg-gray-100 rounded p-4">
               <summary className="cursor-pointer font-semibold text-gray-700 mb-2">
