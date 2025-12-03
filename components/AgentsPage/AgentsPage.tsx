@@ -1,29 +1,25 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { Agent, Property } from '../../types';
+import { Agent } from '../../types';
 import { getAllAgents } from '../../services/apiService';
 import AgentCard from './AgentCard';
 import AgentProfilePage from './AgentProfilePage';
-import { Bars3Icon, Squares2x2Icon, TrophyIcon, UserGroupIcon } from '../../constants';
-import StarRating from '../shared/StarRating';
-import { formatPrice } from '../../utils/currency';
+import { MagnifyingGlassIcon, ChevronDownIcon, ChevronUpIcon, UserGroupIcon, PhoneIcon } from '../../constants';
 import AdvertisementBanner from '../AdvertisementBanner';
 import Footer from '../shared/Footer';
 
-type SortKey = 'sales' | 'rating' | 'name' | 'sold';
-type ViewMode = 'grid' | 'list';
+type SearchTab = 'location' | 'name';
 
 const AgentsPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
-  const { properties, selectedAgentId, activeView } = state;
+  const { selectedAgentId, activeView } = state;
 
-  const [sortBy, setSortBy] = useState<SortKey>('sales');
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [locationFilter, setLocationFilter] = useState<string>('all');
+  const [searchTab, setSearchTab] = useState<SearchTab>('location');
+  const [searchQuery, setSearchQuery] = useState('');
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
-  // Refetch agents whenever the agents page becomes active
   useEffect(() => {
     if (activeView === 'agents') {
       fetchAgents();
@@ -42,53 +38,51 @@ const AgentsPage: React.FC = () => {
       setLoading(false);
     }
   };
-  
-  const uniqueLocations = useMemo(() => {
-    const locations = new Set(
-      agents
-        .filter(a => a.city && a.country)
-        .map(a => `${a.city}, ${a.country}`)
-    );
-    return ['All Locations', ...Array.from(locations).sort()];
-  }, [agents]);
 
-  const sortedAgents = useMemo(() => {
-    let filtered = [...agents];
+  const filteredAgents = useMemo(() => {
+    if (!searchQuery.trim()) return agents;
 
-    if (locationFilter !== 'all') {
-      const [city, country] = locationFilter.split(', ');
-      filtered = agents.filter(agent => agent.city === city && agent.country === country);
-    }
-
-    const sorted = [...filtered];
-    sorted.sort((a, b) => {
-      switch (sortBy) {
-        case 'rating':
-          return b.rating - a.rating;
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'sold':
-          return b.propertiesSold - a.propertiesSold;
-        case 'sales':
-        default:
-          return b.totalSalesValue - a.totalSalesValue;
+    const query = searchQuery.toLowerCase();
+    return agents.filter(agent => {
+      if (searchTab === 'location') {
+        const location = `${agent.city || ''} ${agent.country || ''}`.toLowerCase();
+        return location.includes(query);
+      } else {
+        return agent.name.toLowerCase().includes(query);
       }
     });
-    return sorted;
-  }, [agents, sortBy, locationFilter]);
-  
-  const selectedAgent = useMemo(() => {
-      if (!selectedAgentId) return null;
-      // Try to find by agentId first, then fallback to id
-      return sortedAgents.find(a => a.agentId === selectedAgentId || a.id === selectedAgentId) || null;
-  }, [selectedAgentId, sortedAgents]);
+  }, [agents, searchQuery, searchTab]);
 
-  const handleSelectAgent = (id: string) => {
-    dispatch({ type: 'SET_SELECTED_AGENT', payload: id });
-  };
-  
+  const selectedAgent = useMemo(() => {
+    if (!selectedAgentId) return null;
+    return agents.find(a => a.agentId === selectedAgentId || a.id === selectedAgentId) || null;
+  }, [selectedAgentId, agents]);
+
+  const faqs = [
+    {
+      question: 'How to find a good real estate agent near me?',
+      answer: 'Start by searching for agents in your area using our location search. Look for agents with high ratings, strong sales records, and testimonials from recent clients.'
+    },
+    {
+      question: 'How to pick a real estate agent?',
+      answer: 'Consider their experience, local market knowledge, sales track record, client reviews, and communication style. Schedule consultations with multiple agents before making your decision.'
+    },
+    {
+      question: 'How to contact a real estate agent?',
+      answer: 'You can view an agent\'s profile to find their contact information, including phone number and email. Many agents also offer convenient online booking for consultations.'
+    },
+    {
+      question: 'How do I leave a review for a real estate agent?',
+      answer: 'Visit the agent\'s profile page and click on the "Write a Review" button. Share your experience to help others make informed decisions.'
+    },
+    {
+      question: 'What is the difference between an agent and a broker?',
+      answer: 'A real estate agent is licensed to help clients buy and sell property, while a broker has additional training and certification. Brokers can work independently and manage their own agencies.'
+    }
+  ];
+
   if (selectedAgent) {
-      return <AgentProfilePage agent={selectedAgent} />;
+    return <AgentProfilePage agent={selectedAgent} />;
   }
 
   if (loading) {
@@ -106,109 +100,206 @@ const AgentsPage: React.FC = () => {
     <div className="bg-neutral-50 min-h-screen flex flex-col">
       <AdvertisementBanner position="top" disableGameTrigger={true} />
 
-      {/* Hero Banner */}
-      <div className="bg-gradient-to-r from-primary via-primary-dark to-primary text-white py-12 px-4 sm:px-6 lg:px-8 shadow-lg">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full mb-4">
-            <TrophyIcon className="w-10 h-10 text-white" />
+      {/* Hero Section with Background Image */}
+      <div className="relative h-64 bg-cover bg-center" style={{
+        backgroundImage: 'url(https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1600&h=400&fit=crop)',
+        backgroundPosition: 'center 40%'
+      }}>
+        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/50 to-black/40"></div>
+        <div className="relative max-w-4xl mx-auto px-4 h-full flex flex-col justify-center items-center text-center">
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
+            A great agent makes<br />all the difference
+          </h1>
+
+          {/* Search Card */}
+          <div className="w-full max-w-2xl bg-white rounded-lg shadow-xl p-6">
+            <h2 className="text-lg font-semibold text-neutral-800 mb-4">Find a real estate agent</h2>
+
+            {/* Search Tabs */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setSearchTab('location')}
+                className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                  searchTab === 'location'
+                    ? 'bg-neutral-800 text-white'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                }`}
+              >
+                Location
+              </button>
+              <button
+                onClick={() => setSearchTab('name')}
+                className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                  searchTab === 'name'
+                    ? 'bg-neutral-800 text-white'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                }`}
+              >
+                Name
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon className="w-5 h-5 text-neutral-400" />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={searchTab === 'location' ? 'City, neighborhood, or ZIP code' : 'Agent name'}
+                className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+              <button className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark transition-colors">
+                Search
+              </button>
+            </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-3">Top Agents</h1>
-          <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto">
-            Connect with the Balkans' most successful real estate professionals
-          </p>
         </div>
       </div>
 
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 flex-grow">
-        
-        <div className="mb-6 bg-white p-3 rounded-lg shadow-sm border flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2">
-                    <label htmlFor="location-filter" className="text-sm font-semibold text-neutral-700 whitespace-nowrap">Location:</label>
-                    <div className="relative">
-                        <select 
-                            id="location-filter"
-                            value={locationFilter}
-                            onChange={(e) => setLocationFilter(e.target.value)}
-                            className="appearance-none block w-full bg-neutral-100 border border-neutral-200 text-neutral-800 py-1.5 sm:py-2 pl-3 pr-8 rounded-md leading-tight focus:outline-none focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/50 text-sm font-semibold"
-                        >
-                            {uniqueLocations.map(loc => <option key={loc} value={loc === 'All Locations' ? 'all' : loc}>{loc}</option>)}
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-neutral-700">
-                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                        </div>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <label htmlFor="sort-by" className="text-sm font-semibold text-neutral-700 whitespace-nowrap">Sort by:</label>
-                     <div className="relative">
-                        <select 
-                            id="sort-by"
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value as SortKey)}
-                            className="appearance-none block w-full bg-neutral-100 border border-neutral-200 text-neutral-800 py-1.5 sm:py-2 pl-3 pr-8 rounded-md leading-tight focus:outline-none focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/50 text-sm font-semibold"
-                        >
-                            <option value="sales">Total Sales</option>
-                            <option value="sold">Properties Sold</option>
-                            <option value="rating">Rating</option>
-                            <option value="name">Name (A-Z)</option>
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-neutral-700">
-                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div className="flex items-center gap-1 bg-neutral-100 p-1 rounded-md border">
-                <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-primary text-white' : 'text-neutral-500 hover:bg-neutral-200'}`}><Squares2x2Icon className="w-5 h-5"/></button>
-                <button onClick={() => setViewMode('list')} className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-primary text-white' : 'text-neutral-500 hover:bg-neutral-200'}`}><Bars3Icon className="w-5 h-5"/></button>
-            </div>
+        {/* Section Header */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-neutral-900 mb-2">
+            Real Estate Agents in the Balkans
+          </h2>
+          <p className="text-neutral-600">
+            With over {agents.length} agents from all the top brokerages, a local agent knows your market and
+            can help you find the perfect home.
+          </p>
         </div>
 
-        {sortedAgents.length === 0 ? (
+        {/* Agent Cards Grid */}
+        {filteredAgents.length === 0 ? (
           <div className="bg-white rounded-xl shadow-md border p-12 text-center">
-            <TrophyIcon className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
+            <UserGroupIcon className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-neutral-900 mb-2">No agents found</h3>
             <p className="text-neutral-600">
-              {locationFilter !== 'all'
-                ? 'Try selecting a different location'
-                : 'No agents available at this time'}
+              Try adjusting your search criteria
             </p>
           </div>
-        ) : viewMode === 'grid' ? (
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {sortedAgents.map((agent, index) => (
-                    <AgentCard key={agent.id} agent={agent} rank={index + 1} />
-                ))}
-            </div>
         ) : (
-            <div className="bg-white rounded-xl shadow-md border overflow-hidden">
-                <div className="divide-y divide-neutral-100">
-                     {sortedAgents.map((agent, index) => (
-                        <div key={agent.id} onClick={() => handleSelectAgent(agent.id)} className={`p-4 flex items-center gap-4 hover:bg-neutral-50 cursor-pointer transition-colors`}>
-                            <span className="font-bold text-lg text-neutral-500 w-8 text-center">#{index + 1}</span>
-                            <img src={agent.avatarUrl} alt={agent.name} className="w-12 h-12 rounded-full object-cover"/>
-                            <div className="flex-grow">
-                                <p className="font-bold text-neutral-800">{agent.name}</p>
-                                {agent.city && agent.country && (
-                                    <p className="text-sm text-neutral-500 font-medium -mt-1">{agent.city}, {agent.country}</p>
-                                )}
-                                <div className="flex items-center gap-2 mt-1">
-                                    <StarRating rating={agent.rating} className="w-4 h-4"/>
-                                </div>
-                            </div>
-                             <div className="text-right flex-shrink-0 w-32">
-                                <p className="font-bold text-primary">{formatPrice(agent.totalSalesValue, 'Serbia')}</p>
-                                <p className="text-xs text-neutral-500">{agent.propertiesSold} properties sold</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {filteredAgents.map((agent) => (
+              <AgentCard key={agent.id} agent={agent} />
+            ))}
+          </div>
         )}
+
+        {/* View More Button */}
+        {filteredAgents.length > 0 && (
+          <div className="text-center mb-16">
+            <button className="px-8 py-3 border-2 border-primary text-primary font-semibold rounded-md hover:bg-primary hover:text-white transition-colors">
+              View more
+            </button>
+          </div>
+        )}
+
+        {/* CTA Section */}
+        <div className="relative h-64 rounded-xl overflow-hidden mb-16 shadow-lg" style={{
+          backgroundImage: 'url(https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1600&h=400&fit=crop)',
+          backgroundPosition: 'center'
+        }}>
+          <div className="absolute inset-0 bg-gradient-to-r from-neutral-900/70 to-neutral-900/50"></div>
+          <div className="relative h-full flex flex-col justify-center items-start max-w-2xl mx-auto px-8">
+            <h2 className="text-3xl font-bold text-white mb-3">Get help finding an agent</h2>
+            <p className="text-lg text-white/90 mb-6">
+              We'll pair you with a Zillow Premier Agent who has the inside scoop on your market.
+            </p>
+            <button className="bg-white text-neutral-900 px-8 py-3 rounded-md font-semibold hover:bg-neutral-100 transition-colors flex items-center gap-2">
+              <PhoneIcon className="w-5 h-5" />
+              Connect with a local agent
+            </button>
+          </div>
+        </div>
+
+        {/* FAQ Section */}
+        <div className="bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-xl p-8 md:p-12 text-white mb-16">
+          <h2 className="text-3xl font-bold mb-8 text-center">Frequently asked questions</h2>
+          <div className="max-w-3xl mx-auto space-y-4">
+            {faqs.map((faq, index) => (
+              <div
+                key={index}
+                className="bg-white/10 backdrop-blur-sm rounded-lg overflow-hidden hover:bg-white/15 transition-colors"
+              >
+                <button
+                  onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
+                  className="w-full px-6 py-4 flex items-center justify-between text-left"
+                >
+                  <span className="font-medium text-lg">{faq.question}</span>
+                  {expandedFaq === index ? (
+                    <ChevronUpIcon className="w-5 h-5 flex-shrink-0" />
+                  ) : (
+                    <ChevronDownIcon className="w-5 h-5 flex-shrink-0" />
+                  )}
+                </button>
+                {expandedFaq === index && (
+                  <div className="px-6 pb-4 text-white/80">
+                    {faq.answer}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Professional Categories Footer Section */}
+        <div className="bg-white rounded-xl shadow-md border p-8 mb-8">
+          <h3 className="text-2xl font-bold text-neutral-900 mb-6 text-center">
+            Are you a real estate agent?
+          </h3>
+          <p className="text-center text-neutral-600 mb-8">
+            Visit our <a href="#" className="text-primary hover:underline font-semibold">Balkan Estate Agent Resource Center</a> to
+            learn more about <a href="#" className="text-primary hover:underline font-semibold">real estate advertising</a> and
+            how to connect with more clients.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+              <h4 className="font-bold text-neutral-900 mb-3">Real Estate Agents</h4>
+              <ul className="space-y-2 text-sm text-neutral-600">
+                <li><a href="#" className="hover:text-primary">Belgrade Real Estate Agents</a></li>
+                <li><a href="#" className="hover:text-primary">Sofia Real Estate Agents</a></li>
+                <li><a href="#" className="hover:text-primary">Bucharest Real Estate Agents</a></li>
+                <li><a href="#" className="hover:text-primary">Zagreb Real Estate Agents</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-neutral-900 mb-3">Property Managers</h4>
+              <ul className="space-y-2 text-sm text-neutral-600">
+                <li><a href="#" className="hover:text-primary">Belgrade Property Managers</a></li>
+                <li><a href="#" className="hover:text-primary">Sofia Property Managers</a></li>
+                <li><a href="#" className="hover:text-primary">Bucharest Property Managers</a></li>
+                <li><a href="#" className="hover:text-primary">Zagreb Property Managers</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-neutral-900 mb-3">Mortgage Lenders</h4>
+              <ul className="space-y-2 text-sm text-neutral-600">
+                <li><a href="#" className="hover:text-primary">Belgrade Mortgage Lenders</a></li>
+                <li><a href="#" className="hover:text-primary">Sofia Mortgage Lenders</a></li>
+                <li><a href="#" className="hover:text-primary">Bucharest Mortgage Lenders</a></li>
+                <li><a href="#" className="hover:text-primary">Zagreb Mortgage Lenders</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-neutral-900 mb-3">Home Builders</h4>
+              <ul className="space-y-2 text-sm text-neutral-600">
+                <li><a href="#" className="hover:text-primary">Belgrade Home Builders</a></li>
+                <li><a href="#" className="hover:text-primary">Sofia Home Builders</a></li>
+                <li><a href="#" className="hover:text-primary">Bucharest Home Builders</a></li>
+                <li><a href="#" className="hover:text-primary">Zagreb Home Builders</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </main>
 
-      {/* Footer */}
       <Footer />
     </div>
   );
