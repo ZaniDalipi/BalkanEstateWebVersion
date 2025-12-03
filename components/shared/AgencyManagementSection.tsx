@@ -4,7 +4,7 @@ import { getAgencies, verifyInvitationCode, createJoinRequest, leaveAgency } fro
 import { useAppContext } from '../../context/AppContext';
 
 const API_URL = '/api';
-
+``
 interface Agency {
   _id: string;
   name: string;
