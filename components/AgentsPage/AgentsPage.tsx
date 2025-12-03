@@ -1,10 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { Agent } from '../../types';
-import { getAllAgents } from '../../services/apiService';
+import { Agent, Agency } from '../../types';
+import { getAllAgents, getAgencies } from '../../services/apiService';
 import AgentCard from './AgentCard';
 import AgentProfilePage from './AgentProfilePage';
-import { MagnifyingGlassIcon, ChevronDownIcon, ChevronUpIcon, UserGroupIcon, PhoneIcon } from '../../constants';
+import { MagnifyingGlassIcon, ChevronDownIcon, ChevronUpIcon, UserGroupIcon, PhoneIcon, BuildingOfficeIcon } from '../../constants';
 import AdvertisementBanner from '../AdvertisementBanner';
 import Footer from '../shared/Footer';
 
@@ -17,12 +17,14 @@ const AgentsPage: React.FC = () => {
   const [searchTab, setSearchTab] = useState<SearchTab>('location');
   const [searchQuery, setSearchQuery] = useState('');
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [agencies, setAgencies] = useState<Agency[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   useEffect(() => {
     if (activeView === 'agents') {
       fetchAgents();
+      fetchAgencies();
     }
   }, [activeView]);
 
@@ -36,6 +38,16 @@ const AgentsPage: React.FC = () => {
       setAgents([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAgencies = async () => {
+    try {
+      const response = await getAgencies({ limit: 12 });
+      setAgencies(response.agencies || []);
+    } catch (error) {
+      console.error('Failed to fetch agencies:', error);
+      setAgencies([]);
     }
   };
 
@@ -101,12 +113,12 @@ const AgentsPage: React.FC = () => {
       <AdvertisementBanner position="top" disableGameTrigger={true} />
 
       {/* Hero Section with Background Image */}
-      <div className="relative h-64 bg-cover bg-center" style={{
+      <div className="relative min-h-[400px] sm:h-96 bg-cover bg-center" style={{
         backgroundImage: 'url(https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1600&h=400&fit=crop)',
         backgroundPosition: 'center 40%'
       }}>
         <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/50 to-black/40"></div>
-        <div className="relative max-w-4xl mx-auto px-4 h-full flex flex-col justify-center items-center text-center">
+        <div className="relative max-w-4xl mx-auto px-4 h-full flex flex-col justify-center items-center text-center py-12">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
             A great agent makes<br />all the difference
           </h1>
@@ -197,6 +209,66 @@ const AgentsPage: React.FC = () => {
           </div>
         )}
 
+        {/* Agencies Section */}
+        {agencies.length > 0 && (
+          <div className="mb-16">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-3xl font-bold text-neutral-900 mb-2">Top Real Estate Agencies</h2>
+                <p className="text-neutral-600">Browse agencies with experienced professionals</p>
+              </div>
+              <button
+                onClick={() => dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' })}
+                className="text-primary font-semibold hover:underline"
+              >
+                View all agencies →
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {agencies.slice(0, 8).map((agency) => {
+                const handleAgencyClick = () => {
+                  dispatch({ type: 'SET_SELECTED_AGENCY', payload: agency });
+                  dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
+                  const urlSlug = agency.slug || agency._id;
+                  window.history.pushState({}, '', `/agencies/${urlSlug}`);
+                };
+
+                return (
+                  <div
+                    key={agency._id}
+                    onClick={handleAgencyClick}
+                    className="bg-white rounded-lg shadow-md border border-neutral-200 hover:shadow-xl transition-all cursor-pointer p-4"
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      {agency.logo ? (
+                        <img
+                          src={agency.logo}
+                          alt={agency.name}
+                          className="w-16 h-16 object-contain mb-3"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-neutral-200 rounded-lg flex items-center justify-center mb-3">
+                          <BuildingOfficeIcon className="w-8 h-8 text-neutral-400" />
+                        </div>
+                      )}
+                      <h3 className="font-bold text-neutral-900 mb-1 line-clamp-2">{agency.name}</h3>
+                      {agency.city && agency.country && (
+                        <p className="text-xs text-neutral-500 mb-2">
+                          {agency.city}, {agency.country}
+                        </p>
+                      )}
+                      <div className="flex gap-4 text-xs text-neutral-600 mt-2">
+                        <span>{agency.totalAgents} agents</span>
+                        <span>{agency.totalProperties} properties</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* CTA Section */}
         <div className="relative h-64 rounded-xl overflow-hidden mb-16 shadow-lg" style={{
           backgroundImage: 'url(https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1600&h=400&fit=crop)',
@@ -206,7 +278,7 @@ const AgentsPage: React.FC = () => {
           <div className="relative h-full flex flex-col justify-center items-start max-w-2xl mx-auto px-8">
             <h2 className="text-3xl font-bold text-white mb-3">Get help finding an agent</h2>
             <p className="text-lg text-white/90 mb-6">
-              We'll pair you with a Zillow Premier Agent who has the inside scoop on your market.
+              We'll pair you with a BalkanEstate Premier Agent who has the inside scoop on your market.
             </p>
             <button className="bg-white text-neutral-900 px-8 py-3 rounded-md font-semibold hover:bg-neutral-100 transition-colors flex items-center gap-2">
               <PhoneIcon className="w-5 h-5" />
@@ -245,57 +317,30 @@ const AgentsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Professional Categories Footer Section */}
+        {/* Are you a real estate agent Section */}
         <div className="bg-white rounded-xl shadow-md border p-8 mb-8">
-          <h3 className="text-2xl font-bold text-neutral-900 mb-6 text-center">
+          <h3 className="text-2xl font-bold text-neutral-900 mb-4 text-center">
             Are you a real estate agent?
           </h3>
-          <p className="text-center text-neutral-600 mb-8">
-            Visit our <a href="#" className="text-primary hover:underline font-semibold">Balkan Estate Agent Resource Center</a> to
-            learn more about <a href="#" className="text-primary hover:underline font-semibold">real estate advertising</a> and
-            how to connect with more clients.
+          <p className="text-center text-neutral-600 mb-8 max-w-2xl mx-auto">
+            Join BalkanEstate to showcase your expertise, connect with potential clients, and grow your business.
+            Get access to premium tools and advertising opportunities to help you succeed in the Balkan real estate market.
           </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <h4 className="font-bold text-neutral-900 mb-3">Real Estate Agents</h4>
-              <ul className="space-y-2 text-sm text-neutral-600">
-                <li><a href="#" className="hover:text-primary">Belgrade Real Estate Agents</a></li>
-                <li><a href="#" className="hover:text-primary">Sofia Real Estate Agents</a></li>
-                <li><a href="#" className="hover:text-primary">Bucharest Real Estate Agents</a></li>
-                <li><a href="#" className="hover:text-primary">Zagreb Real Estate Agents</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-neutral-900 mb-3">Property Managers</h4>
-              <ul className="space-y-2 text-sm text-neutral-600">
-                <li><a href="#" className="hover:text-primary">Belgrade Property Managers</a></li>
-                <li><a href="#" className="hover:text-primary">Sofia Property Managers</a></li>
-                <li><a href="#" className="hover:text-primary">Bucharest Property Managers</a></li>
-                <li><a href="#" className="hover:text-primary">Zagreb Property Managers</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-neutral-900 mb-3">Mortgage Lenders</h4>
-              <ul className="space-y-2 text-sm text-neutral-600">
-                <li><a href="#" className="hover:text-primary">Belgrade Mortgage Lenders</a></li>
-                <li><a href="#" className="hover:text-primary">Sofia Mortgage Lenders</a></li>
-                <li><a href="#" className="hover:text-primary">Bucharest Mortgage Lenders</a></li>
-                <li><a href="#" className="hover:text-primary">Zagreb Mortgage Lenders</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-neutral-900 mb-3">Home Builders</h4>
-              <ul className="space-y-2 text-sm text-neutral-600">
-                <li><a href="#" className="hover:text-primary">Belgrade Home Builders</a></li>
-                <li><a href="#" className="hover:text-primary">Sofia Home Builders</a></li>
-                <li><a href="#" className="hover:text-primary">Bucharest Home Builders</a></li>
-                <li><a href="#" className="hover:text-primary">Zagreb Home Builders</a></li>
-              </ul>
-            </div>
+          <div className="flex justify-center gap-4">
+            <button
+              onClick={() => {
+                dispatch({ type: 'SET_AUTH_MODAL', payload: { isOpen: true, mode: 'login' } });
+              }}
+              className="px-6 py-3 bg-primary text-white rounded-md font-semibold hover:bg-primary-dark transition-colors"
+            >
+              Get Started
+            </button>
+            <button
+              onClick={() => dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' })}
+              className="px-6 py-3 border-2 border-primary text-primary rounded-md font-semibold hover:bg-primary hover:text-white transition-colors"
+            >
+              Browse Agencies
+            </button>
           </div>
         </div>
       </main>
