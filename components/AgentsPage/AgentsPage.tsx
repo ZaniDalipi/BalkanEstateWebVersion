@@ -54,12 +54,20 @@ const AgentsPage: React.FC = () => {
   const filteredAgents = useMemo(() => {
     if (!searchQuery.trim()) return agents;
 
-    const query = searchQuery.toLowerCase();
+    const query = searchQuery.toLowerCase().trim();
     return agents.filter(agent => {
       if (searchTab === 'location') {
-        const location = `${agent.city || ''} ${agent.country || ''}`.toLowerCase();
-        return location.includes(query);
+        // Search by city, country, or both
+        const city = (agent.city || '').toLowerCase();
+        const country = (agent.country || '').toLowerCase();
+        const fullLocation = `${city} ${country}`.trim();
+
+        // Check if query matches city, country, or combined location
+        return city.includes(query) ||
+               country.includes(query) ||
+               fullLocation.includes(query);
       } else {
+        // Search by agent name
         return agent.name.toLowerCase().includes(query);
       }
     });
@@ -160,8 +168,8 @@ const AgentsPage: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={searchTab === 'location' ? 'City, neighborhood, or ZIP code' : 'Agent name'}
-                className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder={searchTab === 'location' ? 'Search by city or country (e.g., Belgrade, Serbia)' : 'Enter agent name'}
+                className="w-full pl-10 pr-32 py-3 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
               <button className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark transition-colors">
                 Search
@@ -178,8 +186,24 @@ const AgentsPage: React.FC = () => {
             Real Estate Agents in the Balkans
           </h2>
           <p className="text-neutral-600">
-            With over {agents.length} agents from all the top brokerages, a local agent knows your market and
-            can help you find the perfect home.
+            {searchQuery ? (
+              <>
+                Showing <span className="font-bold text-primary">{filteredAgents.length}</span> agent{filteredAgents.length !== 1 ? 's' : ''} matching "{searchQuery}"
+                {filteredAgents.length > 0 && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="ml-2 text-primary hover:underline font-semibold"
+                  >
+                    Clear search
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                With over {agents.length} agents from all the top brokerages, a local agent knows your market and
+                can help you find the perfect home.
+              </>
+            )}
           </p>
         </div>
 
