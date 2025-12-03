@@ -2,7 +2,9 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Property, PropertyImageTag, ChatMessage, AiSearchQuery, Filters } from '../types';
 import type { LatLngBounds } from 'leaflet';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({
+  apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY || ''
+});
 
 // Retry configuration for handling 503 and other transient errors
 const MAX_RETRIES = 4;
