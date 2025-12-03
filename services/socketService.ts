@@ -22,7 +22,9 @@ class SocketService {
       this.currentUserId = userId;
     }
 
-    const serverUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5001';
+    const serverUrl = typeof window !== 'undefined'
+      ? window.location.origin // Client-side: use current origin (Next.js will proxy)
+      : process.env.NEXT_PUBLIC_BACKEND_URL?.replace('/api', '') || 'http://localhost:5001'; // Server-side
 
     console.log('🔌 Connecting to WebSocket server:', serverUrl);
 

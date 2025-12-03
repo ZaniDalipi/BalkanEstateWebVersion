@@ -95,7 +95,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
         const agencyIdentifier = agent.agencyId || slugify(agent.agencyName);
 
         try {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+            const API_URL = '/api';
             console.log('🔗 Fetching agency:', agencyIdentifier, 'for agent:', agent.name);
 
             const response = await fetch(`${API_URL}/agencies/${agencyIdentifier}`);

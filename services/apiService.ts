@@ -1,7 +1,10 @@
 import { Property, Seller, User, UserRole, SavedSearch, Message, Conversation, Filters } from '../types';
 
 // Get API URL from environment variables
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+// In Next.js, we use the proxy configured in next.config.js
+const API_URL = typeof window !== 'undefined'
+  ? '/api' // Client-side: use Next.js proxy
+  : process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001/api'; // Server-side: direct backend URL
 
 // --- TOKEN MANAGEMENT ---
 

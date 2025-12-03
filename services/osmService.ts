@@ -1,6 +1,8 @@
 import { NominatimResult } from '../types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const API_URL = typeof window !== 'undefined'
+  ? '/api'
+  : process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001/api';
 
 export const searchLocation = async (query: string, countryCode?: string): Promise<NominatimResult[]> => {
   if (query.trim().length < 3) {

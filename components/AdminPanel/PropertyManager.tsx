@@ -89,7 +89,7 @@ const PropertyManager: React.FC = () => {
         ...(searchQuery && { search: searchQuery }),
       });
 
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+      const API_URL = '/api';
       const response = await fetch(`${API_URL}/admin/properties?${params}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -143,7 +143,7 @@ const PropertyManager: React.FC = () => {
 
     try {
       const token = localStorage.getItem('balkan_estate_token');
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+      const API_URL = '/api';
 
       const response = await fetch(`${API_URL}/admin/properties/${editingProperty._id}`, {
         method: 'PATCH',
@@ -172,7 +172,7 @@ const PropertyManager: React.FC = () => {
 
     try {
       const token = localStorage.getItem('balkan_estate_token');
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+      const API_URL = '/api';
 
       const response = await fetch(`${API_URL}/admin/properties/${propertyId}`, {
         method: 'DELETE',
