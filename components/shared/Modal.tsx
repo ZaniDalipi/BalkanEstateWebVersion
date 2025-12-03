@@ -35,15 +35,15 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
   if (size === '5xl') sizeClass = 'max-w-5xl';
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-[5000] flex justify-center items-center p-4" onClick={handleBackdropClick}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-[5000] flex justify-center items-center p-3" onClick={handleBackdropClick}>
       <div
-        className={`bg-white rounded-lg shadow-xl p-6 md:p-8 w-full ${sizeClass} relative overflow-y-auto max-h-[90vh]`}
+        className={`bg-white rounded-lg shadow-xl p-4 md:p-6 w-full ${sizeClass} relative overflow-y-auto max-h-[90vh]`}
         onClick={handleContentClick}
       >
-        <button onClick={onClose} className="absolute top-4 right-4 text-neutral-500 hover:text-neutral-800" aria-label="Close modal">
-          <XMarkIcon className="w-6 h-6" />
+        <button onClick={onClose} className="absolute top-3 right-3 text-neutral-500 hover:text-neutral-800" aria-label="Close modal">
+          <XMarkIcon className="w-5 h-5" />
         </button>
-        {title && <h2 className="text-2xl font-bold text-neutral-800 mb-4 text-center">{title}</h2>}
+        {title && <h2 className="text-xl font-bold text-neutral-800 mb-3 text-center">{title}</h2>}
         <div>{children}</div>
       </div>
     </div>

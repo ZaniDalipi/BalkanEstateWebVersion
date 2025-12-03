@@ -15,21 +15,21 @@ const NavItem: React.FC<{
   return (
     <button
       onClick={() => onClick(view)}
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-left md:justify-center group-hover:md:justify-start relative ${
+      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-semibold transition-colors w-full text-left md:justify-center group-hover:md:justify-start relative ${
         isActive
           ? 'bg-primary-light text-primary-dark'
           : 'text-neutral-700 hover:bg-neutral-100'
       }`}
     >
-      <div className={`w-6 h-6 flex-shrink-0 ${isActive ? 'text-primary' : 'text-neutral-700'} relative`}>
+      <div className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary' : 'text-neutral-700'} relative`}>
         {icon}
         {badge && badge > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+          <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1">
             {badge > 99 ? '99+' : badge}
           </span>
         )}
       </div>
-      <span className="md:hidden group-hover:md:inline whitespace-nowrap">{label}</span>
+      <span className="md:hidden group-hover:md:inline whitespace-nowrap text-sm">{label}</span>
     </button>
   );
 };
@@ -114,22 +114,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
             {/* Sidebar */}
             <aside className={`fixed top-0 left-0 h-full bg-white border-r border-neutral-200 z-40 flex flex-col transition-all duration-300 ease-in-out group overflow-hidden ${isOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64'} md:w-20 md:translate-x-0 hover:md:w-64`}>
-                <div className="flex items-center p-4 h-[69px] border-b border-neutral-200 flex-shrink-0 md:justify-center group-hover:md:justify-start">
+                <div className="flex items-center p-3 h-[56px] border-b border-neutral-200 flex-shrink-0 md:justify-center group-hover:md:justify-start">
                     <button
                         onClick={() => handleNavClick('search')}
                         className="flex items-center space-x-2"
                     >
-                        <LogoIcon className="w-8 h-8 text-primary flex-shrink-0" />
-                        <h1 className="text-xl font-bold text-neutral-800 md:hidden group-hover:md:inline whitespace-nowrap">
+                        <LogoIcon className="w-7 h-7 text-primary flex-shrink-0" />
+                        <h1 className="text-lg font-bold text-neutral-800 md:hidden group-hover:md:inline whitespace-nowrap">
                             Balkan <span className="text-primary">Estate</span>
                         </h1>
                     </button>
-                    <button onClick={onClose} className="md:hidden absolute right-4 top-5 text-neutral-700 hover:text-neutral-800">
-                        <XMarkIcon className="w-6 h-6"/>
+                    <button onClick={onClose} className="md:hidden absolute right-3 top-4 text-neutral-700 hover:text-neutral-800">
+                        <XMarkIcon className="w-5 h-5"/>
                     </button>
                 </div>
-                
-                <nav className="flex-grow p-2 space-y-1 overflow-y-auto">
+
+                <nav className="flex-grow p-1.5 space-y-0.5 overflow-y-auto">
                     {navItems.map(item => (
                          <NavItem
                             key={item.view}
@@ -141,67 +141,67 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                             badge={item.view === 'inbox' ? totalUnreadCount : undefined}
                         />
                     ))}
-                     <div className="px-2 pt-2 mt-2 border-t border-neutral-100 space-y-1">
+                     <div className="px-1.5 pt-1.5 mt-1.5 border-t border-neutral-100 space-y-0.5">
                         <button
                             onClick={handleNewListingClick}
-                            className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-white bg-secondary hover:bg-opacity-90 md:justify-center group-hover:md:justify-start"
+                            className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-semibold transition-colors w-full text-white bg-secondary hover:bg-opacity-90 md:justify-center group-hover:md:justify-start"
                         >
-                            <PencilIcon className="w-6 h-6 flex-shrink-0" />
-                            <span className="md:hidden group-hover:md:inline whitespace-nowrap">+ New Listing</span>
+                            <PencilIcon className="w-5 h-5 flex-shrink-0" />
+                            <span className="md:hidden group-hover:md:inline whitespace-nowrap text-sm">+ New Listing</span>
                         </button>
                         <button
                             onClick={handleSubscriptionClick}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-left md:justify-center group-hover:md:justify-start text-neutral-700 hover:bg-neutral-100`}
+                            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-semibold transition-colors w-full text-left md:justify-center group-hover:md:justify-start text-neutral-700 hover:bg-neutral-100`}
                         >
-                            <div className={`w-6 h-6 flex-shrink-0 text-neutral-700`}><StarIconSolid /></div>
-                            <span className="md:hidden group-hover:md:inline whitespace-nowrap">Subscription</span>
+                            <div className={`w-5 h-5 flex-shrink-0 text-neutral-700`}><StarIconSolid /></div>
+                            <span className="md:hidden group-hover:md:inline whitespace-nowrap text-sm">Subscription</span>
                         </button>
                         <button
                             onClick={() => handleNavClick('inbox')}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-left md:justify-center group-hover:md:justify-start relative ${
+                            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-semibold transition-colors w-full text-left md:justify-center group-hover:md:justify-start relative ${
                                 activeView === 'inbox'
                                     ? 'bg-primary-light text-primary-dark'
                                     : 'text-neutral-700 hover:bg-neutral-100'
                             }`}
                         >
-                            <div className={`w-6 h-6 flex-shrink-0 ${activeView === 'inbox' ? 'text-primary' : 'text-neutral-700'} relative`}>
+                            <div className={`w-5 h-5 flex-shrink-0 ${activeView === 'inbox' ? 'text-primary' : 'text-neutral-700'} relative`}>
                                 <EnvelopeIcon />
                                 {totalUnreadCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                                    <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1">
                                         {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
                                     </span>
                                 )}
                             </div>
-                            <span className="md:hidden group-hover:md:inline whitespace-nowrap">Inbox</span>
+                            <span className="md:hidden group-hover:md:inline whitespace-nowrap text-sm">Inbox</span>
                         </button>
                     </div>
                 </nav>
 
-                <div className="p-2 border-t border-neutral-200 flex-shrink-0">
+                <div className="p-1.5 border-t border-neutral-200 flex-shrink-0">
                     {isAuthenticated && currentUser ? (
-                        <div className="space-y-1">
+                        <div className="space-y-0.5">
                              <button
                                 onClick={() => handleNavClick('account')}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-left md:justify-center group-hover:md:justify-start ${
+                                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-semibold transition-colors w-full text-left md:justify-center group-hover:md:justify-start ${
                                     activeView === 'account'
                                     ? 'bg-primary-light text-primary-dark'
                                     : 'text-neutral-700 hover:bg-neutral-100'
                                 }`}
                             >
-                                <div className="w-6 h-6 flex-shrink-0">
+                                <div className="w-5 h-5 flex-shrink-0">
                                 {currentUser.avatarUrl ? <img src={currentUser.avatarUrl} alt="avatar" className="w-full h-full rounded-full object-cover"/> : <UserCircleIcon />}
                                 </div>
-                                <span className="md:hidden group-hover:md:inline whitespace-nowrap">My Account</span>
+                                <span className="md:hidden group-hover:md:inline whitespace-nowrap text-sm">My Account</span>
                             </button>
-                            <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-left text-red-600 hover:bg-red-50 md:justify-center group-hover:md:justify-start">
-                                <ArrowLeftOnRectangleIcon className="w-6 h-6 flex-shrink-0" />
-                                <span className="md:hidden group-hover:md:inline whitespace-nowrap">Logout</span>
+                            <button onClick={handleLogout} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-semibold transition-colors w-full text-left text-red-600 hover:bg-red-50 md:justify-center group-hover:md:justify-start">
+                                <ArrowLeftOnRectangleIcon className="w-5 h-5 flex-shrink-0" />
+                                <span className="md:hidden group-hover:md:inline whitespace-nowrap text-sm">Logout</span>
                             </button>
                         </div>
                     ) : (
-                         <button onClick={() => { dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'login' } }); onClose(); }} className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors w-full text-left text-neutral-700 hover:bg-neutral-100 md:justify-center group-hover:md:justify-start">
-                            <UserCircleIcon className="w-6 h-6 text-neutral-700 flex-shrink-0" />
-                            <span className="md:hidden group-hover:md:inline whitespace-nowrap">Login / Register</span>
+                         <button onClick={() => { dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'login' } }); onClose(); }} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-semibold transition-colors w-full text-left text-neutral-700 hover:bg-neutral-100 md:justify-center group-hover:md:justify-start">
+                            <UserCircleIcon className="w-5 h-5 text-neutral-700 flex-shrink-0" />
+                            <span className="md:hidden group-hover:md:inline whitespace-nowrap text-sm">Login / Register</span>
                         </button>
                     )}
                 </div>

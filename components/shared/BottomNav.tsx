@@ -46,7 +46,7 @@ const BottomNav: React.FC = () => {
 
     return (
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 z-50 safe-area-inset-bottom">
-            <div className="flex items-center justify-around px-2 py-2">
+            <div className="flex items-center justify-around px-1.5 py-1.5">
                 {navItems.map(item => {
                     const Icon = item.icon;
                     const isActive = activeView === item.view;
@@ -57,10 +57,10 @@ const BottomNav: React.FC = () => {
                             <button
                                 key={item.view}
                                 onClick={handleNewListingClick}
-                                className="flex flex-col items-center justify-center flex-1 py-2 relative"
+                                className="flex flex-col items-center justify-center flex-1 py-1.5 relative"
                             >
-                                <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center shadow-lg -mt-6">
-                                    <Icon className="w-6 h-6 text-white" />
+                                <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center shadow-lg -mt-5">
+                                    <Icon className="w-5 h-5 text-white" />
                                 </div>
                                 <span className="text-xs font-medium text-neutral-600 mt-1">{item.label}</span>
                             </button>
@@ -71,17 +71,17 @@ const BottomNav: React.FC = () => {
                         <button
                             key={item.view}
                             onClick={() => handleNavClick(item.view)}
-                            className="flex flex-col items-center justify-center flex-1 py-2 relative"
+                            className="flex flex-col items-center justify-center flex-1 py-1.5 relative"
                         >
                             <div className="relative">
-                                <Icon className={`w-6 h-6 ${isActive ? 'text-primary' : 'text-neutral-600'}`} />
+                                <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-neutral-600'}`} />
                                 {item.badge && item.badge > 0 && (
                                     <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1">
                                         {item.badge > 99 ? '99+' : item.badge}
                                     </span>
                                 )}
                             </div>
-                            <span className={`text-xs font-medium mt-1 ${isActive ? 'text-primary' : 'text-neutral-600'}`}>
+                            <span className={`text-xs font-medium mt-0.5 ${isActive ? 'text-primary' : 'text-neutral-600'}`}>
                                 {item.label}
                             </span>
                         </button>
