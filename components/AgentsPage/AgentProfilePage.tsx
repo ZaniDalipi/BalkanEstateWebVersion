@@ -8,7 +8,7 @@ import PropertyCard from '../BuyerFlow/PropertyDisplay/PropertyCard';
 import PropertyCardSkeleton from '../BuyerFlow/PropertyDisplay/PropertyCardSkeleton';
 import AgentReviewForm from '../shared/AgentReviewForm';
 import { slugify } from '../../utils/slug';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import L from 'leaflet';
 
 interface AgentProfilePageProps {
@@ -57,6 +57,23 @@ const DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
+// Custom marker icons for active and sold properties
+const activeMarkerIcon = L.divIcon({
+    className: 'custom-marker',
+    html: `<div style="background-color: #10b981; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><div style="transform: rotate(45deg); color: white; font-weight: bold; font-size: 16px; margin-top: 3px; margin-left: 7px;">●</div></div>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+    popupAnchor: [0, -30]
+});
+
+const soldMarkerIcon = L.divIcon({
+    className: 'custom-marker',
+    html: `<div style="background-color: #6b7280; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><div style="transform: rotate(45deg); color: white; font-weight: bold; font-size: 16px; margin-top: 3px; margin-left: 7px;">✓</div></div>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+    popupAnchor: [0, -30]
+});
+
 const ProfileAvatar: React.FC<{ agent: Agent }> = ({ agent }) => {
     const [error, setError] = useState(false);
 
@@ -82,7 +99,7 @@ const AgentPropertiesMap: React.FC<{ properties: any[] }> = ({ properties }) => 
 
     if (validProperties.length === 0) {
         return (
-            <div className="h-96 bg-neutral-100 rounded-lg flex items-center justify-center text-neutral-500">
+            <div className="h-64 sm:h-80 md:h-96 bg-neutral-100 rounded-lg flex items-center justify-center text-neutral-500">
                 <p>No properties with location data available</p>
             </div>
         );
@@ -95,24 +112,84 @@ const AgentPropertiesMap: React.FC<{ properties: any[] }> = ({ properties }) => 
         return [avgLat, avgLng];
     }, [validProperties]);
 
+    // Determine appropriate zoom level based on property spread
+    const zoom = useMemo(() => {
+        if (validProperties.length === 1) return 15;
+
+        const lats = validProperties.map(p => p.lat);
+        const lngs = validProperties.map(p => p.lng);
+        const latSpread = Math.max(...lats) - Math.min(...lats);
+        const lngSpread = Math.max(...lngs) - Math.min(...lngs);
+        const maxSpread = Math.max(latSpread, lngSpread);
+
+        if (maxSpread < 0.01) return 14;
+        if (maxSpread < 0.05) return 12;
+        if (maxSpread < 0.1) return 11;
+        if (maxSpread < 0.5) return 10;
+        return 9;
+    }, [validProperties]);
+
     return (
-        <div className="h-96 rounded-lg overflow-hidden shadow-md">
-            <MapContainer center={center} zoom={12} scrollWheelZoom={false} className="w-full h-full">
+        <div className="h-64 sm:h-80 md:h-96 lg:h-[500px] rounded-lg overflow-hidden shadow-md">
+            <MapContainer
+                center={center}
+                zoom={zoom}
+                scrollWheelZoom={true}
+                className="w-full h-full"
+                style={{ zIndex: 0 }}
+            >
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                {validProperties.map((property) => (
-                    <Marker key={property.id} position={[property.lat, property.lng]}>
-                        <Popup>
-                            <div className="text-sm">
-                                <p className="font-semibold">{formatPrice(property.price, 'Serbia')}</p>
-                                <p className="text-neutral-600">{property.address}</p>
-                                <p className="text-neutral-500">{property.beds} beds • {property.baths} baths</p>
-                            </div>
-                        </Popup>
-                    </Marker>
-                ))}
+                {validProperties.map((property) => {
+                    const isSold = property.status === 'sold';
+                    // Simulate cadastre bounds with a circle (radius: ~50m)
+                    const cadastreRadius = 50;
+
+                    return (
+                        <React.Fragment key={property.id}>
+                            {/* Cadastre boundary circle */}
+                            <Circle
+                                center={[property.lat, property.lng]}
+                                radius={cadastreRadius}
+                                pathOptions={{
+                                    color: isSold ? '#6b7280' : '#10b981',
+                                    fillColor: isSold ? '#6b7280' : '#10b981',
+                                    fillOpacity: 0.1,
+                                    weight: 2,
+                                    opacity: 0.5
+                                }}
+                            />
+
+                            {/* Property marker */}
+                            <Marker
+                                position={[property.lat, property.lng]}
+                                icon={isSold ? soldMarkerIcon : activeMarkerIcon}
+                            >
+                                <Popup maxWidth={250}>
+                                    <div className="text-sm p-2">
+                                        <div className="mb-2">
+                                            <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
+                                                isSold ? 'bg-gray-200 text-gray-700' : 'bg-green-100 text-green-700'
+                                            }`}>
+                                                {isSold ? '✓ SOLD' : '● ACTIVE'}
+                                            </span>
+                                        </div>
+                                        <p className="font-bold text-lg mb-1">{formatPrice(property.price, 'Serbia')}</p>
+                                        <p className="text-neutral-700 mb-2">{property.address}</p>
+                                        <p className="text-neutral-600 text-xs">
+                                            {property.beds} beds • {property.baths} baths • {property.sqft} sqft
+                                        </p>
+                                        {property.propertyType && (
+                                            <p className="text-neutral-500 text-xs mt-1 capitalize">{property.propertyType}</p>
+                                        )}
+                                    </div>
+                                </Popup>
+                            </Marker>
+                        </React.Fragment>
+                    );
+                })}
             </MapContainer>
         </div>
     );
@@ -375,8 +452,23 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
         {/* Properties Map */}
         {allAgentProperties.length > 0 && (
             <div className="py-8 border-b border-neutral-200">
-                <h2 className="text-2xl font-bold text-neutral-900 mb-6">Property Locations</h2>
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-neutral-900">Property Locations</h2>
+                    <div className="flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                            <span className="text-neutral-600">Active ({allAgentProperties.filter(p => p.status === 'active').length})</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                            <span className="text-neutral-600">Sold ({allAgentProperties.filter(p => p.status === 'sold').length})</span>
+                        </div>
+                    </div>
+                </div>
                 <AgentPropertiesMap properties={allAgentProperties} />
+                <p className="text-xs text-neutral-500 mt-3 text-center">
+                    Circles represent approximate property boundaries • Click markers for details
+                </p>
             </div>
         )}
 
