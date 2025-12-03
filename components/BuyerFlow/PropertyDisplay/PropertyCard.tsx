@@ -113,7 +113,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
             </svg>
         </div>
       </div>
-      <div className="p-2.5 flex flex-col flex-grow">
+      <div className="p-4 flex flex-col flex-grow">
         <button onClick={handleCardClick} className="text-left flex-grow">
             <div className="flex items-center text-neutral-600 mb-1">
                 <MapPinIcon className="w-3.5 h-3.5 mr-1 text-neutral-400 flex-shrink-0" />
@@ -142,7 +142,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
 
         <div className="flex-grow"></div>
 
-        <div className="mt-3 pt-3 border-t border-neutral-100 flex flex-col gap-2">
+        <div className="mt-3 pt-3 border-t border-neutral-100">
             <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
                 {showCompareButton && (
                     <button
@@ -169,14 +169,6 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
                     <span>View Details</span>
                 </button>
             </div>
-            <button
-                onClick={handleMessageSeller}
-                disabled={isCreatingConversation}
-                className="bg-white text-primary px-4 py-2 rounded-full text-sm font-semibold border-2 border-primary hover:bg-primary-light transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-1.5 w-full disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                <EnvelopeIcon className="w-5 h-5" />
-                <span>{isCreatingConversation ? 'Creating...' : 'Message Seller'}</span>
-            </button>
         </div>
       </div>
     </div>

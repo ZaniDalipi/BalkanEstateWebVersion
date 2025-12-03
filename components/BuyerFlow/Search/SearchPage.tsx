@@ -76,9 +76,9 @@ const MobileFilters: React.FC<{
         </div>
         {searchMode === 'manual' && (
             <div className="flex-shrink-0 p-4 border-t border-neutral-200 bg-white flex items-center gap-2">
-                 <button onClick={onReset} className="px-4 py-3 border border-neutral-300 rounded-lg text-sm font-semibold text-neutral-700 hover:bg-neutral-100">Reset</button>
-                 <button onClick={onSave} disabled={isSaving} className="px-4 py-3 border border-neutral-300 rounded-lg text-sm font-semibold text-neutral-700 hover:bg-neutral-100">Save Search</button>
-                 <button onClick={onApply} className="flex-grow px-4 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark">Show Results</button>
+                 <button onClick={onReset} className="px-3 py-2 border border-neutral-300 rounded-lg text-sm font-semibold text-neutral-700 hover:bg-neutral-100">Reset</button>
+                 <button onClick={onSave} disabled={isSaving} className="px-3 py-2 border border-neutral-300 rounded-lg text-sm font-semibold text-neutral-700 hover:bg-neutral-100">Save Search</button>
+                 <button onClick={onApply} className="flex-grow px-3 py-2 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark">Show Results</button>
             </div>
         )}
     </div>
@@ -680,13 +680,13 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                         </div>
                         
                         <div className="absolute bottom-16 left-0 right-0 z-[1002] p-4 pointer-events-none">
-                            <div className="pointer-events-auto mx-auto w-fit bg-white/80 text-neutral-800 p-2 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
-                                <button onClick={() => updateSearchPageState({ mobileView: 'list' })} className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition-colors ${mobileView === 'list' ? 'bg-primary text-white shadow' : 'hover:bg-neutral-200'}`}>
-                                    <Squares2x2Icon className="w-5 h-5" />
+                            <div className="pointer-events-auto mx-auto w-fit bg-white/80 text-neutral-800 p-1.5 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
+                                <button onClick={() => updateSearchPageState({ mobileView: 'list' })} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold transition-colors ${mobileView === 'list' ? 'bg-primary text-white shadow' : 'hover:bg-neutral-200'}`}>
+                                    <Squares2x2Icon className="w-4 h-4" />
                                     <span>List</span>
                                 </button>
-                                <button onClick={() => updateSearchPageState({ mobileView: 'map' })} className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition-colors ${mobileView === 'map' ? 'bg-primary text-white shadow' : 'hover:bg-neutral-200'}`}>
-                                    <MapIcon className="w-5 h-5" />
+                                <button onClick={() => updateSearchPageState({ mobileView: 'map' })} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold transition-colors ${mobileView === 'map' ? 'bg-primary text-white shadow' : 'hover:bg-neutral-200'}`}>
+                                    <MapIcon className="w-4 h-4" />
                                     <span>Map</span>
                                 </button>
                             </div>
@@ -695,25 +695,25 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                         {mobileView === 'map' && (
                             <div className="absolute inset-0 z-10 pointer-events-none p-2 flex flex-col justify-between pt-24 pb-24">
                                 <div className="pointer-events-auto self-end">
-                                    <button onClick={toggleDrawing} className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-full shadow-lg transition-colors ${ isDrawing ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-neutral-800 text-white hover:bg-neutral-900' }`}>
-                                        {isDrawing ? <XCircleIcon className="w-5 h-5" /> : <PencilIcon className="w-5 h-5" />}
+                                    <button onClick={toggleDrawing} className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold rounded-full shadow-lg transition-colors ${ isDrawing ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-neutral-800 text-white hover:bg-neutral-900' }`}>
+                                        {isDrawing ? <XCircleIcon className="w-4 h-4" /> : <PencilIcon className="w-4 h-4" />}
                                         <span>{isDrawing ? 'Cancel' : 'Draw'}</span>
                                     </button>
                                 </div>
                                 {drawnBoundsJSON && !isDrawing && (
                                     <div className="absolute top-1/2 right-2 -translate-y-1/2 pointer-events-auto flex flex-col gap-2">
-                                        {isAuthenticated && (<button onClick={() => handleSaveSearch(true)} disabled={isSaving} className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50"><BellIcon className="w-5 h-5" /><span>{isSaving ? 'Saving...' : 'Save Area'}</span></button>)}
-                                        <button onClick={handleClearDrawnArea} className="flex items-center gap-2 px-4 py-2 bg-neutral-800 text-white font-bold rounded-full shadow-lg hover:bg-neutral-900"><XCircleIcon className="w-5 h-5" /><span>Clear</span></button>
+                                        {isAuthenticated && (<button onClick={() => handleSaveSearch(true)} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-sm font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50"><BellIcon className="w-4 h-4" /><span>{isSaving ? 'Saving...' : 'Save Area'}</span></button>)}
+                                        <button onClick={handleClearDrawnArea} className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-800 text-white text-sm font-bold rounded-full shadow-lg hover:bg-neutral-900"><XCircleIcon className="w-4 h-4" /><span>Clear</span></button>
                                     </div>
                                 )}
                                 <div className="pointer-events-auto flex justify-between items-end">
                                     <div>
                                         {/* This is where the mobile legend used to be */}
                                     </div>
-                                    <div className="bg-white/80 text-neutral-800 p-2 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
-                                        <button onClick={handleRecenterOnUser} className="p-2.5 rounded-full hover:bg-black/10 transition-colors" title="My Location"><CrosshairsIcon className="w-5 h-5" /></button>
-                                        {isAuthenticated && !drawnBoundsJSON && (<button onClick={() => handleSaveSearch(false)} disabled={isSaving} className="p-2.5 rounded-full hover:bg-black/10 transition-colors disabled:opacity-50" title="Save Search"><BellIcon className="w-5 h-5" /></button>)}
-                                        {isAuthenticated && <button onClick={() => updateSearchPageState({ isAiChatModalOpen: true })} className="p-2.5 rounded-full hover:bg-black/10 transition-colors" title="AI Search"><SparklesIcon className="w-5 h-5 text-primary" /></button>}
+                                    <div className="bg-white/80 text-neutral-800 p-1.5 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
+                                        <button onClick={handleRecenterOnUser} className="p-2 rounded-full hover:bg-black/10 transition-colors" title="My Location"><CrosshairsIcon className="w-4 h-4" /></button>
+                                        {isAuthenticated && !drawnBoundsJSON && (<button onClick={() => handleSaveSearch(false)} disabled={isSaving} className="p-2 rounded-full hover:bg-black/10 transition-colors disabled:opacity-50" title="Save Search"><BellIcon className="w-4 h-4" /></button>)}
+                                        {isAuthenticated && <button onClick={() => updateSearchPageState({ isAiChatModalOpen: true })} className="p-2 rounded-full hover:bg-black/10 transition-colors" title="AI Search"><SparklesIcon className="w-4 h-4 text-primary" /></button>}
                                     </div>
                                 </div>
                             </div>
