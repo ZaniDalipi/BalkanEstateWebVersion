@@ -3,7 +3,7 @@ import { User } from '../../types';
 import { getAgencies, verifyInvitationCode, createJoinRequest, leaveAgency } from '../../services/apiService';
 import { useAppContext } from '../../context/AppContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const API_URL = '/api';
 
 interface Agency {
   _id: string;
