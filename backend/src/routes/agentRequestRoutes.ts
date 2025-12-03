@@ -5,7 +5,7 @@ import {
   getAgentRequests,
   updateAgentRequestStatus,
 } from '../controllers/agentRequestController';
-import { protect } from '../middleware/authMiddleware';
+import { protect } from '../middleware/auth';
 
 const router = express.Router();
 
