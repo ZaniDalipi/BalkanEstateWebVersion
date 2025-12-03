@@ -9,6 +9,7 @@
     "start": "node dist/server.js",
     "seed:products": "ts-node src/scripts/seedProducts.ts",
     "seed:agencies": "ts-node src/scripts/seedAgencies.ts",
+    "seed:properties": "ts-node src/scripts/seedMockProperties.ts",
     "test:agencies": "ts-node src/scripts/testAgencyAccess.ts",
     "test:find-agency": "ts-node src/scripts/testFindAgencyByCode.ts",
     "sync:agents": "ts-node src/scripts/syncAgents.ts",
