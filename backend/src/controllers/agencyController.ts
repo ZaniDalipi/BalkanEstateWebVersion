@@ -387,7 +387,31 @@ export const getAgency = async (
       properties = [];
     }
 
-    res.json({ agency, properties });
+    // Calculate sales statistics
+    const soldProperties = properties.filter(p => p.status === 'sold');
+    const twelveMonthsAgo = Date.now() - (365 * 24 * 60 * 60 * 1000);
+    const soldPropertiesLast12Months = soldProperties.filter(p => {
+      return p.soldAt && p.soldAt >= twelveMonthsAgo;
+    });
+
+    const soldPrices = soldProperties.map(p => p.price).filter(Boolean);
+    const salesStats = {
+      salesLast12Months: soldPropertiesLast12Months.length,
+      totalSales: soldProperties.length,
+      minPrice: soldPrices.length > 0 ? Math.min(...soldPrices) : 0,
+      maxPrice: soldPrices.length > 0 ? Math.max(...soldPrices) : 0,
+      averagePrice: soldPrices.length > 0
+        ? soldPrices.reduce((sum, price) => sum + price, 0) / soldPrices.length
+        : 0,
+    };
+
+    // Include sales stats in agency object
+    const agencyWithStats = {
+      ...agency.toObject(),
+      salesStats,
+    };
+
+    res.json({ agency: agencyWithStats, properties });
   } catch (error: any) {
     console.error('❌ Get agency error:', error);
     console.error('Stack trace:', error.stack);

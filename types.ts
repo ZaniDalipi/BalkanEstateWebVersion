@@ -127,6 +127,13 @@ export interface Agency {
     createdAt?: string;
     updatedAt?: string;
     totalListings?: number;
+    salesStats?: {
+        salesLast12Months: number;
+        totalSales: number;
+        minPrice: number;
+        maxPrice: number;
+        averagePrice: number;
+    };
 }
 
 export interface PropertyImage {

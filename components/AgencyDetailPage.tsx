@@ -164,20 +164,20 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     return scoreB - scoreA;
   });
 
-  // Calculate sales statistics
+  // Calculate sales statistics (use backend data if available, otherwise calculate)
   const soldProperties = agencyProperties.filter(p => p.status === 'sold');
-  const soldPropertiesLast12Months = soldProperties.filter(p => {
+  const salesLast12Months = agencyData.salesStats?.salesLast12Months ?? soldProperties.filter(p => {
     if (!p.soldAt) return false;
     const twelveMonthsAgo = Date.now() - (365 * 24 * 60 * 60 * 1000);
     return p.soldAt >= twelveMonthsAgo;
-  });
+  }).length;
 
-  const soldPrices = soldProperties.map(p => p.price).filter(Boolean);
-  const minPrice = soldPrices.length > 0 ? Math.min(...soldPrices) : 0;
-  const maxPrice = soldPrices.length > 0 ? Math.max(...soldPrices) : 0;
-  const averagePrice = soldPrices.length > 0
-    ? soldPrices.reduce((sum, price) => sum + price, 0) / soldPrices.length
-    : 0;
+  const totalSales = agencyData.salesStats?.totalSales ?? soldProperties.length;
+  const minPrice = agencyData.salesStats?.minPrice ?? (soldProperties.length > 0 ? Math.min(...soldProperties.map(p => p.price).filter(Boolean)) : 0);
+  const maxPrice = agencyData.salesStats?.maxPrice ?? (soldProperties.length > 0 ? Math.max(...soldProperties.map(p => p.price).filter(Boolean)) : 0);
+  const averagePrice = agencyData.salesStats?.averagePrice ?? (soldProperties.length > 0
+    ? soldProperties.map(p => p.price).filter(Boolean).reduce((sum, price) => sum + price, 0) / soldProperties.filter(p => p.price).length
+    : 0);
 
   const handleBack = () => {
     dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
@@ -692,11 +692,11 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div>
                 <p className="text-sm text-gray-500 font-medium mb-2">Sales last 12 months</p>
-                <p className="text-3xl font-bold text-primary">{soldPropertiesLast12Months.length}</p>
+                <p className="text-3xl font-bold text-primary">{salesLast12Months}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500 font-medium mb-2">Total sales</p>
-                <p className="text-3xl font-bold text-green-600">{soldProperties.length}</p>
+                <p className="text-3xl font-bold text-green-600">{totalSales}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500 font-medium mb-2">Price range</p>
