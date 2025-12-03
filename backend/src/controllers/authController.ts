@@ -427,8 +427,53 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // If switching to agent, validate license and optionally verify agency
-    if (role === 'agent' && licenseNumber) {
+    // If switching to agent role
+    if (role === 'agent') {
+      // Check if user was previously an agent (switching back from private_seller)
+      const existingAgentRecord = await Agent.findOne({ userId: user._id });
+
+      if (existingAgentRecord && !licenseNumber) {
+        // Reactivate existing agent profile
+        user.role = 'agent';
+        user.agencyName = existingAgentRecord.agencyName;
+        user.agentId = existingAgentRecord.agentId;
+        user.licenseNumber = existingAgentRecord.licenseNumber;
+        user.agencyId = existingAgentRecord.agencyId;
+        existingAgentRecord.isActive = true;
+        await existingAgentRecord.save();
+        await user.save();
+
+        res.json({
+          message: 'Switched back to agent role successfully',
+          user: {
+            id: String(user._id),
+            email: user.email,
+            name: user.name,
+            phone: user.phone,
+            role: user.role,
+            avatarUrl: user.avatarUrl,
+            city: user.city,
+            country: user.country,
+            agencyName: user.agencyName,
+            agencyId: user.agencyId,
+            agentId: user.agentId,
+            licenseNumber: user.licenseNumber,
+            licenseVerified: user.licenseVerified,
+            listingsCount: user.listingsCount,
+            totalListingsCreated: user.totalListingsCreated,
+            isSubscribed: user.isSubscribed,
+          },
+        });
+        return;
+      }
+
+      // New agent or updating license
+      if (!licenseNumber) {
+        res.status(400).json({
+          message: 'License number is required to become an agent'
+        });
+        return;
+      }
       // Validate license format (basic validation - you can enhance this)
       if (licenseNumber.length < 5) {
         res.status(400).json({
@@ -455,15 +500,18 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
 
       // If agency invitation code is provided, verify it
       if (agencyInvitationCode) {
+        console.log(`🔍 Looking for agency with invitation code: ${agencyInvitationCode.toUpperCase()}`);
         agency = await Agency.findOne({ invitationCode: agencyInvitationCode.toUpperCase() });
 
         if (!agency) {
+          console.log(`❌ Agency not found with code: ${agencyInvitationCode.toUpperCase()}`);
           res.status(404).json({
             message: 'Invalid agency invitation code. Please check the code and try again.'
           });
           return;
         }
 
+        console.log(`✅ Found agency: ${agency.name} (ID: ${agency._id})`);
         agencyName = agency.name; // Use verified agency name
       }
 
@@ -524,6 +572,17 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
           if (!agency.agents.some(agentId => agentId.toString() === userObjectId.toString())) {
             agency.agents.push(userObjectId);
             agency.totalAgents = agency.agents.length;
+
+            // Add to agentDetails for tracking join order
+            if (!agency.agentDetails) {
+              agency.agentDetails = [];
+            }
+            agency.agentDetails.push({
+              userId: userObjectId,
+              joinedAt: new Date(),
+              isActive: true,
+            } as any);
+
             await agency.save({ session });
           }
         }
@@ -538,10 +597,22 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
         session.endSession();
       }
     } else {
-      // For non-agent role switches, just update the role
+      // For non-agent role switches
+      // If switching from agent to private_seller, deactivate agent profile but keep data
+      if (user.role === 'agent' && role === 'private_seller') {
+        const agentProfile = await Agent.findOne({ userId: user._id });
+        if (agentProfile) {
+          agentProfile.isActive = false;
+          await agentProfile.save();
+        }
+      }
+
+      // Update the role
       user.role = role;
       await user.save();
     }
+
+    console.log(`✅ Role switch successful for user ${user._id}: ${user.role} ${user.agencyId ? `(Agency: ${user.agencyName})` : ''}`);
 
     res.json({
       message: 'Role updated successfully',
@@ -555,6 +626,7 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
         city: user.city,
         country: user.country,
         agencyName: user.agencyName,
+        agencyId: user.agencyId ? String(user.agencyId) : undefined,
         agentId: user.agentId,
         licenseNumber: user.licenseNumber,
         licenseVerified: user.licenseVerified,

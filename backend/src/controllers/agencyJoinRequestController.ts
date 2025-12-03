@@ -204,6 +204,17 @@ export const approveJoinRequest = async (req: Request, res: Response): Promise<v
     if (!agency.agents.includes(joinRequest.agentId)) {
       agency.agents.push(joinRequest.agentId);
       agency.totalAgents = agency.agents.length;
+
+      // Add to agentDetails for tracking join order
+      if (!agency.agentDetails) {
+        agency.agentDetails = [];
+      }
+      agency.agentDetails.push({
+        userId: joinRequest.agentId,
+        joinedAt: new Date(),
+        isActive: true,
+      } as any);
+
       await agency.save();
     }
 

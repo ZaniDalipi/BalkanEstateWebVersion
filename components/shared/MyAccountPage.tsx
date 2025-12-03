@@ -93,9 +93,9 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
     const handleAgencyClick = async () => {
-        if (user?.agencyId) {
+        if (formData?.agencyId) {
             try {
-                const response = await fetch(`${API_URL}/agencies/${user.agencyId}`);
+                const response = await fetch(`${API_URL}/agencies/${formData.agencyId}`);
                 if (response.ok) {
                     const data = await response.json();
                     dispatch({ type: 'SET_SELECTED_AGENCY', payload: data.agency });
@@ -134,14 +134,14 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const handleRoleChange = async (role: UserRole) => {
         setError('');
 
-        // If switching to agent, require license verification
-        if (role === UserRole.AGENT && !user.licenseVerified) {
+        // If switching to agent and never been an agent before, require license verification
+        if (role === UserRole.AGENT && !user.licenseNumber) {
             setPendingRole(role);
             setIsLicenseModalOpen(true);
             return;
         }
 
-        // For other role switches, allow freely
+        // For other role switches (including agent ↔ private_seller), allow freely
         try {
             setIsSaving(true);
             const updatedUser = await switchRole(role);
@@ -158,16 +158,27 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
 
     const handleLicenseSubmit = async (licenseData: { licenseNumber: string; agencyInvitationCode?: string; agentId?: string; selectedAgencyId?: string }) => {
         setIsSaving(true);
+        setError('');
         try {
             const roleToSwitch = pendingRole || formData.role;
+            console.log('🔄 Switching to role:', roleToSwitch);
             const updatedUser = await switchRole(roleToSwitch, licenseData);
+            console.log('✅ Role switch successful');
+
+            // Update context and form data
             dispatch({ type: 'UPDATE_USER', payload: updatedUser });
             setFormData(updatedUser);
+
+            // Close modal and show success
             setIsLicenseModalOpen(false);
             setPendingRole(null);
             setIsSaved(true);
             setTimeout(() => setIsSaved(false), 2000);
         } catch (err) {
+            console.error('❌ Role switch failed:', err);
+            const errorMessage = err instanceof Error ? err.message : 'Failed to switch role';
+            setError(errorMessage);
+            // Re-throw so modal can catch and display error
             throw err;
         } finally {
             setIsSaving(false);
@@ -294,22 +305,17 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const floatingLabelClasses = "absolute text-base text-neutral-700 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1";
 
     return (
-        <form onSubmit={handleSaveChanges}>
-            <AgentLicenseModal
-                isOpen={isLicenseModalOpen}
-                onClose={() => {
-                    setIsLicenseModalOpen(false);
-                    setPendingRole(null);
-                }}
-                onSubmit={handleLicenseSubmit}
-                currentLicenseNumber={user.licenseNumber}
-                currentAgentId={user.agentId}
-            />
-
-            <fieldset>
-                <legend className="block text-sm font-medium text-neutral-700 mb-2">Your Role</legend>
-                <RoleSelector selectedRole={formData.role} originalRole={user.role} onChange={handleRoleChange} />
-            </fieldset>
+        <>
+            <form onSubmit={handleSaveChanges}>
+                <fieldset>
+                    <legend className="block text-sm font-medium text-neutral-700 mb-2">Your Role</legend>
+                    <RoleSelector selectedRole={formData.role} originalRole={user.role} onChange={handleRoleChange} />
+                    {error && (
+                        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                            {error}
+                        </div>
+                    )}
+                </fieldset>
 
             {/* Avatar Upload Section */}
             <fieldset className="border-t pt-6">
@@ -375,19 +381,34 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 <fieldset className="space-y-6 animate-fade-in border-t pt-8">
                      <div className="flex items-center justify-between -mt-2 mb-4">
                         <legend className="text-lg font-semibold text-neutral-700">Agent Information</legend>
-                        {user.licenseVerified && (
+                        {formData.licenseVerified && (
                             <span className="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-full font-medium">
                                 ✓ License Verified
                             </span>
                         )}
                      </div>
 
-                     {user.licenseVerified && (
-                        <AgencyManagementSection
-                            currentUser={user}
-                            onAgencyChange={() => window.location.reload()}
-                        />
-                     )}
+                     {/* Agency Management - Always visible for agents */}
+                     <AgencyManagementSection
+                        currentUser={formData}
+                        onAgencyChange={async () => {
+                           // Fetch updated user data instead of reloading the page
+                           try {
+                              const response = await fetch(`${API_URL}/auth/me`, {
+                                 headers: {
+                                    'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
+                                 },
+                              });
+                              if (response.ok) {
+                                 const data = await response.json();
+                                 dispatch({ type: 'UPDATE_USER', payload: data.user });
+                                 setFormData(data.user);
+                              }
+                           } catch (err) {
+                              console.error('Failed to refresh user data:', err);
+                           }
+                        }}
+                     />
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="relative">
                             <div className="relative">
@@ -404,7 +425,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                             </div>
 
                             {/* View Agency Button */}
-                            {user.agencyId && (
+                            {formData.agencyId && (
                                 <button
                                     type="button"
                                     onClick={handleAgencyClick}
@@ -449,6 +470,18 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 </button>
             </div>
         </form>
+
+        <AgentLicenseModal
+            isOpen={isLicenseModalOpen}
+            onClose={() => {
+                setIsLicenseModalOpen(false);
+                setPendingRole(null);
+            }}
+            onSubmit={handleLicenseSubmit}
+            currentLicenseNumber={user.licenseNumber}
+            currentAgentId={user.agentId}
+        />
+        </>
     );
 };
 

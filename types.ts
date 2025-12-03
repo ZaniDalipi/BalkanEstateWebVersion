@@ -121,7 +121,7 @@ export interface Agency {
         sunday?: string;
     };
     agents?: any[]; // Array of agent objects
-    ownerId?: string; // Owner user ID (also the creator/admin)
+    ownerId?: string | { _id: string; name: string; email: string; role?: string }; // Owner user ID (also the creator/admin) - can be populated
     admins?: string[]; // Array of admin user IDs
     invitationCode?: string; // Code required to join agency
     createdAt?: string;

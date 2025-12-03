@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../../types';
-import { getAgencies, joinAgencyByInvitationCode, leaveAgency } from '../../services/apiService';
+import { getAgencies, verifyInvitationCode, createJoinRequest, leaveAgency } from '../../services/apiService';
 import { useAppContext } from '../../context/AppContext';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 interface Agency {
   _id: string;
   name: string;
+  description?: string;
   city?: string;
   country?: string;
   slug?: string;
+  logo?: string;
+  totalAgents?: number;
 }
 
 interface AgencyManagementSectionProps {
@@ -25,6 +30,12 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
   const [loadingAgencies, setLoadingAgencies] = useState(false);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+
+  // Fetch pending join requests on mount and when showing the form
+  useEffect(() => {
+    fetchPendingRequests();
+  }, [showForm]); // Refresh when form visibility changes
 
   // Fetch agencies when form is shown
   useEffect(() => {
@@ -32,6 +43,25 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
       fetchAgencies();
     }
   }, [showForm]);
+
+  const fetchPendingRequests = async () => {
+    try {
+      const response = await fetch(`${API_URL}/agency-join-requests/my-requests`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Filter for pending requests
+        const pending = data.requests?.filter((req: any) => req.status === 'pending') || [];
+        setPendingRequests(pending);
+        console.log('📋 Pending join requests:', pending.length);
+      }
+    } catch (err) {
+      console.error('Failed to fetch pending requests:', err);
+    }
+  };
 
   const fetchAgencies = async () => {
     try {
@@ -49,6 +79,7 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setError('');
 
     // Validation
@@ -58,53 +89,78 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
     }
 
     if (!invitationCode.trim()) {
-      setError('Please enter the agency invitation code');
+      setError('Please enter the invitation code');
       return;
     }
 
     try {
       setLoading(true);
-      console.log('📤 Joining agency:', selectedAgencyId, 'with code:', invitationCode);
+      console.log('🔍 Step 1: Verifying invitation code for agency:', selectedAgencyId);
+      console.log('📝 Agency name:', agencies.find(a => a._id === selectedAgencyId)?.name);
+      console.log('🔑 Code entered:', invitationCode.trim().toUpperCase());
 
-      const response = await joinAgencyByInvitationCode(
-        invitationCode.trim().toUpperCase(),
-        selectedAgencyId
-      );
+      // Step 1: Verify the invitation code matches the selected agency
+      const verification = await verifyInvitationCode(selectedAgencyId, invitationCode.trim());
+      console.log('📦 Verification result:', verification);
 
-      console.log('✅ Successfully joined agency:', response.agency.name);
+      if (!verification.valid) {
+        const errorMsg = verification.message || 'Invalid invitation code for this agency';
+        console.error('❌ Verification failed:', errorMsg);
+        setError(errorMsg);
+        setLoading(false);
+        return;
+      }
 
-      // Update user context immediately with new agency data
-      dispatch({
-        type: 'UPDATE_USER',
-        payload: {
-          agencyName: response.user.agencyName,
-          agencyId: response.user.agencyId,
-          agentId: response.user.agentId,
-        }
-      });
+      console.log('✅ Step 1 complete: Invitation code verified successfully');
 
-      // Show success message
-      const wasIndependent = !currentUser.agencyName || currentUser.agencyName === 'Independent Agent';
-      const actionText = wasIndependent ? 'joined' : 'switched to';
+      // Step 2: Send join request
+      console.log('📤 Step 2: Sending join request to agency:', selectedAgencyId);
+      const joinResponse = await createJoinRequest(selectedAgencyId, `Join request with invitation code: ${invitationCode.trim().toUpperCase()}`);
+      console.log('✅ Step 2 complete: Join request response:', joinResponse);
 
-      alert(
-        `✅ Successfully ${actionText} ${response.agency.name}!\n\n` +
-        `🏢 You are now affiliated with ${response.agency.name}\n` +
-        `🎯 Total Agents: ${response.agency.totalAgents}\n\n` +
-        `Your profile has been updated!`
-      );
+      // Step 3: Show success and update UI
+      const agencyName = agencies.find(a => a._id === selectedAgencyId)?.name || 'the agency';
+      const selectedAgencyData = agencies.find(a => a._id === selectedAgencyId);
+      console.log('✅ All steps complete! Request sent to:', agencyName);
+
+      // Immediately add to pending requests for instant UI feedback
+      const newPendingRequest = {
+        _id: `temp_${Date.now()}`, // Temporary ID
+        agencyId: selectedAgencyData,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        message: `Join request with invitation code: ${invitationCode.trim().toUpperCase()}`
+      };
+      setPendingRequests([...pendingRequests, newPendingRequest]);
 
       // Reset form
       setSelectedAgencyId('');
       setInvitationCode('');
       setShowForm(false);
 
-      // Trigger refresh callback
+      // Show success message with better formatting
+      alert(
+        `✅ SUCCESS!\n\n` +
+        `Your join request has been sent to ${agencyName}.\n\n` +
+        `📋 Status: Pending Approval\n` +
+        `🔔 You will be notified when the agency responds.\n\n` +
+        `You can check your pending requests in the "Pending Join Requests" section above.`
+      );
+
+      // Fetch updated pending requests from server (to get real IDs)
+      await fetchPendingRequests();
+
+      // Trigger the callback to refresh parent component
       onAgencyChange();
 
     } catch (err: any) {
-      console.error('❌ Failed to join agency:', err);
-      setError(err.message || 'Failed to join agency. Please check your invitation code.');
+      console.error('❌ ERROR in handleSubmit:', err);
+      console.error('Error type:', typeof err);
+      console.error('Error message:', err.message);
+      console.error('Error stack:', err.stack);
+      console.error('Full error object:', JSON.stringify(err, null, 2));
+
+      setError(err.message || 'Failed to process join request. Please check the invitation code and try again.');
     } finally {
       setLoading(false);
     }
@@ -193,6 +249,26 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
         </div>
       </div>
 
+      {/* Pending Join Requests */}
+      {pendingRequests.length > 0 && (
+        <div className="p-4 bg-yellow-50 border-2 border-yellow-200 rounded-lg">
+          <h4 className="text-sm font-semibold text-yellow-900 mb-2">Pending Join Requests</h4>
+          <div className="space-y-2">
+            {pendingRequests.map((request) => (
+              <div key={request._id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-yellow-200">
+                <div>
+                  <p className="font-medium text-gray-900">{request.agencyId?.name || 'Unknown Agency'}</p>
+                  <p className="text-xs text-gray-600">Sent: {new Date(request.createdAt).toLocaleDateString()}</p>
+                </div>
+                <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">
+                  Pending Approval
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Agency Join/Switch Form */}
       {showForm && (
         <div className="p-6 bg-blue-50 border-2 border-blue-200 rounded-lg animate-fade-in">
@@ -210,7 +286,7 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Agency Selection */}
+            {/* Agency Selection Dropdown */}
             <div>
               <label htmlFor="agency-select" className="block text-sm font-medium text-gray-700 mb-2">
                 Select Agency <span className="text-red-500">*</span>
@@ -241,7 +317,7 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
               )}
             </div>
 
-            {/* Invitation Code */}
+            {/* Invitation Code Input */}
             <div>
               <label htmlFor="invitation-code" className="block text-sm font-medium text-gray-700 mb-2">
                 Agency Invitation Code <span className="text-red-500">*</span>
@@ -260,7 +336,7 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
                 required
               />
               <p className="text-xs text-gray-600 mt-1">
-                Enter the invitation code provided by the agency
+                Enter the invitation code for the selected agency
               </p>
             </div>
 
@@ -286,7 +362,7 @@ const AgencyManagementSection: React.FC<AgencyManagementSectionProps> = ({ curre
                 disabled={loading || !selectedAgencyId || !invitationCode.trim()}
                 className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
-                {loading ? 'Processing...' : (isIndependent ? 'Join Agency' : 'Switch Agency')}
+                {loading ? 'Verifying & Sending...' : 'Send Join Request'}
               </button>
             </div>
           </form>

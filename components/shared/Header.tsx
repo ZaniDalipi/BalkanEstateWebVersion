@@ -14,7 +14,12 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isFloating }) => {
 
   const handleAccountClick = useCallback(() => {
     if (isAuthenticated) {
+        // Clear any selected items before navigating
+        dispatch({ type: 'SET_SELECTED_PROPERTY', payload: null });
+        dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
+        // Update URL
+        window.history.pushState({}, '', '/account');
     } else {
         dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'login' } });
     }
@@ -22,7 +27,12 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isFloating }) => {
 
   const handleNewListingClick = useCallback(() => {
     if (isAuthenticated) {
+        // Clear any selected items before navigating
+        dispatch({ type: 'SET_SELECTED_PROPERTY', payload: null });
+        dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'create-listing' });
+        // Update URL
+        window.history.pushState({}, '', '/create-listing');
     } else {
         dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'signup' } });
     }

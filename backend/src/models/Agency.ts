@@ -31,8 +31,19 @@ export interface IAgency extends Document {
   yearsInBusiness?: number;
   // Agency agents (references to User model with role 'agent')
   agents: mongoose.Types.ObjectId[];
+  // Detailed agent tracking with join order
+  agentDetails?: Array<{
+    userId: mongoose.Types.ObjectId;
+    joinedAt: Date;
+    leftAt?: Date;
+    isActive: boolean;
+  }>;
   // Agency admins (users who can manage the agency)
   admins?: mongoose.Types.ObjectId[];
+  // Agency subscription info
+  subscriptionPlan?: string;
+  subscriptionStatus?: string;
+  subscriptionExpiresAt?: Date;
   // Featured/advertising settings
   isFeatured: boolean;
   featuredStartDate?: Date;
@@ -175,10 +186,38 @@ const AgencySchema: Schema = new Schema(
       ref: 'User',
       index: true,
     }],
+    agentDetails: [{
+      userId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+      },
+      joinedAt: {
+        type: Date,
+        default: Date.now,
+      },
+      leftAt: {
+        type: Date,
+      },
+      isActive: {
+        type: Boolean,
+        default: true,
+      },
+    }],
     admins: [{
       type: Schema.Types.ObjectId,
       ref: 'User',
     }],
+    subscriptionPlan: {
+      type: String,
+      default: 'free',
+    },
+    subscriptionStatus: {
+      type: String,
+    },
+    subscriptionExpiresAt: {
+      type: Date,
+    },
     isFeatured: {
       type: Boolean,
       default: false,
