@@ -1,193 +1,209 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Agent } from '../../types';
 import StarRating from '../shared/StarRating';
-import { TrophyIcon, UserCircleIcon, BuildingOfficeIcon } from '../../constants';
+import { UserCircleIcon, BuildingOfficeIcon, CheckBadgeIcon, MapPinIcon, CurrencyDollarIcon, HomeIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
 import { slugify } from '../../utils/slug';
 
 interface AgentCardProps {
   agent: Agent;
-  rank: number;
 }
 
 const AgentAvatar: React.FC<{ agent: Agent }> = ({ agent }) => {
-    const [error, setError] = useState(false);
+  const [error, setError] = useState(false);
 
-    if (!agent.avatarUrl || error) {
-        return <UserCircleIcon className="w-16 h-16 text-neutral-300" />;
-    }
-
+  if (!agent.avatarUrl || error) {
     return (
-        <img 
-            src={agent.avatarUrl} 
-            alt={agent.name} 
-            className="w-16 h-16 rounded-full object-cover"
-            onError={() => setError(true)}
-        />
+      <div className="w-24 h-24 rounded-full bg-neutral-200 flex items-center justify-center">
+        <UserCircleIcon className="w-16 h-16 text-neutral-400" />
+      </div>
     );
+  }
+
+  return (
+    <img
+      src={agent.avatarUrl}
+      alt={agent.name}
+      className="w-24 h-24 rounded-full object-cover ring-4 ring-white shadow-lg"
+      onError={() => setError(true)}
+    />
+  );
 };
 
-const AgentCard: React.FC<AgentCardProps> = ({ agent, rank }) => {
+const AgentCard: React.FC<AgentCardProps> = ({ agent }) => {
   const { dispatch } = useAppContext();
-  const [showAnimation, setShowAnimation] = useState(true);
 
-  // Disable animations after 30 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowAnimation(false);
-    }, 30000); // 30 seconds
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  const rankColors: { [key: number]: { bg: string; text: string; border: string } } = {
-    1: { bg: 'bg-yellow-400', text: 'text-yellow-800', border: 'border-yellow-400' },
-    2: { bg: 'bg-neutral-300', text: 'text-neutral-700', border: 'border-neutral-400' },
-    3: { bg: 'bg-yellow-600', text: 'text-yellow-900', border: 'border-yellow-600' },
+  // Calculate price range from agent's sold properties
+  const getPriceRange = () => {
+    if (agent.totalSalesValue && agent.propertiesSold > 0) {
+      const avgPrice = agent.totalSalesValue / agent.propertiesSold;
+      const minPrice = avgPrice * 0.5;
+      const maxPrice = avgPrice * 1.8;
+      return `${formatPrice(minPrice, 'Serbia')} - ${formatPrice(maxPrice, 'Serbia')}`;
+    }
+    return 'Contact for pricing';
   };
 
-  const rankColor = rankColors[rank] || { bg: 'bg-neutral-200', text: 'text-neutral-600', border: 'border-neutral-300' };
+  // Calculate testimonial count
+  const testimonialCount = agent.testimonials?.length || 0;
 
-  // Animation for top 3 (staggered bounce effect)
-  const getAnimationStyle = (): React.CSSProperties => {
-    if (!showAnimation || rank > 3) return {};
-    const delays = [0, 300, 600]; // ms delays for each rank
-    return {
-      animation: `gentle-bounce 2s ease-in-out infinite`,
-      animationDelay: `${delays[rank - 1]}ms`,
-    };
-  };
+  // Check if agent is part of a team/agency
+  const isTeam = agent.agencyName && agent.agencyName !== 'Independent Agent';
 
   const handleSelectAgent = () => {
-    // Use agentId for URL-friendly sharing, fallback to id
     const agentIdentifier = agent.agentId || agent.id;
     dispatch({ type: 'SET_SELECTED_AGENT', payload: agentIdentifier });
-    // Update URL to use agentId
     window.history.pushState({}, '', `/agents/${agentIdentifier}`);
   };
 
   const handleAgencyClick = async (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent triggering agent selection
+    e.stopPropagation();
 
-    // Don't navigate if no agency name
     if (!agent.agencyName || agent.agencyName === 'Independent Agent') {
       return;
     }
 
-    // Use agencyId if available for direct lookup, otherwise fallback to slug
     const agencyIdentifier = agent.agencyId || slugify(agent.agencyName);
 
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-      console.log('🔗 Fetching agency:', agencyIdentifier, 'for agent:', agent.name);
-
       const response = await fetch(`${API_URL}/agencies/${agencyIdentifier}`);
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Agency found:', data.agency.name);
-
-        // Pass the full agency object and navigate
         dispatch({ type: 'SET_SELECTED_AGENCY', payload: data.agency });
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
-
-        // Update URL - convert old comma format to new forward slash format
         let urlSlug = data.agency.slug || data.agency._id;
-        // Replace comma with forward slash for backward compatibility with old slugs
         urlSlug = urlSlug.replace(',', '/');
         window.history.pushState({}, '', `/agencies/${urlSlug}`);
-      } else {
-        console.error('❌ Agency not found:', agent.agencyName, 'with identifier:', agencyIdentifier);
-        alert(
-          `⚠️ Agency Not Found\n\n` +
-          `The agency "${agent.agencyName}" is referenced in this agent's profile ` +
-          `but doesn't exist in the database.\n\n` +
-          `This agent's data may be outdated or the agency was deleted.\n\n` +
-          `Identifier used: ${agencyIdentifier}`
-        );
       }
     } catch (error) {
       console.error('Error fetching agency:', error);
-      alert('Failed to load agency details. Please check your connection and try again.');
     }
   };
 
   return (
-    <>
-      <style>{`
-        @keyframes gentle-bounce {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-10px);
-          }
-        }
-      `}</style>
-      <div
-        className={`bg-white rounded-xl shadow-md border hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer ${rank <= 3 ? rankColor.border : 'border-neutral-200'}`}
-        style={getAnimationStyle()}
-        onClick={handleSelectAgent}
-      >
-      <div className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
+    <div
+      className="bg-white rounded-lg shadow-md border border-neutral-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden group"
+      onClick={handleSelectAgent}
+    >
+      <div className="p-6">
+        {/* Agency Badge */}
+        {isTeam && (
+          <div className="inline-flex items-center bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 text-xs font-bold px-3 py-1.5 rounded-full mb-4 shadow-sm">
+            <BuildingOfficeIcon className="w-3.5 h-3.5 mr-1" />
+            AGENCY
+          </div>
+        )}
+
+        {/* Agent Avatar and Info */}
+        <div className="flex flex-col items-center text-center mb-5">
+          <div className="relative mb-3">
             <AgentAvatar agent={agent} />
-            <div>
-              <h3 className="text-lg font-bold text-neutral-900">{agent.name}</h3>
-              {agent.agencyName && (
-                <div
-                  className="flex items-center gap-1 mt-1 mb-1 cursor-pointer hover:text-primary transition-colors"
-                  onClick={handleAgencyClick}
-                  title="View agency profile"
-                >
-                  <BuildingOfficeIcon className="w-4 h-4" />
-                  <span className="text-xs font-semibold underline decoration-dotted">{agent.agencyName}</span>
-                </div>
-              )}
-              {agent.city && agent.country && (
-                  <p className="text-sm text-neutral-500 font-medium">{agent.city}, {agent.country}</p>
-              )}
-              <div className="flex items-center gap-1.5 mt-1">
-                {agent.rating > 0 ? (
-                  <>
-                    <StarRating rating={agent.rating} className="w-4 h-4" />
-                    <span className="text-sm font-semibold text-neutral-600">{agent.rating.toFixed(1)}</span>
-                  </>
-                ) : (
-                  <span className="text-xs text-neutral-500 italic">No reviews yet</span>
-                )}
-              </div>
+            {/* Premier Agent Badge */}
+            <div className="absolute -bottom-1 -right-1 bg-primary rounded-full p-1.5 shadow-md">
+              <CheckBadgeIcon className="w-5 h-5 text-white" />
             </div>
           </div>
-          <div className="flex flex-col items-end gap-1">
-            <div className={`flex items-center gap-2 font-bold px-3 py-1.5 rounded-full text-sm ${rankColor.bg} ${rankColor.text}`}>
-              <TrophyIcon className="w-4 h-4" />
-              <span>#{rank}</span>
+
+          {/* Rating */}
+          <div className="flex items-center justify-center gap-2 mb-3 bg-neutral-50 px-3 py-2 rounded-lg">
+            <div className="flex items-center">
+              <StarRating rating={agent.rating} className="w-4 h-4" />
             </div>
-            {/* FUTURE REWARDS SYSTEM: Add reward badges here */}
-            {rank === 1 && (
-              <div className="text-xs bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-900 px-2 py-0.5 rounded-full font-bold shadow-sm">
-                🏆 Champion
-              </div>
+            {agent.rating > 0 ? (
+              <span className="text-sm font-bold text-neutral-800">
+                {agent.rating.toFixed(1)} <span className="text-neutral-500 font-normal">({testimonialCount})</span>
+              </span>
+            ) : (
+              <span className="text-sm text-neutral-500 italic">No reviews</span>
             )}
-            {/* Future: Add monthly/yearly rewards, achievement badges, etc. */}
           </div>
+
+          {/* Agent Name */}
+          <h3 className="text-xl font-bold text-neutral-900 mb-2 group-hover:text-primary transition-colors">
+            {agent.name}
+          </h3>
+
+          {/* Agency/Brokerage */}
+          {agent.agencyName && (
+            <div
+              className="flex items-center gap-1.5 text-neutral-600 hover:text-primary transition-colors px-3 py-1 rounded-md hover:bg-neutral-50"
+              onClick={handleAgencyClick}
+            >
+              <BuildingOfficeIcon className="w-4 h-4" />
+              <span className="text-sm font-semibold">{agent.agencyName}</span>
+            </div>
+          )}
+
+          {/* Location */}
+          {agent.city && agent.country && (
+            <div className="flex items-center gap-1.5 mt-2 text-neutral-600">
+              <MapPinIcon className="w-4 h-4 text-primary" />
+              <p className="text-sm font-medium">
+                {agent.city}, {agent.country}
+              </p>
+            </div>
+          )}
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-4 text-center border-t border-neutral-100 pt-4">
-          <div>
-            <p className="text-xs text-neutral-500 font-semibold">Total Sales</p>
-            <p className="text-lg font-bold text-primary">{formatPrice(agent.totalSalesValue, 'Serbia')}</p>
+
+        {/* Divider */}
+        <div className="border-t border-neutral-200 my-4"></div>
+
+        {/* Stats */}
+        <div className="space-y-3">
+          {/* Price Range */}
+          <div className="bg-primary/5 rounded-lg p-3 border border-primary/10">
+            <div className="flex items-center gap-2 mb-1">
+              <CurrencyDollarIcon className="w-4 h-4 text-primary" />
+              <span className="text-xs font-semibold text-neutral-600 uppercase">Price Range</span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-base font-bold text-primary">
+                {getPriceRange()}
+              </span>
+              {isTeam && (
+                <span className="text-xs text-neutral-500 italic">agency</span>
+              )}
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-neutral-500 font-semibold">Properties Sold</p>
-            <p className="text-lg font-bold text-primary">{agent.propertiesSold}</p>
+
+          {/* Sales Stats */}
+          <div className="grid grid-cols-2 gap-2">
+            {/* Recent Sales */}
+            <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-200">
+              <div className="flex items-center gap-1 mb-1">
+                <HomeIcon className="w-3.5 h-3.5 text-neutral-500" />
+                <span className="text-xs text-neutral-600 font-medium">Sales</span>
+              </div>
+              <p className="text-lg font-bold text-neutral-900">{agent.propertiesSold}</p>
+              <p className="text-xs text-neutral-500">last 12 months</p>
+            </div>
+
+            {/* Active Listings */}
+            <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-200">
+              <div className="flex items-center gap-1 mb-1">
+                <HomeIcon className="w-3.5 h-3.5 text-neutral-500" />
+                <span className="text-xs text-neutral-600 font-medium">Active</span>
+              </div>
+              <p className="text-lg font-bold text-neutral-900">{agent.activeListings || 0}</p>
+              <p className="text-xs text-neutral-500">listings</p>
+            </div>
           </div>
+
+          {/* Agency Sales Badge (if part of agency) */}
+          {isTeam && agent.city && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2.5 text-center">
+              <p className="text-sm text-yellow-900">
+                <span className="font-bold text-lg">{agent.propertiesSold * 3}</span>
+                <span className="text-xs font-medium ml-1">agency sales in {agent.city}</span>
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
-    </>
   );
 };
 
