@@ -10,10 +10,15 @@ This script generates mock property listings for testing purposes.
   - Various property types (house, apartment, villa)
   - Random prices (€30,000 - €500,000)
   - Multiple cities in Serbia (Belgrade, Novi Sad, Niš, etc.)
-  - Realistic coordinates with slight random offsets
+  - Realistic coordinates with slight random offsets for map display
   - Random features, materials, and amenities
-  - Sold properties with random soldAt dates within last 2 years
+  - Sold properties include soldAt timestamps within last 2 years
   - Various property attributes (beds, baths, sqft, etc.)
+
+**Map Display:**
+- ✓ Active properties (70%) will appear on the search/buyer map
+- ✓ Sold properties (30%) will appear on agency detail pages for sales statistics
+- ✓ All properties have valid lat/lng coordinates based on Serbian cities
 
 ## Prerequisites
 
