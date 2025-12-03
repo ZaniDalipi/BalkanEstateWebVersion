@@ -10,7 +10,8 @@ export const createAgentRequest = async (req: Request, res: Response): Promise<v
 
     // Validate required fields
     if (!email || !phone || !location || !propertyDescription) {
-      return res.status(400).json({ message: 'All fields are required' });
+       res.status(400).json({ message: 'All fields are required' });
+       return
     }
 
     // Create the request
@@ -106,7 +107,8 @@ export const getAgentRequests = async (req: Request, res: Response): Promise<voi
 
     const agent = await Agent.findOne({ agentId });
     if (!agent) {
-      return res.status(404).json({ message: 'Agent not found' });
+       res.status(404).json({ message: 'Agent not found' });
+        return;
     }
 
     const agentRequests = await AgentRequest.find({
@@ -128,7 +130,8 @@ export const updateAgentRequestStatus = async (req: Request, res: Response): Pro
     const { status } = req.body;
 
     if (!['pending', 'assigned', 'contacted', 'completed', 'cancelled'].includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
+       res.status(400).json({ message: 'Invalid status' });
+       return;
     }
 
     const agentRequest = await AgentRequest.findByIdAndUpdate(
@@ -138,7 +141,8 @@ export const updateAgentRequestStatus = async (req: Request, res: Response): Pro
     );
 
     if (!agentRequest) {
-      return res.status(404).json({ message: 'Request not found' });
+       res.status(404).json({ message: 'Request not found' });
+       return;
     }
 
     res.json({ agentRequest });
