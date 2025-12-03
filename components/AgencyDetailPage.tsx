@@ -621,7 +621,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 font-medium">Active Properties</p>
+                <p className="text-sm text-gray-500 font-medium">Total Listings</p>
                 <p className="text-3xl font-bold text-primary mt-1">{agencyProperties.length}</p>
               </div>
               <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
