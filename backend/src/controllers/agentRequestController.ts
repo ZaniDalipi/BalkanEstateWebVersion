@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import AgentRequest from '../models/AgentRequest';
 import Agent from '../models/Agent';
 
 // Create a new agent request
-export const createAgentRequest = async (req: Request, res: Response) => {
+export const createAgentRequest = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, phone, location, propertyDescription } = req.body;
 
@@ -41,7 +42,7 @@ export const createAgentRequest = async (req: Request, res: Response) => {
 
     // Assign nearby agents to the request
     if (nearbyAgents.length > 0) {
-      agentRequest.assignedAgents = nearbyAgents.map(agent => agent._id);
+      agentRequest.assignedAgents = nearbyAgents.map(agent => agent._id as mongoose.Types.ObjectId);
       agentRequest.status = 'assigned';
       await agentRequest.save();
     }
@@ -66,7 +67,7 @@ export const createAgentRequest = async (req: Request, res: Response) => {
 };
 
 // Get all agent requests (admin only - can be added later)
-export const getAllAgentRequests = async (req: Request, res: Response) => {
+export const getAllAgentRequests = async (req: Request, res: Response): Promise<void> => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
 
@@ -99,7 +100,7 @@ export const getAllAgentRequests = async (req: Request, res: Response) => {
 };
 
 // Get requests assigned to a specific agent
-export const getAgentRequests = async (req: Request, res: Response) => {
+export const getAgentRequests = async (req: Request, res: Response): Promise<void> => {
   try {
     const agentId = req.params.agentId;
 
@@ -121,7 +122,7 @@ export const getAgentRequests = async (req: Request, res: Response) => {
 };
 
 // Update request status
-export const updateAgentRequestStatus = async (req: Request, res: Response) => {
+export const updateAgentRequestStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { status } = req.body;
