@@ -6,6 +6,7 @@ import { EyeIcon, HeartIcon, InboxIcon, PencilIcon, SparklesIcon, CheckCircleIco
 import Modal from './Modal';
 import ListingCardSkeleton from './ListingCardSkeleton';
 import * as api from '../../services/apiService';
+import PromotionModal from '../promotions/PromotionModal';
 
 const StatusBadge: React.FC<{ status: PropertyStatus }> = ({ status }) => {
     const statusStyles: Record<PropertyStatus, { bg: string, text: string, icon?: React.ReactNode }> = {
@@ -28,7 +29,8 @@ const ListingCard: React.FC<{
     onRenew: (id: string) => void,
     onMarkAsSold: (id: string) => void,
     onDelete: (id: string) => void,
-}> = ({ property, onRenew, onMarkAsSold, onDelete }) => {
+    onPromote: (id: string) => void,
+}> = ({ property, onRenew, onMarkAsSold, onDelete, onPromote }) => {
     const { dispatch } = useAppContext();
     const [imageError, setImageError] = useState(false);
 
@@ -89,15 +91,23 @@ const ListingCard: React.FC<{
             </div>
             
              <div className="flex flex-col sm:flex-row items-center gap-2 mt-4">
-                <button 
-                    onClick={(e) => { e.stopPropagation(); onRenew(property.id); }} 
+                <button
+                    onClick={(e) => { e.stopPropagation(); onPromote(property.id); }}
+                    disabled={!isActionable}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-primary to-secondary rounded-lg hover:shadow-lg transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <SparklesIcon className="w-5 h-5" />
+                    Promote
+                </button>
+                <button
+                    onClick={(e) => { e.stopPropagation(); onRenew(property.id); }}
                     disabled={!isActionable}
                     className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-secondary rounded-lg hover:bg-opacity-90 transition-colors shadow-sm disabled:bg-opacity-50 disabled:cursor-not-allowed"
                 >
                     <ArrowPathIcon className="w-5 h-5" />
                     Renew
                 </button>
-                <button 
+                <button
                     onClick={(e) => { e.stopPropagation(); onMarkAsSold(property.id); }}
                     disabled={!isActionable}
                     className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-green-800 bg-green-100 rounded-lg hover:bg-green-200 transition-colors shadow-sm disabled:bg-neutral-200 disabled:text-neutral-500"
@@ -137,6 +147,8 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
     const [propertyToMarkSold, setPropertyToMarkSold] = useState<string | null>(null);
     const [propertyToDelete, setPropertyToDelete] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<PropertyStatus | 'all'>('all');
+    const [showPromotionModal, setShowPromotionModal] = useState(false);
+    const [propertyToPromote, setPropertyToPromote] = useState<Property | null>(null);
     
     const myProperties = useMemo(() => 
         state.properties.filter(p => p.sellerId === sellerId)
@@ -193,6 +205,21 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
         setPropertyToDelete(null);
     };
 
+    const handlePromote = (id: string) => {
+        const property = myProperties.find(p => p.id === id);
+        if (property) {
+            setPropertyToPromote(property);
+            setShowPromotionModal(true);
+        }
+    };
+
+    const handlePromotionSuccess = () => {
+        // Refresh properties to show updated promotion status
+        // The property will be updated by the API
+        setShowPromotionModal(false);
+        setPropertyToPromote(null);
+    };
+
     const filterOptions: { label: string, value: PropertyStatus | 'all' }[] = [
         { label: 'All', value: 'all' },
         { label: 'Active', value: 'active' },
@@ -226,6 +253,20 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
                     <button onClick={confirmDelete} className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700">Delete</button>
                 </div>
             </Modal>
+
+            {propertyToPromote && (
+                <PromotionModal
+                    isOpen={showPromotionModal}
+                    onClose={() => {
+                        setShowPromotionModal(false);
+                        setPropertyToPromote(null);
+                    }}
+                    propertyId={propertyToPromote.id}
+                    propertyTitle={`${propertyToPromote.address}, ${propertyToPromote.city}`}
+                    onSuccess={handlePromotionSuccess}
+                />
+            )}
+
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                 <h3 className="text-xl sm:text-2xl font-bold text-neutral-800">My Listings ({myProperties.length})</h3>
                 <button 
@@ -266,6 +307,7 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
                             onRenew={handleRenew}
                             onMarkAsSold={handleMarkAsSoldClick}
                             onDelete={handleDeleteClick}
+                            onPromote={handlePromote}
                         />
                     )}
                 </div>

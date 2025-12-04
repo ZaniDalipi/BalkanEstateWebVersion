@@ -299,6 +299,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const [aiPropertyType, setAiPropertyType] = useState<'house' | 'apartment' | 'villa' | 'other'>('house');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
+    const [wantToPromote, setWantToPromote] = useState(true); // Default to true to encourage promotions
 
     // Upload Progress State
     const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -916,9 +917,16 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                  if (currentUser.role === UserRole.BUYER) {
                     await updateUser({ role: UserRole.PRIVATE_SELLER });
                 }
-                // For new properties, store ID and show promotion step
-                setCreatedPropertyId(newProperty.id);
-                setStep('promotion');
+                // For new properties, check if user wants to promote
+                if (wantToPromote) {
+                    setCreatedPropertyId(newProperty.id);
+                    setStep('promotion');
+                } else {
+                    setStep('success');
+                    setTimeout(() => {
+                        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
+                    }, 3000);
+                }
             }
 
         } catch (err) {
@@ -1244,6 +1252,58 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                                     />
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {!propertyToEdit && (
+                        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 border-2 border-primary/20 rounded-xl p-6 mb-6">
+                            <div className="flex items-start gap-4">
+                                <input
+                                    type="checkbox"
+                                    id="wantToPromote"
+                                    checked={wantToPromote}
+                                    onChange={(e) => setWantToPromote(e.target.checked)}
+                                    className="mt-1 w-5 h-5 text-primary border-neutral-300 rounded focus:ring-primary"
+                                />
+                                <div className="flex-1">
+                                    <label htmlFor="wantToPromote" className="flex items-center gap-2 mb-2 cursor-pointer">
+                                        <SparklesIcon className="w-6 h-6 text-primary" />
+                                        <span className="text-lg font-bold text-neutral-800">
+                                            Promote this listing after publishing?
+                                        </span>
+                                        <span className="bg-gradient-to-r from-primary to-secondary text-white text-xs font-bold px-2 py-1 rounded">
+                                            RECOMMENDED
+                                        </span>
+                                    </label>
+                                    <p className="text-sm text-neutral-600 mb-3">
+                                        Get up to <strong>3x more visibility</strong> and <strong>5x more inquiries</strong> by promoting your listing.
+                                        Choose from Featured, Highlight, or Premium tiers starting at just €19.99.
+                                    </p>
+                                    <ul className="space-y-1 text-sm text-neutral-700">
+                                        <li className="flex items-center gap-2">
+                                            <span className="text-green-500">✓</span>
+                                            <span>Appear at the top of search results</span>
+                                        </li>
+                                        <li className="flex items-center gap-2">
+                                            <span className="text-green-500">✓</span>
+                                            <span>Featured badge and enhanced listing card</span>
+                                        </li>
+                                        <li className="flex items-center gap-2">
+                                            <span className="text-green-500">✓</span>
+                                            <span>Priority in email alerts to buyers</span>
+                                        </li>
+                                        <li className="flex items-center gap-2">
+                                            <span className="text-green-500">✓</span>
+                                            <span>Agency members get FREE promotions monthly!</span>
+                                        </li>
+                                    </ul>
+                                    {wantToPromote && (
+                                        <p className="text-sm text-primary font-semibold mt-3">
+                                            ✨ You'll be able to select your promotion tier and duration after publishing
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
 
