@@ -166,21 +166,124 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose, 
   );
 
   const renderSellerPlan = () => (
-    <div className="animate-fade-in text-center p-4 sm:p-8">
-        <BuildingOfficeIcon className="w-16 h-16 text-primary mx-auto mb-4" />
-        <h3 className="text-xl sm:text-2xl font-bold text-neutral-800">Seller & Agent Plans</h3>
-        <p className="text-neutral-600 mt-2 max-w-md mx-auto text-sm sm:text-base">Reach thousands of potential buyers with our powerful tools for sellers.</p>
-        <ul className="mt-6 text-left space-y-3 max-w-xs mx-auto text-neutral-700 text-sm sm:text-base">
-            <li className="flex items-center gap-3"><CheckCircleIcon className="w-6 h-6 text-green-500" /> Premium listing placement</li>
-            <li className="flex items-center gap-3"><CheckCircleIcon className="w-6 h-6 text-green-500" /> Advanced analytics</li>
-            <li className="flex items-center gap-3"><CheckCircleIcon className="w-6 h-6 text-green-500" /> List more properties</li>
-        </ul>
-        <button 
-            onClick={handleViewSellerPlans}
-            className="mt-8 px-8 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
-        >
-            View All Seller Plans
-        </button>
+    <div className="animate-fade-in p-4 sm:p-6">
+        <div className="text-center mb-6">
+            <BuildingOfficeIcon className="w-12 h-12 text-primary mx-auto mb-3" />
+            <h3 className="text-xl sm:text-2xl font-bold text-neutral-800">Listing Promotion Plans</h3>
+            <p className="text-neutral-600 mt-2 max-w-md mx-auto text-sm">
+                Boost your property listings to get more visibility and inquiries
+            </p>
+        </div>
+
+        {/* Promotion Tiers */}
+        <div className="grid sm:grid-cols-3 gap-4 mb-6">
+            {/* Featured */}
+            <div className="bg-white border border-gray-300 rounded-lg p-5 hover:border-gray-400 hover:shadow transition-all">
+                <div className="text-center mb-3">
+                    <span className="text-2xl mb-2 block">⭐</span>
+                    <h4 className="font-bold text-gray-900 text-lg mb-1">Featured</h4>
+                    <p className="text-sm text-gray-600 mb-2">Priority in search results</p>
+                    <div className="text-2xl font-bold text-gray-900">€1.99+</div>
+                    <div className="text-xs text-gray-500">7-90 days</div>
+                </div>
+                <ul className="space-y-1.5 text-left">
+                    <li className="text-xs text-gray-700 flex items-start gap-2">
+                        <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span>Top of search results</span>
+                    </li>
+                    <li className="text-xs text-gray-700 flex items-start gap-2">
+                        <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span>Featured badge</span>
+                    </li>
+                    <li className="text-xs text-gray-700 flex items-start gap-2">
+                        <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span>2x visibility boost</span>
+                    </li>
+                </ul>
+            </div>
+
+            {/* Highlight */}
+            <div className="bg-white border-2 border-primary rounded-lg p-5 hover:shadow-md transition-all relative">
+                <div className="absolute -top-2 right-3 bg-primary text-white text-xs font-medium px-2 py-0.5 rounded">
+                    Popular
+                </div>
+                <div className="text-center mb-3">
+                    <span className="text-2xl mb-2 block">💎</span>
+                    <h4 className="font-bold text-gray-900 text-lg mb-1">Highlight</h4>
+                    <p className="text-sm text-gray-600 mb-2">Stand out with color</p>
+                    <div className="text-2xl font-bold text-gray-900">€3.99+</div>
+                    <div className="text-xs text-gray-500">7-90 days</div>
+                </div>
+                <ul className="space-y-1.5 text-left">
+                    <li className="text-xs text-gray-700 flex items-start gap-2">
+                        <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span>All Featured benefits</span>
+                    </li>
+                    <li className="text-xs text-gray-700 flex items-start gap-2">
+                        <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span>Colored background</span>
+                    </li>
+                    <li className="text-xs text-gray-700 flex items-start gap-2">
+                        <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span>3x visibility boost</span>
+                    </li>
+                </ul>
+            </div>
+
+            {/* Premium */}
+            <div className="bg-white border border-gray-300 rounded-lg p-5 hover:border-gray-400 hover:shadow transition-all">
+                <div className="text-center mb-3">
+                    <span className="text-2xl mb-2 block">👑</span>
+                    <h4 className="font-bold text-gray-900 text-lg mb-1">Premium</h4>
+                    <p className="text-sm text-gray-600 mb-2">Homepage featuring</p>
+                    <div className="text-2xl font-bold text-gray-900">€7.99+</div>
+                    <div className="text-xs text-gray-500">7-90 days</div>
+                </div>
+                <ul className="space-y-1.5 text-left">
+                    <li className="text-xs text-gray-700 flex items-start gap-2">
+                        <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span>All Highlight benefits</span>
+                    </li>
+                    <li className="text-xs text-gray-700 flex items-start gap-2">
+                        <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span>Homepage carousel</span>
+                    </li>
+                    <li className="text-xs text-gray-700 flex items-start gap-2">
+                        <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span>5x visibility boost</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        {/* Info Box */}
+        <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+                <span className="text-xl">💡</span>
+                <div className="flex-1 text-sm text-gray-700">
+                    <p className="font-medium mb-1">How it works:</p>
+                    <p className="text-xs text-gray-600">
+                        When creating a listing, select your promotion tier and duration. Payment is processed before publishing. Discount coupons are supported!
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        {/* Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3">
+            <button
+                onClick={handleViewSellerPlans}
+                className="flex-1 px-6 py-3 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:border-gray-400 hover:shadow transition-all"
+            >
+                View Subscription Plans
+            </button>
+            <button
+                onClick={onClose}
+                className="flex-1 px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition-colors"
+            >
+                Start Creating Listing
+            </button>
+        </div>
     </div>
   );
 
