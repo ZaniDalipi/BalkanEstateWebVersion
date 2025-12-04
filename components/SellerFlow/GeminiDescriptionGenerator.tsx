@@ -11,8 +11,9 @@ import MapLocationPicker from './MapLocationPicker';
 import { BALKAN_LOCATIONS, CityData } from '../../utils/balkanLocations';
 import * as api from '../../services/apiService';
 import imageCompression from 'browser-image-compression';
+import PromotionSelector from '../promotions/PromotionSelector';
 
-type Step = 'init' | 'loading' | 'form' | 'floorplan' | 'success';
+type Step = 'init' | 'loading' | 'form' | 'floorplan' | 'promotion' | 'success';
 type Mode = 'ai' | 'manual';
 
 interface ListingData {
@@ -297,6 +298,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const [language, setLanguage] = useState('English');
     const [aiPropertyType, setAiPropertyType] = useState<'house' | 'apartment' | 'villa' | 'other'>('house');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
 
     // Upload Progress State
     const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -904,17 +906,20 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
 
             if (propertyToEdit) {
                 await updateListing(newProperty);
+                // For edits, go directly to success
+                setStep('success');
+                setTimeout(() => {
+                    dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
+                }, 3000);
             } else {
                 await createListing(newProperty);
                  if (currentUser.role === UserRole.BUYER) {
                     await updateUser({ role: UserRole.PRIVATE_SELLER });
                 }
+                // For new properties, store ID and show promotion step
+                setCreatedPropertyId(newProperty.id);
+                setStep('promotion');
             }
-
-            setStep('success');
-            setTimeout(() => {
-                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
-            }, 3000);
 
         } catch (err) {
             if (err instanceof Error) {
@@ -927,6 +932,26 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         }
     };
     
+    if (step === 'promotion' && createdPropertyId) {
+        return (
+            <PromotionSelector
+                propertyId={createdPropertyId}
+                onSuccess={() => {
+                    setStep('success');
+                    setTimeout(() => {
+                        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
+                    }, 3000);
+                }}
+                onSkip={() => {
+                    setStep('success');
+                    setTimeout(() => {
+                        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
+                    }, 3000);
+                }}
+            />
+        );
+    }
+
     if (step === 'success') {
         return (
             <div className="text-center py-12 flex flex-col items-center">

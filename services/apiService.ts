@@ -885,20 +885,129 @@ export const findAgencyByInvitationCode = async (code: string): Promise<{success
 
 // --- PROMOTION API ---
 
-export const promoteProperty = async (propertyId: string): Promise<any> => {
-  return await apiRequest('/promotions', {
-    method: 'POST',
-    body: { propertyId },
+export interface PromotionTier {
+  id: string;
+  name: string;
+  description: string;
+  features: string[];
+  icon: string;
+  color: string;
+  highlight?: boolean;
+}
+
+export interface PromotionPricing {
+  tierId: string;
+  duration: number;
+  price: number;
+}
+
+export interface UrgentModifier {
+  name: string;
+  description: string;
+  price: number;
+  features: string[];
+}
+
+export interface AgencyPlanAllocation {
+  planId: string;
+  planName: string;
+  monthlyFeaturedAds: number;
+  monthlyHighlightAds: number;
+  monthlyPremiumAds: number;
+  discountPercentage: number;
+}
+
+export interface PromotionTiersResponse {
+  tiers: Record<string, PromotionTier>;
+  pricing: PromotionPricing[];
+  urgentModifier: UrgentModifier;
+  agencyAllocations: AgencyPlanAllocation[];
+}
+
+export interface PurchasePromotionParams {
+  propertyId: string;
+  promotionTier: 'featured' | 'highlight' | 'premium';
+  duration: 7 | 15 | 30 | 60 | 90;
+  hasUrgentBadge?: boolean;
+  useAgencyAllocation?: boolean;
+  couponCode?: string;
+}
+
+export interface CouponValidationResult {
+  isValid: boolean;
+  discount: number;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  message?: string;
+}
+
+export interface AgencyAllocation {
+  plan: AgencyPlanAllocation;
+  usage: {
+    featured: number;
+    highlight: number;
+    premium: number;
+  };
+  remaining: {
+    featured: number;
+    highlight: number;
+    premium: number;
+  };
+}
+
+/**
+ * Get all available promotion tiers, pricing, and agency allocations
+ */
+export const getPromotionTiers = async (): Promise<PromotionTiersResponse> => {
+  return await apiRequest('/promotions/tiers');
+};
+
+/**
+ * Get agency's monthly promotion allocation and usage (requires agency owner)
+ */
+export const getAgencyAllocation = async (): Promise<{ allocation: AgencyAllocation; agency: any }> => {
+  return await apiRequest('/promotions/agency/allocation', {
     requiresAuth: true,
   });
 };
 
+/**
+ * Purchase a property promotion with advanced options
+ */
+export const purchasePromotion = async (params: PurchasePromotionParams): Promise<any> => {
+  return await apiRequest('/promotions', {
+    method: 'POST',
+    body: params,
+    requiresAuth: true,
+  });
+};
+
+/**
+ * Validate a coupon code and get discount information
+ */
+export const validateCoupon = async (
+  couponCode: string,
+  promotionTier: string,
+  price: number
+): Promise<CouponValidationResult> => {
+  return await apiRequest('/coupons/validate', {
+    method: 'POST',
+    body: { couponCode, promotionTier, price },
+  });
+};
+
+/**
+ * Get user's promotions
+ */
 export const getMyPromotions = async (): Promise<any> => {
   return await apiRequest('/promotions', {
     requiresAuth: true,
   });
 };
 
+/**
+ * Cancel/deactivate a promotion
+ */
 export const cancelPromotion = async (promotionId: string): Promise<any> => {
   return await apiRequest(`/promotions/${promotionId}`, {
     method: 'DELETE',
@@ -906,12 +1015,29 @@ export const cancelPromotion = async (promotionId: string): Promise<any> => {
   });
 };
 
-export const getFeaturedProperties = async (filters?: { city?: string; limit?: number }): Promise<any> => {
+/**
+ * Get featured/promoted properties (public)
+ */
+export const getFeaturedProperties = async (filters?: {
+  city?: string;
+  tier?: string;
+  limit?: number
+}): Promise<any> => {
   const params = new URLSearchParams();
   if (filters?.city) params.append('city', filters.city);
+  if (filters?.tier) params.append('tier', filters.tier);
   if (filters?.limit) params.append('limit', String(filters.limit));
 
   return await apiRequest(`/promotions/featured?${params.toString()}`);
+};
+
+/**
+ * Get promotion statistics
+ */
+export const getPromotionStats = async (promotionId: string): Promise<any> => {
+  return await apiRequest(`/promotions/${promotionId}/stats`, {
+    requiresAuth: true,
+  });
 };
 
 
