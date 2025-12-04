@@ -160,6 +160,114 @@ Agencies receive **monthly free promotion allocations** based on their subscript
 
 ---
 
+## Coupon System
+
+The promotion system includes a comprehensive coupon/discount code system for marketing campaigns, seasonal promotions, and special offers.
+
+### Coupon Features
+
+#### Discount Types
+1. **Percentage Discount** (e.g., 20% off)
+   - Value: 1-100%
+   - Applied to final price after agency discounts
+
+2. **Fixed Amount Discount** (e.g., €25 off)
+   - Value: Any amount in EUR
+   - Cannot exceed the promotion price
+
+#### Coupon Restrictions
+
+**Tier Restrictions**
+- Limit coupon to specific promotion tiers
+- Example: "HIGHLIGHT50" only for Highlight and Premium tiers
+
+**Minimum Purchase**
+- Set minimum promotion amount required
+- Example: "Must spend at least €50"
+
+**Usage Limits**
+- **Total Uses**: Limit total redemptions (e.g., first 100 users)
+- **Per User**: Limit uses per user (default: 1 per user)
+
+**Validity Period**
+- Set start and end dates
+- Auto-expire when end date passes
+
+**Visibility**
+- **Public**: Shown in coupon list, discoverable by users
+- **Private**: Only works when user enters code directly
+
+#### Coupon States
+
+1. **Active**: Currently valid and can be used
+2. **Expired**: Past validity period, automatically set
+3. **Disabled**: Manually disabled by admin
+
+### Example Coupons
+
+```javascript
+// Welcome offer - 30% off first promotion
+{
+  code: "WELCOME30",
+  discountType: "percentage",
+  discountValue: 30,
+  maxUsesPerUser: 1,
+  applicableTiers: ["featured", "highlight", "premium"],
+  isPublic: true
+}
+
+// Flash sale - €50 off Premium tier only
+{
+  code: "FLASH50",
+  discountType: "fixed",
+  discountValue: 50,
+  maxTotalUses: 50, // First 50 users only
+  applicableTiers: ["premium"],
+  minimumPurchaseAmount: 100,
+  validUntil: "2025-12-31",
+  isPublic: true
+}
+
+// VIP client code - 25% off, unlimited uses
+{
+  code: "VIP25",
+  discountType: "percentage",
+  discountValue: 25,
+  maxUsesPerUser: null, // Unlimited per user
+  maxTotalUses: null, // Unlimited total
+  isPublic: false
+}
+```
+
+### Usage Tracking
+
+Every coupon use is tracked with:
+- User ID
+- Promotion ID
+- Timestamp
+- Discount amount applied
+
+This allows admins to:
+- View total redemptions
+- See which users used the coupon
+- Analyze coupon performance
+- Prevent abuse
+
+### Coupon Stacking
+
+**Current behavior**: Coupons are applied AFTER agency discounts
+
+**Example**:
+```
+Original Price: €100
+Agency Discount (15%): -€15
+Price after Agency: €85
+Coupon (20% off): -€17
+Final Price: €68
+```
+
+---
+
 ## Technical Implementation
 
 ### Database Models
@@ -207,9 +315,50 @@ Added fields:
 }
 ```
 
+### Coupon Model
+
+Located: `backend/src/models/PromotionCoupon.ts`
+
+```typescript
+{
+  code: string, // Unique, uppercase
+  description?: string,
+  discountType: 'percentage' | 'fixed',
+  discountValue: number,
+
+  // Validity
+  validFrom: Date,
+  validUntil: Date,
+  status: 'active' | 'expired' | 'disabled',
+
+  // Limits
+  maxTotalUses?: number,
+  maxUsesPerUser?: number,
+  currentTotalUses: number,
+
+  // Restrictions
+  applicableTiers?: ('featured' | 'highlight' | 'premium')[],
+  minimumPurchaseAmount?: number,
+
+  // Usage tracking
+  usageHistory: [{
+    userId: ObjectId,
+    promotionId: ObjectId,
+    usedAt: Date,
+    discountApplied: number
+  }],
+
+  // Metadata
+  createdBy?: ObjectId,
+  notes?: string,
+  isPublic: boolean
+}
+```
+
 ### API Endpoints
 
-All endpoints are prefixed with `/api/promotions`
+All promotion endpoints are prefixed with `/api/promotions`
+All coupon endpoints are prefixed with `/api/coupons`
 
 #### Public Endpoints
 
@@ -218,6 +367,9 @@ Get all available promotion tiers and pricing
 
 **GET /api/promotions/featured**
 Get all promoted properties (filtered by city, tier, limit)
+
+**GET /api/coupons/public**
+Get all public, active coupons
 
 #### Protected Endpoints (Require Authentication)
 
@@ -231,7 +383,20 @@ Request body:
   "promotionTier": "featured" | "highlight" | "premium",
   "duration": 7 | 15 | 30 | 60 | 90,
   "hasUrgentBadge": boolean,
-  "useAgencyAllocation": boolean
+  "useAgencyAllocation": boolean,
+  "couponCode": "string" // Optional
+}
+```
+
+**POST /api/coupons/validate**
+Validate a coupon code and calculate discount
+
+Request body:
+```json
+{
+  "code": "string",
+  "promotionTier": "featured" | "highlight" | "premium",
+  "amount": number
 }
 ```
 
@@ -246,6 +411,23 @@ Get detailed promotion statistics
 
 **GET /api/promotions/agency/allocation**
 Get agency's monthly allocation and usage (agency owners only)
+
+#### Admin Endpoints (Require Admin Role)
+
+**POST /api/coupons**
+Create a new coupon
+
+**GET /api/coupons**
+Get all coupons (with filters)
+
+**GET /api/coupons/:id**
+Get coupon details and usage history
+
+**PUT /api/coupons/:id**
+Update coupon details
+
+**DELETE /api/coupons/:id**
+Disable a coupon
 
 ### Property Sorting Algorithm
 
@@ -386,6 +568,84 @@ POST /api/promotions
 // Final price: €59.49
 ```
 
+### Example 4: Apply Coupon Code
+
+```typescript
+// 1. First, validate the coupon
+POST /api/coupons/validate
+Authorization: Bearer <token>
+
+{
+  "code": "WELCOME30",
+  "promotionTier": "featured",
+  "amount": 34.99
+}
+
+// Response:
+{
+  "valid": true,
+  "coupon": {
+    "code": "WELCOME30",
+    "discountType": "percentage",
+    "discountValue": 30
+  },
+  "discount": {
+    "amount": 10.50,
+    "originalPrice": 34.99,
+    "finalPrice": 24.49,
+    "savings": 10.50,
+    "savingsPercentage": 30
+  }
+}
+
+// 2. Then, purchase with coupon
+POST /api/promotions
+{
+  "propertyId": "507f1f77bcf86cd799439011",
+  "promotionTier": "featured",
+  "duration": 15,
+  "hasUrgentBadge": false,
+  "couponCode": "WELCOME30"
+}
+
+// Response includes pricing breakdown:
+{
+  "pricing": {
+    "originalAmount": 34.99,
+    "couponDiscount": 10.50,
+    "finalAmount": 24.49,
+    "currency": "EUR",
+    "couponApplied": {
+      "code": "WELCOME30",
+      "discountType": "percentage",
+      "discountValue": 30
+    }
+  }
+}
+```
+
+### Example 5: Create Admin Coupon
+
+```typescript
+POST /api/coupons
+Authorization: Bearer <admin-token>
+
+{
+  "code": "SUMMER2025",
+  "description": "Summer promotion - 25% off all promotions",
+  "discountType": "percentage",
+  "discountValue": 25,
+  "validFrom": "2025-06-01T00:00:00Z",
+  "validUntil": "2025-08-31T23:59:59Z",
+  "maxTotalUses": 500,
+  "maxUsesPerUser": 2,
+  "applicableTiers": ["featured", "highlight", "premium"],
+  "minimumPurchaseAmount": 30,
+  "isPublic": true,
+  "notes": "Summer marketing campaign 2025"
+}
+```
+
 ---
 
 ## Frontend Implementation TODO
@@ -489,7 +749,20 @@ curl http://localhost:5001/api/promotions/tiers
 # 2. Get featured properties
 curl http://localhost:5001/api/promotions/featured?city=Pristina&limit=10
 
-# 3. Purchase promotion (requires auth)
+# 3. Get public coupons
+curl http://localhost:5001/api/coupons/public
+
+# 4. Validate coupon
+curl -X POST http://localhost:5001/api/coupons/validate \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "WELCOME30",
+    "promotionTier": "featured",
+    "amount": 34.99
+  }'
+
+# 5. Purchase promotion with coupon
 curl -X POST http://localhost:5001/api/promotions \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
@@ -497,16 +770,34 @@ curl -X POST http://localhost:5001/api/promotions \
     "propertyId": "507f1f77bcf86cd799439011",
     "promotionTier": "featured",
     "duration": 15,
-    "hasUrgentBadge": false
+    "hasUrgentBadge": false,
+    "couponCode": "WELCOME30"
   }'
 
-# 4. Get my promotions
+# 6. Get my promotions
 curl http://localhost:5001/api/promotions \
   -H "Authorization: Bearer <token>"
 
-# 5. Get agency allocation
+# 7. Get agency allocation
 curl http://localhost:5001/api/promotions/agency/allocation \
   -H "Authorization: Bearer <token>"
+
+# 8. Create coupon (admin only)
+curl -X POST http://localhost:5001/api/coupons \
+  -H "Authorization: Bearer <admin-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "LAUNCH50",
+    "discountType": "percentage",
+    "discountValue": 50,
+    "validUntil": "2025-12-31T23:59:59Z",
+    "maxTotalUses": 100,
+    "isPublic": true
+  }'
+
+# 9. Get all coupons (admin only)
+curl http://localhost:5001/api/coupons \
+  -H "Authorization: Bearer <admin-token>"
 ```
 
 ---
@@ -542,8 +833,9 @@ curl http://localhost:5001/api/promotions/agency/allocation \
 ## Summary
 
 ✅ **Backend**: Fully implemented and production-ready
-✅ **Models**: Promotion and Property models updated
-✅ **API Endpoints**: All CRUD operations implemented
+✅ **Models**: Promotion, Property, and Coupon models complete
+✅ **API Endpoints**: All CRUD operations for promotions and coupons
+✅ **Coupon System**: Discount codes with validation and tracking
 ✅ **Auto-refresh Worker**: Highlight tier auto-refresh every 3 days
 ✅ **Priority Sorting**: Properties sorted by promotion tier
 ✅ **Agency Integration**: Monthly allocations and discounts
@@ -552,10 +844,13 @@ curl http://localhost:5001/api/promotions/agency/allocation \
 🚧 **Frontend UI**: Needs implementation (detailed specs provided above)
 
 The system is designed to be **better than the competition** with:
-- More granular tier options
+- More granular tier options (4 tiers + urgent modifier)
+- **Comprehensive coupon system** for marketing campaigns
 - Intelligent image selection (prioritizes tagged images)
-- Auto-refresh for sustained visibility
-- Agency integration for B2B value
+- Auto-refresh for sustained visibility (Highlight tier)
+- Agency integration for B2B value (allocations + discounts)
+- Coupon stacking with agency discounts
+- Usage tracking and analytics
 - Comprehensive performance tracking
 - Professional, data-driven approach
 
@@ -572,5 +867,5 @@ Research based on:
 ---
 
 **Created**: December 2025
-**Version**: 1.0.0
-**Status**: Backend Complete, Frontend Pending
+**Version**: 1.1.0
+**Status**: Backend Complete (including Coupon System), Frontend Pending

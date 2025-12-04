@@ -3,6 +3,7 @@ import Promotion from '../models/Promotion';
 import Property from '../models/Property';
 import User, { IUser } from '../models/User';
 import Agency from '../models/Agency';
+import PromotionCoupon from '../models/PromotionCoupon';
 import {
   PROMOTION_TIERS,
   PROMOTION_PRICING,
@@ -120,6 +121,7 @@ export const purchasePromotion = async (
       duration,
       hasUrgentBadge = false,
       useAgencyAllocation = false,
+      couponCode,
     } = req.body;
 
     // Validation
@@ -191,6 +193,9 @@ export const purchasePromotion = async (
     let isFromAgencyAllocation = false;
     let agencyId = null;
     let finalPrice = 0;
+    let appliedCoupon = null;
+    let couponDiscount = 0;
+    let originalPrice = 0;
 
     // Check agency allocation if requested
     if (useAgencyAllocation) {
@@ -241,11 +246,13 @@ export const purchasePromotion = async (
 
       isFromAgencyAllocation = true;
       agencyId = agency._id;
-      finalPrice = hasUrgentBadge ? URGENT_MODIFIER.price : 0; // Urgent badge still costs if agency allocation is used
+      originalPrice = hasUrgentBadge ? URGENT_MODIFIER.price : 0;
+      finalPrice = originalPrice; // Urgent badge still costs if agency allocation is used
 
     } else {
       // Calculate price for paid promotion
       const basePrice = getPromotionPrice(promotionTier, duration, hasUrgentBadge);
+      originalPrice = basePrice;
 
       // Apply agency discount if user is part of an agency
       const agency = await Agency.findOne({ agents: user._id });
@@ -259,6 +266,59 @@ export const purchasePromotion = async (
       } else {
         finalPrice = basePrice;
       }
+    }
+
+    // Apply coupon code if provided
+    if (couponCode && finalPrice > 0) {
+      const coupon = await (PromotionCoupon as any).findValidCoupon(couponCode);
+
+      if (!coupon) {
+        res.status(400).json({
+          message: 'Invalid or expired coupon code',
+          code: 'INVALID_COUPON',
+        });
+        return;
+      }
+
+      // Check if user can use this coupon
+      const canUse = await coupon.canBeUsedBy(user._id);
+      if (!canUse) {
+        res.status(403).json({
+          message: 'You have reached the usage limit for this coupon',
+          code: 'COUPON_LIMIT_REACHED',
+        });
+        return;
+      }
+
+      // Check if applicable to tier
+      if (coupon.applicableTiers && coupon.applicableTiers.length > 0) {
+        if (!coupon.applicableTiers.includes(promotionTier)) {
+          res.status(403).json({
+            message: `This coupon is only valid for: ${coupon.applicableTiers.join(', ')}`,
+            code: 'INVALID_TIER_FOR_COUPON',
+            applicableTiers: coupon.applicableTiers,
+          });
+          return;
+        }
+      }
+
+      // Check minimum purchase amount
+      if (coupon.minimumPurchaseAmount && finalPrice < coupon.minimumPurchaseAmount) {
+        res.status(403).json({
+          message: `Minimum purchase amount of €${coupon.minimumPurchaseAmount} required for this coupon`,
+          code: 'MINIMUM_NOT_MET',
+          minimumRequired: coupon.minimumPurchaseAmount,
+          currentAmount: finalPrice,
+        });
+        return;
+      }
+
+      // Calculate discount
+      couponDiscount = coupon.calculateDiscount(finalPrice);
+      const priceAfterCoupon = Math.max(0, finalPrice - couponDiscount);
+
+      appliedCoupon = coupon;
+      finalPrice = priceAfterCoupon;
     }
 
     // Create promotion
@@ -295,7 +355,13 @@ export const purchasePromotion = async (
       nextRefreshAt,
       refreshCount: 0,
       purchasedVia: 'web',
+      notes: appliedCoupon ? `Coupon applied: ${appliedCoupon.code} (€${couponDiscount.toFixed(2)} discount)` : undefined,
     });
+
+    // Record coupon usage if applied
+    if (appliedCoupon && couponDiscount > 0) {
+      await appliedCoupon.recordUsage(user._id, promotion._id, couponDiscount);
+    }
 
     // Update property
     property.isPromoted = true;
@@ -319,9 +385,16 @@ export const purchasePromotion = async (
         city: property.city,
       },
       pricing: {
-        amount: finalPrice,
+        originalAmount: originalPrice,
+        couponDiscount: couponDiscount,
+        finalAmount: finalPrice,
         currency: 'EUR',
         isFromAgencyAllocation,
+        couponApplied: appliedCoupon ? {
+          code: appliedCoupon.code,
+          discountType: appliedCoupon.discountType,
+          discountValue: appliedCoupon.discountValue,
+        } : null,
       },
     });
   } catch (error: any) {
