@@ -10,7 +10,7 @@ import {
   URGENT_MODIFIER,
   AGENCY_PLAN_ALLOCATIONS,
   getPromotionPrice,
-  getAgencyAllocation,
+  getAgencyAllocation as getAgencyAllocationConfig, // Renamed import
   calculateDiscountedPrice,
   PromotionTierType,
   PromotionDuration,
@@ -43,7 +43,7 @@ export const getPromotionTiers = async (
  * @route   GET /api/promotions/agency/allocation
  * @access  Private (Agency owners only)
  */
-export const getAgencyAllocation = async (
+export const getAgencyPromotionAllocation = async ( // Renamed function
   req: Request,
   res: Response
 ): Promise<void> => {
@@ -73,7 +73,7 @@ export const getAgencyAllocation = async (
     }
 
     // Get plan allocation
-    const planAllocation = getAgencyAllocation(agency.subscriptionPlan || 'free');
+    const planAllocation = getAgencyAllocationConfig(agency.subscriptionPlan || 'free');
 
     if (!planAllocation) {
       res.status(404).json({ message: 'Invalid subscription plan' });
@@ -209,7 +209,7 @@ export const purchasePromotion = async (
         return;
       }
 
-      const planAllocation = getAgencyAllocation(agency.subscriptionPlan || 'free');
+      const planAllocation = getAgencyAllocationConfig(agency.subscriptionPlan || 'free');
 
       if (!planAllocation) {
         res.status(403).json({
@@ -257,7 +257,7 @@ export const purchasePromotion = async (
       // Apply agency discount if user is part of an agency
       const agency = await Agency.findOne({ agents: user._id });
       if (agency) {
-        const planAllocation = getAgencyAllocation(agency.subscriptionPlan || 'free');
+        const planAllocation = getAgencyAllocationConfig(agency.subscriptionPlan || 'free');
         if (planAllocation && planAllocation.discountPercentage > 0) {
           finalPrice = calculateDiscountedPrice(basePrice, planAllocation.discountPercentage);
         } else {

@@ -10,7 +10,6 @@
  * every 3 days, giving them continued visibility throughout their duration.
  */
 
-import mongoose from 'mongoose';
 import Promotion from '../models/Promotion';
 import Property from '../models/Property';
 

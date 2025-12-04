@@ -156,7 +156,8 @@ PromotionCouponSchema.index({ status: 1, validUntil: 1 });
 
 // Validation: Percentage discount must be between 1-100
 PromotionCouponSchema.pre('save', function(next) {
-  if (this.discountType === 'percentage' && (this.discountValue < 1 || this.discountValue > 100)) {
+  const doc = this as unknown as IPromotionCoupon;
+  if (doc.discountType === 'percentage' && (doc.discountValue < 1 || doc.discountValue > 100)) {
     next(new Error('Percentage discount must be between 1 and 100'));
   } else {
     next();

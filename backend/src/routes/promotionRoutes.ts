@@ -1,7 +1,7 @@
 import express from 'express';
 import {
   getPromotionTiers,
-  getAgencyAllocation,
+  getAgencyPromotionAllocation,
   purchasePromotion,
   getMyPromotions,
   cancelPromotion,
@@ -21,6 +21,6 @@ router.post('/', protect, purchasePromotion); // Purchase a promotion
 router.get('/', protect, getMyPromotions); // Get user's promotions
 router.delete('/:id', protect, cancelPromotion); // Cancel a promotion
 router.get('/:id/stats', protect, getPromotionStats); // Get promotion statistics
-router.get('/agency/allocation', protect, getAgencyAllocation); // Get agency allocation
+router.get('/agency/allocation', protect, getAgencyPromotionAllocation); // Get agency allocation
 
 export default router;
