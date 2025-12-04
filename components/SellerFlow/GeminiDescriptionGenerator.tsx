@@ -303,6 +303,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
     const [wantToPromote, setWantToPromote] = useState(false);
     const [selectedPromotionTier, setSelectedPromotionTier] = useState<'featured' | 'highlight' | 'premium' | null>(null);
+    const [selectedDuration, setSelectedDuration] = useState<7 | 15 | 30 | 60 | 90>(7);
+    const [couponCode, setCouponCode] = useState('');
 
     // Upload Progress State
     const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -1413,6 +1415,81 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                                         <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-3 mt-2">
                                             Please select a promotion tier to continue
                                         </p>
+                                    )}
+
+                                    {selectedPromotionTier && (
+                                        <div className="mt-4 space-y-4">
+                                            {/* Duration Selection */}
+                                            <div className="border border-gray-300 rounded-lg p-4">
+                                                <h4 className="text-sm font-semibold text-gray-900 mb-3">⏱️ Select Duration</h4>
+                                                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                                                    {([7, 15, 30, 60, 90] as const).map((duration) => {
+                                                        const isSelected = selectedDuration === duration;
+                                                        // Calculate price for this tier and duration
+                                                        const prices = {
+                                                            featured: { 7: 1.99, 15: 3.49, 30: 5.99, 60: 9.99, 90: 13.99 },
+                                                            highlight: { 7: 3.99, 15: 6.99, 30: 11.99, 60: 19.99, 90: 27.99 },
+                                                            premium: { 7: 7.99, 15: 13.99, 30: 23.99, 60: 39.99, 90: 55.99 }
+                                                        };
+                                                        const price = prices[selectedPromotionTier][duration];
+
+                                                        return (
+                                                            <button
+                                                                key={duration}
+                                                                type="button"
+                                                                onClick={() => setSelectedDuration(duration)}
+                                                                className={`p-2 rounded border-2 transition-all text-xs ${
+                                                                    isSelected
+                                                                        ? 'border-primary bg-primary/5 text-gray-900'
+                                                                        : 'border-gray-300 bg-white hover:border-gray-400 text-gray-700'
+                                                                }`}
+                                                            >
+                                                                <div className="font-semibold">{duration} days</div>
+                                                                <div className="text-xs mt-1">€{price}</div>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* Coupon Code */}
+                                            <div className="border border-gray-300 rounded-lg p-4">
+                                                <h4 className="text-sm font-semibold text-gray-900 mb-3">🎟️ Discount Coupon (Optional)</h4>
+                                                <input
+                                                    type="text"
+                                                    value={couponCode}
+                                                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                                    placeholder="Enter coupon code"
+                                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                                />
+                                                <p className="text-xs text-gray-500 mt-2">
+                                                    Have a discount code? Enter it here to save on your promotion.
+                                                </p>
+                                            </div>
+
+                                            {/* Price Summary */}
+                                            <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
+                                                <h4 className="text-sm font-semibold text-gray-900 mb-2">Summary</h4>
+                                                <div className="flex justify-between text-sm mb-1">
+                                                    <span className="text-gray-600">{selectedPromotionTier.charAt(0).toUpperCase() + selectedPromotionTier.slice(1)} - {selectedDuration} days:</span>
+                                                    <span className="font-semibold text-gray-900">
+                                                        €{(() => {
+                                                            const prices = {
+                                                                featured: { 7: 1.99, 15: 3.49, 30: 5.99, 60: 9.99, 90: 13.99 },
+                                                                highlight: { 7: 3.99, 15: 6.99, 30: 11.99, 60: 19.99, 90: 27.99 },
+                                                                premium: { 7: 7.99, 15: 13.99, 30: 23.99, 60: 39.99, 90: 55.99 }
+                                                            };
+                                                            return prices[selectedPromotionTier][selectedDuration];
+                                                        })()}
+                                                    </span>
+                                                </div>
+                                                {couponCode && (
+                                                    <div className="text-xs text-gray-600 mt-1">
+                                                        Coupon "{couponCode}" will be validated at checkout
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             )}
