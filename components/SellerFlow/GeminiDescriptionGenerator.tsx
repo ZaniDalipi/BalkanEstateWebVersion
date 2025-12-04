@@ -1289,20 +1289,20 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                                         </span>
                                     </div>
                                     <p className="text-sm text-neutral-700 mb-3">
-                                        After publishing, you'll choose from 3 promotion tiers (Featured, Highlight, or Premium) starting at just €19.99 for 7 days. Includes coupon support and agency discounts.
+                                        After publishing, you'll choose from 3 promotion tiers (Featured, Highlight, or Premium) starting at just €4.99 for 7 days. Includes coupon support and agency discounts.
                                     </p>
                                     <div className="grid grid-cols-3 gap-2 text-xs">
                                         <div className="bg-white p-2 rounded border border-neutral-200">
                                             <div className="font-semibold text-neutral-800">Featured</div>
-                                            <div className="text-neutral-600">From €19.99</div>
+                                            <div className="text-neutral-600">From €4.99</div>
                                         </div>
                                         <div className="bg-white p-2 rounded border-2 border-neutral-800">
                                             <div className="font-semibold text-neutral-800">Highlight</div>
-                                            <div className="text-neutral-600">From €39.99</div>
+                                            <div className="text-neutral-600">From €9.99</div>
                                         </div>
                                         <div className="bg-white p-2 rounded border border-neutral-200">
                                             <div className="font-semibold text-neutral-800">Premium</div>
-                                            <div className="text-neutral-600">From €79.99</div>
+                                            <div className="text-neutral-600">From €19.99</div>
                                         </div>
                                     </div>
                                     {wantToPromote && (

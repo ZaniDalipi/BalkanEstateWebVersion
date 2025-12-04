@@ -251,25 +251,25 @@ export const PROMOTION_PRICING: PromotionPricing[] = [
   { tierId: 'standard', duration: 90, price: 0, currency: 'EUR' },
 
   // Featured
-  { tierId: 'featured', duration: 7, price: 19.99, currency: 'EUR' },
-  { tierId: 'featured', duration: 15, price: 34.99, currency: 'EUR', discount: 12, popular: true },
-  { tierId: 'featured', duration: 30, price: 59.99, currency: 'EUR', discount: 25 },
-  { tierId: 'featured', duration: 60, price: 99.99, currency: 'EUR', discount: 38 },
-  { tierId: 'featured', duration: 90, price: 129.99, currency: 'EUR', discount: 45 },
+  { tierId: 'featured', duration: 7, price: 4.99, currency: 'EUR' },
+  { tierId: 'featured', duration: 15, price: 8.99, currency: 'EUR', discount: 10, popular: true },
+  { tierId: 'featured', duration: 30, price: 14.99, currency: 'EUR', discount: 25 },
+  { tierId: 'featured', duration: 60, price: 24.99, currency: 'EUR', discount: 38 },
+  { tierId: 'featured', duration: 90, price: 34.99, currency: 'EUR', discount: 45 },
 
   // Highlight
-  { tierId: 'highlight', duration: 7, price: 39.99, currency: 'EUR' },
-  { tierId: 'highlight', duration: 15, price: 69.99, currency: 'EUR', discount: 12, popular: true },
-  { tierId: 'highlight', duration: 30, price: 119.99, currency: 'EUR', discount: 25 },
-  { tierId: 'highlight', duration: 60, price: 199.99, currency: 'EUR', discount: 38 },
-  { tierId: 'highlight', duration: 90, price: 259.99, currency: 'EUR', discount: 45 },
+  { tierId: 'highlight', duration: 7, price: 9.99, currency: 'EUR' },
+  { tierId: 'highlight', duration: 15, price: 17.99, currency: 'EUR', discount: 10, popular: true },
+  { tierId: 'highlight', duration: 30, price: 29.99, currency: 'EUR', discount: 25 },
+  { tierId: 'highlight', duration: 60, price: 49.99, currency: 'EUR', discount: 38 },
+  { tierId: 'highlight', duration: 90, price: 69.99, currency: 'EUR', discount: 45 },
 
   // Premium
-  { tierId: 'premium', duration: 7, price: 79.99, currency: 'EUR' },
-  { tierId: 'premium', duration: 15, price: 139.99, currency: 'EUR', discount: 12, popular: true },
-  { tierId: 'premium', duration: 30, price: 249.99, currency: 'EUR', discount: 25 },
-  { tierId: 'premium', duration: 60, price: 419.99, currency: 'EUR', discount: 38 },
-  { tierId: 'premium', duration: 90, price: 549.99, currency: 'EUR', discount: 45 },
+  { tierId: 'premium', duration: 7, price: 19.99, currency: 'EUR' },
+  { tierId: 'premium', duration: 15, price: 34.99, currency: 'EUR', discount: 12, popular: true },
+  { tierId: 'premium', duration: 30, price: 59.99, currency: 'EUR', discount: 25 },
+  { tierId: 'premium', duration: 60, price: 99.99, currency: 'EUR', discount: 38 },
+  { tierId: 'premium', duration: 90, price: 139.99, currency: 'EUR', discount: 45 },
 ];
 
 /**
@@ -279,7 +279,7 @@ export const URGENT_MODIFIER: UrgentModifier = {
   id: 'urgent',
   name: 'Urgent',
   description: 'Add a prominent "URGENT" badge to signal time sensitivity and attract motivated buyers',
-  price: 14.99,
+  price: 2.99,
   badgeColor: '#EF4444',
   canCombineWith: ['standard', 'featured', 'highlight', 'premium'],
 };

@@ -318,7 +318,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
           <div className="border border-neutral-200 rounded-lg p-4 hover:border-neutral-400 transition-all">
             <div className="flex items-center justify-between mb-2">
               <h5 className="font-semibold text-neutral-800">Featured</h5>
-              <span className="text-xs bg-neutral-100 text-neutral-700 px-2 py-1 rounded">From €19.99</span>
+              <span className="text-xs bg-neutral-100 text-neutral-700 px-2 py-1 rounded">From €4.99</span>
             </div>
             <p className="text-xs text-neutral-600 mb-3">Stand out in search results with priority placement</p>
             <ul className="space-y-1">
@@ -344,7 +344,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
             </div>
             <div className="flex items-center justify-between mb-2">
               <h5 className="font-semibold text-neutral-800">Highlight</h5>
-              <span className="text-xs bg-neutral-100 text-neutral-700 px-2 py-1 rounded">From €39.99</span>
+              <span className="text-xs bg-neutral-100 text-neutral-700 px-2 py-1 rounded">From €9.99</span>
             </div>
             <p className="text-xs text-neutral-600 mb-3">Maximum visibility with auto-refresh every 3 days</p>
             <ul className="space-y-1">
@@ -367,7 +367,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
           <div className="border border-neutral-200 rounded-lg p-4 hover:border-neutral-400 transition-all">
             <div className="flex items-center justify-between mb-2">
               <h5 className="font-semibold text-neutral-800">Premium</h5>
-              <span className="text-xs bg-neutral-100 text-neutral-700 px-2 py-1 rounded">From €79.99</span>
+              <span className="text-xs bg-neutral-100 text-neutral-700 px-2 py-1 rounded">From €19.99</span>
             </div>
             <p className="text-xs text-neutral-600 mb-3">Ultimate exposure with homepage featuring</p>
             <ul className="space-y-1">
