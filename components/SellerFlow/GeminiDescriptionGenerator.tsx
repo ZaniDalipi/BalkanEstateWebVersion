@@ -17,6 +17,7 @@ type Step = 'init' | 'loading' | 'form' | 'floorplan' | 'promotion' | 'success';
 type Mode = 'ai' | 'manual';
 
 interface ListingData {
+    title: string;
     streetAddress: string;
     price: number;
     bedrooms: number;
@@ -52,6 +53,7 @@ interface ImageData {
 }
 
 const initialListingData: ListingData = {
+    title: '',
     streetAddress: '',
     price: 0,
     bedrooms: 0,
@@ -299,7 +301,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const [aiPropertyType, setAiPropertyType] = useState<'house' | 'apartment' | 'villa' | 'other'>('house');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
-    const [wantToPromote, setWantToPromote] = useState(true); // Default to true to encourage promotions
+    const [wantToPromote, setWantToPromote] = useState(false);
+    const [selectedPromotionTier, setSelectedPromotionTier] = useState<'featured' | 'highlight' | 'premium' | null>(null);
 
     // Upload Progress State
     const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -736,6 +739,13 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             return;
         }
 
+        // Validate promotion selection
+        if (!propertyToEdit && wantToPromote && !selectedPromotionTier) {
+            setError("Please select a promotion tier or uncheck the promotion option.");
+            setIsSubmitting(false);
+            return;
+        }
+
         try {
             // Step 1: Upload images to Cloudinary before creating the property
             let imageUrls: PropertyImage[] = [];
@@ -1103,6 +1113,14 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                             </div>
                         )}
 
+                        <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('title')?.focus()}>
+                            <input type="text" id="title" name="title" value={listingData.title} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " required />
+                            <label htmlFor="title" className={floatingLabelClasses}>Listing Title</label>
+                            <p className="mt-1 text-xs text-neutral-500">
+                                Create an attractive title for your property (e.g., "Modern 3BR Apartment in City Center")
+                            </p>
+                        </div>
+
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('streetAddress')?.focus()}>
                             <input type="text" id="streetAddress" name="streetAddress" value={listingData.streetAddress} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " />
                             <label htmlFor="streetAddress" className={floatingLabelClasses}>Address</label>
@@ -1256,68 +1274,148 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                     )}
 
                     {!propertyToEdit && (
-                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-500 rounded-xl p-6 mb-6 shadow-lg">
-                            <div className="flex items-start gap-4 mb-4">
-                                <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md">
+                        <div className="bg-white border border-gray-300 rounded-lg p-6 mb-6">
+                            <div className="flex items-start gap-3 mb-4">
+                                <div className="flex-shrink-0">
                                     <span className="text-2xl">🚀</span>
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="text-lg font-bold text-green-900 mb-1">
-                                        Boost Your Listing's Visibility
+                                    <h3 className="text-base font-bold text-gray-900 mb-1">
+                                        Promote Your Listing
                                     </h3>
-                                    <p className="text-sm text-green-700 font-medium">
-                                        Get 3-5x more views and inquiries with promoted placement
+                                    <p className="text-sm text-gray-600">
+                                        Get more visibility and inquiries with promoted placement
                                     </p>
                                 </div>
                             </div>
 
-                            <label htmlFor="wantToPromote" className="flex items-start gap-3 cursor-pointer p-5 bg-white rounded-xl hover:shadow-md transition-all border-2 border-green-200 hover:border-green-400">
+                            <label htmlFor="wantToPromote" className="flex items-start gap-3 cursor-pointer mb-4">
                                 <input
                                     type="checkbox"
                                     id="wantToPromote"
                                     checked={wantToPromote}
-                                    onChange={(e) => setWantToPromote(e.target.checked)}
-                                    className="mt-1 w-6 h-6 text-green-600 border-green-300 rounded focus:ring-2 focus:ring-green-500"
+                                    onChange={(e) => {
+                                        setWantToPromote(e.target.checked);
+                                        if (!e.target.checked) {
+                                            setSelectedPromotionTier(null);
+                                        }
+                                    }}
+                                    className="mt-0.5 w-4 h-4 text-primary border-gray-300 rounded focus:ring-2 focus:ring-primary"
                                 />
                                 <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-base font-bold text-green-900">
-                                            Promote this listing after publishing
-                                        </span>
-                                        <span className="bg-gradient-to-r from-green-600 to-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
-                                            ⭐ Recommended
-                                        </span>
-                                    </div>
-                                    <p className="text-sm text-gray-700 mb-4 font-medium">
-                                        After publishing, choose from 3 promotion tiers starting at just €1.99 for 7 days! Includes coupon support and agency discounts.
+                                    <span className="text-sm font-semibold text-gray-900">
+                                        I want to promote this listing
+                                    </span>
+                                    <p className="text-xs text-gray-600 mt-1">
+                                        Select a promotion plan below. Payment will be processed before publishing.
                                     </p>
-                                    <div className="grid grid-cols-3 gap-3">
-                                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg border-2 border-blue-300 hover:border-blue-500 transition-all shadow-sm hover:shadow-md">
-                                            <div className="font-bold text-blue-900 mb-1">⭐ Featured</div>
-                                            <div className="text-blue-700 font-bold text-sm">From €1.99</div>
-                                        </div>
-                                        <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-3 rounded-lg border-2 border-amber-400 shadow-md relative">
-                                            <div className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow">
-                                                Popular
-                                            </div>
-                                            <div className="font-bold text-amber-900 mb-1">💎 Highlight</div>
-                                            <div className="text-amber-700 font-bold text-sm">From €3.99</div>
-                                        </div>
-                                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-3 rounded-lg border-2 border-purple-300 hover:border-purple-500 transition-all shadow-sm hover:shadow-md">
-                                            <div className="font-bold text-purple-900 mb-1">👑 Premium</div>
-                                            <div className="text-purple-700 font-bold text-sm">From €7.99</div>
-                                        </div>
-                                    </div>
-                                    {wantToPromote && (
-                                        <div className="mt-4 p-4 bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-500 rounded-lg shadow-sm">
-                                            <div className="flex items-center gap-2 text-green-900 font-bold">
-                                                <span className="text-xl">✓</span>
-                                                <span>You'll be able to select your promotion tier and duration after publishing</span>
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                             </label>
+
+                            {wantToPromote && (
+                                <div className="mt-4 space-y-3">
+                                    <p className="text-sm font-medium text-gray-900 mb-3">Select promotion tier:</p>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedPromotionTier('featured')}
+                                        className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                                            selectedPromotionTier === 'featured'
+                                                ? 'border-primary bg-primary/5'
+                                                : 'border-gray-200 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="font-bold text-gray-900">Featured</span>
+                                                    <span className="text-xs text-gray-600">⭐</span>
+                                                </div>
+                                                <p className="text-sm text-gray-600 mb-2">Priority placement in search results</p>
+                                                <p className="text-lg font-bold text-gray-900">From €1.99</p>
+                                            </div>
+                                            {selectedPromotionTier === 'featured' && (
+                                                <div className="flex-shrink-0">
+                                                    <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                                                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedPromotionTier('highlight')}
+                                        className={`w-full text-left p-4 rounded-lg border-2 transition-all relative ${
+                                            selectedPromotionTier === 'highlight'
+                                                ? 'border-primary bg-primary/5'
+                                                : 'border-gray-200 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <div className="absolute -top-2 right-3 bg-primary text-white text-xs font-medium px-2 py-0.5 rounded">
+                                            Popular
+                                        </div>
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="font-bold text-gray-900">Highlight</span>
+                                                    <span className="text-xs text-gray-600">💎</span>
+                                                </div>
+                                                <p className="text-sm text-gray-600 mb-2">Stand out with distinctive highlighting</p>
+                                                <p className="text-lg font-bold text-gray-900">From €3.99</p>
+                                            </div>
+                                            {selectedPromotionTier === 'highlight' && (
+                                                <div className="flex-shrink-0">
+                                                    <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                                                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedPromotionTier('premium')}
+                                        className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                                            selectedPromotionTier === 'premium'
+                                                ? 'border-primary bg-primary/5'
+                                                : 'border-gray-200 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="font-bold text-gray-900">Premium</span>
+                                                    <span className="text-xs text-gray-600">👑</span>
+                                                </div>
+                                                <p className="text-sm text-gray-600 mb-2">Ultimate exposure with homepage featuring</p>
+                                                <p className="text-lg font-bold text-gray-900">From €7.99</p>
+                                            </div>
+                                            {selectedPromotionTier === 'premium' && (
+                                                <div className="flex-shrink-0">
+                                                    <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                                                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </button>
+
+                                    {!selectedPromotionTier && (
+                                        <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-3 mt-2">
+                                            Please select a promotion tier to continue
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
 
