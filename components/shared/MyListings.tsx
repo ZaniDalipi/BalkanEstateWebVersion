@@ -94,25 +94,24 @@ const ListingCard: React.FC<{
                 <button
                     onClick={(e) => { e.stopPropagation(); onPromote(property.id); }}
                     disabled={!isActionable}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-primary to-secondary rounded-lg hover:shadow-lg transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-neutral-900 rounded hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <SparklesIcon className="w-5 h-5" />
                     Promote
                 </button>
                 <button
                     onClick={(e) => { e.stopPropagation(); onRenew(property.id); }}
                     disabled={!isActionable}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-secondary rounded-lg hover:bg-opacity-90 transition-colors shadow-sm disabled:bg-opacity-50 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-neutral-700 bg-neutral-100 border border-neutral-200 rounded hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <ArrowPathIcon className="w-5 h-5" />
+                    <ArrowPathIcon className="w-4 h-4" />
                     Renew
                 </button>
                 <button
                     onClick={(e) => { e.stopPropagation(); onMarkAsSold(property.id); }}
                     disabled={!isActionable}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-green-800 bg-green-100 rounded-lg hover:bg-green-200 transition-colors shadow-sm disabled:bg-neutral-200 disabled:text-neutral-500"
+                    className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <CheckCircleIcon className="w-5 h-5" />
+                    <CheckCircleIcon className="w-4 h-4" />
                     Mark as Sold
                 </button>
              </div>

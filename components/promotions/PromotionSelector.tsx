@@ -200,23 +200,23 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-neutral-800 mb-2">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-neutral-800 mb-2">
           Promote Your Listing
         </h2>
-        <p className="text-neutral-600">
-          Get more visibility and inquiries with a promoted listing
+        <p className="text-neutral-600 text-sm">
+          Increase visibility and get more inquiries by choosing a promotion tier
         </p>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm">
           {error}
         </div>
       )}
 
       {/* Tier Selection */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {(['featured', 'highlight', 'premium'] as PromotionTier[]).map((tierId) => {
           const tier = tiers[tierId];
           const isSelected = selectedTier === tierId;
@@ -228,39 +228,31 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
             <button
               key={tierId}
               onClick={() => setSelectedTier(tierId)}
-              className={`relative p-6 rounded-xl border-2 text-left transition-all transform hover:scale-105 ${
+              className={`relative p-5 rounded-lg border text-left transition-all ${
                 isSelected
-                  ? 'border-primary bg-primary/5 shadow-lg'
-                  : 'border-neutral-200 bg-white hover:border-primary/50'
+                  ? 'border-neutral-800 bg-neutral-50'
+                  : 'border-neutral-200 bg-white hover:border-neutral-400'
               }`}
             >
               {tier.highlight && (
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  MOST POPULAR
+                <div className="absolute -top-2 right-4 bg-neutral-800 text-white text-xs font-medium px-2 py-0.5 rounded">
+                  Popular
                 </div>
               )}
 
-              <div className="flex items-center gap-3 mb-4">
-                <div
-                  className="text-3xl p-3 rounded-lg"
-                  style={{ backgroundColor: `${tier.color}20` }}
-                >
-                  {tier.icon}
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-neutral-800">{tier.name}</h3>
-                  <p className="text-2xl font-bold" style={{ color: tier.color }}>
-                    €{pricing?.price || 0}
-                  </p>
-                </div>
+              <div className="mb-3">
+                <h3 className="text-lg font-semibold text-neutral-800 mb-1">{tier.name}</h3>
+                <p className="text-2xl font-bold text-neutral-900">
+                  €{pricing?.price || 0}
+                </p>
               </div>
 
-              <p className="text-sm text-neutral-600 mb-4">{tier.description}</p>
+              <p className="text-sm text-neutral-600 mb-3">{tier.description}</p>
 
-              <ul className="space-y-2">
-                {tier.features.slice(0, 5).map((feature, idx) => (
-                  <li key={idx} className="text-sm text-neutral-700 flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5">✓</span>
+              <ul className="space-y-1.5">
+                {tier.features.slice(0, 4).map((feature, idx) => (
+                  <li key={idx} className="text-xs text-neutral-700 flex items-start gap-2">
+                    <span className="text-neutral-400 mt-0.5">•</span>
                     <span>{feature}</span>
                   </li>
                 ))}
@@ -268,9 +260,9 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
 
               {isSelected && (
                 <div className="absolute top-4 right-4">
-                  <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                  <div className="w-5 h-5 bg-neutral-800 rounded-full flex items-center justify-center">
                     <svg
-                      className="w-4 h-4 text-white"
+                      className="w-3 h-3 text-white"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -278,7 +270,7 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        strokeWidth={2}
+                        strokeWidth={3}
                         d="M5 13l4 4L19 7"
                       />
                     </svg>
@@ -293,9 +285,9 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
       {selectedTier && (
         <>
           {/* Duration Selection */}
-          <div className="bg-white rounded-xl border border-neutral-200 p-6 mb-6">
-            <h3 className="text-lg font-bold text-neutral-800 mb-4">Select Duration</h3>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="bg-white rounded-lg border border-neutral-200 p-5 mb-4">
+            <h3 className="text-sm font-semibold text-neutral-800 mb-3">Duration</h3>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
               {([7, 15, 30, 60, 90] as PromotionDuration[]).map((duration) => {
                 const isSelected = selectedDuration === duration;
                 const pricing = tiersData.pricing.find(
@@ -306,14 +298,14 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
                   <button
                     key={duration}
                     onClick={() => setSelectedDuration(duration)}
-                    className={`p-4 rounded-lg border-2 transition-all ${
+                    className={`p-3 rounded border transition-all text-sm ${
                       isSelected
-                        ? 'border-primary bg-primary/5'
-                        : 'border-neutral-200 hover:border-primary/50'
+                        ? 'border-neutral-800 bg-neutral-50'
+                        : 'border-neutral-200 hover:border-neutral-400'
                     }`}
                   >
-                    <div className="text-lg font-bold text-neutral-800">{duration} days</div>
-                    <div className="text-sm text-neutral-600">€{pricing?.price || 0}</div>
+                    <div className="font-semibold text-neutral-900">{duration} days</div>
+                    <div className="text-xs text-neutral-600">€{pricing?.price || 0}</div>
                   </button>
                 );
               })}
@@ -321,33 +313,33 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
           </div>
 
           {/* Urgent Badge */}
-          <div className="bg-white rounded-xl border border-neutral-200 p-6 mb-6">
-            <label className="flex items-start gap-4 cursor-pointer">
+          <div className="bg-white rounded-lg border border-neutral-200 p-5 mb-4">
+            <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={hasUrgentBadge}
                 onChange={(e) => setHasUrgentBadge(e.target.checked)}
-                className="mt-1 w-5 h-5 text-primary border-neutral-300 rounded focus:ring-primary"
+                className="mt-1 w-4 h-4 text-neutral-800 border-neutral-300 rounded focus:ring-neutral-800"
               />
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg font-bold text-neutral-800">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-semibold text-neutral-800">
                     {tiersData.urgentModifier.name}
                   </span>
-                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                    URGENT
+                  <span className="bg-neutral-800 text-white text-xs font-medium px-2 py-0.5 rounded">
+                    Urgent
                   </span>
-                  <span className="text-lg font-bold text-red-600">
+                  <span className="text-sm font-semibold text-neutral-900">
                     +€{tiersData.urgentModifier.price}
                   </span>
                 </div>
-                <p className="text-sm text-neutral-600 mb-3">
+                <p className="text-xs text-neutral-600 mb-2">
                   {tiersData.urgentModifier.description}
                 </p>
-                <ul className="space-y-1">
-                  {tiersData.urgentModifier.features.map((feature, idx) => (
-                    <li key={idx} className="text-sm text-neutral-700 flex items-start gap-2">
-                      <span className="text-red-500">⚡</span>
+                <ul className="space-y-0.5">
+                  {tiersData.urgentModifier.features.slice(0, 3).map((feature, idx) => (
+                    <li key={idx} className="text-xs text-neutral-700 flex items-start gap-2">
+                      <span className="text-neutral-400">•</span>
                       <span>{feature}</span>
                     </li>
                   ))}
@@ -358,39 +350,35 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
 
           {/* Agency Allocation */}
           {agencyAllocation && canUseAgencyAllocation() && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-6">
-              <label className="flex items-start gap-4 cursor-pointer">
+            <div className="bg-neutral-50 rounded-lg border border-neutral-200 p-5 mb-4">
+              <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={useAgencyAllocation}
                   onChange={(e) => setUseAgencyAllocation(e.target.checked)}
-                  className="mt-1 w-5 h-5 text-blue-600 border-neutral-300 rounded focus:ring-blue-600"
+                  className="mt-1 w-4 h-4 text-neutral-800 border-neutral-300 rounded focus:ring-neutral-800"
                 />
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg font-bold text-neutral-800">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-semibold text-neutral-800">
                       Use Agency Allocation
                     </span>
-                    <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">
-                      FREE
+                    <span className="bg-green-600 text-white text-xs font-medium px-2 py-0.5 rounded">
+                      Free
                     </span>
                   </div>
-                  <p className="text-sm text-neutral-600 mb-3">
-                    Your agency plan ({agencyAllocation.plan.planName}) includes monthly promotion
-                    allocations. Use one of your remaining {selectedTier} promotions this month.
+                  <p className="text-xs text-neutral-600 mb-2">
+                    Your {agencyAllocation.plan.planName} plan includes monthly promotions. Use one of your remaining {selectedTier} slots this month.
                   </p>
-                  <div className="flex gap-4 text-sm">
+                  <div className="flex gap-3 text-xs text-neutral-700">
                     <div>
-                      <span className="font-semibold">Featured:</span>{' '}
-                      {agencyAllocation.remaining.featured}/{agencyAllocation.plan.monthlyFeaturedAds}
+                      Featured: {agencyAllocation.remaining.featured}/{agencyAllocation.plan.monthlyFeaturedAds}
                     </div>
                     <div>
-                      <span className="font-semibold">Highlight:</span>{' '}
-                      {agencyAllocation.remaining.highlight}/{agencyAllocation.plan.monthlyHighlightAds}
+                      Highlight: {agencyAllocation.remaining.highlight}/{agencyAllocation.plan.monthlyHighlightAds}
                     </div>
                     <div>
-                      <span className="font-semibold">Premium:</span>{' '}
-                      {agencyAllocation.remaining.premium}/{agencyAllocation.plan.monthlyPremiumAds}
+                      Premium: {agencyAllocation.remaining.premium}/{agencyAllocation.plan.monthlyPremiumAds}
                     </div>
                   </div>
                 </div>
@@ -400,42 +388,36 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
 
           {/* Coupon Code */}
           {!useAgencyAllocation && (
-            <div className="bg-white rounded-xl border border-neutral-200 p-6 mb-6">
-              <h3 className="text-lg font-bold text-neutral-800 mb-4">Have a Coupon Code?</h3>
-              <div className="flex gap-3">
+            <div className="bg-white rounded-lg border border-neutral-200 p-5 mb-4">
+              <h3 className="text-sm font-semibold text-neutral-800 mb-3">Coupon Code</h3>
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={couponCode}
                   onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                  placeholder="Enter coupon code"
-                  className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                  placeholder="Enter code"
+                  className="flex-1 px-3 py-2 text-sm border border-neutral-300 rounded focus:outline-none focus:ring-1 focus:ring-neutral-800 focus:border-neutral-800"
                 />
                 {validatingCoupon && (
-                  <div className="flex items-center px-4 py-2 text-neutral-600">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                  <div className="flex items-center px-3 py-2 text-neutral-600">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-neutral-800"></div>
                   </div>
                 )}
               </div>
               {couponValidation && (
                 <div
-                  className={`mt-3 p-3 rounded-lg text-sm ${
+                  className={`mt-2 p-2 rounded text-xs ${
                     couponValidation.isValid
                       ? 'bg-green-50 text-green-700 border border-green-200'
                       : 'bg-red-50 text-red-700 border border-red-200'
                   }`}
                 >
                   {couponValidation.isValid ? (
-                    <div className="flex items-center gap-2">
-                      <span>✓</span>
-                      <span>
-                        Coupon applied! You save €{couponValidation.discount.toFixed(2)}
-                      </span>
-                    </div>
+                    <span>
+                      Coupon applied! You save €{couponValidation.discount.toFixed(2)}
+                    </span>
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <span>✗</span>
-                      <span>{couponValidation.message}</span>
-                    </div>
+                    <span>{couponValidation.message}</span>
                   )}
                 </div>
               )}
@@ -443,9 +425,9 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
           )}
 
           {/* Price Summary */}
-          <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl border border-primary/20 p-6 mb-6">
-            <h3 className="text-lg font-bold text-neutral-800 mb-4">Price Summary</h3>
-            <div className="space-y-2">
+          <div className="bg-neutral-50 rounded-lg border border-neutral-300 p-5 mb-6">
+            <h3 className="text-sm font-semibold text-neutral-800 mb-3">Summary</h3>
+            <div className="space-y-2 text-sm">
               {priceInfo.original !== priceInfo.final && (
                 <div className="flex justify-between text-neutral-600">
                   <span>Original Price:</span>
@@ -453,17 +435,17 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
                 </div>
               )}
               {priceInfo.savings > 0 && (
-                <div className="flex justify-between text-green-600 font-semibold">
-                  <span>Total Savings:</span>
+                <div className="flex justify-between text-green-600 font-medium">
+                  <span>Savings:</span>
                   <span>-€{priceInfo.savings.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-2xl font-bold text-neutral-800 pt-3 border-t border-neutral-300">
+              <div className="flex justify-between text-lg font-bold text-neutral-900 pt-2 border-t border-neutral-300">
                 <span>Total:</span>
-                <span className="text-primary">
+                <span>
                   €{priceInfo.final.toFixed(2)}
                   {useAgencyAllocation && priceInfo.final === 0 && (
-                    <span className="text-sm text-green-600 ml-2">(FREE)</span>
+                    <span className="text-sm text-green-600 ml-2 font-normal">(Free)</span>
                   )}
                 </span>
               </div>
@@ -471,26 +453,26 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <button
               onClick={onSkip}
               disabled={submitting}
-              className="flex-1 px-6 py-3 bg-neutral-200 text-neutral-700 rounded-lg font-semibold hover:bg-neutral-300 transition-colors disabled:opacity-50"
+              className="px-6 py-2.5 bg-white border border-neutral-300 text-neutral-700 rounded-lg text-sm font-medium hover:bg-neutral-50 transition-colors disabled:opacity-50"
             >
-              Skip for Now
+              Skip
             </button>
             <button
               onClick={handlePurchase}
               disabled={submitting}
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-6 py-2.5 bg-neutral-900 text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   Processing...
                 </span>
               ) : (
-                `Promote Property - €${priceInfo.final.toFixed(2)}`
+                `Continue - €${priceInfo.final.toFixed(2)}`
               )}
             </button>
           </div>
@@ -501,9 +483,9 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
         <div className="text-center">
           <button
             onClick={onSkip}
-            className="px-8 py-3 bg-neutral-200 text-neutral-700 rounded-lg font-semibold hover:bg-neutral-300 transition-colors"
+            className="px-6 py-2.5 bg-white border border-neutral-300 text-neutral-700 rounded-lg text-sm font-medium hover:bg-neutral-50 transition-colors"
           >
-            Skip Promotion
+            Skip for Now
           </button>
         </div>
       )}
