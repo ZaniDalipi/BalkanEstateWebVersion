@@ -224,45 +224,83 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
             (p) => p.tierId === tierId && p.duration === selectedDuration
           );
 
+          // Define tier-specific colors
+          const tierColors = {
+            featured: {
+              gradient: 'from-blue-50 to-blue-100',
+              border: isSelected ? 'border-blue-600' : 'border-blue-300',
+              borderHover: 'hover:border-blue-500',
+              text: 'text-blue-900',
+              priceText: 'text-blue-900',
+              featureText: 'text-blue-800',
+              checkmark: 'text-blue-500',
+              badge: 'bg-blue-600',
+              icon: '⭐',
+            },
+            highlight: {
+              gradient: 'from-amber-50 to-amber-100',
+              border: isSelected ? 'border-amber-600' : 'border-amber-400',
+              borderHover: 'hover:border-amber-500',
+              text: 'text-amber-900',
+              priceText: 'text-amber-900',
+              featureText: 'text-amber-800',
+              checkmark: 'text-amber-500',
+              badge: 'bg-amber-600',
+              icon: '💎',
+            },
+            premium: {
+              gradient: 'from-purple-50 to-purple-100',
+              border: isSelected ? 'border-purple-600' : 'border-purple-300',
+              borderHover: 'hover:border-purple-500',
+              text: 'text-purple-900',
+              priceText: 'text-purple-900',
+              featureText: 'text-purple-800',
+              checkmark: 'text-purple-500',
+              badge: 'bg-purple-600',
+              icon: '👑',
+            },
+          };
+
+          const colors = tierColors[tierId];
+
           return (
             <button
               key={tierId}
               onClick={() => setSelectedTier(tierId)}
-              className={`relative p-5 rounded-lg border text-left transition-all ${
-                isSelected
-                  ? 'border-neutral-800 bg-neutral-50'
-                  : 'border-neutral-200 bg-white hover:border-neutral-400'
-              }`}
+              className={`relative p-6 rounded-xl border-2 text-left transition-all bg-gradient-to-br shadow-md hover:shadow-lg ${colors.gradient} ${colors.border} ${colors.borderHover}`}
             >
               {tier.highlight && (
-                <div className="absolute -top-2 right-4 bg-neutral-800 text-white text-xs font-medium px-2 py-0.5 rounded">
+                <div className="absolute -top-2 right-4 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow">
                   Popular
                 </div>
               )}
 
-              <div className="mb-3">
-                <h3 className="text-lg font-semibold text-neutral-800 mb-1">{tier.name}</h3>
-                <p className="text-2xl font-bold text-neutral-900">
+              <div className="mb-4">
+                <h3 className={`text-xl font-bold ${colors.text} mb-2 flex items-center gap-2`}>
+                  <span>{colors.icon}</span>
+                  {tier.name}
+                </h3>
+                <p className={`text-3xl font-bold ${colors.priceText}`}>
                   €{pricing?.price || 0}
                 </p>
               </div>
 
-              <p className="text-sm text-neutral-600 mb-3">{tier.description}</p>
+              <p className={`text-sm ${colors.featureText} mb-4 font-medium`}>{tier.description}</p>
 
-              <ul className="space-y-1.5">
+              <ul className="space-y-2">
                 {tier.features.slice(0, 4).map((feature, idx) => (
-                  <li key={idx} className="text-xs text-neutral-700 flex items-start gap-2">
-                    <span className="text-neutral-400 mt-0.5">•</span>
+                  <li key={idx} className={`text-sm ${colors.featureText} flex items-start gap-2 font-medium`}>
+                    <span className={`${colors.checkmark} font-bold`}>✓</span>
                     <span>{typeof feature === 'string' ? feature : feature.name}</span>
                   </li>
                 ))}
               </ul>
 
               {isSelected && (
-                <div className="absolute top-4 right-4">
-                  <div className="w-5 h-5 bg-neutral-800 rounded-full flex items-center justify-center">
+                <div className="absolute top-5 right-5">
+                  <div className={`w-6 h-6 ${colors.badge} rounded-full flex items-center justify-center shadow-md`}>
                     <svg
-                      className="w-3 h-3 text-white"
+                      className="w-4 h-4 text-white"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -285,9 +323,12 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
       {selectedTier && (
         <>
           {/* Duration Selection */}
-          <div className="bg-white rounded-lg border border-neutral-200 p-5 mb-4">
-            <h3 className="text-sm font-semibold text-neutral-800 mb-3">Duration</h3>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border-2 border-green-200 p-5 mb-4 shadow-sm">
+            <h3 className="text-base font-bold text-green-900 mb-4 flex items-center gap-2">
+              <span>⏱️</span>
+              Select Duration
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {([7, 15, 30, 60, 90] as PromotionDuration[]).map((duration) => {
                 const isSelected = selectedDuration === duration;
                 const pricing = tiersData.pricing.find(
@@ -298,14 +339,14 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
                   <button
                     key={duration}
                     onClick={() => setSelectedDuration(duration)}
-                    className={`p-3 rounded border transition-all text-sm ${
+                    className={`p-3 rounded-lg border-2 transition-all text-sm font-semibold shadow-sm hover:shadow-md ${
                       isSelected
-                        ? 'border-neutral-800 bg-neutral-50'
-                        : 'border-neutral-200 hover:border-neutral-400'
+                        ? 'border-green-600 bg-green-100 text-green-900'
+                        : 'border-green-200 bg-white hover:border-green-400 text-gray-700'
                     }`}
                   >
-                    <div className="font-semibold text-neutral-900">{duration} days</div>
-                    <div className="text-xs text-neutral-600">€{pricing?.price || 0}</div>
+                    <div className="font-bold">{duration} days</div>
+                    <div className="text-xs font-bold mt-1">€{pricing?.price || 0}</div>
                   </button>
                 );
               })}
@@ -449,22 +490,22 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
             <button
               onClick={onSkip}
               disabled={submitting}
-              className="px-6 py-2.5 bg-white border border-neutral-300 text-neutral-700 rounded-lg text-sm font-medium hover:bg-neutral-50 transition-colors disabled:opacity-50"
+              className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl text-base font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all disabled:opacity-50 shadow-sm"
             >
               Skip
             </button>
             <button
               onClick={handlePurchase}
               disabled={submitting}
-              className="flex-1 px-6 py-2.5 bg-neutral-900 text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl text-base font-bold hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
             >
               {submitting ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                   Processing...
                 </span>
               ) : (
-                `Continue - €${priceInfo.final.toFixed(2)}`
+                `🚀 Continue - €${priceInfo.final.toFixed(2)}`
               )}
             </button>
           </div>

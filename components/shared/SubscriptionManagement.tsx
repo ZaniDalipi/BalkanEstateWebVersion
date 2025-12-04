@@ -315,73 +315,73 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
 
         <div className="grid sm:grid-cols-3 gap-4 mt-4">
           {/* Featured */}
-          <div className="border border-neutral-200 rounded-lg p-4 hover:border-neutral-400 transition-all">
+          <div className="border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all">
             <div className="flex items-center justify-between mb-2">
-              <h5 className="font-semibold text-neutral-800">Featured</h5>
-              <span className="text-xs bg-neutral-100 text-neutral-700 px-2 py-1 rounded">From €4.99</span>
+              <h5 className="font-bold text-blue-900">⭐ Featured</h5>
+              <span className="text-xs bg-blue-600 text-white font-bold px-3 py-1 rounded-full shadow-sm">From €1.99</span>
             </div>
-            <p className="text-xs text-neutral-600 mb-3">Stand out in search results with priority placement</p>
+            <p className="text-xs text-blue-800 mb-3 font-medium">Stand out in search results with priority placement</p>
             <ul className="space-y-1">
-              <li className="text-xs text-neutral-700 flex items-start gap-1.5">
-                <span className="text-neutral-400 mt-0.5">•</span>
+              <li className="text-xs text-blue-800 flex items-start gap-1.5 font-medium">
+                <span className="text-blue-500 mt-0.5">✓</span>
                 <span>Top of search results</span>
               </li>
-              <li className="text-xs text-neutral-700 flex items-start gap-1.5">
-                <span className="text-neutral-400 mt-0.5">•</span>
+              <li className="text-xs text-blue-800 flex items-start gap-1.5 font-medium">
+                <span className="text-blue-500 mt-0.5">✓</span>
                 <span>Featured badge</span>
               </li>
-              <li className="text-xs text-neutral-700 flex items-start gap-1.5">
-                <span className="text-neutral-400 mt-0.5">•</span>
-                <span>2x visibility</span>
+              <li className="text-xs text-blue-800 flex items-start gap-1.5 font-medium">
+                <span className="text-blue-500 mt-0.5">✓</span>
+                <span>2x visibility boost</span>
               </li>
             </ul>
           </div>
 
           {/* Highlight */}
-          <div className="border-2 border-neutral-800 rounded-lg p-4 relative">
-            <div className="absolute -top-2 right-2 bg-neutral-800 text-white text-xs font-medium px-2 py-0.5 rounded">
+          <div className="border-2 border-amber-400 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg p-4 hover:shadow-lg transition-all relative shadow-md">
+            <div className="absolute -top-2 right-2 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow">
               Popular
             </div>
             <div className="flex items-center justify-between mb-2">
-              <h5 className="font-semibold text-neutral-800">Highlight</h5>
-              <span className="text-xs bg-neutral-100 text-neutral-700 px-2 py-1 rounded">From €9.99</span>
+              <h5 className="font-bold text-amber-900">💎 Highlight</h5>
+              <span className="text-xs bg-amber-600 text-white font-bold px-3 py-1 rounded-full shadow-sm">From €3.99</span>
             </div>
-            <p className="text-xs text-neutral-600 mb-3">Maximum visibility with auto-refresh every 3 days</p>
+            <p className="text-xs text-amber-800 mb-3 font-medium">Maximum visibility with auto-refresh every 3 days</p>
             <ul className="space-y-1">
-              <li className="text-xs text-neutral-700 flex items-start gap-1.5">
-                <span className="text-neutral-400 mt-0.5">•</span>
+              <li className="text-xs text-amber-800 flex items-start gap-1.5 font-medium">
+                <span className="text-amber-500 mt-0.5">✓</span>
                 <span>All Featured benefits</span>
               </li>
-              <li className="text-xs text-neutral-700 flex items-start gap-1.5">
-                <span className="text-neutral-400 mt-0.5">•</span>
+              <li className="text-xs text-amber-800 flex items-start gap-1.5 font-medium">
+                <span className="text-amber-500 mt-0.5">✓</span>
                 <span>Auto-refresh to top</span>
               </li>
-              <li className="text-xs text-neutral-700 flex items-start gap-1.5">
-                <span className="text-neutral-400 mt-0.5">•</span>
-                <span>3x visibility</span>
+              <li className="text-xs text-amber-800 flex items-start gap-1.5 font-medium">
+                <span className="text-amber-500 mt-0.5">✓</span>
+                <span>3x visibility boost</span>
               </li>
             </ul>
           </div>
 
           {/* Premium */}
-          <div className="border border-neutral-200 rounded-lg p-4 hover:border-neutral-400 transition-all">
+          <div className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 hover:border-purple-500 hover:shadow-md transition-all">
             <div className="flex items-center justify-between mb-2">
-              <h5 className="font-semibold text-neutral-800">Premium</h5>
-              <span className="text-xs bg-neutral-100 text-neutral-700 px-2 py-1 rounded">From €19.99</span>
+              <h5 className="font-bold text-purple-900">👑 Premium</h5>
+              <span className="text-xs bg-purple-600 text-white font-bold px-3 py-1 rounded-full shadow-sm">From €7.99</span>
             </div>
-            <p className="text-xs text-neutral-600 mb-3">Ultimate exposure with homepage featuring</p>
+            <p className="text-xs text-purple-800 mb-3 font-medium">Ultimate exposure with homepage featuring</p>
             <ul className="space-y-1">
-              <li className="text-xs text-neutral-700 flex items-start gap-1.5">
-                <span className="text-neutral-400 mt-0.5">•</span>
+              <li className="text-xs text-purple-800 flex items-start gap-1.5 font-medium">
+                <span className="text-purple-500 mt-0.5">✓</span>
                 <span>All Highlight benefits</span>
               </li>
-              <li className="text-xs text-neutral-700 flex items-start gap-1.5">
-                <span className="text-neutral-400 mt-0.5">•</span>
+              <li className="text-xs text-purple-800 flex items-start gap-1.5 font-medium">
+                <span className="text-purple-500 mt-0.5">✓</span>
                 <span>Homepage carousel</span>
               </li>
-              <li className="text-xs text-neutral-700 flex items-start gap-1.5">
-                <span className="text-neutral-400 mt-0.5">•</span>
-                <span>5x visibility</span>
+              <li className="text-xs text-purple-800 flex items-start gap-1.5 font-medium">
+                <span className="text-purple-500 mt-0.5">✓</span>
+                <span>5x visibility boost</span>
               </li>
             </ul>
           </div>

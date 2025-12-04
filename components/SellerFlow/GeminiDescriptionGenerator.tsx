@@ -1256,58 +1256,64 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                     )}
 
                     {!propertyToEdit && (
-                        <div className="bg-white border-2 border-neutral-300 rounded-lg p-6 mb-6 shadow-sm">
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-500 rounded-xl p-6 mb-6 shadow-lg">
                             <div className="flex items-start gap-4 mb-4">
-                                <div className="flex-shrink-0 w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                                    <span className="text-xl">🚀</span>
+                                <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md">
+                                    <span className="text-2xl">🚀</span>
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="text-base font-bold text-neutral-800 mb-1">
+                                    <h3 className="text-lg font-bold text-green-900 mb-1">
                                         Boost Your Listing's Visibility
                                     </h3>
-                                    <p className="text-sm text-neutral-600">
+                                    <p className="text-sm text-green-700 font-medium">
                                         Get 3-5x more views and inquiries with promoted placement
                                     </p>
                                 </div>
                             </div>
 
-                            <label htmlFor="wantToPromote" className="flex items-start gap-3 cursor-pointer p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors">
+                            <label htmlFor="wantToPromote" className="flex items-start gap-3 cursor-pointer p-5 bg-white rounded-xl hover:shadow-md transition-all border-2 border-green-200 hover:border-green-400">
                                 <input
                                     type="checkbox"
                                     id="wantToPromote"
                                     checked={wantToPromote}
                                     onChange={(e) => setWantToPromote(e.target.checked)}
-                                    className="mt-0.5 w-5 h-5 text-neutral-800 border-neutral-300 rounded focus:ring-2 focus:ring-neutral-800"
+                                    className="mt-1 w-6 h-6 text-green-600 border-green-300 rounded focus:ring-2 focus:ring-green-500"
                                 />
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-sm font-semibold text-neutral-900">
+                                        <span className="text-base font-bold text-green-900">
                                             Promote this listing after publishing
                                         </span>
-                                        <span className="bg-green-600 text-white text-xs font-medium px-2 py-0.5 rounded">
-                                            Recommended
+                                        <span className="bg-gradient-to-r from-green-600 to-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                                            ⭐ Recommended
                                         </span>
                                     </div>
-                                    <p className="text-sm text-neutral-700 mb-3">
-                                        After publishing, you'll choose from 3 promotion tiers (Featured, Highlight, or Premium) starting at just €4.99 for 7 days. Includes coupon support and agency discounts.
+                                    <p className="text-sm text-gray-700 mb-4 font-medium">
+                                        After publishing, choose from 3 promotion tiers starting at just €1.99 for 7 days! Includes coupon support and agency discounts.
                                     </p>
-                                    <div className="grid grid-cols-3 gap-2 text-xs">
-                                        <div className="bg-white p-2 rounded border border-neutral-200">
-                                            <div className="font-semibold text-neutral-800">Featured</div>
-                                            <div className="text-neutral-600">From €4.99</div>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg border-2 border-blue-300 hover:border-blue-500 transition-all shadow-sm hover:shadow-md">
+                                            <div className="font-bold text-blue-900 mb-1">⭐ Featured</div>
+                                            <div className="text-blue-700 font-bold text-sm">From €1.99</div>
                                         </div>
-                                        <div className="bg-white p-2 rounded border-2 border-neutral-800">
-                                            <div className="font-semibold text-neutral-800">Highlight</div>
-                                            <div className="text-neutral-600">From €9.99</div>
+                                        <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-3 rounded-lg border-2 border-amber-400 shadow-md relative">
+                                            <div className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow">
+                                                Popular
+                                            </div>
+                                            <div className="font-bold text-amber-900 mb-1">💎 Highlight</div>
+                                            <div className="text-amber-700 font-bold text-sm">From €3.99</div>
                                         </div>
-                                        <div className="bg-white p-2 rounded border border-neutral-200">
-                                            <div className="font-semibold text-neutral-800">Premium</div>
-                                            <div className="text-neutral-600">From €19.99</div>
+                                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-3 rounded-lg border-2 border-purple-300 hover:border-purple-500 transition-all shadow-sm hover:shadow-md">
+                                            <div className="font-bold text-purple-900 mb-1">👑 Premium</div>
+                                            <div className="text-purple-700 font-bold text-sm">From €7.99</div>
                                         </div>
                                     </div>
                                     {wantToPromote && (
-                                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-800">
-                                            ✓ You'll be able to select your promotion tier and duration after publishing
+                                        <div className="mt-4 p-4 bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-500 rounded-lg shadow-sm">
+                                            <div className="flex items-center gap-2 text-green-900 font-bold">
+                                                <span className="text-xl">✓</span>
+                                                <span>You'll be able to select your promotion tier and duration after publishing</span>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
