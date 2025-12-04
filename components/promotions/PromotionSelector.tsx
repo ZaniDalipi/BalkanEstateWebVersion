@@ -5,6 +5,9 @@ interface PromotionSelectorProps {
   propertyId: string;
   onSuccess: () => void;
   onSkip: () => void;
+  initialTier?: 'featured' | 'highlight' | 'premium';
+  initialDuration?: 7 | 15 | 30 | 60 | 90;
+  initialCoupon?: string;
 }
 
 type PromotionTier = 'featured' | 'highlight' | 'premium';
@@ -14,6 +17,9 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
   propertyId,
   onSuccess,
   onSkip,
+  initialTier,
+  initialDuration = 30,
+  initialCoupon = '',
 }) => {
   const [tiersData, setTiersData] = useState<api.PromotionTiersResponse | null>(null);
   const [agencyAllocation, setAgencyAllocation] = useState<api.AgencyAllocation | null>(null);
@@ -21,12 +27,12 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form state
-  const [selectedTier, setSelectedTier] = useState<PromotionTier | null>(null);
-  const [selectedDuration, setSelectedDuration] = useState<PromotionDuration>(30);
+  // Form state - use initial values if provided
+  const [selectedTier, setSelectedTier] = useState<PromotionTier | null>(initialTier || null);
+  const [selectedDuration, setSelectedDuration] = useState<PromotionDuration>(initialDuration);
   const [hasUrgentBadge, setHasUrgentBadge] = useState(false);
   const [useAgencyAllocation, setUseAgencyAllocation] = useState(false);
-  const [couponCode, setCouponCode] = useState('');
+  const [couponCode, setCouponCode] = useState(initialCoupon);
   const [couponValidation, setCouponValidation] = useState<api.CouponValidationResult | null>(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
 

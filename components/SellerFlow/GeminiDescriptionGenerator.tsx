@@ -13,7 +13,7 @@ import * as api from '../../services/apiService';
 import imageCompression from 'browser-image-compression';
 import PromotionSelector from '../promotions/PromotionSelector';
 
-type Step = 'init' | 'loading' | 'form' | 'floorplan' | 'promotion' | 'success';
+type Step = 'init' | 'loading' | 'form' | 'floorplan' | 'payment' | 'success';
 type Mode = 'ai' | 'manual';
 
 interface ListingData {
@@ -305,6 +305,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const [selectedPromotionTier, setSelectedPromotionTier] = useState<'featured' | 'highlight' | 'premium' | null>(null);
     const [selectedDuration, setSelectedDuration] = useState<7 | 15 | 30 | 60 | 90>(7);
     const [couponCode, setCouponCode] = useState('');
+    const [pendingPropertyData, setPendingPropertyData] = useState<Property | null>(null);
 
     // Upload Progress State
     const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -925,15 +926,17 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                     dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
                 }, 3000);
             } else {
-                await createListing(newProperty);
-                 if (currentUser.role === UserRole.BUYER) {
-                    await updateUser({ role: UserRole.PRIVATE_SELLER });
-                }
                 // For new properties, check if user wants to promote
                 if (wantToPromote) {
-                    setCreatedPropertyId(newProperty.id);
-                    setStep('promotion');
+                    // Store property data and go to payment step WITHOUT creating listing yet
+                    setPendingPropertyData(newProperty);
+                    setStep('payment');
                 } else {
+                    // Create listing immediately without promotion
+                    await createListing(newProperty);
+                    if (currentUser.role === UserRole.BUYER) {
+                        await updateUser({ role: UserRole.PRIVATE_SELLER });
+                    }
                     setStep('success');
                     setTimeout(() => {
                         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
@@ -952,22 +955,62 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         }
     };
     
-    if (step === 'promotion' && createdPropertyId) {
+    if (step === 'payment' && pendingPropertyData) {
+        const handlePaymentSuccess = async () => {
+            // Payment succeeded, promotion will be applied
+            setStep('success');
+            setTimeout(() => {
+                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
+            }, 3000);
+        };
+
+        const handlePaymentSkipOrFail = async () => {
+            // Payment failed or skipped - listing already exists without promotion
+            setStep('success');
+            setTimeout(() => {
+                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
+            }, 3000);
+        };
+
+        // First create the listing, then show payment
+        const createListingAndShowPayment = async () => {
+            try {
+                await createListing(pendingPropertyData);
+                if (currentUser && currentUser.role === UserRole.BUYER) {
+                    await updateUser({ role: UserRole.PRIVATE_SELLER });
+                }
+                setCreatedPropertyId(pendingPropertyData.id);
+            } catch (err) {
+                console.error('Failed to create listing:', err);
+                setError('Failed to create listing');
+                setStep('form');
+            }
+        };
+
+        // Create listing on mount
+        React.useEffect(() => {
+            if (!createdPropertyId && pendingPropertyData) {
+                createListingAndShowPayment();
+            }
+        }, []);
+
+        if (!createdPropertyId) {
+            return (
+                <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-neutral-600">Creating your listing...</p>
+                </div>
+            );
+        }
+
         return (
             <PromotionSelector
                 propertyId={createdPropertyId}
-                onSuccess={() => {
-                    setStep('success');
-                    setTimeout(() => {
-                        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
-                    }, 3000);
-                }}
-                onSkip={() => {
-                    setStep('success');
-                    setTimeout(() => {
-                        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
-                    }, 3000);
-                }}
+                initialTier={selectedPromotionTier || undefined}
+                initialDuration={selectedDuration}
+                initialCoupon={couponCode}
+                onSuccess={handlePaymentSuccess}
+                onSkip={handlePaymentSkipOrFail}
             />
         );
     }
@@ -1502,7 +1545,11 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                             disabled={isSubmitting || isCompressing || isUploading}
                             className="px-8 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {isSubmitting ? 'Saving...' : (propertyToEdit ? 'Update Listing' : 'Publish Listing')}
+                            {isSubmitting ? 'Saving...' : (
+                                propertyToEdit ? 'Update Listing' : (
+                                    wantToPromote ? 'Continue to Payment' : 'Publish Listing'
+                                )
+                            )}
                         </button>
                     </div>
                  </div>
