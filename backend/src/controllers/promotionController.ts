@@ -2,11 +2,47 @@ import { Request, Response } from 'express';
 import Promotion from '../models/Promotion';
 import Property from '../models/Property';
 import User, { IUser } from '../models/User';
+import Agency from '../models/Agency';
+import {
+  PROMOTION_TIERS,
+  PROMOTION_PRICING,
+  URGENT_MODIFIER,
+  AGENCY_PLAN_ALLOCATIONS,
+  getPromotionPrice,
+  getAgencyAllocation,
+  calculateDiscountedPrice,
+  PromotionTierType,
+  PromotionDuration,
+} from '../config/promotionTiers';
 
-// @desc    Promote a property
-// @route   POST /api/promotions
-// @access  Private (Pro/Enterprise tiers only)
-export const promoteProperty = async (
+/**
+ * @desc    Get available promotion tiers and pricing
+ * @route   GET /api/promotions/tiers
+ * @access  Public
+ */
+export const getPromotionTiers = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    res.json({
+      tiers: PROMOTION_TIERS,
+      pricing: PROMOTION_PRICING,
+      urgentModifier: URGENT_MODIFIER,
+      agencyAllocations: AGENCY_PLAN_ALLOCATIONS,
+    });
+  } catch (error: any) {
+    console.error('Get promotion tiers error:', error);
+    res.status(500).json({ message: 'Error fetching promotion tiers', error: error.message });
+  }
+};
+
+/**
+ * @desc    Get agency's monthly promotion allocation and usage
+ * @route   GET /api/promotions/agency/allocation
+ * @access  Private (Agency owners only)
+ */
+export const getAgencyAllocation = async (
   req: Request,
   res: Response
 ): Promise<void> => {
@@ -16,7 +52,6 @@ export const promoteProperty = async (
       return;
     }
 
-    const { propertyId } = req.body;
     const currentUser = req.user as IUser;
     const user = await User.findById(String(currentUser._id));
 
@@ -25,41 +60,100 @@ export const promoteProperty = async (
       return;
     }
 
-    // Check if user has a paid tier
-    const paidTiers = ['pro_monthly', 'pro_yearly', 'enterprise'];
-    if (!paidTiers.includes(user.subscriptionPlan || '')) {
-      res.status(403).json({
-        message: 'Property promotion is only available for Pro and Enterprise tiers.',
-        code: 'TIER_UPGRADE_REQUIRED',
+    // Find agency owned by this user
+    const agency = await Agency.findOne({ ownerId: user._id });
+
+    if (!agency) {
+      res.status(404).json({
+        message: 'No agency found. Only agency owners can access allocation data.',
+        code: 'NO_AGENCY_FOUND',
       });
       return;
     }
 
-    // Check if subscription is expired
-    if (user.subscriptionExpiresAt && user.subscriptionExpiresAt < new Date()) {
-      res.status(403).json({
-        message: 'Your subscription has expired. Please renew to promote properties.',
-        code: 'SUBSCRIPTION_EXPIRED',
+    // Get plan allocation
+    const planAllocation = getAgencyAllocation(agency.subscriptionPlan || 'free');
+
+    if (!planAllocation) {
+      res.status(404).json({ message: 'Invalid subscription plan' });
+      return;
+    }
+
+    // Get current month usage
+    const usage = await (Promotion as any).getAgencyMonthlyUsage(agency._id);
+
+    const allocation = {
+      plan: planAllocation,
+      usage,
+      remaining: {
+        featured: Math.max(0, planAllocation.monthlyFeaturedAds - usage.featured),
+        highlight: Math.max(0, planAllocation.monthlyHighlightAds - usage.highlight),
+        premium: Math.max(0, planAllocation.monthlyPremiumAds - usage.premium),
+      },
+    };
+
+    res.json({ allocation, agency: { id: agency._id, name: agency.name } });
+  } catch (error: any) {
+    console.error('Get agency allocation error:', error);
+    res.status(500).json({ message: 'Error fetching agency allocation', error: error.message });
+  }
+};
+
+/**
+ * @desc    Purchase/Create a property promotion
+ * @route   POST /api/promotions
+ * @access  Private
+ */
+export const purchasePromotion = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const {
+      propertyId,
+      promotionTier,
+      duration,
+      hasUrgentBadge = false,
+      useAgencyAllocation = false,
+    } = req.body;
+
+    // Validation
+    if (!propertyId || !promotionTier || !duration) {
+      res.status(400).json({
+        message: 'Property ID, promotion tier, and duration are required',
+        code: 'MISSING_REQUIRED_FIELDS',
       });
       return;
     }
 
-    // Get active promotions count
-    const activePromotionsCount = await Promotion.countDocuments({
-      userId: user._id,
-      isActive: true,
-      endDate: { $gt: new Date() },
-    });
-
-    // Pro tier allows 2 promoted ads
-    const PROMOTION_LIMIT = 2;
-    if (activePromotionsCount >= PROMOTION_LIMIT) {
-      res.status(403).json({
-        message: `You have reached the limit of ${PROMOTION_LIMIT} promoted properties. Please wait for existing promotions to expire.`,
-        code: 'PROMOTION_LIMIT_REACHED',
-        limit: PROMOTION_LIMIT,
-        current: activePromotionsCount,
+    const validTiers: PromotionTierType[] = ['featured', 'highlight', 'premium'];
+    if (!validTiers.includes(promotionTier)) {
+      res.status(400).json({
+        message: 'Invalid promotion tier. Must be featured, highlight, or premium',
+        code: 'INVALID_TIER',
       });
+      return;
+    }
+
+    const validDurations: PromotionDuration[] = [7, 15, 30, 60, 90];
+    if (!validDurations.includes(duration)) {
+      res.status(400).json({
+        message: 'Invalid duration. Must be 7, 15, 30, 60, or 90 days',
+        code: 'INVALID_DURATION',
+      });
+      return;
+    }
+
+    const currentUser = req.user as IUser;
+    const user = await User.findById(String(currentUser._id));
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
       return;
     }
 
@@ -71,7 +165,10 @@ export const promoteProperty = async (
     }
 
     if (property.sellerId.toString() !== String(currentUser._id)) {
-      res.status(403).json({ message: 'You can only promote your own properties' });
+      res.status(403).json({
+        message: 'You can only promote your own properties',
+        code: 'NOT_PROPERTY_OWNER',
+      });
       return;
     }
 
@@ -84,16 +181,97 @@ export const promoteProperty = async (
 
     if (existingPromotion) {
       res.status(400).json({
-        message: 'This property is already promoted',
+        message: 'This property is already promoted. Please wait for the current promotion to expire or cancel it first.',
+        code: 'ALREADY_PROMOTED',
         promotion: existingPromotion,
       });
       return;
     }
 
-    // Create promotion (15 days)
+    let isFromAgencyAllocation = false;
+    let agencyId = null;
+    let finalPrice = 0;
+
+    // Check agency allocation if requested
+    if (useAgencyAllocation) {
+      const agency = await Agency.findOne({ ownerId: user._id });
+
+      if (!agency) {
+        res.status(403).json({
+          message: 'Agency allocation requested but no agency found for this user',
+          code: 'NO_AGENCY',
+        });
+        return;
+      }
+
+      const planAllocation = getAgencyAllocation(agency.subscriptionPlan || 'free');
+
+      if (!planAllocation) {
+        res.status(403).json({
+          message: 'Invalid agency subscription plan',
+          code: 'INVALID_PLAN',
+        });
+        return;
+      }
+
+      // Get current month usage
+      const usage = await (Promotion as any).getAgencyMonthlyUsage(agency._id);
+
+      // Check if agency has remaining allocation for this tier
+      let hasAllocation = false;
+      if (promotionTier === 'featured' && usage.featured < planAllocation.monthlyFeaturedAds) {
+        hasAllocation = true;
+      } else if (promotionTier === 'highlight' && usage.highlight < planAllocation.monthlyHighlightAds) {
+        hasAllocation = true;
+      } else if (promotionTier === 'premium' && usage.premium < planAllocation.monthlyPremiumAds) {
+        hasAllocation = true;
+      }
+
+      if (!hasAllocation) {
+        res.status(403).json({
+          message: `Your agency has used all ${promotionTier} promotions for this month`,
+          code: 'ALLOCATION_EXCEEDED',
+          allocation: {
+            plan: planAllocation,
+            usage,
+          },
+        });
+        return;
+      }
+
+      isFromAgencyAllocation = true;
+      agencyId = agency._id;
+      finalPrice = hasUrgentBadge ? URGENT_MODIFIER.price : 0; // Urgent badge still costs if agency allocation is used
+
+    } else {
+      // Calculate price for paid promotion
+      const basePrice = getPromotionPrice(promotionTier, duration, hasUrgentBadge);
+
+      // Apply agency discount if user is part of an agency
+      const agency = await Agency.findOne({ agents: user._id });
+      if (agency) {
+        const planAllocation = getAgencyAllocation(agency.subscriptionPlan || 'free');
+        if (planAllocation && planAllocation.discountPercentage > 0) {
+          finalPrice = calculateDiscountedPrice(basePrice, planAllocation.discountPercentage);
+        } else {
+          finalPrice = basePrice;
+        }
+      } else {
+        finalPrice = basePrice;
+      }
+    }
+
+    // Create promotion
     const startDate = new Date();
     const endDate = new Date();
-    endDate.setDate(endDate.getDate() + 15); // 15 days promotion
+    endDate.setDate(endDate.getDate() + duration);
+
+    // Calculate next refresh date for Highlight tier
+    let nextRefreshAt = null;
+    if (promotionTier === 'highlight') {
+      nextRefreshAt = new Date(startDate);
+      nextRefreshAt.setDate(nextRefreshAt.getDate() + 3); // Refresh every 3 days
+    }
 
     const promotion = await Promotion.create({
       userId: user._id,
@@ -101,13 +279,30 @@ export const promoteProperty = async (
       startDate,
       endDate,
       isActive: true,
-      promotionType: 'featured',
+      promotionType: promotionTier === 'highlight' ? 'highlighted' : promotionTier, // Legacy field
+      promotionTier,
+      duration,
+      hasUrgentBadge,
+      price: finalPrice,
+      currency: 'EUR',
+      paymentStatus: isFromAgencyAllocation ? 'paid' : 'pending', // In real app, integrate with payment gateway
+      isFromAgencyAllocation,
+      agencyId,
+      viewsGenerated: 0,
+      inquiriesGenerated: 0,
+      savesGenerated: 0,
+      lastRefreshedAt: startDate,
+      nextRefreshAt,
+      refreshCount: 0,
+      purchasedVia: 'web',
     });
 
     // Update property
     property.isPromoted = true;
+    property.promotionTier = promotionTier;
     property.promotionStartDate = startDate;
     property.promotionEndDate = endDate;
+    property.hasUrgentBadge = hasUrgentBadge;
     await property.save();
 
     // Update user's promoted ads count
@@ -115,19 +310,31 @@ export const promoteProperty = async (
     await user.save();
 
     res.status(201).json({
-      message: 'Property promoted successfully',
+      message: 'Property promotion created successfully',
       promotion,
-      property,
+      property: {
+        id: property._id,
+        title: property.title,
+        address: property.address,
+        city: property.city,
+      },
+      pricing: {
+        amount: finalPrice,
+        currency: 'EUR',
+        isFromAgencyAllocation,
+      },
     });
   } catch (error: any) {
-    console.error('Promote property error:', error);
-    res.status(500).json({ message: 'Error promoting property', error: error.message });
+    console.error('Purchase promotion error:', error);
+    res.status(500).json({ message: 'Error creating promotion', error: error.message });
   }
 };
 
-// @desc    Get user's active promotions
-// @route   GET /api/promotions
-// @access  Private
+/**
+ * @desc    Get user's promotions
+ * @route   GET /api/promotions
+ * @access  Private
+ */
 export const getMyPromotions = async (
   req: Request,
   res: Response
@@ -144,16 +351,27 @@ export const getMyPromotions = async (
       .populate('propertyId')
       .sort({ createdAt: -1 });
 
-    res.json({ promotions });
+    // Add tier information to each promotion
+    const enrichedPromotions = promotions.map(promo => {
+      const tierInfo = PROMOTION_TIERS[promo.promotionTier as PromotionTierType];
+      return {
+        ...promo.toObject(),
+        tierInfo,
+      };
+    });
+
+    res.json({ promotions: enrichedPromotions });
   } catch (error: any) {
     console.error('Get promotions error:', error);
     res.status(500).json({ message: 'Error fetching promotions', error: error.message });
   }
 };
 
-// @desc    Cancel/deactivate a promotion
-// @route   DELETE /api/promotions/:id
-// @access  Private
+/**
+ * @desc    Cancel/deactivate a promotion
+ * @route   DELETE /api/promotions/:id
+ * @access  Private
+ */
 export const cancelPromotion = async (
   req: Request,
   res: Response
@@ -185,6 +403,8 @@ export const cancelPromotion = async (
     const property = await Property.findById(promotion.propertyId);
     if (property) {
       property.isPromoted = false;
+      property.promotionTier = undefined;
+      property.hasUrgentBadge = false;
       await property.save();
     }
 
@@ -202,26 +422,35 @@ export const cancelPromotion = async (
   }
 };
 
-// @desc    Get all promoted properties (public)
-// @route   GET /api/promotions/featured
-// @access  Public
+/**
+ * @desc    Get all promoted properties (public)
+ * @route   GET /api/promotions/featured
+ * @access  Public
+ */
 export const getFeaturedProperties = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const { city, limit = 10 } = req.query;
+    const { city, tier, limit = 20 } = req.query;
 
     // Find active promotions
     const filter: any = {
       isActive: true,
       endDate: { $gt: new Date() },
+      paymentStatus: 'paid',
     };
+
+    if (tier) {
+      filter.promotionTier = tier;
+    }
 
     const promotions = await Promotion.find(filter)
       .populate({
         path: 'propertyId',
-        match: city ? { city: new RegExp(city as string, 'i'), status: 'active' } : { status: 'active' },
+        match: city
+          ? { city: new RegExp(city as string, 'i'), status: 'active' }
+          : { status: 'active' },
         populate: {
           path: 'sellerId',
           select: 'name email phone avatarUrl role agencyName',
@@ -233,9 +462,102 @@ export const getFeaturedProperties = async (
     // Filter out promotions where property was not found or doesn't match filters
     const validPromotions = promotions.filter(p => p.propertyId !== null);
 
-    res.json({ promotions: validPromotions });
+    // Sort by priority (Premium > Highlight > Featured)
+    validPromotions.sort((a, b) => {
+      const scoreA = (a as any).getPriorityScore();
+      const scoreB = (b as any).getPriorityScore();
+      return scoreB - scoreA;
+    });
+
+    // Add tier info to response
+    const enrichedPromotions = validPromotions.map(promo => {
+      const tierInfo = PROMOTION_TIERS[promo.promotionTier as PromotionTierType];
+      return {
+        ...promo.toObject(),
+        tierInfo,
+      };
+    });
+
+    res.json({
+      promotions: enrichedPromotions,
+      total: enrichedPromotions.length,
+    });
   } catch (error: any) {
     console.error('Get featured properties error:', error);
     res.status(500).json({ message: 'Error fetching featured properties', error: error.message });
+  }
+};
+
+/**
+ * @desc    Get promotion statistics
+ * @route   GET /api/promotions/:id/stats
+ * @access  Private (Owner only)
+ */
+export const getPromotionStats = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const promotion = await Promotion.findById(req.params.id).populate('propertyId');
+
+    if (!promotion) {
+      res.status(404).json({ message: 'Promotion not found' });
+      return;
+    }
+
+    // Check ownership
+    if (promotion.userId.toString() !== String((req.user as IUser)._id)) {
+      res.status(403).json({ message: 'Not authorized to view this promotion' });
+      return;
+    }
+
+    const property = promotion.propertyId as any;
+
+    // Calculate stats
+    const daysActive = Math.floor(
+      (Date.now() - promotion.startDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const daysRemaining = Math.max(
+      0,
+      Math.floor((promotion.endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    );
+
+    const stats = {
+      promotion: {
+        id: promotion._id,
+        tier: promotion.promotionTier,
+        startDate: promotion.startDate,
+        endDate: promotion.endDate,
+        daysActive,
+        daysRemaining,
+        isActive: promotion.isActive && promotion.endDate > new Date(),
+      },
+      performance: {
+        views: promotion.viewsGenerated,
+        inquiries: promotion.inquiriesGenerated,
+        saves: promotion.savesGenerated,
+        refreshCount: promotion.refreshCount,
+      },
+      property: property ? {
+        id: property._id,
+        title: property.title,
+        city: property.city,
+        price: property.price,
+        totalViews: property.views,
+        totalSaves: property.saves,
+        totalInquiries: property.inquiries,
+      } : null,
+      tierInfo: PROMOTION_TIERS[promotion.promotionTier as PromotionTierType],
+    };
+
+    res.json({ stats });
+  } catch (error: any) {
+    console.error('Get promotion stats error:', error);
+    res.status(500).json({ message: 'Error fetching promotion stats', error: error.message });
   }
 };

@@ -9,6 +9,7 @@ export type HeatingType = 'any' | 'central' | 'electric' | 'gas' | 'oil' | 'heat
 export type PropertyCondition = 'any' | 'new' | 'excellent' | 'good' | 'fair' | 'needs-renovation';
 export type ViewType = 'any' | 'sea' | 'mountain' | 'city' | 'park' | 'garden' | 'street';
 export type EnergyRating = 'any' | 'A+' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
+export type PromotionTier = 'standard' | 'featured' | 'highlight' | 'premium';
 
 export interface PropertyImage {
   url: string;
@@ -77,7 +78,13 @@ export class Property {
     public readonly distanceToCenter?: number,
     public readonly distanceToSea?: number,
     public readonly distanceToSchool?: number,
-    public readonly distanceToHospital?: number
+    public readonly distanceToHospital?: number,
+    // Promotion fields
+    public readonly isPromoted?: boolean,
+    public readonly promotionTier?: PromotionTier,
+    public readonly promotionStartDate?: number,
+    public readonly promotionEndDate?: number,
+    public readonly hasUrgentBadge?: boolean
   ) {}
 
   // Business logic methods
@@ -189,6 +196,89 @@ export class Property {
     return this.beds >= minBeds && this.baths >= minBaths && this.price <= maxPrice;
   }
 
+  // Promotion-related methods
+
+  get isActivelyPromoted(): boolean {
+    if (!this.isPromoted || !this.promotionEndDate) {
+      return false;
+    }
+    return this.promotionEndDate > Date.now();
+  }
+
+  get promotionDaysRemaining(): number {
+    if (!this.isActivelyPromoted || !this.promotionEndDate) {
+      return 0;
+    }
+    return Math.max(0, Math.ceil((this.promotionEndDate - Date.now()) / (1000 * 60 * 60 * 24)));
+  }
+
+  get promotionBadgeColor(): string {
+    switch (this.promotionTier) {
+      case 'premium':
+        return '#8B5CF6'; // Purple
+      case 'highlight':
+        return '#F59E0B'; // Amber
+      case 'featured':
+        return '#3B82F6'; // Blue
+      default:
+        return '#6B7280'; // Gray
+    }
+  }
+
+  get promotionBadgeText(): string {
+    if (this.hasUrgentBadge) {
+      return 'URGENT';
+    }
+    switch (this.promotionTier) {
+      case 'premium':
+        return 'PREMIUM';
+      case 'highlight':
+        return 'HIGHLIGHT';
+      case 'featured':
+        return 'FEATURED';
+      default:
+        return '';
+    }
+  }
+
+  get displayMultiplier(): number {
+    switch (this.promotionTier) {
+      case 'premium':
+        return 3.0;
+      case 'highlight':
+        return 2.5;
+      case 'featured':
+        return 2.0;
+      default:
+        return 1.0;
+    }
+  }
+
+  get shouldShowImageCarousel(): boolean {
+    return this.isActivelyPromoted && this.promotionTier !== 'standard' && this.promotionTier !== undefined;
+  }
+
+  get featuredImages(): PropertyImage[] {
+    if (!this.images || this.images.length === 0) {
+      return [{ url: this.imageUrl, tag: 'other' }];
+    }
+
+    // Prioritize images with specific tags (exterior, living_room, kitchen)
+    const priorityTags: PropertyImageTag[] = ['exterior', 'living_room', 'kitchen'];
+    const taggedImages = this.images.filter(img => priorityTags.includes(img.tag));
+
+    // If we have tagged images, return up to 3
+    if (taggedImages.length >= 3) {
+      return taggedImages.slice(0, 3);
+    }
+
+    // Otherwise, combine tagged images with first available images
+    const remainingImages = this.images.filter(img => !taggedImages.includes(img));
+    const combined = [...taggedImages, ...remainingImages];
+
+    return combined.slice(0, 3);
+  }
+
   // Factory method
   static fromDTO(dto: any): Property {
     return new Property(
@@ -242,7 +332,13 @@ export class Property {
       dto.distanceToCenter,
       dto.distanceToSea,
       dto.distanceToSchool,
-      dto.distanceToHospital
+      dto.distanceToHospital,
+      // Promotion fields
+      dto.isPromoted,
+      dto.promotionTier,
+      dto.promotionStartDate,
+      dto.promotionEndDate,
+      dto.hasUrgentBadge
     );
   }
 
@@ -297,6 +393,12 @@ export class Property {
       distanceToSea: this.distanceToSea,
       distanceToSchool: this.distanceToSchool,
       distanceToHospital: this.distanceToHospital,
+      // Promotion fields
+      isPromoted: this.isPromoted,
+      promotionTier: this.promotionTier,
+      promotionStartDate: this.promotionStartDate,
+      promotionEndDate: this.promotionEndDate,
+      hasUrgentBadge: this.hasUrgentBadge,
     };
   }
 }

@@ -39,6 +39,7 @@ import { initializeGooglePlayService } from './services/googlePlayService';
 import { initializeAppStoreService } from './services/appStoreService';
 import { scheduleReconciliation } from './workers/reconciliationWorker';
 import { scheduleExpirationWorker } from './workers/subscriptionExpirationWorker';
+import { startPromotionRefreshWorker } from './workers/promotionRefreshWorker';
 
 // Create Express app
 const app: Application = express();
@@ -102,6 +103,10 @@ if (process.env.ENABLE_RECONCILIATION === 'true') {
 // Start subscription expiration worker (always enabled for security)
 scheduleExpirationWorker();
 console.log('✅ Subscription expiration worker started');
+
+// Start promotion refresh worker (for Highlight tier auto-refresh and expired promotion cleanup)
+startPromotionRefreshWorker();
+console.log('✅ Promotion refresh worker started');
 
 // ============================================================================
 // MANUAL CORS MIDDLEWARE - Handle ALL CORS manually for maximum control
