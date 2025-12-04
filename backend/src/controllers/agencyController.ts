@@ -188,7 +188,7 @@ export const getAgencies = async (
     // Get agencies sorted by rotation order for featured ones
     const agencies = await Agency.find(filter)
       .populate('ownerId', 'name email phone avatarUrl')
-      .populate('agents', 'name email phone avatarUrl role agencyName')
+      .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber stats.activeListings stats.totalSalesValue stats.propertiesSold stats.rating')
       .populate('admins', 'name email phone avatarUrl')
       .sort({ isFeatured: -1, adRotationOrder: 1, createdAt: -1 })
       .skip(skip)
@@ -253,7 +253,7 @@ export const getAgency = async (
       console.log(`🔑 Attempting lookup by ObjectId: ${identifier}`);
       agency = await Agency.findById(identifier)
         .populate('ownerId', 'name email phone avatarUrl')
-        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating')
+        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber stats.activeListings stats.totalSalesValue stats.propertiesSold stats.rating')
         .populate('admins', 'name email phone avatarUrl');
     }
 
@@ -263,7 +263,7 @@ export const getAgency = async (
       console.log(`🏷️  Attempting lookup by slug: ${slugLower}`);
       agency = await Agency.findOne({ slug: slugLower })
         .populate('ownerId', 'name email phone avatarUrl')
-        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating')
+        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber stats.activeListings stats.totalSalesValue stats.propertiesSold stats.rating')
         .populate('admins', 'name email phone avatarUrl');
     }
 
@@ -274,7 +274,7 @@ export const getAgency = async (
       console.log(`🏷️  Attempting lookup by legacy slug format: ${legacySlug}`);
       agency = await Agency.findOne({ slug: legacySlug })
         .populate('ownerId', 'name email phone avatarUrl')
-        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating')
+        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber stats.activeListings stats.totalSalesValue stats.propertiesSold stats.rating')
         .populate('admins', 'name email phone avatarUrl');
     }
 
@@ -355,7 +355,7 @@ export const getAgency = async (
         }
 
         // Re-populate agents to include the newly added admin
-        await agency.populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating');
+        await agency.populate('agents', 'name email phone avatarUrl role agencyName licenseNumber stats.activeListings stats.totalSalesValue stats.propertiesSold stats.rating');
       }
     }
 
@@ -367,7 +367,7 @@ export const getAgency = async (
 
       const rawProperties = await Property.find({
         sellerId: { $in: sellerIds },
-        status: 'active',
+        status: { $in: ['active', 'sold'] }, // Include both active and sold properties
       })
         .populate('sellerId', 'name email phone avatarUrl role agencyName')
         .sort({ createdAt: -1 })
@@ -387,7 +387,31 @@ export const getAgency = async (
       properties = [];
     }
 
-    res.json({ agency, properties });
+    // Calculate sales statistics
+    const soldProperties = properties.filter(p => p.status === 'sold');
+    const twelveMonthsAgo = Date.now() - (365 * 24 * 60 * 60 * 1000);
+    const soldPropertiesLast12Months = soldProperties.filter(p => {
+      return p.soldAt && p.soldAt >= twelveMonthsAgo;
+    });
+
+    const soldPrices = soldProperties.map(p => p.price).filter(Boolean);
+    const salesStats = {
+      salesLast12Months: soldPropertiesLast12Months.length,
+      totalSales: soldProperties.length,
+      minPrice: soldPrices.length > 0 ? Math.min(...soldPrices) : 0,
+      maxPrice: soldPrices.length > 0 ? Math.max(...soldPrices) : 0,
+      averagePrice: soldPrices.length > 0
+        ? soldPrices.reduce((sum, price) => sum + price, 0) / soldPrices.length
+        : 0,
+    };
+
+    // Include sales stats in agency object
+    const agencyWithStats = {
+      ...agency.toObject(),
+      salesStats,
+    };
+
+    res.json({ agency: agencyWithStats, properties });
   } catch (error: any) {
     console.error('❌ Get agency error:', error);
     console.error('Stack trace:', error.stack);

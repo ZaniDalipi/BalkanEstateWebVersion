@@ -48,7 +48,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const [showAllMembers, setShowAllMembers] = useState(true);
   const [isLeavingAgency, setIsLeavingAgency] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'myAgency'>('overview');
+  const [propertyView, setPropertyView] = useState<'active' | 'sold'>('active');
   const [editForm, setEditForm] = useState({
     name: '',
     description: '',
@@ -159,10 +159,25 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
 
   // Sort agents by performance
   const rankedAgents = [...agents].sort((a, b) => {
-    const scoreA = (a.totalSalesValue || 0) + (a.propertiesSold || 0) * 10000 + (a.rating || 0) * 5000;
-    const scoreB = (b.totalSalesValue || 0) + (b.propertiesSold || 0) * 10000 + (b.rating || 0) * 5000;
+    const scoreA = (a.stats?.totalSalesValue || 0) + (a.stats?.propertiesSold || 0) * 10000 + (a.stats?.rating || 0) * 5000;
+    const scoreB = (b.stats?.totalSalesValue || 0) + (b.stats?.propertiesSold || 0) * 10000 + (b.stats?.rating || 0) * 5000;
     return scoreB - scoreA;
   });
+
+  // Calculate sales statistics (use backend data if available, otherwise calculate)
+  const soldProperties = agencyProperties.filter(p => p.status === 'sold');
+  const salesLast12Months = agencyData.salesStats?.salesLast12Months ?? soldProperties.filter(p => {
+    if (!p.soldAt) return false;
+    const twelveMonthsAgo = Date.now() - (365 * 24 * 60 * 60 * 1000);
+    return p.soldAt >= twelveMonthsAgo;
+  }).length;
+
+  const totalSales = agencyData.salesStats?.totalSales ?? soldProperties.length;
+  const minPrice = agencyData.salesStats?.minPrice ?? (soldProperties.length > 0 ? Math.min(...soldProperties.map(p => p.price).filter(Boolean)) : 0);
+  const maxPrice = agencyData.salesStats?.maxPrice ?? (soldProperties.length > 0 ? Math.max(...soldProperties.map(p => p.price).filter(Boolean)) : 0);
+  const averagePrice = agencyData.salesStats?.averagePrice ?? (soldProperties.length > 0
+    ? soldProperties.map(p => p.price).filter(Boolean).reduce((sum, price) => sum + price, 0) / soldProperties.filter(p => p.price).length
+    : 0);
 
   const handleBack = () => {
     dispatch({ type: 'SET_SELECTED_AGENCY', payload: null });
@@ -621,7 +636,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 font-medium">Active Properties</p>
+                <p className="text-sm text-gray-500 font-medium">Total Listings</p>
                 <p className="text-3xl font-bold text-primary mt-1">{agencyProperties.length}</p>
               </div>
               <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
@@ -670,37 +685,43 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
           </div>
         </div>
 
-        {/* Tab Navigation - Show only for agency members */}
-        {isAlreadyMember && (
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 mb-8">
-            <div className="flex border-b border-gray-200">
-              <button
-                onClick={() => setActiveTab('overview')}
-                className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors ${
-                  activeTab === 'overview'
-                    ? 'text-primary border-b-2 border-primary bg-primary/5'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                Agency Overview
-              </button>
-              <button
-                onClick={() => setActiveTab('myAgency')}
-                className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors ${
-                  activeTab === 'myAgency'
-                    ? 'text-primary border-b-2 border-primary bg-primary/5'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                My Agency
-              </button>
+        {/* Sales Statistics */}
+        {soldProperties.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Sales Performance</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div>
+                <p className="text-sm text-gray-500 font-medium mb-2">Sales last 12 months</p>
+                <p className="text-3xl font-bold text-primary">{salesLast12Months}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 font-medium mb-2">Total sales</p>
+                <p className="text-3xl font-bold text-green-600">{totalSales}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 font-medium mb-2">Price range</p>
+                <p className="text-lg font-bold text-blue-600">
+                  {minPrice > 0 && maxPrice > 0 ? (
+                    <>
+                      {formatPrice(minPrice, agencyData.country || 'Serbia')} - {formatPrice(maxPrice, agencyData.country || 'Serbia')}
+                    </>
+                  ) : (
+                    'N/A'
+                  )}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 font-medium mb-2">Average price</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {averagePrice > 0 ? formatPrice(averagePrice, agencyData.country || 'Serbia') : 'N/A'}
+                </p>
+              </div>
             </div>
           </div>
         )}
 
-        {/* About Section - Show in Overview tab */}
-        {(!isAlreadyMember || activeTab === 'overview') && (
-          <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
+        {/* About Section */}
+        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">About {agencyData.name}</h2>
           {agencyData.description && (
             <p className="text-gray-600 text-lg leading-relaxed mb-6">{agencyData.description}</p>
@@ -807,11 +828,9 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
             )}
           </div>
         </div>
-        )}
 
-      
-        {(!isAlreadyMember || activeTab === 'overview') && (
-          <div className="mb-8">
+        {/* Team Members Section */}
+        <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-3xl font-bold text-gray-900">Team Members</h2>
             <div className="flex items-center gap-4">
@@ -870,10 +889,10 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
                             <UserCircleIcon className="w-12 h-12 text-white" />
                           </div>
                         )}
-                        {agent.rating && agent.rating >= 4.5 && (
+                        {agent.stats?.rating && agent.stats.rating >= 4.5 && (
                           <div className="absolute -bottom-2 -right-2 bg-amber-500 text-white px-2 py-1 rounded-lg text-xs font-bold shadow">
                             <StarIcon className="w-3 h-3 inline fill-current" />
-                            {agent.rating.toFixed(1)}
+                            {agent.stats.rating.toFixed(1)}
                           </div>
                         )}
                       </div>
@@ -904,16 +923,16 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
                           <div>
                             <p className="text-xs text-gray-500 mb-1">Total Sales</p>
                             <p className="text-lg font-bold text-primary">
-                              {formatPrice(agent.totalSalesValue || 0, agency.country || 'Serbia')}
+                              {formatPrice(agent.stats?.totalSalesValue || 0, agency.country || 'Serbia')}
                             </p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500 mb-1">Properties Sold</p>
-                            <p className="text-lg font-bold text-green-600">{agent.propertiesSold || 0}</p>
+                            <p className="text-lg font-bold text-green-600">{agent.stats?.propertiesSold || 0}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500 mb-1">Active Listings</p>
-                            <p className="text-lg font-bold text-blue-600">{agent.activeListings || 0}</p>
+                            <p className="text-lg font-bold text-blue-600">{agent.stats?.activeListings || 0}</p>
                           </div>
                         </div>
 
@@ -1013,169 +1032,72 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
             </div>
           )}
         </div>
-        )}
 
-        {/* Active Properties Section - Show in Overview tab */}
-        {(!isAlreadyMember || activeTab === 'overview') && (
-          <div>
+        {/* Agency Stats Cards */}
+        <div className="mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div
+                className={`text-center p-6 rounded-lg cursor-pointer transition-all ${
+                  propertyView === 'active' ? 'bg-primary text-white shadow-lg' : 'bg-white hover:bg-neutral-50 border border-neutral-200'
+                }`}
+                onClick={() => setPropertyView('active')}
+              >
+                <p className={`text-sm font-semibold mb-2 ${propertyView === 'active' ? 'text-white' : 'text-neutral-600'}`}>
+                  ACTIVE LISTINGS
+                </p>
+                <p className={`text-3xl font-bold ${propertyView === 'active' ? 'text-white' : 'text-neutral-900'}`}>
+                  {agencyProperties.filter(p => p.status === 'active').length}
+                </p>
+              </div>
+              <div
+                className={`text-center p-6 rounded-lg cursor-pointer transition-all ${
+                  propertyView === 'sold' ? 'bg-primary text-white shadow-lg' : 'bg-white hover:bg-neutral-50 border border-neutral-200'
+                }`}
+                onClick={() => setPropertyView('sold')}
+              >
+                <p className={`text-sm font-semibold mb-2 ${propertyView === 'sold' ? 'text-white' : 'text-neutral-600'}`}>
+                  SOLD PROPERTIES
+                </p>
+                <p className={`text-3xl font-bold ${propertyView === 'sold' ? 'text-white' : 'text-neutral-900'}`}>
+                  {agencyProperties.filter(p => p.status === 'sold').length}
+                </p>
+              </div>
+            </div>
+        </div>
+
+        {/* Properties Section */}
+        <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold text-gray-900">Active Listings</h2>
-            <span className="text-sm text-gray-500">{agencyProperties.length} properties</span>
+            <h2 className="text-3xl font-bold text-gray-900">
+              {propertyView === 'active' ? 'Active Listings' : 'Sold Properties'}
+            </h2>
+            <span className="text-sm text-gray-500">
+              {agencyProperties.filter(p => p.status === propertyView).length} properties
+            </span>
           </div>
 
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map(i => <PropertyCardSkeleton key={i} />)}
             </div>
-          ) : agencyProperties.length > 0 ? (
+          ) : agencyProperties.filter(p => p.status === propertyView).length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {agencyProperties.map(property => (
+              {agencyProperties.filter(p => p.status === propertyView).map(property => (
                 <PropertyCard key={property.id || property._id} property={property} />
               ))}
             </div>
           ) : (
             <div className="bg-white p-12 rounded-2xl border border-gray-200 text-center">
               <HomeIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 text-lg">No active listings at the moment</p>
-              <p className="text-gray-400 text-sm mt-2">Check back soon for new properties</p>
+              <p className="text-gray-500 text-lg">
+                {propertyView === 'active' ? 'No active listings at the moment' : 'No sold properties yet'}
+              </p>
+              <p className="text-gray-400 text-sm mt-2">
+                {propertyView === 'active' ? 'Check back soon for new properties' : 'Sold properties will appear here'}
+              </p>
             </div>
           )}
         </div>
-        )}
-
-        {/* My Agency Tab Content */}
-        {isAlreadyMember && activeTab === 'myAgency' && (
-          <div className="space-y-6">
-            {/* My Status Card */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">My Status</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Role</p>
-                  <p className="text-lg font-bold text-blue-900">
-                    {isOwner ? 'Owner' : isAdmin ? 'Admin' : 'Agent'}
-                  </p>
-                </div>
-                <div className="p-4 bg-green-50 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Agency</p>
-                  <p className="text-lg font-bold text-green-900">{agencyData.name}</p>
-                </div>
-                <div className="p-4 bg-purple-50 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Member Since</p>
-                  <p className="text-lg font-bold text-purple-900">
-                    {new Date().toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Invitation Code - For Admins/Owners */}
-            {isAdmin && agencyData.invitationCode && (
-              <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-900 mb-3">Invitation Code</h3>
-                <p className="text-sm text-gray-600 mb-3">
-                  Share this code with agents to join your agency
-                </p>
-                <div className="flex items-center gap-3">
-                  <code className="flex-1 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg font-mono text-lg font-semibold text-primary">
-                    {agencyData.invitationCode}
-                  </code>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(agencyData.invitationCode || '');
-                      alert('Code copied to clipboard!');
-                    }}
-                    className="px-4 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark transition-colors"
-                  >
-                    Copy
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Quick Actions */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {isAdmin && (
-                  <>
-                    <button
-                      onClick={() => setIsJoinRequestsModalOpen(true)}
-                      className="flex items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                    >
-                      <BellIcon className="w-6 h-6 text-blue-600" />
-                      <div className="text-left">
-                        <p className="font-semibold text-gray-900">Manage Join Requests</p>
-                        <p className="text-xs text-gray-600">Review pending applications</p>
-                      </div>
-                    </button>
-                    <button
-                      onClick={handleOpenEditModal}
-                      className="flex items-center gap-3 p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
-                    >
-                      <PencilIcon className="w-6 h-6 text-purple-600" />
-                      <div className="text-left">
-                        <p className="font-semibold text-gray-900">Edit Agency Profile</p>
-                        <p className="text-xs text-gray-600">Update information</p>
-                      </div>
-                    </button>
-                  </>
-                )}
-                {!isOwner && (
-                  <button
-                    onClick={handleLeaveAgency}
-                    disabled={isLeavingAgency}
-                    className="flex items-center gap-3 p-4 bg-red-50 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    <XMarkIcon className="w-6 h-6 text-red-600" />
-                    <div className="text-left">
-                      <p className="font-semibold text-gray-900">Leave Agency</p>
-                      <p className="text-xs text-gray-600">Become independent</p>
-                    </div>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* My Team - Show other agents */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">My Team ({agents.length} agents)</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {agents.slice(0, 4).map((agent) => (
-                  <div
-                    key={agent.id || agent._id}
-                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                    onClick={() => handleAgentClick(agent.id || agent._id || '')}
-                  >
-                    {agent.avatarUrl ? (
-                      <img
-                        src={agent.avatarUrl}
-                        alt={agent.name}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <UserCircleIcon className="w-8 h-8 text-primary" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">{agent.name}</p>
-                      <p className="text-xs text-gray-600">{agent.email}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {agents.length > 4 && (
-                <button
-                  onClick={() => setActiveTab('overview')}
-                  className="mt-4 w-full px-4 py-2 bg-primary/10 text-primary font-medium rounded-lg hover:bg-primary/20 transition-colors"
-                >
-                  View All {agents.length} Agents
-                </button>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Join Requests Modal */}
