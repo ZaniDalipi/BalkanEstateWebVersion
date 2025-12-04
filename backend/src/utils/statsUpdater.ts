@@ -20,7 +20,9 @@ export const initializeUserStats = async (userId: string): Promise<void> => {
         user.stats.totalSaves === undefined ||
         user.stats.totalInquiries === undefined ||
         user.stats.propertiesSold === undefined ||
-        user.stats.totalSalesValue === undefined) {
+        user.stats.totalSalesValue === undefined ||
+        user.stats.activeListings === undefined ||
+        user.stats.rating === undefined) {
 
       await User.findByIdAndUpdate(
         userId,
@@ -32,6 +34,8 @@ export const initializeUserStats = async (userId: string): Promise<void> => {
               totalInquiries: user.stats?.totalInquiries || 0,
               propertiesSold: user.stats?.propertiesSold || 0,
               totalSalesValue: user.stats?.totalSalesValue || 0,
+              activeListings: user.stats?.activeListings || 0,
+              rating: user.stats?.rating || 0,
               lastUpdated: new Date()
             }
           }
@@ -123,13 +127,48 @@ export const updateSoldStats = async (sellerId: string, propertyPrice: number): 
       {
         $inc: {
           'stats.propertiesSold': 1,
-          'stats.totalSalesValue': propertyPrice
+          'stats.totalSalesValue': propertyPrice,
+          'stats.activeListings': -1 // Decrease active listings when sold
         },
         $set: { 'stats.lastUpdated': new Date() }
       }
     );
   } catch (error) {
     console.error('Error updating sold stats:', error);
+  }
+};
+
+/**
+ * Update active listings count when a property is created
+ */
+export const incrementActiveListings = async (sellerId: string): Promise<void> => {
+  try {
+    await User.findByIdAndUpdate(
+      sellerId,
+      {
+        $inc: { 'stats.activeListings': 1 },
+        $set: { 'stats.lastUpdated': new Date() }
+      }
+    );
+  } catch (error) {
+    console.error('Error incrementing active listings:', error);
+  }
+};
+
+/**
+ * Update active listings count when a property is deleted or deactivated
+ */
+export const decrementActiveListings = async (sellerId: string): Promise<void> => {
+  try {
+    await User.findByIdAndUpdate(
+      sellerId,
+      {
+        $inc: { 'stats.activeListings': -1 },
+        $set: { 'stats.lastUpdated': new Date() }
+      }
+    );
+  } catch (error) {
+    console.error('Error decrementing active listings:', error);
   }
 };
 
@@ -146,11 +185,17 @@ export const syncUserStats = async (userId: string): Promise<void> => {
     const totalViews = properties.reduce((sum, p) => sum + (p.views || 0), 0);
     const totalSaves = properties.reduce((sum, p) => sum + (p.saves || 0), 0);
     const soldProperties = properties.filter(p => p.status === 'sold');
+    const activeProperties = properties.filter(p => p.status === 'active');
     const propertiesSold = soldProperties.length;
+    const activeListings = activeProperties.length;
     const totalSalesValue = soldProperties.reduce((sum, p) => sum + p.price, 0);
 
     // Get total inquiries from conversations
     const totalInquiries = await Conversation.countDocuments({ sellerId: userId });
+
+    // Calculate rating (placeholder - you can implement actual rating logic later)
+    // For now, we'll set it to 0 or calculate based on some criteria
+    const rating = 0; // TODO: Implement actual rating calculation based on reviews
 
     // Update user stats
     await User.findByIdAndUpdate(
@@ -163,13 +208,15 @@ export const syncUserStats = async (userId: string): Promise<void> => {
             totalInquiries,
             propertiesSold,
             totalSalesValue,
+            activeListings,
+            rating,
             lastUpdated: new Date()
           }
         }
       }
     );
 
-    console.log(`Stats synced for user ${userId}`);
+    console.log(`Stats synced for user ${userId}: ${activeListings} active listings, ${propertiesSold} sold`);
   } catch (error) {
     console.error('Error syncing user stats:', error);
     throw error;

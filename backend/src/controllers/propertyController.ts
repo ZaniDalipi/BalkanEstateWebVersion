@@ -5,7 +5,7 @@ import Agent from '../models/Agent';
 import Agency from '../models/Agency';
 import SalesHistory from '../models/SalesHistory';
 import { geocodeProperty } from '../services/geocodingService';
-import { incrementViewCount, updateSoldStats } from '../utils/statsUpdater';
+import { incrementViewCount, updateSoldStats, incrementActiveListings } from '../utils/statsUpdater';
 import {
   uploadPropertyImages,
   deleteImages,
@@ -350,6 +350,11 @@ export const createProperty = async (
     user.listingsCount += 1;
     user.totalListingsCreated += 1;
     await user.save();
+
+    // Update stats for active listings
+    if (propertyData.status === 'active') {
+      await incrementActiveListings(String(user._id));
+    }
 
     // Update agent activeListings count if user is an agent
     if (user.role === 'agent') {
