@@ -5,7 +5,7 @@ import Agent from '../models/Agent';
 import Agency from '../models/Agency';
 import SalesHistory from '../models/SalesHistory';
 import { geocodeProperty } from '../services/geocodingService';
-import { incrementViewCount, updateSoldStats, incrementActiveListings, decrementActiveListings } from '../utils/statsUpdater';
+import { incrementViewCount, updateSoldStats, incrementActiveListings } from '../utils/statsUpdater';
 import {
   uploadPropertyImages,
   deleteImages,
