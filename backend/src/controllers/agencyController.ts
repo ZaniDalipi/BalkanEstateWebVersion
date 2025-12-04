@@ -188,7 +188,7 @@ export const getAgencies = async (
     // Get agencies sorted by rotation order for featured ones
     const agencies = await Agency.find(filter)
       .populate('ownerId', 'name email phone avatarUrl')
-      .populate('agents', 'name email phone avatarUrl role agencyName')
+      .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber stats.activeListings stats.totalSalesValue stats.propertiesSold stats.rating')
       .populate('admins', 'name email phone avatarUrl')
       .sort({ isFeatured: -1, adRotationOrder: 1, createdAt: -1 })
       .skip(skip)
@@ -253,7 +253,7 @@ export const getAgency = async (
       console.log(`🔑 Attempting lookup by ObjectId: ${identifier}`);
       agency = await Agency.findById(identifier)
         .populate('ownerId', 'name email phone avatarUrl')
-        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating')
+        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber stats.activeListings stats.totalSalesValue stats.propertiesSold stats.rating')
         .populate('admins', 'name email phone avatarUrl');
     }
 
@@ -263,7 +263,7 @@ export const getAgency = async (
       console.log(`🏷️  Attempting lookup by slug: ${slugLower}`);
       agency = await Agency.findOne({ slug: slugLower })
         .populate('ownerId', 'name email phone avatarUrl')
-        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating')
+        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber stats.activeListings stats.totalSalesValue stats.propertiesSold stats.rating')
         .populate('admins', 'name email phone avatarUrl');
     }
 
@@ -274,7 +274,7 @@ export const getAgency = async (
       console.log(`🏷️  Attempting lookup by legacy slug format: ${legacySlug}`);
       agency = await Agency.findOne({ slug: legacySlug })
         .populate('ownerId', 'name email phone avatarUrl')
-        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating')
+        .populate('agents', 'name email phone avatarUrl role agencyName licenseNumber stats.activeListings stats.totalSalesValue stats.propertiesSold stats.rating')
         .populate('admins', 'name email phone avatarUrl');
     }
 
@@ -355,7 +355,7 @@ export const getAgency = async (
         }
 
         // Re-populate agents to include the newly added admin
-        await agency.populate('agents', 'name email phone avatarUrl role agencyName licenseNumber activeListings totalSalesValue propertiesSold rating');
+        await agency.populate('agents', 'name email phone avatarUrl role agencyName licenseNumber stats.activeListings stats.totalSalesValue stats.propertiesSold stats.rating');
       }
     }
 

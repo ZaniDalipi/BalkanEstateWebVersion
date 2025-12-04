@@ -31,6 +31,8 @@ export interface IUser extends Document {
     totalInquiries: number;    // Total conversation inquiries
     propertiesSold: number;    // Count of sold properties
     totalSalesValue: number;   // Sum of sold property prices
+    activeListings: number;    // Count of active properties
+    rating: number;            // Average rating (0-5)
     lastUpdated: Date;         // Last stats update timestamp
   };
 
@@ -178,6 +180,16 @@ const UserSchema: Schema = new Schema(
       totalSalesValue: {
         type: Number,
         default: 0,
+      },
+      activeListings: {
+        type: Number,
+        default: 0,
+      },
+      rating: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 5,
       },
       lastUpdated: {
         type: Date,

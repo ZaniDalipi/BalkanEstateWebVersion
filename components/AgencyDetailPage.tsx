@@ -159,8 +159,8 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
 
   // Sort agents by performance
   const rankedAgents = [...agents].sort((a, b) => {
-    const scoreA = (a.totalSalesValue || 0) + (a.propertiesSold || 0) * 10000 + (a.rating || 0) * 5000;
-    const scoreB = (b.totalSalesValue || 0) + (b.propertiesSold || 0) * 10000 + (b.rating || 0) * 5000;
+    const scoreA = (a.stats?.totalSalesValue || 0) + (a.stats?.propertiesSold || 0) * 10000 + (a.stats?.rating || 0) * 5000;
+    const scoreB = (b.stats?.totalSalesValue || 0) + (b.stats?.propertiesSold || 0) * 10000 + (b.stats?.rating || 0) * 5000;
     return scoreB - scoreA;
   });
 
@@ -889,10 +889,10 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
                             <UserCircleIcon className="w-12 h-12 text-white" />
                           </div>
                         )}
-                        {agent.rating && agent.rating >= 4.5 && (
+                        {agent.stats?.rating && agent.stats.rating >= 4.5 && (
                           <div className="absolute -bottom-2 -right-2 bg-amber-500 text-white px-2 py-1 rounded-lg text-xs font-bold shadow">
                             <StarIcon className="w-3 h-3 inline fill-current" />
-                            {agent.rating.toFixed(1)}
+                            {agent.stats.rating.toFixed(1)}
                           </div>
                         )}
                       </div>
@@ -923,16 +923,16 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
                           <div>
                             <p className="text-xs text-gray-500 mb-1">Total Sales</p>
                             <p className="text-lg font-bold text-primary">
-                              {formatPrice(agent.totalSalesValue || 0, agency.country || 'Serbia')}
+                              {formatPrice(agent.stats?.totalSalesValue || 0, agency.country || 'Serbia')}
                             </p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500 mb-1">Properties Sold</p>
-                            <p className="text-lg font-bold text-green-600">{agent.propertiesSold || 0}</p>
+                            <p className="text-lg font-bold text-green-600">{agent.stats?.propertiesSold || 0}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500 mb-1">Active Listings</p>
-                            <p className="text-lg font-bold text-blue-600">{agent.activeListings || 0}</p>
+                            <p className="text-lg font-bold text-blue-600">{agent.stats?.activeListings || 0}</p>
                           </div>
                         </div>
 
