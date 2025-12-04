@@ -1256,41 +1256,60 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                     )}
 
                     {!propertyToEdit && (
-                        <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-5 mb-6">
-                            <label htmlFor="wantToPromote" className="flex items-start gap-3 cursor-pointer">
+                        <div className="bg-white border-2 border-neutral-300 rounded-lg p-6 mb-6 shadow-sm">
+                            <div className="flex items-start gap-4 mb-4">
+                                <div className="flex-shrink-0 w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
+                                    <span className="text-xl">🚀</span>
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-base font-bold text-neutral-800 mb-1">
+                                        Boost Your Listing's Visibility
+                                    </h3>
+                                    <p className="text-sm text-neutral-600">
+                                        Get 3-5x more views and inquiries with promoted placement
+                                    </p>
+                                </div>
+                            </div>
+
+                            <label htmlFor="wantToPromote" className="flex items-start gap-3 cursor-pointer p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors">
                                 <input
                                     type="checkbox"
                                     id="wantToPromote"
                                     checked={wantToPromote}
                                     onChange={(e) => setWantToPromote(e.target.checked)}
-                                    className="mt-1 w-4 h-4 text-neutral-800 border-neutral-300 rounded focus:ring-neutral-800"
+                                    className="mt-0.5 w-5 h-5 text-neutral-800 border-neutral-300 rounded focus:ring-2 focus:ring-neutral-800"
                                 />
                                 <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-sm font-semibold text-neutral-800">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-sm font-semibold text-neutral-900">
                                             Promote this listing after publishing
                                         </span>
-                                        <span className="bg-neutral-800 text-white text-xs font-medium px-2 py-0.5 rounded">
+                                        <span className="bg-green-600 text-white text-xs font-medium px-2 py-0.5 rounded">
                                             Recommended
                                         </span>
                                     </div>
-                                    <p className="text-xs text-neutral-600 mb-2">
-                                        Get more visibility and inquiries with promoted placement. Choose from Featured, Highlight, or Premium tiers starting at €19.99.
+                                    <p className="text-sm text-neutral-700 mb-3">
+                                        After publishing, you'll choose from 3 promotion tiers (Featured, Highlight, or Premium) starting at just €19.99 for 7 days. Includes coupon support and agency discounts.
                                     </p>
-                                    <ul className="space-y-0.5 text-xs text-neutral-700">
-                                        <li className="flex items-center gap-2">
-                                            <span className="text-neutral-400">•</span>
-                                            <span>Top search results placement</span>
-                                        </li>
-                                        <li className="flex items-center gap-2">
-                                            <span className="text-neutral-400">•</span>
-                                            <span>Enhanced listing display</span>
-                                        </li>
-                                        <li className="flex items-center gap-2">
-                                            <span className="text-neutral-400">•</span>
-                                            <span>Priority in buyer alerts</span>
-                                        </li>
-                                    </ul>
+                                    <div className="grid grid-cols-3 gap-2 text-xs">
+                                        <div className="bg-white p-2 rounded border border-neutral-200">
+                                            <div className="font-semibold text-neutral-800">Featured</div>
+                                            <div className="text-neutral-600">From €19.99</div>
+                                        </div>
+                                        <div className="bg-white p-2 rounded border-2 border-neutral-800">
+                                            <div className="font-semibold text-neutral-800">Highlight</div>
+                                            <div className="text-neutral-600">From €39.99</div>
+                                        </div>
+                                        <div className="bg-white p-2 rounded border border-neutral-200">
+                                            <div className="font-semibold text-neutral-800">Premium</div>
+                                            <div className="text-neutral-600">From €79.99</div>
+                                        </div>
+                                    </div>
+                                    {wantToPromote && (
+                                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-800">
+                                            ✓ You'll be able to select your promotion tier and duration after publishing
+                                        </div>
+                                    )}
                                 </div>
                             </label>
                         </div>

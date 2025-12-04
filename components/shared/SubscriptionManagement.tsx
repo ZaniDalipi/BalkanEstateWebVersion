@@ -303,6 +303,103 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
         </div>
       </div>
 
+      {/* Listing Promotion Options */}
+      <div className="bg-white rounded-xl shadow-md border border-neutral-200 p-6 space-y-4">
+        <h4 className="text-lg font-bold text-neutral-800 flex items-center gap-2">
+          <span className="text-2xl">🚀</span>
+          Listing Promotion Options
+        </h4>
+        <p className="text-sm text-neutral-600">
+          Boost your property listings with paid promotions to get more visibility and inquiries
+        </p>
+
+        <div className="grid sm:grid-cols-3 gap-4 mt-4">
+          {/* Featured */}
+          <div className="border border-neutral-200 rounded-lg p-4 hover:border-neutral-400 transition-all">
+            <div className="flex items-center justify-between mb-2">
+              <h5 className="font-semibold text-neutral-800">Featured</h5>
+              <span className="text-xs bg-neutral-100 text-neutral-700 px-2 py-1 rounded">From €19.99</span>
+            </div>
+            <p className="text-xs text-neutral-600 mb-3">Stand out in search results with priority placement</p>
+            <ul className="space-y-1">
+              <li className="text-xs text-neutral-700 flex items-start gap-1.5">
+                <span className="text-neutral-400 mt-0.5">•</span>
+                <span>Top of search results</span>
+              </li>
+              <li className="text-xs text-neutral-700 flex items-start gap-1.5">
+                <span className="text-neutral-400 mt-0.5">•</span>
+                <span>Featured badge</span>
+              </li>
+              <li className="text-xs text-neutral-700 flex items-start gap-1.5">
+                <span className="text-neutral-400 mt-0.5">•</span>
+                <span>2x visibility</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Highlight */}
+          <div className="border-2 border-neutral-800 rounded-lg p-4 relative">
+            <div className="absolute -top-2 right-2 bg-neutral-800 text-white text-xs font-medium px-2 py-0.5 rounded">
+              Popular
+            </div>
+            <div className="flex items-center justify-between mb-2">
+              <h5 className="font-semibold text-neutral-800">Highlight</h5>
+              <span className="text-xs bg-neutral-100 text-neutral-700 px-2 py-1 rounded">From €39.99</span>
+            </div>
+            <p className="text-xs text-neutral-600 mb-3">Maximum visibility with auto-refresh every 3 days</p>
+            <ul className="space-y-1">
+              <li className="text-xs text-neutral-700 flex items-start gap-1.5">
+                <span className="text-neutral-400 mt-0.5">•</span>
+                <span>All Featured benefits</span>
+              </li>
+              <li className="text-xs text-neutral-700 flex items-start gap-1.5">
+                <span className="text-neutral-400 mt-0.5">•</span>
+                <span>Auto-refresh to top</span>
+              </li>
+              <li className="text-xs text-neutral-700 flex items-start gap-1.5">
+                <span className="text-neutral-400 mt-0.5">•</span>
+                <span>3x visibility</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Premium */}
+          <div className="border border-neutral-200 rounded-lg p-4 hover:border-neutral-400 transition-all">
+            <div className="flex items-center justify-between mb-2">
+              <h5 className="font-semibold text-neutral-800">Premium</h5>
+              <span className="text-xs bg-neutral-100 text-neutral-700 px-2 py-1 rounded">From €79.99</span>
+            </div>
+            <p className="text-xs text-neutral-600 mb-3">Ultimate exposure with homepage featuring</p>
+            <ul className="space-y-1">
+              <li className="text-xs text-neutral-700 flex items-start gap-1.5">
+                <span className="text-neutral-400 mt-0.5">•</span>
+                <span>All Highlight benefits</span>
+              </li>
+              <li className="text-xs text-neutral-700 flex items-start gap-1.5">
+                <span className="text-neutral-400 mt-0.5">•</span>
+                <span>Homepage carousel</span>
+              </li>
+              <li className="text-xs text-neutral-700 flex items-start gap-1.5">
+                <span className="text-neutral-400 mt-0.5">•</span>
+                <span>5x visibility</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 mt-4">
+          <div className="flex items-start gap-3">
+            <span className="text-lg">💡</span>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-neutral-800 mb-1">How to promote your listings</p>
+              <p className="text-xs text-neutral-600">
+                When creating a new listing, you'll see a promotion option checkbox. Select it to choose your promotion tier after publishing. You can also promote existing listings from the "My Listings" tab by clicking the "Promote" button.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Action Buttons */}
       <div className="bg-white rounded-xl shadow-md border border-neutral-200 p-6">
         <div className="flex flex-col sm:flex-row gap-4">
