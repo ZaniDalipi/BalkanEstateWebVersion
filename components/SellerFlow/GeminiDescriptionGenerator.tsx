@@ -742,13 +742,6 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             return;
         }
 
-        // Validate promotion selection
-        if (!propertyToEdit && wantToPromote && !selectedPromotionTier) {
-            setError("Please select a promotion tier or uncheck the promotion option.");
-            setIsSubmitting(false);
-            return;
-        }
-
         try {
             // Step 1: Upload images to Cloudinary before creating the property
             let imageUrls: PropertyImage[] = [];
@@ -1006,9 +999,6 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         return (
             <PromotionSelector
                 propertyId={createdPropertyId}
-                initialTier={selectedPromotionTier || undefined}
-                initialDuration={selectedDuration}
-                initialCoupon={couponCode}
                 onSuccess={handlePaymentSuccess}
                 onSkip={handlePaymentSkipOrFail}
             />
@@ -1334,206 +1324,37 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                                 </div>
                             </div>
 
-                            <label htmlFor="wantToPromote" className="flex items-start gap-3 cursor-pointer mb-4">
+                            <label htmlFor="wantToPromote" className="flex items-start gap-3 cursor-pointer">
                                 <input
                                     type="checkbox"
                                     id="wantToPromote"
                                     checked={wantToPromote}
-                                    onChange={(e) => {
-                                        setWantToPromote(e.target.checked);
-                                        if (!e.target.checked) {
-                                            setSelectedPromotionTier(null);
-                                        }
-                                    }}
-                                    className="mt-0.5 w-4 h-4 text-primary border-gray-300 rounded focus:ring-2 focus:ring-primary"
+                                    onChange={(e) => setWantToPromote(e.target.checked)}
+                                    className="mt-0.5 w-5 h-5 text-primary border-gray-300 rounded focus:ring-2 focus:ring-primary"
                                 />
                                 <div className="flex-1">
                                     <span className="text-sm font-semibold text-gray-900">
                                         I want to promote this listing
                                     </span>
                                     <p className="text-xs text-gray-600 mt-1">
-                                        Select a promotion plan below. Payment will be processed before publishing.
+                                        You'll choose your promotion plan and complete payment on the next page before publishing.
                                     </p>
                                 </div>
                             </label>
 
                             {wantToPromote && (
-                                <div className="mt-4 space-y-3">
-                                    <p className="text-sm font-medium text-gray-900 mb-3">Select promotion tier:</p>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedPromotionTier('featured')}
-                                        className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                                            selectedPromotionTier === 'featured'
-                                                ? 'border-primary bg-primary/5'
-                                                : 'border-gray-200 hover:border-gray-300'
-                                        }`}
-                                    >
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="font-bold text-gray-900">Featured</span>
-                                                    <span className="text-xs text-gray-600">⭐</span>
-                                                </div>
-                                                <p className="text-sm text-gray-600 mb-2">Priority placement in search results</p>
-                                                <p className="text-lg font-bold text-gray-900">From €1.99</p>
-                                            </div>
-                                            {selectedPromotionTier === 'featured' && (
-                                                <div className="flex-shrink-0">
-                                                    <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                                                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                    </div>
-                                                </div>
-                                            )}
+                                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                    <div className="flex items-start gap-2">
+                                        <span className="text-lg">✓</span>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-medium text-green-900 mb-1">
+                                                Promotion selected
+                                            </p>
+                                            <p className="text-xs text-green-700">
+                                                On the next page, you'll select your promotion tier (from €1.99), duration, and apply any discount coupons before publishing.
+                                            </p>
                                         </div>
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedPromotionTier('highlight')}
-                                        className={`w-full text-left p-4 rounded-lg border-2 transition-all relative ${
-                                            selectedPromotionTier === 'highlight'
-                                                ? 'border-primary bg-primary/5'
-                                                : 'border-gray-200 hover:border-gray-300'
-                                        }`}
-                                    >
-                                        <div className="absolute -top-2 right-3 bg-primary text-white text-xs font-medium px-2 py-0.5 rounded">
-                                            Popular
-                                        </div>
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="font-bold text-gray-900">Highlight</span>
-                                                    <span className="text-xs text-gray-600">💎</span>
-                                                </div>
-                                                <p className="text-sm text-gray-600 mb-2">Stand out with distinctive highlighting</p>
-                                                <p className="text-lg font-bold text-gray-900">From €3.99</p>
-                                            </div>
-                                            {selectedPromotionTier === 'highlight' && (
-                                                <div className="flex-shrink-0">
-                                                    <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                                                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedPromotionTier('premium')}
-                                        className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                                            selectedPromotionTier === 'premium'
-                                                ? 'border-primary bg-primary/5'
-                                                : 'border-gray-200 hover:border-gray-300'
-                                        }`}
-                                    >
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="font-bold text-gray-900">Premium</span>
-                                                    <span className="text-xs text-gray-600">👑</span>
-                                                </div>
-                                                <p className="text-sm text-gray-600 mb-2">Ultimate exposure with homepage featuring</p>
-                                                <p className="text-lg font-bold text-gray-900">From €7.99</p>
-                                            </div>
-                                            {selectedPromotionTier === 'premium' && (
-                                                <div className="flex-shrink-0">
-                                                    <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                                                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </button>
-
-                                    {!selectedPromotionTier && (
-                                        <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-3 mt-2">
-                                            Please select a promotion tier to continue
-                                        </p>
-                                    )}
-
-                                    {selectedPromotionTier && (
-                                        <div className="mt-4 space-y-4">
-                                            {/* Duration Selection */}
-                                            <div className="border border-gray-300 rounded-lg p-4">
-                                                <h4 className="text-sm font-semibold text-gray-900 mb-3">⏱️ Select Duration</h4>
-                                                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                                                    {([7, 15, 30, 60, 90] as const).map((duration) => {
-                                                        const isSelected = selectedDuration === duration;
-                                                        // Calculate price for this tier and duration
-                                                        const prices = {
-                                                            featured: { 7: 1.99, 15: 3.49, 30: 5.99, 60: 9.99, 90: 13.99 },
-                                                            highlight: { 7: 3.99, 15: 6.99, 30: 11.99, 60: 19.99, 90: 27.99 },
-                                                            premium: { 7: 7.99, 15: 13.99, 30: 23.99, 60: 39.99, 90: 55.99 }
-                                                        };
-                                                        const price = prices[selectedPromotionTier][duration];
-
-                                                        return (
-                                                            <button
-                                                                key={duration}
-                                                                type="button"
-                                                                onClick={() => setSelectedDuration(duration)}
-                                                                className={`p-2 rounded border-2 transition-all text-xs ${
-                                                                    isSelected
-                                                                        ? 'border-primary bg-primary/5 text-gray-900'
-                                                                        : 'border-gray-300 bg-white hover:border-gray-400 text-gray-700'
-                                                                }`}
-                                                            >
-                                                                <div className="font-semibold">{duration} days</div>
-                                                                <div className="text-xs mt-1">€{price}</div>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-
-                                            {/* Coupon Code */}
-                                            <div className="border border-gray-300 rounded-lg p-4">
-                                                <h4 className="text-sm font-semibold text-gray-900 mb-3">🎟️ Discount Coupon (Optional)</h4>
-                                                <input
-                                                    type="text"
-                                                    value={couponCode}
-                                                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                                                    placeholder="Enter coupon code"
-                                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                                                />
-                                                <p className="text-xs text-gray-500 mt-2">
-                                                    Have a discount code? Enter it here to save on your promotion.
-                                                </p>
-                                            </div>
-
-                                            {/* Price Summary */}
-                                            <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-                                                <h4 className="text-sm font-semibold text-gray-900 mb-2">Summary</h4>
-                                                <div className="flex justify-between text-sm mb-1">
-                                                    <span className="text-gray-600">{selectedPromotionTier.charAt(0).toUpperCase() + selectedPromotionTier.slice(1)} - {selectedDuration} days:</span>
-                                                    <span className="font-semibold text-gray-900">
-                                                        €{(() => {
-                                                            const prices = {
-                                                                featured: { 7: 1.99, 15: 3.49, 30: 5.99, 60: 9.99, 90: 13.99 },
-                                                                highlight: { 7: 3.99, 15: 6.99, 30: 11.99, 60: 19.99, 90: 27.99 },
-                                                                premium: { 7: 7.99, 15: 13.99, 30: 23.99, 60: 39.99, 90: 55.99 }
-                                                            };
-                                                            return prices[selectedPromotionTier][selectedDuration];
-                                                        })()}
-                                                    </span>
-                                                </div>
-                                                {couponCode && (
-                                                    <div className="text-xs text-gray-600 mt-1">
-                                                        Coupon "{couponCode}" will be validated at checkout
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
+                                    </div>
                                 </div>
                             )}
                         </div>
