@@ -902,10 +902,12 @@ export interface PromotionPricing {
 }
 
 export interface UrgentModifier {
+  id: string;
   name: string;
   description: string;
   price: number;
-  features: string[];
+  badgeColor: string;
+  canCombineWith: string[];
 }
 
 export interface AgencyPlanAllocation {

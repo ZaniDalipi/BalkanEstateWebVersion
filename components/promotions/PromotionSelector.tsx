@@ -253,7 +253,7 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
                 {tier.features.slice(0, 4).map((feature, idx) => (
                   <li key={idx} className="text-xs text-neutral-700 flex items-start gap-2">
                     <span className="text-neutral-400 mt-0.5">•</span>
-                    <span>{feature}</span>
+                    <span>{typeof feature === 'string' ? feature : feature.name}</span>
                   </li>
                 ))}
               </ul>
@@ -333,17 +333,9 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
                     +€{tiersData.urgentModifier.price}
                   </span>
                 </div>
-                <p className="text-xs text-neutral-600 mb-2">
+                <p className="text-xs text-neutral-600">
                   {tiersData.urgentModifier.description}
                 </p>
-                <ul className="space-y-0.5">
-                  {tiersData.urgentModifier.features.slice(0, 3).map((feature, idx) => (
-                    <li key={idx} className="text-xs text-neutral-700 flex items-start gap-2">
-                      <span className="text-neutral-400">•</span>
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
               </div>
             </label>
           </div>
