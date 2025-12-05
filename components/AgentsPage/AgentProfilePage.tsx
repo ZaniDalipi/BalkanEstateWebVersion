@@ -518,7 +518,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                                     {firstName}'s Properties
                                                 </h2>
                                                 <p className="text-gray-600">
-                                                    {activeListings.length} active listings • {soldProperties.length} sold recently
+                                                    {activeListings.length} active listings • {soldProperties.length} sold properties
                                                 </p>
                                             </div>
                                             <button
@@ -550,10 +550,10 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                             </div>
                                         )}
 
-                                        {/* Recently Sold Properties */}
+                                        {/* Sold Properties */}
                                         {soldProperties.length > 0 && (
                                             <div>
-                                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recently Sold ({soldProperties.length})</h3>
+                                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Sold Properties ({soldProperties.length})</h3>
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                                     {soldProperties.map(prop => (
                                                         <div key={prop.id} className="relative">
