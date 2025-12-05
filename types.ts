@@ -80,6 +80,19 @@ export interface Agent extends User {
     linkedinUrl?: string;
     officeAddress?: string;
     officePhone?: string;
+    teamSize?: number;
+    minPrice?: number;
+    maxPrice?: number;
+    receiveInquiries?: boolean;
+    averageprice?: number;
+    certifications?: string[];
+    recentsales?: {
+        propertyId: string;
+        soldPrice: number;
+        soldDate: string;
+    }[];
+    awards?: string[];
+    
 }
 
 export interface Agency {
