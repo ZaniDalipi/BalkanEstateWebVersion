@@ -178,25 +178,40 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Enhanced Header with Gradient */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white sticky top-0 z-50 shadow-lg">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white sticky top-0 z-40 shadow-lg">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center justify-between">
-                        <button 
-                            onClick={handleBack} 
-                            className="flex items-center gap-2 text-white hover:text-blue-100 font-semibold transition-colors group"
-                        >
-                            <ArrowLeftIcon className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                            Back to Leaderboard
-                        </button>
-                        <div className="flex items-center gap-3">
-                            <button 
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <button
+                                onClick={handleBack}
+                                className="flex items-center gap-2 text-white hover:text-blue-100 font-semibold transition-colors group flex-shrink-0"
+                            >
+                                <ArrowLeftIcon className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                                <span className="hidden sm:inline">Back</span>
+                            </button>
+                            <div className="hidden md:flex items-center gap-2 bg-white/10 px-3 py-2 rounded-lg">
+                                {isAgencyAgent ? (
+                                    <>
+                                        <BuildingOfficeIcon className="w-5 h-5 flex-shrink-0" />
+                                        <span className="font-semibold truncate">{agent.agencyName}</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <UserIcon className="w-5 h-5 flex-shrink-0" />
+                                        <span className="font-semibold">Independent</span>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
                                 onClick={handleSaveAgent}
                                 className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
                             >
                                 <HeartIcon className={`w-5 h-5 ${savedAgent ? 'fill-red-500 text-red-500' : ''}`} />
-                                <span className="hidden sm:inline">{savedAgent ? 'Saved' : 'Save Agent'}</span>
+                                <span className="hidden sm:inline">Save</span>
                             </button>
-                            <button 
+                            <button
                                 onClick={handleShareAgent}
                                 className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
                             >
