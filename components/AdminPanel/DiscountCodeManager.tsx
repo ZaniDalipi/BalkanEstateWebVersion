@@ -41,6 +41,7 @@ const DiscountCodeManager: React.FC = () => {
     description: '',
     applicablePlans: [] as string[],
     minimumPurchaseAmount: 0,
+    source: 'admin' as string,
   });
 
   // Bulk generation form
@@ -93,7 +94,6 @@ const DiscountCodeManager: React.FC = () => {
           ...newCode,
           code: newCode.code.toUpperCase(),
           validFrom: new Date().toISOString(),
-          source: 'admin',
         }),
       });
 
@@ -117,6 +117,7 @@ const DiscountCodeManager: React.FC = () => {
         description: '',
         applicablePlans: [],
         minimumPurchaseAmount: 0,
+        source: 'admin',
       });
     } catch (err: any) {
       setError(err.message || 'Failed to create discount code');
@@ -232,6 +233,29 @@ const DiscountCodeManager: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-gray-900">Discount Code Management</h2>
           <div className="flex gap-2">
+            <button
+              onClick={() => {
+                // Set preset values for listing promotion code
+                setNewCode({
+                  code: `PROMO${Date.now().toString().slice(-6)}`,
+                  discountType: 'percentage',
+                  discountValue: 20,
+                  validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+                  usageLimit: 100,
+                  description: 'Listing promotion discount',
+                  applicablePlans: ['listing_promotion_15days'],
+                  minimumPurchaseAmount: 0,
+                  source: 'promotion',
+                });
+                setIsCreateModalOpen(true);
+              }}
+              className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-medium flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Listing Promo
+            </button>
             <button
               onClick={() => setIsBulkModalOpen(true)}
               className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
@@ -460,6 +484,97 @@ const DiscountCodeManager: React.FC = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                   min="0"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Code Type/Source
+                </label>
+                <select
+                  value={newCode.source}
+                  onChange={(e) => setNewCode({ ...newCode, source: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="admin">Admin (General)</option>
+                  <option value="promotion">Listing Promotion</option>
+                  <option value="seasonal">Seasonal Campaign</option>
+                  <option value="referral">Referral Program</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {newCode.source === 'promotion' && 'Use for discounts on listing promotions (15-day featured boost)'}
+                  {newCode.source === 'seasonal' && 'Use for holiday/seasonal marketing campaigns'}
+                  {newCode.source === 'referral' && 'Use for user referral rewards'}
+                  {newCode.source === 'admin' && 'General purpose discount codes'}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Applicable Plans (optional)
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={newCode.applicablePlans.includes('listing_promotion_15days')}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setNewCode({ ...newCode, applicablePlans: [...newCode.applicablePlans, 'listing_promotion_15days'] });
+                        } else {
+                          setNewCode({ ...newCode, applicablePlans: newCode.applicablePlans.filter(p => p !== 'listing_promotion_15days') });
+                        }
+                      }}
+                      className="rounded border-gray-300"
+                    />
+                    <span className="text-sm text-gray-700">Listing Promotion (15 days)</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={newCode.applicablePlans.includes('seller_pro_monthly')}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setNewCode({ ...newCode, applicablePlans: [...newCode.applicablePlans, 'seller_pro_monthly'] });
+                        } else {
+                          setNewCode({ ...newCode, applicablePlans: newCode.applicablePlans.filter(p => p !== 'seller_pro_monthly') });
+                        }
+                      }}
+                      className="rounded border-gray-300"
+                    />
+                    <span className="text-sm text-gray-700">Seller Pro (Monthly)</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={newCode.applicablePlans.includes('seller_pro_yearly')}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setNewCode({ ...newCode, applicablePlans: [...newCode.applicablePlans, 'seller_pro_yearly'] });
+                        } else {
+                          setNewCode({ ...newCode, applicablePlans: newCode.applicablePlans.filter(p => p !== 'seller_pro_yearly') });
+                        }
+                      }}
+                      className="rounded border-gray-300"
+                    />
+                    <span className="text-sm text-gray-700">Seller Pro (Yearly)</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={newCode.applicablePlans.includes('seller_enterprise_yearly')}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setNewCode({ ...newCode, applicablePlans: [...newCode.applicablePlans, 'seller_enterprise_yearly'] });
+                        } else {
+                          setNewCode({ ...newCode, applicablePlans: newCode.applicablePlans.filter(p => p !== 'seller_enterprise_yearly') });
+                        }
+                      }}
+                      className="rounded border-gray-300"
+                    />
+                    <span className="text-sm text-gray-700">Enterprise Plan</span>
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Leave all unchecked to apply to all plans</p>
               </div>
 
               <div>

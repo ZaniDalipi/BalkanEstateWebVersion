@@ -8,6 +8,7 @@ import { useAppContext } from '../../context/AppContext';
 import WhackAnIconAnimation from './WhackAnIconAnimation';
 import NumberInputWithSteppers from '../shared/NumberInputWithSteppers';
 import MapLocationPicker from './MapLocationPicker';
+import PromotionOfferModal from '../shared/PromotionOfferModal';
 import { BALKAN_LOCATIONS, CityData } from '../../utils/balkanLocations';
 import * as api from '../../services/apiService';
 import imageCompression from 'browser-image-compression';
@@ -303,6 +304,10 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const [isCompressing, setIsCompressing] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
 
+    // Promotion Modal State
+    const [showPromotionModal, setShowPromotionModal] = useState(false);
+    const [createdProperty, setCreatedProperty] = useState<Property | null>(null);
+
     // Drag & Drop State
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
@@ -426,6 +431,13 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const getZoomLevel = useMemo(() => {
         return listingData.streetAddress.trim() ? 16 : 13;
     }, [listingData.streetAddress]);
+
+    // Memoize city data calculation to avoid IIFE in JSX (fixes hooks render error)
+    const cityData = useMemo(() => {
+        if (!selectedCountry || !selectedCity) return null;
+        const countryData = BALKAN_LOCATIONS.find(c => c.name === selectedCountry);
+        return countryData?.cities.find(c => c.name === selectedCity) || null;
+    }, [selectedCountry, selectedCity]);
 
     const handleMapLocationChange = (newLat: number, newLng: number) => {
         console.log('📍 PIN DRAGGED TO EXACT COORDINATES:', { lat: newLat, lng: newLng });
@@ -699,6 +711,18 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         setListingData(prev => ({ ...prev, image_tags: newImageTags }));
     };
 
+    // Handle promotion modal completion
+    const handlePromotionComplete = (success: boolean) => {
+        setShowPromotionModal(false);
+        setCreatedProperty(null);
+        setStep('success');
+
+        // Redirect after a short delay to show success message
+        setTimeout(() => {
+            dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
+        }, 2000);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!currentUser) {
@@ -904,17 +928,23 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
 
             if (propertyToEdit) {
                 await updateListing(newProperty);
+                // For updates, show success and redirect
+                setStep('success');
+                setTimeout(() => {
+                    dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
+                }, 3000);
             } else {
-                await createListing(newProperty);
-                 if (currentUser.role === UserRole.BUYER) {
+                // For new listings, create first then offer promotion
+                const savedProperty = await createListing(newProperty);
+
+                if (currentUser.role === UserRole.BUYER) {
                     await updateUser({ role: UserRole.PRIVATE_SELLER });
                 }
-            }
 
-            setStep('success');
-            setTimeout(() => {
-                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
-            }, 3000);
+                // Store the created property and show promotion modal
+                setCreatedProperty(savedProperty);
+                setShowPromotionModal(true);
+            }
 
         } catch (err) {
             if (err instanceof Error) {
@@ -1048,25 +1078,18 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                         {/* Show interactive map when city is selected */}
                         {selectedCity && listingData.lat !== 0 && listingData.lng !== 0 && (
                             <div className="md:col-span-2">
-                                {(() => {
-                                  // Get city coordinates for filtering
-                                  const countryData = BALKAN_LOCATIONS.find(c => c.name === selectedCountry);
-                                  const cityData = countryData?.cities.find(c => c.name === selectedCity);
-                                  return (
-                                    <MapLocationPicker
-                                      lat={listingData.lat}
-                                      lng={listingData.lng}
-                                      address={listingData.streetAddress || `${selectedCity}, ${selectedCountry}`}
-                                      zoom={getZoomLevel}
-                                      country={selectedCountry}
-                                      city={selectedCity}
-                                      cityLat={cityData?.lat}
-                                      cityLng={cityData?.lng}
-                                      onLocationChange={handleMapLocationChange}
-                                      onAddressChange={handleMapAddressChange}
-                                    />
-                                  );
-                                })()}
+                                <MapLocationPicker
+                                    lat={listingData.lat}
+                                    lng={listingData.lng}
+                                    address={listingData.streetAddress || `${selectedCity}, ${selectedCountry}`}
+                                    zoom={getZoomLevel}
+                                    country={selectedCountry}
+                                    city={selectedCity}
+                                    cityLat={cityData?.lat}
+                                    cityLng={cityData?.lng}
+                                    onLocationChange={handleMapLocationChange}
+                                    onAddressChange={handleMapAddressChange}
+                                />
                             </div>
                         )}
 
@@ -1233,6 +1256,14 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                     </div>
                  </div>
             )}
+
+            {/* Promotion Offer Modal - shown after successfully creating a new listing */}
+            <PromotionOfferModal
+                isOpen={showPromotionModal}
+                onClose={() => handlePromotionComplete(false)}
+                property={createdProperty}
+                onPromotionComplete={handlePromotionComplete}
+            />
         </form>
     );
 };

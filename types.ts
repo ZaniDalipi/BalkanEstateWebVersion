@@ -198,6 +198,10 @@ export interface Property {
     distanceToSea?: number; // in km
     distanceToSchool?: number; // in km
     distanceToHospital?: number; // in km
+    // Promotion fields
+    isPromoted?: boolean;
+    promotionStartDate?: number;
+    promotionEndDate?: number;
 }
 
 export interface Message {

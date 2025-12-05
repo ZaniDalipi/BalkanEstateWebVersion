@@ -14,7 +14,7 @@ interface PaymentWindowProps {
   onClose: () => void;
   planName: string;
   planPrice: number;
-  planInterval: 'month' | 'year';
+  planInterval: 'month' | 'year' | 'once'; // 'once' for one-time payments like promotions
   userRole: 'buyer' | 'private_seller' | 'agent';
   userEmail?: string;
   userCountry?: string;
