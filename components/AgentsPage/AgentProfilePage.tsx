@@ -129,13 +129,6 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
         }
     };
 
-    const handleStartLiveChat = async () => {
-        if (!state.isAuthenticated) {
-            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
-            return;
-        }
-        await handleContactAgent();
-    };
 
     const handleRequestAppraisal = () => {
         if (!state.isAuthenticated) {
@@ -170,39 +163,17 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
         window.history.pushState({}, '', '/agents');
     };
 
-    // Sample similar agents data (in real app, fetch from API)
-    const similarAgents = [
-        {
-            id: 1,
-            name: "Sarah Johnson",
-            avatarUrl: "https://randomuser.me/api/portraits/women/32.jpg",
-            agencyName: agent.agencyName || "Premium Realty",
-            rating: 4.8,
-            reviews: 42,
-            location: agent.city || "New York",
-            specialties: ["Luxury", "Apartments"]
-        },
-        {
-            id: 2,
-            name: "Michael Chen",
-            avatarUrl: "https://randomuser.me/api/portraits/men/54.jpg",
-            agencyName: agent.agencyName || "Premium Realty",
-            rating: 4.9,
-            reviews: 67,
-            location: agent.city || "New York",
-            specialties: ["Commercial", "Investment"]
-        },
-        {
-            id: 3,
-            name: "Lisa Rodriguez",
-            avatarUrl: "https://randomuser.me/api/portraits/women/44.jpg",
-            agencyName: agent.agencyName || "Luxury Estates",
-            rating: 4.7,
-            reviews: 35,
-            location: agent.city || "New York",
-            specialties: ["Condos", "First-time Buyers"]
+    // Get similar agents from the same agency or same city
+    const similarAgents = useMemo(() => {
+        // If agent has an agency, fetch agents from the same agency
+        if (agent.agencyName && agent.agencyName !== 'Independent Agent') {
+            // In a real app, this would be fetched from the backend
+            // For now, we could filter from state if available
+            return [];
         }
-    ];
+        // Otherwise, show agents from the same city
+        return [];
+    }, [agent.agencyName, agent.city]);
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -440,30 +411,34 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
 
                                         {/* Performance Stats */}
                                         <div>
-                                            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                                                 <TrendingUpIcon className="w-6 h-6 text-blue-600" />
                                                 Performance & Statistics
                                             </h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
-                                                    <div className="text-3xl font-bold text-blue-700 mb-2">${(stats.totalSales * 1000000).toLocaleString()}</div>
-                                                    <div className="text-sm font-semibold text-blue-800">Total Sales Volume</div>
-                                                    <div className="text-xs text-blue-600 mt-1">Lifetime value sold</div>
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                                                    <div className="text-2xl font-bold text-blue-700">{stats.totalSales}</div>
+                                                    <div className="text-xs font-semibold text-blue-800">Sold</div>
                                                 </div>
-                                                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
-                                                    <div className="text-3xl font-bold text-green-700 mb-2">{stats.totalSales}</div>
-                                                    <div className="text-sm font-semibold text-green-800">Properties Sold</div>
-                                                    <div className="text-xs text-green-600 mt-1">Successful transactions</div>
+                                                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+                                                    <div className="text-2xl font-bold text-green-700">{activeListings.length}</div>
+                                                    <div className="text-xs font-semibold text-green-800">Active</div>
                                                 </div>
-                                                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
-                                                    <div className="text-3xl font-bold text-purple-700 mb-2">{stats.avgPrice > 0 ? formatPrice(stats.avgPrice, 'US') : 'N/A'}</div>
-                                                    <div className="text-sm font-semibold text-purple-800">Avg. Sale Price</div>
-                                                    <div className="text-xs text-purple-600 mt-1">Average transaction value</div>
+                                                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                                                    <div className="text-2xl font-bold text-purple-700">{stats.rating.toFixed(1)}</div>
+                                                    <div className="text-xs font-semibold text-purple-800">Rating</div>
                                                 </div>
-                                                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200">
-                                                    <div className="text-3xl font-bold text-orange-700 mb-2">{stats.recentSales}</div>
-                                                    <div className="text-sm font-semibold text-orange-800">Recent Sales</div>
-                                                    <div className="text-xs text-orange-600 mt-1">Last 12 months</div>
+                                                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200">
+                                                    <div className="text-2xl font-bold text-orange-700">{stats.yearsExperience}+</div>
+                                                    <div className="text-xs font-semibold text-orange-800">Years</div>
+                                                </div>
+                                                <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-4 border border-red-200">
+                                                    <div className="text-2xl font-bold text-red-700">{stats.reviews}</div>
+                                                    <div className="text-xs font-semibold text-red-800">Reviews</div>
+                                                </div>
+                                                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-4 border border-indigo-200">
+                                                    <div className="text-2xl font-bold text-indigo-700">{stats.teamMembers}</div>
+                                                    <div className="text-xs font-semibold text-indigo-800">Team</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -552,7 +527,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                                     </div>
                                                 ) : (
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                        {activeListings.slice(0, 6).map(prop => (
+                                                        {activeListings.map(prop => (
                                                             <PropertyCard key={prop.id} property={prop} />
                                                         ))}
                                                     </div>
@@ -563,9 +538,9 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                         {/* Recent Sales */}
                                         {soldProperties.length > 0 && (
                                             <div>
-                                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recently Sold</h3>
+                                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recently Sold ({soldProperties.length})</h3>
                                                 <div className="space-y-3">
-                                                    {soldProperties.slice(0, 5).map((prop, index) => (
+                                                    {soldProperties.map((prop, index) => (
                                                         <div key={prop.id} className="flex items-center gap-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors group">
                                                             <div className="text-2xl font-bold text-gray-300">#{index + 1}</div>
                                                             <div className="flex-1">
@@ -719,22 +694,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                         <div className="text-sm truncate">{agent.email}</div>
                                     </div>
                                 </a>
-                            )}
-                            
-                            <button
-                                onClick={handleStartLiveChat}
-                                className="w-full bg-white text-blue-600 hover:bg-blue-50 font-bold py-3.5 px-4 rounded-xl mt-4 transition-colors shadow-lg"
-                            >
-                                <span className="flex items-center justify-center gap-2">
-                                    <ChatBubbleLeftRightIcon className="w-5 h-5" />
-                                    Start Live Chat
-                                </span>
-                            </button>
-                            
-                            <div className="text-center text-sm text-blue-100 mt-4 pt-4 border-t border-white/20">
-                                <ClockIcon className="w-4 h-4 inline mr-1" />
-                                Typically replies within 15 minutes
-                            </div>
+                            }
                         </div>
 
                         {/* Request Appraisal Card */}
@@ -755,32 +715,39 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                             </div>
                         </div>
 
-                        {/* Similar Agents */}
+                        {/* Similar Agents / Agents from Same Agency */}
                         <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-6">
                             <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                                 <UsersIcon className="w-5 h-5 text-blue-600" />
-                                Similar Agents
+                                {isAgencyAgent ? 'Agents from Same Agency' : 'Other Agents in Area'}
                             </h3>
-                            <div className="space-y-4">
-                                {similarAgents.map((similarAgent) => (
-                                    <div key={similarAgent.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
-                                        <img
-                                            src={similarAgent.avatarUrl}
-                                            alt={similarAgent.name}
-                                            className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
-                                        />
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-semibold text-gray-900 truncate">{similarAgent.name}</p>
-                                            <div className="flex items-center gap-1">
-                                                <StarRating rating={similarAgent.rating} />
-                                                <span className="text-sm text-gray-600">{similarAgent.rating} ({similarAgent.reviews})</span>
+                            {similarAgents.length > 0 ? (
+                                <div className="space-y-4">
+                                    {similarAgents.map((similarAgent) => (
+                                        <div key={similarAgent.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
+                                            <img
+                                                src={similarAgent.avatarUrl}
+                                                alt={similarAgent.name}
+                                                className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-gray-900 truncate">{similarAgent.name}</p>
+                                                <div className="flex items-center gap-1">
+                                                    <StarRating rating={similarAgent.rating} />
+                                                    <span className="text-sm text-gray-600">{similarAgent.rating} ({similarAgent.reviews})</span>
+                                                </div>
+                                                <p className="text-xs text-gray-500 truncate">{similarAgent.agencyName}</p>
                                             </div>
-                                            <p className="text-xs text-gray-500 truncate">{similarAgent.agencyName}</p>
+                                            <ChevronRightIcon className="w-5 h-5 text-gray-400" />
                                         </div>
-                                        <ChevronRightIcon className="w-5 h-5 text-gray-400" />
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-6">
+                                    <UsersIcon className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                                    <p className="text-gray-600 font-medium">No similar agents found</p>
+                                </div>
+                            )}
                             <button
                                 onClick={handleViewMoreAgents}
                                 className="w-full mt-4 text-center text-blue-600 hover:text-blue-700 font-semibold text-sm py-2"
