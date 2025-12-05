@@ -358,6 +358,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             const originalLng = propertyToEdit.lng - lngOffset;
 
             setListingData({
+                title: propertyToEdit.address || '',
                 streetAddress: propertyToEdit.address,
                 price: propertyToEdit.price,
                 bedrooms: propertyToEdit.beds,
@@ -959,7 +960,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
                     }, 3000);
                 }
-
+            }
         } catch (err) {
             if (err instanceof Error) {
                 setError(err.message || "Failed to submit listing.");
