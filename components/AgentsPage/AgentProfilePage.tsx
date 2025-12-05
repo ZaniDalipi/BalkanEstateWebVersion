@@ -169,6 +169,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
         if (agent.agencyName && agent.agencyName !== 'Independent Agent') {
             // In a real app, this would be fetched from the backend
             // For now, we could filter from state if available
+            
             return [];
         }
         // Otherwise, show agents from the same city
@@ -550,7 +551,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                             </div>
                                         )}
 
-                                        {/* Sold Properties */}
+                                    
                                         {soldProperties.length > 0 && (
                                             <div>
                                                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Sold Properties ({soldProperties.length})</h3>
