@@ -995,6 +995,7 @@ export const validateCoupon = async (
   return await apiRequest('/coupons/validate', {
     method: 'POST',
     body: { couponCode, promotionTier, price },
+    requiresAuth: true,
   });
 };
 
