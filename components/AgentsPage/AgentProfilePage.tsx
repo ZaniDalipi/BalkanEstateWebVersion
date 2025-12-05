@@ -122,7 +122,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
             const conversation = await createConversation(agent.id);
             dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: conversation.id });
             window.history.pushState({ page: 'inbox' }, '', '/inbox');
-            dispatch({ type: 'SET_CURRENT_PAGE', payload: 'inbox' });
+            dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'inbox' });
         } catch (error) {
             console.error('Failed to start conversation:', error);
             alert('Failed to contact agent. Please try again.');
@@ -694,7 +694,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                         <div className="text-sm truncate">{agent.email}</div>
                                     </div>
                                 </a>
-                            }
+                            )}
                         </div>
 
                         {/* Request Appraisal Card */}
