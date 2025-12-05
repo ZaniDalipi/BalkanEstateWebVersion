@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import AdminNav from './AdminNav';
 import DiscountCodeManager from './DiscountCodeManager';
+import PromotionCouponManager from './PromotionCouponManager';
 import UserManager from './UserManager';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import PropertyManager from './PropertyManager';
 import AgencyManager from './AgencyManager';
 
-type AdminView = 'dashboard' | 'discounts' | 'users' | 'properties' | 'agencies';
+type AdminView = 'dashboard' | 'discounts' | 'promotionCoupons' | 'users' | 'properties' | 'agencies';
 
 const AdminDashboard: React.FC = () => {
   const { state, dispatch } = useAppContext();
@@ -121,6 +122,8 @@ const AdminDashboard: React.FC = () => {
         return <AnalyticsDashboard />;
       case 'discounts':
         return <DiscountCodeManager />;
+      case 'promotionCoupons':
+        return <PromotionCouponManager />;
       case 'users':
         return <UserManager />;
       case 'properties':
