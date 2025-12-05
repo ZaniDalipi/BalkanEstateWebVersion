@@ -992,11 +992,38 @@ export const validateCoupon = async (
   promotionTier: string,
   price: number
 ): Promise<CouponValidationResult> => {
-  return await apiRequest('/coupons/validate', {
+  const response = await apiRequest<{
+    valid: boolean;
+    coupon?: {
+      code: string;
+      description?: string;
+      discountType: 'percentage' | 'fixed';
+      discountValue: number;
+    };
+    discount?: {
+      amount: number;
+      originalPrice: number;
+      finalPrice: number;
+      savings: number;
+      savingsPercentage: number;
+    };
+    message?: string;
+  }>('/coupons/validate', {
     method: 'POST',
     body: { couponCode, promotionTier, price },
     requiresAuth: true,
   });
+
+  // Map backend response to frontend interface
+  return {
+    isValid: response.valid,
+    discount: response.discount?.amount || 0,
+    discountType: response.coupon?.discountType || 'fixed',
+    discountValue: response.coupon?.discountValue || 0,
+    message: response.valid
+      ? response.coupon?.description
+      : response.message,
+  };
 };
 
 /**
