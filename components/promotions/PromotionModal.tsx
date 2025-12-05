@@ -32,16 +32,14 @@ const PromotionModal: React.FC<PromotionModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={propertyTitle ? `Promote: ${propertyTitle}` : 'Promote Your Listing'}
-      maxWidth="max-w-6xl"
+      size="5xl"
     >
-      <div className="p-6">
-        <PromotionSelector
-          propertyId={propertyId}
-          onSuccess={handleSuccess}
-          onSkip={handleSkip}
-        />
-      </div>
+      <PromotionSelector
+        propertyId={propertyId}
+        onSuccess={handleSuccess}
+        onSkip={handleSkip}
+        inModal={true}
+      />
     </Modal>
   );
 };

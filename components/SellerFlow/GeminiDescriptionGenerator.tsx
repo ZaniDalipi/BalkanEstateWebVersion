@@ -458,84 +458,93 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     };
 
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            const files = Array.from(e.target.files);
+        // Handle case when user cancels file picker - don't clear existing images
+        if (!e.target.files || e.target.files.length === 0) {
+            // Reset the input so the same file can be selected again
+            e.target.value = '';
+            return;
+        }
 
-            // Check image count limits first
-            let filesToProcess = files;
-            if (propertyToEdit || mode === 'manual') {
-                // Limit to 30 images
-                filesToProcess = files.slice(0, 30);
-                if (files.length > 30) {
-                    alert('Maximum 30 images allowed. Only the first 30 images will be uploaded.');
-                }
-            } else {
-                // When adding to existing images, ensure total doesn't exceed 30
-                const totalCount = images.length + files.length;
-                if (totalCount > 30) {
-                    const availableSlots = 30 - images.length;
-                    if (availableSlots <= 0) {
-                        alert('Maximum 30 images allowed. Please remove some images before adding more.');
-                        return;
-                    }
-                    alert(`Maximum 30 images allowed. Only ${availableSlots} more image(s) can be added.`);
-                    filesToProcess = files.slice(0, availableSlots);
+        const files = Array.from(e.target.files);
+
+        // Check image count limits - always append to existing images
+        const currentImageCount = images.length;
+        const totalCount = currentImageCount + files.length;
+        let filesToProcess = files;
+
+        if (totalCount > 30) {
+            const availableSlots = 30 - currentImageCount;
+            if (availableSlots <= 0) {
+                alert('Maximum 30 images allowed. Please remove some images before adding more.');
+                e.target.value = '';
+                return;
+            }
+            alert(`Maximum 30 images allowed. Only ${availableSlots} more image(s) can be added.`);
+            filesToProcess = files.slice(0, availableSlots);
+        }
+
+        // Compress images on the client side for faster uploads
+        setIsCompressing(true);
+        setError(null);
+
+        try {
+            const compressionOptions = {
+                maxSizeMB: 1, // Maximum file size in MB
+                maxWidthOrHeight: 1920, // Max dimension
+                useWebWorker: true, // Use web worker for better performance
+                fileType: 'image/jpeg', // Convert to JPEG for better compression
+                initialQuality: 0.8, // Good quality while reducing size
+            };
+
+            const compressedImages: ImageData[] = [];
+
+            // Process images in batches for better performance
+            for (let i = 0; i < filesToProcess.length; i++) {
+                const file = filesToProcess[i];
+                try {
+                    console.log(`🗜️ Compressing image ${i + 1}/${filesToProcess.length}: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+
+                    const compressedFile = await imageCompression(file, compressionOptions);
+
+                    console.log(`✅ Compressed: ${compressedFile.name} (${(compressedFile.size / 1024 / 1024).toFixed(2)}MB) - ${((1 - compressedFile.size / file.size) * 100).toFixed(0)}% reduction`);
+
+                    compressedImages.push({
+                        file: compressedFile,
+                        previewUrl: URL.createObjectURL(compressedFile)
+                    });
+                } catch (compressionError) {
+                    console.error(`Failed to compress ${file.name}, using original:`, compressionError);
+                    // Fallback to original file if compression fails
+                    compressedImages.push({
+                        file,
+                        previewUrl: URL.createObjectURL(file)
+                    });
                 }
             }
 
-            // Compress images on the client side for faster uploads
-            setIsCompressing(true);
-            setError(null);
+            // Always append new images to existing ones
+            setImages(prev => {
+                const newImages = [...prev, ...compressedImages];
+                // Update image tags for new images
+                const newStartIndex = prev.length;
+                setListingData(prevData => ({
+                    ...prevData,
+                    image_tags: [
+                        ...prevData.image_tags,
+                        ...compressedImages.map((_, i) => ({ index: newStartIndex + i, tag: 'other' }))
+                    ]
+                }));
+                return newImages;
+            });
 
-            try {
-                const compressionOptions = {
-                    maxSizeMB: 1, // Maximum file size in MB
-                    maxWidthOrHeight: 1920, // Max dimension
-                    useWebWorker: true, // Use web worker for better performance
-                    fileType: 'image/jpeg', // Convert to JPEG for better compression
-                    initialQuality: 0.8, // Good quality while reducing size
-                };
-
-                const compressedImages: ImageData[] = [];
-
-                // Process images in batches for better performance
-                for (let i = 0; i < filesToProcess.length; i++) {
-                    const file = filesToProcess[i];
-                    try {
-                        console.log(`🗜️ Compressing image ${i + 1}/${filesToProcess.length}: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
-
-                        const compressedFile = await imageCompression(file, compressionOptions);
-
-                        console.log(`✅ Compressed: ${compressedFile.name} (${(compressedFile.size / 1024 / 1024).toFixed(2)}MB) - ${((1 - compressedFile.size / file.size) * 100).toFixed(0)}% reduction`);
-
-                        compressedImages.push({
-                            file: compressedFile,
-                            previewUrl: URL.createObjectURL(compressedFile)
-                        });
-                    } catch (compressionError) {
-                        console.error(`Failed to compress ${file.name}, using original:`, compressionError);
-                        // Fallback to original file if compression fails
-                        compressedImages.push({
-                            file,
-                            previewUrl: URL.createObjectURL(file)
-                        });
-                    }
-                }
-
-                if (propertyToEdit || mode === 'manual') {
-                    setImages(compressedImages);
-                    setListingData(prev => ({...prev, image_tags: compressedImages.map((_, i) => ({index: i, tag: 'other'}))}));
-                } else {
-                    setImages(prev => [...prev, ...compressedImages]);
-                }
-
-                console.log(`🎉 Successfully processed ${compressedImages.length} images`);
-            } catch (error) {
-                console.error('Image compression error:', error);
-                setError('Failed to process images. Please try again.');
-            } finally {
-                setIsCompressing(false);
-            }
+            console.log(`🎉 Successfully processed ${compressedImages.length} images`);
+        } catch (error) {
+            console.error('Image compression error:', error);
+            setError('Failed to process images. Please try again.');
+        } finally {
+            setIsCompressing(false);
+            // Reset input so the same files can be selected again if needed
+            e.target.value = '';
         }
     };
 

@@ -14,6 +14,7 @@ interface PromotionSelectorProps {
   initialTier?: 'featured' | 'highlight' | 'premium';
   initialDuration?: 7 | 15 | 30 | 60 | 90;
   initialCoupon?: string;
+  inModal?: boolean; // When true, reduces padding for modal context
 }
 
 type PromotionTier = 'featured' | 'highlight' | 'premium';
@@ -30,6 +31,7 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
   initialTier,
   initialDuration = 30,
   initialCoupon = '',
+  inModal = false,
 }) => {
   const [tiersData, setTiersData] = useState<api.PromotionTiersResponse | null>(null);
   const [agencyAllocation, setAgencyAllocation] = useState<api.AgencyAllocation | null>(null);
@@ -232,16 +234,16 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
   const tiers = tiersData.tiers;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div className={inModal ? "w-full" : "max-w-7xl mx-auto px-4 sm:px-6 py-8"}>
       {/* Header Section */}
-      <div className="text-center mb-10">
-        <div className="inline-block p-3 bg-primary/10 rounded-full mb-4">
-          <span className="text-4xl">🚀</span>
+      <div className={`text-center ${inModal ? 'mb-6' : 'mb-10'}`}>
+        <div className={`inline-block ${inModal ? 'p-2' : 'p-3'} bg-primary/10 rounded-full mb-3`}>
+          <span className={inModal ? 'text-2xl' : 'text-4xl'}>🚀</span>
         </div>
-        <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-3">
+        <h2 className={`${inModal ? 'text-xl md:text-2xl' : 'text-3xl md:text-4xl'} font-bold text-neutral-900 mb-2`}>
           Promote Your Listing
         </h2>
-        <p className="text-neutral-600 text-base md:text-lg max-w-2xl mx-auto">
+        <p className={`text-neutral-600 ${inModal ? 'text-sm' : 'text-base md:text-lg'} max-w-2xl mx-auto`}>
           Get up to 5x more views and inquiries with promoted placement. Choose the perfect plan for your needs.
         </p>
       </div>
@@ -253,42 +255,42 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
       )}
 
       {/* Benefits Banner */}
-      <div className="bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-6 mb-8">
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
-              <span className="text-xl">👁️</span>
+      <div className={`bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-xl ${inModal ? 'p-4 mb-5' : 'p-6 mb-8'}`}>
+        <div className={`grid ${inModal ? 'grid-cols-3 gap-3' : 'md:grid-cols-3 gap-6'}`}>
+          <div className="flex items-start gap-2">
+            <div className={`flex-shrink-0 ${inModal ? 'w-8 h-8' : 'w-10 h-10'} bg-primary/20 rounded-lg flex items-center justify-center`}>
+              <span className={inModal ? 'text-sm' : 'text-xl'}>👁️</span>
             </div>
             <div>
-              <h3 className="font-semibold text-neutral-900 mb-1">Higher Visibility</h3>
-              <p className="text-sm text-neutral-600">Appear at the top of search results</p>
+              <h3 className={`font-semibold text-neutral-900 ${inModal ? 'text-xs' : 'mb-1'}`}>Higher Visibility</h3>
+              {!inModal && <p className="text-sm text-neutral-600">Appear at the top of search results</p>}
             </div>
           </div>
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
-              <span className="text-xl">📱</span>
+          <div className="flex items-start gap-2">
+            <div className={`flex-shrink-0 ${inModal ? 'w-8 h-8' : 'w-10 h-10'} bg-primary/20 rounded-lg flex items-center justify-center`}>
+              <span className={inModal ? 'text-sm' : 'text-xl'}>📱</span>
             </div>
             <div>
-              <h3 className="font-semibold text-neutral-900 mb-1">More Inquiries</h3>
-              <p className="text-sm text-neutral-600">Get contacted by serious buyers</p>
+              <h3 className={`font-semibold text-neutral-900 ${inModal ? 'text-xs' : 'mb-1'}`}>More Inquiries</h3>
+              {!inModal && <p className="text-sm text-neutral-600">Get contacted by serious buyers</p>}
             </div>
           </div>
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
-              <span className="text-xl">⚡</span>
+          <div className="flex items-start gap-2">
+            <div className={`flex-shrink-0 ${inModal ? 'w-8 h-8' : 'w-10 h-10'} bg-primary/20 rounded-lg flex items-center justify-center`}>
+              <span className={inModal ? 'text-sm' : 'text-xl'}>⚡</span>
             </div>
             <div>
-              <h3 className="font-semibold text-neutral-900 mb-1">Sell Faster</h3>
-              <p className="text-sm text-neutral-600">Reach buyers up to 3x faster</p>
+              <h3 className={`font-semibold text-neutral-900 ${inModal ? 'text-xs' : 'mb-1'}`}>Sell Faster</h3>
+              {!inModal && <p className="text-sm text-neutral-600">Reach buyers up to 3x faster</p>}
             </div>
           </div>
         </div>
       </div>
 
       {/* Tier Selection */}
-      <div className="mb-8">
-        <h3 className="text-xl font-bold text-neutral-900 mb-4">Choose Your Plan</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className={inModal ? 'mb-5' : 'mb-8'}>
+        <h3 className={`${inModal ? 'text-base' : 'text-xl'} font-bold text-neutral-900 mb-3`}>Choose Your Plan</h3>
+        <div className={`grid grid-cols-1 md:grid-cols-3 ${inModal ? 'gap-3' : 'gap-5'}`}>
           {(['featured', 'highlight', 'premium'] as PromotionTier[]).map((tierId) => {
             const tier = tiers[tierId];
             const isSelected = selectedTier === tierId;

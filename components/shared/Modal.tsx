@@ -6,10 +6,11 @@ interface ModalProps {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
-  size?: 'lg' | '2xl' | '5xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl';
+  maxWidth?: string;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'lg' }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'lg', maxWidth }) => {
   // Lock body scroll when modal is open to prevent map jumping
   useEffect(() => {
     if (isOpen) {
@@ -30,9 +31,23 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
 
   if (!isOpen) return null;
 
-  let sizeClass = 'max-w-lg';
-  if (size === '2xl') sizeClass = 'max-w-2xl';
-  if (size === '5xl') sizeClass = 'max-w-5xl';
+  // Use custom maxWidth if provided, otherwise map size to class
+  let sizeClass = maxWidth || 'max-w-lg';
+  if (!maxWidth) {
+    const sizeMap: Record<string, string> = {
+      sm: 'max-w-sm',
+      md: 'max-w-md',
+      lg: 'max-w-lg',
+      xl: 'max-w-xl',
+      '2xl': 'max-w-2xl',
+      '3xl': 'max-w-3xl',
+      '4xl': 'max-w-4xl',
+      '5xl': 'max-w-5xl',
+      '6xl': 'max-w-6xl',
+      '7xl': 'max-w-7xl',
+    };
+    sizeClass = sizeMap[size || 'lg'] || 'max-w-lg';
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-[5000] flex justify-center items-center p-3" onClick={handleBackdropClick}>
