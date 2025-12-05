@@ -43,8 +43,10 @@ export interface IProperty extends Document {
   inquiries: number;
   // Promotion fields
   isPromoted: boolean;
+  promotionTier?: 'standard' | 'featured' | 'highlight' | 'premium';
   promotionStartDate?: Date;
   promotionEndDate?: Date;
+  hasUrgentBadge?: boolean;
   // Amenities fields
   amenities: string[];
   hasBalcony?: boolean;
@@ -230,11 +232,21 @@ const PropertySchema: Schema = new Schema(
       default: false,
       index: true,
     },
+    promotionTier: {
+      type: String,
+      enum: ['standard', 'featured', 'highlight', 'premium'],
+      index: true,
+    },
     promotionStartDate: {
       type: Date,
     },
     promotionEndDate: {
       type: Date,
+    },
+    hasUrgentBadge: {
+      type: Boolean,
+      default: false,
+      index: true,
     },
     // Amenities fields
     amenities: {
@@ -294,5 +306,9 @@ PropertySchema.index({ price: 1, status: 1 });
 PropertySchema.index({ propertyType: 1, city: 1, status: 1 });
 // Index for promoted properties
 PropertySchema.index({ isPromoted: 1, status: 1 });
+// Index for promoted properties by tier (for sorting)
+PropertySchema.index({ promotionTier: 1, isPromoted: 1, promotionEndDate: 1 });
+// Index for urgent properties
+PropertySchema.index({ hasUrgentBadge: 1, isPromoted: 1 });
 
 export default mongoose.model<IProperty>('Property', PropertySchema);

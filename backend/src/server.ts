@@ -24,6 +24,7 @@ import webhookRoutes from './routes/webhookRoutes';
 import productRoutes from './routes/productRoutes';
 import bankExportRoutes from './routes/bankExportRoutes';
 import promotionRoutes from './routes/promotionRoutes';
+import couponRoutes from './routes/couponRoutes';
 import agencyRoutes from './routes/agencyRoutes';
 import agencyJoinRequestRoutes from './routes/agencyJoinRequestRoutes';
 import agentRoutes from './routes/agentRoutes';
@@ -39,6 +40,7 @@ import { initializeGooglePlayService } from './services/googlePlayService';
 import { initializeAppStoreService } from './services/appStoreService';
 import { scheduleReconciliation } from './workers/reconciliationWorker';
 import { scheduleExpirationWorker } from './workers/subscriptionExpirationWorker';
+import { startPromotionRefreshWorker } from './workers/promotionRefreshWorker';
 
 // Create Express app
 const app: Application = express();
@@ -103,6 +105,10 @@ if (process.env.ENABLE_RECONCILIATION === 'true') {
 scheduleExpirationWorker();
 console.log('✅ Subscription expiration worker started');
 
+// Start promotion refresh worker (for Highlight tier auto-refresh and expired promotion cleanup)
+startPromotionRefreshWorker();
+console.log('✅ Promotion refresh worker started');
+
 // ============================================================================
 // MANUAL CORS MIDDLEWARE - Handle ALL CORS manually for maximum control
 // ============================================================================
@@ -162,6 +168,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/bank-exports', bankExportRoutes);
 app.use('/api/promotions', promotionRoutes);
+app.use('/api/coupons', couponRoutes);
 app.use('/api/agencies', agencyRoutes);
 app.use('/api/agency-join-requests', agencyJoinRequestRoutes);
 app.use('/api/agents', agentRoutes);

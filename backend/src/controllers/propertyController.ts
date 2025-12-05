@@ -93,14 +93,13 @@ export const getProperties = async (
     }
 
     // Build sort object
-    // Always show sold properties at the top, then apply user-selected sorting
+    // Priority order: Premium > Highlight > Featured > Urgent > Standard, then sold properties, then apply user-selected sorting
     let sort: any = {};
 
-    // First, sort by status to show sold properties at top
-    // We use a trick: create a computed field that gives sold=1, active=0
-    // So sold properties sort first
+    // First priority: Promoted properties (Premium > Highlight > Featured)
+    // We'll handle this with a custom sort after fetching
 
-    // Add status sorting (sold first)
+    // Add status sorting (sold first among non-promoted)
     sort.status = -1; // 'sold' > 'active' alphabetically (reversed)
 
     // Then apply user's preferred sorting
@@ -122,11 +121,49 @@ export const getProperties = async (
     const skip = (pageNum - 1) * limitNum;
 
     // Execute query with seller population
-    const properties = await Property.find(filter)
+    // Fetch more than needed to allow for promoted property sorting
+    const fetchLimit = limitNum * 2; // Fetch 2x to ensure we have enough promoted properties
+    let properties = await Property.find(filter)
       .populate('sellerId', 'name email phone avatarUrl role agencyName')
       .sort(sort)
       .skip(skip)
-      .limit(limitNum);
+      .limit(fetchLimit);
+
+    // Custom sort: Prioritize promoted properties by tier
+    // Order: Premium (active) > Highlight (active) > Featured (active) > Urgent > Standard
+    properties.sort((a, b) => {
+      const aIsPromoted = a.isPromoted && a.promotionEndDate && a.promotionEndDate > new Date();
+      const bIsPromoted = b.isPromoted && b.promotionEndDate && b.promotionEndDate > new Date();
+
+      // Both promoted or both not promoted - use tier scoring
+      if (aIsPromoted && bIsPromoted) {
+        const tierScores: Record<string, number> = {
+          premium: 100,
+          highlight: 70,
+          featured: 40,
+          standard: 10,
+        };
+
+        const aScore = (tierScores[a.promotionTier || 'standard'] || 0) + (a.hasUrgentBadge ? 5 : 0);
+        const bScore = (tierScores[b.promotionTier || 'standard'] || 0) + (b.hasUrgentBadge ? 5 : 0);
+
+        if (aScore !== bScore) {
+          return bScore - aScore; // Higher score first
+        }
+        // If same tier, use original sort order
+        return 0;
+      }
+
+      // One is promoted, one isn't - promoted comes first
+      if (aIsPromoted && !bIsPromoted) return -1;
+      if (!aIsPromoted && bIsPromoted) return 1;
+
+      // Neither promoted - use original sort order
+      return 0;
+    });
+
+    // Trim to requested limit after sorting
+    properties = properties.slice(0, limitNum);
 
     // Get total count for pagination
     const total = await Property.countDocuments(filter);

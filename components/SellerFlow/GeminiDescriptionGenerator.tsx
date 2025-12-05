@@ -12,11 +12,13 @@ import PromotionOfferModal from '../shared/PromotionOfferModal';
 import { BALKAN_LOCATIONS, CityData } from '../../utils/balkanLocations';
 import * as api from '../../services/apiService';
 import imageCompression from 'browser-image-compression';
+import PromotionSelector from '../promotions/PromotionSelector';
 
-type Step = 'init' | 'loading' | 'form' | 'floorplan' | 'success';
+type Step = 'init' | 'loading' | 'form' | 'floorplan' | 'payment' | 'success';
 type Mode = 'ai' | 'manual';
 
 interface ListingData {
+    title: string;
     streetAddress: string;
     price: number;
     bedrooms: number;
@@ -52,6 +54,7 @@ interface ImageData {
 }
 
 const initialListingData: ListingData = {
+    title: '',
     streetAddress: '',
     price: 0,
     bedrooms: 0,
@@ -298,6 +301,12 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const [language, setLanguage] = useState('English');
     const [aiPropertyType, setAiPropertyType] = useState<'house' | 'apartment' | 'villa' | 'other'>('house');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
+    const [wantToPromote, setWantToPromote] = useState(false);
+    const [selectedPromotionTier, setSelectedPromotionTier] = useState<'featured' | 'highlight' | 'premium' | null>(null);
+    const [selectedDuration, setSelectedDuration] = useState<7 | 15 | 30 | 60 | 90>(7);
+    const [couponCode, setCouponCode] = useState('');
+    const [pendingPropertyData, setPendingPropertyData] = useState<Property | null>(null);
 
     // Upload Progress State
     const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -928,23 +937,28 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
 
             if (propertyToEdit) {
                 await updateListing(newProperty);
-                // For updates, show success and redirect
+                // For edits, go directly to success
                 setStep('success');
                 setTimeout(() => {
                     dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
                 }, 3000);
             } else {
-                // For new listings, create first then offer promotion
-                const savedProperty = await createListing(newProperty);
-
-                if (currentUser.role === UserRole.BUYER) {
-                    await updateUser({ role: UserRole.PRIVATE_SELLER });
+                // For new properties, check if user wants to promote
+                if (wantToPromote) {
+                    // Store property data and go to payment step WITHOUT creating listing yet
+                    setPendingPropertyData(newProperty);
+                    setStep('payment');
+                } else {
+                    // Create listing immediately without promotion
+                    await createListing(newProperty);
+                    if (currentUser.role === UserRole.BUYER) {
+                        await updateUser({ role: UserRole.PRIVATE_SELLER });
+                    }
+                    setStep('success');
+                    setTimeout(() => {
+                        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
+                    }, 3000);
                 }
-
-                // Store the created property and show promotion modal
-                setCreatedProperty(savedProperty);
-                setShowPromotionModal(true);
-            }
 
         } catch (err) {
             if (err instanceof Error) {
@@ -957,6 +971,63 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         }
     };
     
+    if (step === 'payment' && pendingPropertyData) {
+        const handlePaymentSuccess = async () => {
+            // Payment succeeded, promotion will be applied
+            setStep('success');
+            setTimeout(() => {
+                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
+            }, 3000);
+        };
+
+        const handlePaymentSkipOrFail = async () => {
+            // Payment failed or skipped - listing already exists without promotion
+            setStep('success');
+            setTimeout(() => {
+                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
+            }, 3000);
+        };
+
+        // First create the listing, then show payment
+        const createListingAndShowPayment = async () => {
+            try {
+                await createListing(pendingPropertyData);
+                if (currentUser && currentUser.role === UserRole.BUYER) {
+                    await updateUser({ role: UserRole.PRIVATE_SELLER });
+                }
+                setCreatedPropertyId(pendingPropertyData.id);
+            } catch (err) {
+                console.error('Failed to create listing:', err);
+                setError('Failed to create listing');
+                setStep('form');
+            }
+        };
+
+        // Create listing on mount
+        React.useEffect(() => {
+            if (!createdPropertyId && pendingPropertyData) {
+                createListingAndShowPayment();
+            }
+        }, []);
+
+        if (!createdPropertyId) {
+            return (
+                <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-neutral-600">Creating your listing...</p>
+                </div>
+            );
+        }
+
+        return (
+            <PromotionSelector
+                propertyId={createdPropertyId}
+                onSuccess={handlePaymentSuccess}
+                onSkip={handlePaymentSkipOrFail}
+            />
+        );
+    }
+
     if (step === 'success') {
         return (
             <div className="text-center py-12 flex flex-col items-center">
@@ -1092,6 +1163,14 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                                 />
                             </div>
                         )}
+
+                        <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('title')?.focus()}>
+                            <input type="text" id="title" name="title" value={listingData.title} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " required />
+                            <label htmlFor="title" className={floatingLabelClasses}>Listing Title</label>
+                            <p className="mt-1 text-xs text-neutral-500">
+                                Create an attractive title for your property (e.g., "Modern 3BR Apartment in City Center")
+                            </p>
+                        </div>
 
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('streetAddress')?.focus()}>
                             <input type="text" id="streetAddress" name="streetAddress" value={listingData.streetAddress} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " />
@@ -1245,13 +1324,69 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                         </div>
                     )}
 
+                    {!propertyToEdit && (
+                        <div className="bg-white border border-gray-300 rounded-lg p-6 mb-6">
+                            <div className="flex items-start gap-3 mb-4">
+                                <div className="flex-shrink-0">
+                                    <span className="text-2xl">🚀</span>
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-base font-bold text-gray-900 mb-1">
+                                        Promote Your Listing
+                                    </h3>
+                                    <p className="text-sm text-gray-600">
+                                        Get more visibility and inquiries with promoted placement
+                                    </p>
+                                </div>
+                            </div>
+
+                            <label htmlFor="wantToPromote" className="flex items-start gap-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    id="wantToPromote"
+                                    checked={wantToPromote}
+                                    onChange={(e) => setWantToPromote(e.target.checked)}
+                                    className="mt-0.5 w-5 h-5 text-primary border-gray-300 rounded focus:ring-2 focus:ring-primary"
+                                />
+                                <div className="flex-1">
+                                    <span className="text-sm font-semibold text-gray-900">
+                                        I want to promote this listing
+                                    </span>
+                                    <p className="text-xs text-gray-600 mt-1">
+                                        You'll choose your promotion plan and complete payment on the next page before publishing.
+                                    </p>
+                                </div>
+                            </label>
+
+                            {wantToPromote && (
+                                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                    <div className="flex items-start gap-2">
+                                        <span className="text-lg">✓</span>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-medium text-green-900 mb-1">
+                                                Promotion selected
+                                            </p>
+                                            <p className="text-xs text-green-700">
+                                                On the next page, you'll select your promotion tier (from €1.99), duration, and apply any discount coupons before publishing.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <div className="flex justify-end pt-4">
                         <button
                             type="submit"
                             disabled={isSubmitting || isCompressing || isUploading}
                             className="px-8 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-dark transition-colors w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {isSubmitting ? 'Saving...' : (propertyToEdit ? 'Update Listing' : 'Publish Listing')}
+                            {isSubmitting ? 'Saving...' : (
+                                propertyToEdit ? 'Update Listing' : (
+                                    wantToPromote ? 'Continue to Payment' : 'Publish Listing'
+                                )
+                            )}
                         </button>
                     </div>
                  </div>
