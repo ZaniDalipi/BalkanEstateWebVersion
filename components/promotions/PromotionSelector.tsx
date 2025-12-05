@@ -205,13 +205,17 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
   const tiers = tiersData.tiers;
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-neutral-800 mb-2">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      {/* Header Section */}
+      <div className="text-center mb-10">
+        <div className="inline-block p-3 bg-primary/10 rounded-full mb-4">
+          <span className="text-4xl">🚀</span>
+        </div>
+        <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-3">
           Promote Your Listing
         </h2>
-        <p className="text-neutral-600 text-sm">
-          Increase visibility and get more inquiries by choosing a promotion tier
+        <p className="text-neutral-600 text-base md:text-lg max-w-2xl mx-auto">
+          Get up to 5x more views and inquiries with promoted placement. Choose the perfect plan for your needs.
         </p>
       </div>
 
@@ -221,76 +225,115 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
         </div>
       )}
 
+      {/* Benefits Banner */}
+      <div className="bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-6 mb-8">
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+              <span className="text-xl">👁️</span>
+            </div>
+            <div>
+              <h3 className="font-semibold text-neutral-900 mb-1">Higher Visibility</h3>
+              <p className="text-sm text-neutral-600">Appear at the top of search results</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+              <span className="text-xl">📱</span>
+            </div>
+            <div>
+              <h3 className="font-semibold text-neutral-900 mb-1">More Inquiries</h3>
+              <p className="text-sm text-neutral-600">Get contacted by serious buyers</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+              <span className="text-xl">⚡</span>
+            </div>
+            <div>
+              <h3 className="font-semibold text-neutral-900 mb-1">Sell Faster</h3>
+              <p className="text-sm text-neutral-600">Reach buyers up to 3x faster</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Tier Selection */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        {(['featured', 'highlight', 'premium'] as PromotionTier[]).map((tierId) => {
-          const tier = tiers[tierId];
-          const isSelected = selectedTier === tierId;
-          const pricing = tiersData.pricing.find(
-            (p) => p.tierId === tierId && p.duration === selectedDuration
-          );
+      <div className="mb-8">
+        <h3 className="text-xl font-bold text-neutral-900 mb-4">Choose Your Plan</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {(['featured', 'highlight', 'premium'] as PromotionTier[]).map((tierId) => {
+            const tier = tiers[tierId];
+            const isSelected = selectedTier === tierId;
+            const pricing = tiersData.pricing.find(
+              (p) => p.tierId === tierId && p.duration === selectedDuration
+            );
 
-          return (
-            <button
-              key={tierId}
-              onClick={() => setSelectedTier(tierId)}
-              className={`relative p-5 rounded-lg border-2 text-left transition-all bg-white ${
-                isSelected
-                  ? 'border-primary shadow-md'
-                  : 'border-gray-300 hover:border-gray-400 hover:shadow'
-              }`}
-            >
-              {tier.highlight && (
-                <div className="absolute -top-2 right-3 bg-primary text-white text-xs font-medium px-2 py-0.5 rounded">
-                  Popular
-                </div>
-              )}
+            return (
+              <button
+                key={tierId}
+                onClick={() => setSelectedTier(tierId)}
+                className={`relative p-6 rounded-xl border-2 text-left transition-all bg-white hover:shadow-lg ${
+                  isSelected
+                    ? 'border-primary shadow-lg scale-105'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                {tier.highlight && (
+                  <div className="absolute -top-3 right-4 bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
+                    ⭐ Most Popular
+                  </div>
+                )}
 
-              <div className="mb-3">
-                <h3 className="text-lg font-bold text-gray-900 mb-1">
-                  {tierId === 'featured' && '⭐ '}
-                  {tierId === 'highlight' && '💎 '}
-                  {tierId === 'premium' && '👑 '}
-                  {tier.name}
-                </h3>
-                <p className="text-2xl font-bold text-gray-900">
-                  €{pricing?.price || 0}
-                </p>
-              </div>
-
-              <p className="text-sm text-gray-600 mb-3">{tier.description}</p>
-
-              <ul className="space-y-1">
-                {tier.features.slice(0, 4).map((feature, idx) => (
-                  <li key={idx} className="text-xs text-gray-700 flex items-start gap-2">
-                    <span className="text-gray-400 mt-0.5">✓</span>
-                    <span>{typeof feature === 'string' ? feature : feature.name}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {isSelected && (
-                <div className="absolute top-4 right-4">
-                  <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                    <svg
-                      className="w-3 h-3 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={3}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
+                <div className="text-center mb-4">
+                  <div className="text-4xl mb-3">
+                    {tierId === 'featured' && '⭐'}
+                    {tierId === 'highlight' && '💎'}
+                    {tierId === 'premium' && '👑'}
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    {tier.name}
+                  </h3>
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className="text-3xl font-bold text-gray-900">€{pricing?.price || 0}</span>
+                    <span className="text-sm text-gray-500">/{selectedDuration} days</span>
                   </div>
                 </div>
-              )}
-            </button>
-          );
-        })}
+
+                <p className="text-sm text-gray-600 mb-4 text-center min-h-[40px]">{tier.description}</p>
+
+                <ul className="space-y-2.5 mb-4">
+                  {tier.features.slice(0, 5).map((feature, idx) => (
+                    <li key={idx} className="text-sm text-gray-700 flex items-start gap-2">
+                      <span className="text-primary font-bold mt-0.5">✓</span>
+                      <span>{typeof feature === 'string' ? feature : feature.name}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {isSelected && (
+                  <div className="absolute top-5 right-5">
+                    <div className="w-7 h-7 bg-primary rounded-full flex items-center justify-center shadow-md">
+                      <svg
+                        className="w-4 h-4 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={3}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {selectedTier && (
