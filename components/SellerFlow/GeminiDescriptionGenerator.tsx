@@ -8,7 +8,6 @@ import { useAppContext } from '../../context/AppContext';
 import WhackAnIconAnimation from './WhackAnIconAnimation';
 import NumberInputWithSteppers from '../shared/NumberInputWithSteppers';
 import MapLocationPicker from './MapLocationPicker';
-import PromotionOfferModal from '../shared/PromotionOfferModal';
 import { BALKAN_LOCATIONS, CityData } from '../../utils/balkanLocations';
 import * as api from '../../services/apiService';
 import imageCompression from 'browser-image-compression';
@@ -301,21 +300,13 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const [language, setLanguage] = useState('English');
     const [aiPropertyType, setAiPropertyType] = useState<'house' | 'apartment' | 'villa' | 'other'>('house');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
     const [wantToPromote, setWantToPromote] = useState(false);
-    const [selectedPromotionTier, setSelectedPromotionTier] = useState<'featured' | 'highlight' | 'premium' | null>(null);
-    const [selectedDuration, setSelectedDuration] = useState<7 | 15 | 30 | 60 | 90>(7);
-    const [couponCode, setCouponCode] = useState('');
     const [pendingPropertyData, setPendingPropertyData] = useState<Property | null>(null);
 
     // Upload Progress State
     const [uploadProgress, setUploadProgress] = useState<number>(0);
     const [isCompressing, setIsCompressing] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
-
-    // Promotion Modal State
-    const [showPromotionModal, setShowPromotionModal] = useState(false);
-    const [createdProperty, setCreatedProperty] = useState<Property | null>(null);
 
     // Drag & Drop State
     const dragItem = useRef<number | null>(null);
@@ -721,18 +712,6 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         setListingData(prev => ({ ...prev, image_tags: newImageTags }));
     };
 
-    // Handle promotion modal completion
-    const handlePromotionComplete = (success: boolean) => {
-        setShowPromotionModal(false);
-        setCreatedProperty(null);
-        setStep('success');
-
-        // Redirect after a short delay to show success message
-        setTimeout(() => {
-            dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
-        }, 2000);
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!currentUser) {
@@ -971,60 +950,90 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             setIsSubmitting(false);
         }
     };
-    
-    if (step === 'payment' && pendingPropertyData) {
-        const handlePaymentSuccess = async () => {
-            // Payment succeeded, promotion will be applied
+
+    // Handler for when promotion payment succeeds
+    const handlePromotionPaymentSuccess = async (promotionData: { tier: string; duration: number; hasUrgent: boolean }) => {
+        if (!pendingPropertyData || !currentUser) return;
+
+        try {
+            setIsSubmitting(true);
+            // Create listing first
+            const createdProperty = await createListing(pendingPropertyData);
+
+            if (currentUser.role === UserRole.BUYER) {
+                await updateUser({ role: UserRole.PRIVATE_SELLER });
+            }
+
+            // Now apply promotion to the created property
+            const token = localStorage.getItem('balkan_estate_token');
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
+            const response = await fetch(`${API_URL}/promotions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    propertyId: createdProperty.id,
+                    promotionTier: promotionData.tier,
+                    duration: promotionData.duration,
+                    hasUrgentBadge: promotionData.hasUrgent,
+                }),
+            });
+
+            if (!response.ok) {
+                console.error('Failed to apply promotion, but listing was created');
+            }
+
+            setPendingPropertyData(null);
             setStep('success');
             setTimeout(() => {
                 dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
             }, 3000);
-        };
-
-        const handlePaymentSkipOrFail = async () => {
-            // Payment failed or skipped - listing already exists without promotion
-            setStep('success');
-            setTimeout(() => {
-                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
-            }, 3000);
-        };
-
-        // First create the listing, then show payment
-        const createListingAndShowPayment = async () => {
-            try {
-                await createListing(pendingPropertyData);
-                if (currentUser && currentUser.role === UserRole.BUYER) {
-                    await updateUser({ role: UserRole.PRIVATE_SELLER });
-                }
-                setCreatedPropertyId(pendingPropertyData.id);
-            } catch (err) {
-                console.error('Failed to create listing:', err);
-                setError('Failed to create listing');
-                setStep('form');
-            }
-        };
-
-        // Create listing on mount
-        React.useEffect(() => {
-            if (!createdPropertyId && pendingPropertyData) {
-                createListingAndShowPayment();
-            }
-        }, []);
-
-        if (!createdPropertyId) {
-            return (
-                <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p className="text-neutral-600">Creating your listing...</p>
-                </div>
-            );
+        } catch (err) {
+            console.error('Error creating listing with promotion:', err);
+            setError('Failed to create listing. Please try again.');
+            setStep('form');
+        } finally {
+            setIsSubmitting(false);
         }
+    };
 
+    // Handler for when user skips promotion or payment fails
+    const handlePostWithoutPromotion = async () => {
+        if (!pendingPropertyData || !currentUser) return;
+
+        try {
+            setIsSubmitting(true);
+            await createListing(pendingPropertyData);
+
+            if (currentUser.role === UserRole.BUYER) {
+                await updateUser({ role: UserRole.PRIVATE_SELLER });
+            }
+
+            setPendingPropertyData(null);
+            setStep('success');
+            setTimeout(() => {
+                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
+            }, 3000);
+        } catch (err) {
+            console.error('Error creating listing:', err);
+            setError('Failed to create listing. Please try again.');
+            setStep('form');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (step === 'payment' && pendingPropertyData) {
         return (
             <PromotionSelector
-                propertyId={createdPropertyId}
-                onSuccess={handlePaymentSuccess}
-                onSkip={handlePaymentSkipOrFail}
+                pendingPropertyData={pendingPropertyData}
+                onPaymentSuccess={handlePromotionPaymentSuccess}
+                onSkip={handlePostWithoutPromotion}
+                onBack={() => setStep('form')}
+                isSubmitting={isSubmitting}
             />
         );
     }
@@ -1394,16 +1403,6 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                  </div>
             )}
         </form>
-
-        {/* Promotion Offer Modal - shown after successfully creating a new listing */}
-        {showPromotionModal && (
-            <PromotionOfferModal
-                isOpen={showPromotionModal}
-                onClose={() => handlePromotionComplete(false)}
-                property={createdProperty}
-                onPromotionComplete={handlePromotionComplete}
-            />
-        )}
         </>
     );
 };

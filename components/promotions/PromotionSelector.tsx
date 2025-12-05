@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import * as api from '../../services/apiService';
+import { Property } from '../../types';
 
 interface PromotionSelectorProps {
-  propertyId: string;
-  onSuccess: () => void;
+  // Either propertyId (for existing listings) or pendingPropertyData (for new listings)
+  propertyId?: string;
+  pendingPropertyData?: Property;
+  onSuccess?: () => void;
+  onPaymentSuccess?: (promotionData: { tier: string; duration: number; hasUrgent: boolean; couponCode?: string }) => void;
   onSkip: () => void;
+  onBack?: () => void;
+  isSubmitting?: boolean;
   initialTier?: 'featured' | 'highlight' | 'premium';
   initialDuration?: 7 | 15 | 30 | 60 | 90;
   initialCoupon?: string;
@@ -15,8 +21,12 @@ type PromotionDuration = 7 | 15 | 30 | 60 | 90;
 
 const PromotionSelector: React.FC<PromotionSelectorProps> = ({
   propertyId,
+  pendingPropertyData,
   onSuccess,
+  onPaymentSuccess,
   onSkip,
+  onBack,
+  isSubmitting: externalSubmitting = false,
   initialTier,
   initialDuration = 30,
   initialCoupon = '',
@@ -161,16 +171,30 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
     setError(null);
 
     try {
-      await api.purchasePromotion({
-        propertyId,
-        promotionTier: selectedTier,
-        duration: selectedDuration,
-        hasUrgentBadge,
-        useAgencyAllocation,
-        couponCode: couponCode || undefined,
-      });
+      // If we have pendingPropertyData, we're in the new listing flow
+      // Pass the promotion data back to parent to handle listing creation + promotion
+      if (pendingPropertyData && onPaymentSuccess) {
+        onPaymentSuccess({
+          tier: selectedTier,
+          duration: selectedDuration,
+          hasUrgent: hasUrgentBadge,
+          couponCode: couponCode || undefined,
+        });
+        return; // Parent will handle the rest
+      }
 
-      onSuccess();
+      // If we have propertyId, we're promoting an existing listing
+      if (propertyId) {
+        await api.purchasePromotion({
+          propertyId,
+          promotionTier: selectedTier,
+          duration: selectedDuration,
+          hasUrgentBadge,
+          useAgencyAllocation,
+          couponCode: couponCode || undefined,
+        });
+        onSuccess?.();
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to purchase promotion');
       console.error('Purchase promotion error:', err);
@@ -178,6 +202,9 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
       setSubmitting(false);
     }
   };
+
+  // Combined submitting state
+  const isProcessing = submitting || externalSubmitting;
 
   if (loading) {
     return (
@@ -500,22 +527,31 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
 
           {/* Action Buttons */}
           <div className="flex gap-3">
+            {onBack && (
+              <button
+                onClick={onBack}
+                disabled={isProcessing}
+                className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors disabled:opacity-50"
+              >
+                ← Back
+              </button>
+            )}
             <button
               onClick={onSkip}
-              disabled={submitting}
+              disabled={isProcessing}
               className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors disabled:opacity-50"
             >
-              Skip
+              {pendingPropertyData ? 'Post Without Promotion' : 'Skip'}
             </button>
             <button
               onClick={handlePurchase}
-              disabled={submitting}
+              disabled={isProcessing}
               className="flex-1 px-6 py-3 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? (
+              {isProcessing ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Processing...
+                  {pendingPropertyData ? 'Creating Listing...' : 'Processing...'}
                 </span>
               ) : (
                 `Continue - €${priceInfo.final.toFixed(2)}`
@@ -526,13 +562,28 @@ const PromotionSelector: React.FC<PromotionSelectorProps> = ({
       )}
 
       {!selectedTier && (
-        <div className="text-center">
+        <div className="text-center space-y-3">
+          {onBack && (
+            <button
+              onClick={onBack}
+              disabled={isProcessing}
+              className="px-6 py-2.5 bg-white border border-neutral-300 text-neutral-700 rounded-lg text-sm font-medium hover:bg-neutral-50 transition-colors mr-3 disabled:opacity-50"
+            >
+              ← Back to Form
+            </button>
+          )}
           <button
             onClick={onSkip}
-            className="px-6 py-2.5 bg-white border border-neutral-300 text-neutral-700 rounded-lg text-sm font-medium hover:bg-neutral-50 transition-colors"
+            disabled={isProcessing}
+            className="px-6 py-2.5 bg-white border border-neutral-300 text-neutral-700 rounded-lg text-sm font-medium hover:bg-neutral-50 transition-colors disabled:opacity-50"
           >
-            Skip for Now
+            {pendingPropertyData ? 'Post Without Promotion' : 'Skip for Now'}
           </button>
+          {pendingPropertyData && (
+            <p className="text-xs text-neutral-500 mt-2">
+              You can promote your listing anytime from your dashboard
+            </p>
+          )}
         </div>
       )}
     </div>
