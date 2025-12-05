@@ -215,7 +215,13 @@ const AgentsPage: React.FC = () => {
                 placeholder={searchTab === 'location' ? 'Search by city or country (e.g., Belgrade, Serbia)' : 'Enter agent name'}
                 className="w-full pl-10 pr-32 py-3 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
-              <button className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark transition-colors">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  // Search is already handled by useMemo with filteredAgents
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark transition-colors"
+              >
                 Search
               </button>
             </div>
@@ -271,7 +277,13 @@ const AgentsPage: React.FC = () => {
         {/* View More Button */}
         {filteredAgents.length > 0 && (
           <div className="text-center mb-16">
-            <button className="px-8 py-3 border-2 border-primary text-primary font-semibold rounded-md hover:bg-primary hover:text-white transition-colors">
+            <button
+              onClick={() => {
+                // TODO: Implement pagination or load more functionality
+                window.scrollToTop?.() || window.scrollTo(0, 0);
+              }}
+              className="px-8 py-3 border-2 border-primary text-primary font-semibold rounded-md hover:bg-primary hover:text-white transition-colors"
+            >
               View more
             </button>
           </div>

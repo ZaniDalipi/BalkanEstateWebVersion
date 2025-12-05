@@ -71,7 +71,7 @@ const ProfileAvatar: React.FC<{ agent: Agent }> = ({ agent }) => {
 };
 
 const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
-    const { state, dispatch } = useAppContext();
+    const { state, dispatch, createConversation } = useAppContext();
     const { isLoadingProperties, currentUser } = state;
     const [activeTab, setActiveTab] = useState<'overview' | 'listings' | 'reviews'>('overview');
     const [showReviewForm, setShowReviewForm] = useState(false);
@@ -111,6 +111,63 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
         // TODO: Implement share functionality
         navigator.clipboard.writeText(window.location.href);
         alert('Link copied to clipboard!');
+    };
+
+    const handleContactAgent = async () => {
+        if (!state.isAuthenticated) {
+            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
+            return;
+        }
+        try {
+            const conversation = await createConversation(agent.id);
+            dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: conversation.id });
+            window.history.pushState({ page: 'inbox' }, '', '/inbox');
+            dispatch({ type: 'SET_CURRENT_PAGE', payload: 'inbox' });
+        } catch (error) {
+            console.error('Failed to start conversation:', error);
+            alert('Failed to contact agent. Please try again.');
+        }
+    };
+
+    const handleStartLiveChat = async () => {
+        if (!state.isAuthenticated) {
+            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
+            return;
+        }
+        await handleContactAgent();
+    };
+
+    const handleRequestAppraisal = () => {
+        if (!state.isAuthenticated) {
+            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
+            return;
+        }
+        // TODO: Implement appraisal request form
+        alert(`Request appraisal from ${firstName}`);
+    };
+
+    const handleScheduleConsultation = () => {
+        if (!state.isAuthenticated) {
+            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
+            return;
+        }
+        // TODO: Implement consultation scheduling
+        alert(`Schedule consultation with ${firstName}`);
+    };
+
+    const handleRequestMarketReport = () => {
+        // TODO: Implement market report request
+        alert(`Request market report for ${agent.city || 'this area'}`);
+    };
+
+    const handleSearchAllProperties = () => {
+        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
+        window.history.pushState({}, '', '/search');
+    };
+
+    const handleViewMoreAgents = () => {
+        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agents' });
+        window.history.pushState({}, '', '/agents');
     };
 
     // Sample similar agents data (in real app, fetch from API)
@@ -274,7 +331,10 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                                         </a>
                                                     )}
                                                 </div>
-                                                <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-semibold flex items-center gap-2 transition-colors shadow-md hover:shadow-lg">
+                                                <button
+                                                    onClick={handleContactAgent}
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-semibold flex items-center gap-2 transition-colors shadow-md hover:shadow-lg"
+                                                >
                                                     <ChatBubbleLeftRightIcon className="w-5 h-5" />
                                                     Contact Agent
                                                 </button>
@@ -471,7 +531,10 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                                     {activeListings.length} active listings • {soldProperties.length} sold recently
                                                 </p>
                                             </div>
-                                            <button className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold">
+                                            <button
+                                                onClick={handleSearchAllProperties}
+                                                className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold"
+                                            >
                                                 <MagnifyingGlassIcon className="w-5 h-5" />
                                                 Search all properties
                                             </button>
@@ -658,7 +721,10 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                 </a>
                             )}
                             
-                            <button className="w-full bg-white text-blue-600 hover:bg-blue-50 font-bold py-3.5 px-4 rounded-xl mt-4 transition-colors shadow-lg">
+                            <button
+                                onClick={handleStartLiveChat}
+                                className="w-full bg-white text-blue-600 hover:bg-blue-50 font-bold py-3.5 px-4 rounded-xl mt-4 transition-colors shadow-lg"
+                            >
                                 <span className="flex items-center justify-center gap-2">
                                     <ChatBubbleLeftRightIcon className="w-5 h-5" />
                                     Start Live Chat
@@ -677,7 +743,10 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                             <p className="text-gray-600 mb-4">
                                 Curious what your property is worth? {firstName} can provide a free, no-obligation market appraisal.
                             </p>
-                            <button className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg">
+                            <button
+                                onClick={handleRequestAppraisal}
+                                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg"
+                            >
                                 Request Appraisal
                             </button>
                             <div className="text-center text-sm text-gray-500 mt-3">
@@ -712,7 +781,10 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                     </div>
                                 ))}
                             </div>
-                            <button className="w-full mt-4 text-center text-blue-600 hover:text-blue-700 font-semibold text-sm py-2">
+                            <button
+                                onClick={handleViewMoreAgents}
+                                className="w-full mt-4 text-center text-blue-600 hover:text-blue-700 font-semibold text-sm py-2"
+                            >
                                 View more agents in {agent.city || 'this area'} →
                             </button>
                         </div>
@@ -742,7 +814,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                     <div>
                                         <p className="font-medium text-gray-900">Awards & Recognition</p>
                                         <p className="text-sm text-gray-600">
-                                            {agent.awards?.join(', ') || '/span>No awards listed'}
+                                            {agent.awards?.join(', ') || 'No awards listed'}
                                         </p>
                                     </div>
                                 </div>
@@ -766,7 +838,10 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                     <span className="font-bold text-blue-600">High</span>
                                 </div>
                             </div>
-                            <button className="w-full mt-4 text-center text-purple-600 hover:text-purple-700 font-semibold text-sm py-2">
+                            <button
+                                onClick={handleRequestMarketReport}
+                                className="w-full mt-4 text-center text-purple-600 hover:text-purple-700 font-semibold text-sm py-2"
+                            >
                                 Request Full Market Report →
                             </button>
                         </div>
@@ -788,7 +863,10 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                         >
                             Call Now: {agent.phone || '(Contact for number)'}
                         </a>
-                        <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl transition-colors">
+                        <button
+                            onClick={handleScheduleConsultation}
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl transition-colors"
+                        >
                             Schedule Consultation
                         </button>
                     </div>
