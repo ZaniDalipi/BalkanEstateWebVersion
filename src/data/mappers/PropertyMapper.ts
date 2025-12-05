@@ -55,6 +55,12 @@ export class PropertyMapper {
       distanceToSea: dto.distanceToSea,
       distanceToSchool: dto.distanceToSchool,
       distanceToHospital: dto.distanceToHospital,
+      // Promotion fields
+      isPromoted: dto.isPromoted,
+      promotionTier: dto.promotionTier,
+      promotionStartDate: dto.promotionStartDate,
+      promotionEndDate: dto.promotionEndDate,
+      hasUrgentBadge: dto.hasUrgentBadge,
     });
   }
 

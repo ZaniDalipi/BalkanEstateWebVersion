@@ -19,6 +19,12 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
   const isNew = property.createdAt && (Date.now() - property.createdAt < 3 * 24 * 60 * 60 * 1000);
   const isSold = property.status === 'sold';
 
+  // Check if property has an active promotion
+  const isActivelyPromoted = property.isPromoted &&
+    property.promotionEndDate &&
+    property.promotionEndDate > Date.now();
+  const promotionTier = isActivelyPromoted ? property.promotionTier : null;
+
   const handleCardClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     dispatch({ type: 'SET_SELECTED_PROPERTY', payload: property.id });
@@ -76,11 +82,22 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
       }
   }, [state.isAuthenticated, state.user, dispatch, property.id, createConversation, showToast]);
 
+  // Determine card border/ring style based on promotion tier
+  const promotionCardStyle = isActivelyPromoted
+    ? promotionTier === 'premium'
+      ? 'ring-2 ring-purple-400 border-purple-300'
+      : promotionTier === 'highlight'
+      ? 'ring-2 ring-amber-400 border-amber-300'
+      : promotionTier === 'featured'
+      ? 'ring-2 ring-blue-400 border-blue-300'
+      : 'ring-1 ring-gray-400 border-gray-300'
+    : 'border-neutral-200';
+
   return (
     <div
-      className={`bg-white rounded-lg overflow-hidden shadow-md border border-neutral-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-left w-full flex flex-col ${
+      className={`bg-white rounded-lg overflow-hidden shadow-md border hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-left w-full flex flex-col ${
         isSold ? 'opacity-75 grayscale-[50%]' : ''
-      }`}
+      } ${promotionCardStyle}`}
     >
       <div className="block w-full relative">
         <button onClick={handleCardClick} className="block w-full">
@@ -102,9 +119,31 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
                 SOLD
             </div>
         )}
-        {!isSold && isNew && (
+        {!isSold && isNew && !isActivelyPromoted && (
             <div className="absolute top-1.5 left-1.5 bg-secondary text-white text-xs font-bold px-2 py-0.5 rounded-md shadow-lg z-10">
                 NEW
+            </div>
+        )}
+        {/* Promotion Badges */}
+        {!isSold && isActivelyPromoted && promotionTier && (
+            <div className={`absolute top-1.5 left-1.5 text-white text-xs font-bold px-2.5 py-1 rounded-md shadow-lg z-10 flex items-center gap-1 ${
+                promotionTier === 'premium'
+                    ? 'bg-gradient-to-r from-purple-600 to-purple-700'
+                    : promotionTier === 'highlight'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600'
+                    : promotionTier === 'featured'
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600'
+                    : 'bg-gradient-to-r from-gray-600 to-gray-700'
+            }`}>
+                {promotionTier === 'premium' && <span>PREMIUM</span>}
+                {promotionTier === 'highlight' && <span>HIGHLIGHT</span>}
+                {promotionTier === 'featured' && <span>FEATURED</span>}
+                {promotionTier === 'standard' && <span>PROMOTED</span>}
+            </div>
+        )}
+        {!isSold && isActivelyPromoted && property.hasUrgentBadge && (
+            <div className="absolute top-10 left-1.5 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-md shadow-lg z-10 animate-pulse">
+                URGENT
             </div>
         )}
         <div onClick={handleFavoriteClick} className="absolute top-1.5 right-1.5 bg-white/90 backdrop-blur-sm p-1.5 rounded-full cursor-pointer hover:bg-white hover:scale-110 transition-transform duration-200 z-10">

@@ -213,8 +213,10 @@ export interface Property {
     distanceToHospital?: number; // in km
     // Promotion fields
     isPromoted?: boolean;
+    promotionTier?: 'standard' | 'featured' | 'highlight' | 'premium';
     promotionStartDate?: number;
     promotionEndDate?: number;
+    hasUrgentBadge?: boolean;
 }
 
 export interface Message {
