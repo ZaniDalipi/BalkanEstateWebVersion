@@ -1048,6 +1048,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     }
 
     return (
+        <>
         <form onSubmit={handleSubmit}>
             <div className="bg-primary-light text-primary-dark/90 text-sm p-4 rounded-lg mb-6 border border-primary/20">
                 <p><strong>Photo Tips:</strong> For best results, include well-lit, high-resolution photos of the exterior, kitchen, living rooms, bedrooms, and bathrooms. The more details you show, the better your AI-generated listing will be!</p>
@@ -1392,15 +1393,18 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                     </div>
                  </div>
             )}
+        </form>
 
-            {/* Promotion Offer Modal - shown after successfully creating a new listing */}
+        {/* Promotion Offer Modal - shown after successfully creating a new listing */}
+        {showPromotionModal && (
             <PromotionOfferModal
                 isOpen={showPromotionModal}
                 onClose={() => handlePromotionComplete(false)}
                 property={createdProperty}
                 onPromotionComplete={handlePromotionComplete}
             />
-        </form>
+        )}
+        </>
     );
 };
 
