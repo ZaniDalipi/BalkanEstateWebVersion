@@ -550,23 +550,17 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                             </div>
                                         )}
 
-                                        {/* Recent Sales */}
+                                        {/* Recently Sold Properties */}
                                         {soldProperties.length > 0 && (
                                             <div>
                                                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Recently Sold ({soldProperties.length})</h3>
-                                                <div className="space-y-3">
-                                                    {soldProperties.map((prop, index) => (
-                                                        <div key={prop.id} className="flex items-center gap-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors group">
-                                                            <div className="text-2xl font-bold text-gray-300">#{index + 1}</div>
-                                                            <div className="flex-1">
-                                                                <p className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{prop.address}</p>
-                                                                <p className="text-sm text-gray-600">{prop.beds} bd | {prop.baths} ba | {prop.sqft} sqft</p>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                    {soldProperties.map(prop => (
+                                                        <div key={prop.id} className="relative">
+                                                            <PropertyCard property={prop} />
+                                                            <div className="absolute top-3 right-3 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-md shadow-lg z-10">
+                                                                SOLD
                                                             </div>
-                                                            <div className="text-right">
-                                                                <p className="font-bold text-gray-900">{formatPrice(prop.price, 'US')}</p>
-                                                                <p className="text-xs text-gray-500">Sold {prop.soldAt || 'recently'}</p>
-                                                            </div>
-                                                            <ArrowRightIcon className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
                                                         </div>
                                                     ))}
                                                 </div>
