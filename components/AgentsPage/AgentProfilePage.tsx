@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Agent } from '../../types';
+import { Agency } from '../../types';
+import AgencyBadge from '../shared/AgencyBadge';
 import { useAppContext } from '../../context/AppContext';
 import { 
   ArrowLeftIcon, 
@@ -48,6 +50,7 @@ import PropertyCard from '../BuyerFlow/PropertyDisplay/PropertyCard';
 import PropertyCardSkeleton from '../BuyerFlow/PropertyDisplay/PropertyCardSkeleton';
 import AgentReviewForm from '../shared/AgentReviewForm';
 import { slugify } from '../../utils/slug';
+
 
 interface AgentProfilePageProps {
   agent: Agent;
@@ -178,51 +181,61 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Enhanced Header with Gradient */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white sticky top-0 z-40 shadow-lg">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3 min-w-0">
-                            <button
-                                onClick={handleBack}
-                                className="flex items-center gap-2 text-white hover:text-blue-100 font-semibold transition-colors group flex-shrink-0"
-                            >
-                                <ArrowLeftIcon className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                                <span className="hidden sm:inline">Back</span>
-                            </button>
-                            <div className="hidden md:flex items-center gap-2 bg-white/10 px-3 py-2 rounded-lg">
-                                {isAgencyAgent ? (
-                                    <>
-                                        <BuildingOfficeIcon className="w-5 h-5 flex-shrink-0" />
-                                        <span className="font-semibold truncate">{agent.agencyName}</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <UserIcon className="w-5 h-5 flex-shrink-0" />
-                                        <span className="font-semibold">Independent</span>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={handleSaveAgent}
-                                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-                            >
-                                <HeartIcon className={`w-5 h-5 ${savedAgent ? 'fill-red-500 text-red-500' : ''}`} />
-                                <span className="hidden sm:inline">Save</span>
-                            </button>
-                            <button
-                                onClick={handleShareAgent}
-                                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-                            >
-                                <ShareIcon className="w-5 h-5" />
-                                <span className="hidden sm:inline">Share</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  {/* Enhanced Header with Gradient */}
+  <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white sticky top-0 z-40 shadow-lg">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="flex items-center justify-between gap-4 relative">
+        {/* Left section - Back button */}
+        <div className="flex items-center gap-3 min-w-0 flex-shrink-0">
+          <button
+            onClick={handleBack}
+            className="flex items-center gap-2 text-white hover:text-blue-100 font-semibold transition-colors group flex-shrink-0"
+          >
+            <ArrowLeftIcon className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            <span className="hidden sm:inline">Back</span>
+          </button>
+        </div>
+
+        <div className="hidden md:flex items-center justify-center absolute left-1/2 transform -translate-x-1/2">
+</div>
+
+{isAgencyAgent && (
+  <div className="flex items-center gap-2 text-white-600 mb-3">
+    <AgencyBadge
+      agencyName={agent.agencyName}
+      agencyLogo={agent.agencyLogo}
+      type={agent.agencyType as any || 'luxury'} 
+      variant="minimal"
+      size="lg"
+      className="bg-transparent px-0 py-0 border-0"
+      showText={false}
+    />
+    <span className="font-medium">{agent.agencyName}</span>
+    {agent.role && <span className="text-white-500">• {agent.agencySlug}</span>}
+  </div>
+)}
+
+        {/* Right section - Save/Share buttons */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={handleSaveAgent}
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+          >
+            <HeartIcon className={`w-5 h-5 ${savedAgent ? 'fill-red-500 text-red-500' : ''}`} />
+            <span className="hidden sm:inline">Save</span>
+          </button>
+          <button
+            onClick={handleShareAgent}
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+          >
+            <ShareIcon className="w-5 h-5" />
+            <span className="hidden sm:inline">Share</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="flex flex-col lg:flex-row gap-8">

@@ -123,7 +123,6 @@ const SavedPropertiesPage: React.FC = () => {
 
   return (
     <div className="bg-neutral-50 min-h-screen flex flex-col">
-      <AdvertisementBanner position="top" />
 
       <Toast
           show={toast.show}

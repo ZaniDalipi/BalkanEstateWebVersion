@@ -92,6 +92,9 @@ export interface Agent extends User {
         soldDate: string;
     }[];
     awards?: string[];
+    agencyLogo?: string; 
+    agencySlug?: string; 
+    agencyType?: 'standard' | 'luxury' | 'commercial' | 'boutique' | 'team';
     
 }
 
@@ -124,6 +127,7 @@ export interface Agency {
     instagramUrl?: string;
     linkedinUrl?: string;
     twitterUrl?: string;
+    type?: 'standard' | 'luxury' | 'commercial' | 'boutique' | 'team';
     businessHours?: {
         monday?: string;
         tuesday?: string;

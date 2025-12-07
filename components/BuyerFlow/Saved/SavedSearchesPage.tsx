@@ -5,6 +5,7 @@ import { MagnifyingGlassPlusIcon } from '../../../constants';
 import { SavedSearch, Filters, SellerType } from '../../../types';
 import AdvertisementBanner from '../../AdvertisementBanner';
 import Footer from '../../shared/Footer';
+import FeaturedAgencies from '../../FeaturedAgencies'; // Add this import
 
 const initialFilters: Filters = {
     query: '',
@@ -165,8 +166,7 @@ const SavedSearchesPage: React.FC = () => {
 
   return (
     <div className="bg-neutral-50 min-h-screen flex flex-col">
-      <AdvertisementBanner position="top" />
-
+     
       {/* Hero Banner */}
       <div className="bg-gradient-to-r from-primary via-primary-dark to-primary text-white py-12 px-4 sm:px-6 lg:px-8 shadow-lg">
         <div className="max-w-7xl mx-auto text-center">
@@ -194,6 +194,11 @@ const SavedSearchesPage: React.FC = () => {
             {renderContent()}
         </div>
       </main>
+
+      {/* Featured Agencies Banner - Add this section */}
+      <div className="mt-12">
+        <FeaturedAgencies />
+      </div>
 
       {/* Footer */}
       <Footer />

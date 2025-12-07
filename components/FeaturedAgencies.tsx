@@ -1,117 +1,341 @@
-import React, { useState, useEffect } from 'react';
-import { getFeaturedAgencies } from '../services/apiService';
-import { BuildingOfficeIcon, ArrowRightIcon } from '../constants';
+import React, { useRef, useEffect, useState } from 'react';
+import { useAppContext } from '../context/AppContext';
+import { BuildingStorefrontIcon ,SparklesIcon, ArrowRightIcon } from '../constants';
 
-interface FeaturedAgenciesProps {
-  limit?: number;
-}
-
-const FeaturedAgencies: React.FC<FeaturedAgenciesProps> = ({ limit = 3 }) => {
-  const [agencies, setAgencies] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+const FeaturedAgencies: React.FC = () => {
+  const { state } = useAppContext();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [hasAnimated, setHasAnimated] = useState(false);
 
   useEffect(() => {
-    const fetchFeaturedAgencies = async () => {
-      try {
-        setLoading(true);
-        const response = await getFeaturedAgencies(limit);
-        setAgencies(response.agencies || []);
-      } catch (err) {
-        console.error('Failed to load featured agencies:', err);
-      } finally {
-        setLoading(false);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasAnimated) {
+          setIsVisible(true);
+          setHasAnimated(true);
+          
+          // Trigger confetti effect
+          triggerConfetti();
+        }
+      },
+      {
+        threshold: 0.2,
+        rootMargin: '50px'
+      }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => {
+      if (containerRef.current) {
+        observer.unobserve(containerRef.current);
       }
     };
+  }, [hasAnimated]);
 
-    fetchFeaturedAgencies();
-  }, [limit]);
+  const triggerConfetti = () => {
+    // Create confetti effect
+    const confettiCount = 30;
+    const container = containerRef.current;
+    
+    if (!container) return;
+    
+    for (let i = 0; i < confettiCount; i++) {
+      const confetti = document.createElement('div');
+      confetti.className = 'absolute w-2 h-2 rounded-full';
+      confetti.style.background = `linear-gradient(45deg, 
+        ${['#8B5CF6', '#3B82F6', '#EC4899', '#F59E0B'][Math.floor(Math.random() * 4)]}, 
+        ${['#8B5CF6', '#3B82F6', '#EC4899', '#F59E0B'][Math.floor(Math.random() * 4)]}
+      )`;
+      confetti.style.left = `${Math.random() * 100}%`;
+      confetti.style.top = `-20px`;
+      confetti.style.opacity = '0';
+      confetti.style.zIndex = '50';
+      
+      container.appendChild(confetti);
+      
+      // Animate confetti
+      setTimeout(() => {
+        confetti.style.transition = 'all 1.2s cubic-bezier(0.1, 0.8, 0.3, 1)';
+        confetti.style.opacity = '1';
+        confetti.style.transform = `translateY(${window.innerHeight * 0.5}px) rotate(${Math.random() * 720}deg)`;
+        confetti.style.left = `${parseFloat(confetti.style.left) + (Math.random() * 40 - 20)}%`;
+      }, i * 30);
+      
+      // Remove confetti after animation
+      setTimeout(() => {
+        confetti.style.opacity = '0';
+        setTimeout(() => {
+          if (container.contains(confetti)) {
+            container.removeChild(confetti);
+          }
+        }, 300);
+      }, 1200);
+    }
+  };
 
-  if (loading || agencies.length === 0) {
-    return null; // Don't show anything while loading or if no featured agencies
-  }
+  const featuredAgencies = [
+    {
+      id: 1,
+      name: "Royal Estates",
+      logo: "👑",
+      properties: 124,
+      rating: 4.9,
+      specialty: "Luxury Properties",
+      color: "from-purple-500 to-pink-500"
+    },
+    {
+      id: 2,
+      name: "Golden Keys",
+      logo: "🗝️",
+      properties: 89,
+      rating: 4.8,
+      specialty: "City Apartments",
+      color: "from-amber-500 to-orange-500"
+    },
+    {
+      id: 3,
+      name: "Blue Horizon",
+      logo: "🌊",
+      properties: 156,
+      rating: 4.7,
+      specialty: "Waterfront Homes",
+      color: "from-blue-500 to-cyan-500"
+    },
+    {
+      id: 4,
+      name: "Green Valley",
+      logo: "🏞️",
+      properties: 67,
+      rating: 4.9,
+      specialty: "Country Estates",
+      color: "from-emerald-500 to-green-500"
+    }
+  ];
+
+  const handleAgencyClick = (agencyId: number) => {
+    // Dispatch action to filter by agency
+    console.log('Viewing agency:', agencyId);
+  };
 
   return (
-    <div className="bg-gradient-to-r from-primary to-primary-dark py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-white mb-2">Featured Real Estate Agencies</h2>
-          <p className="text-white/90">Premium agencies trusted by thousands of clients</p>
+    <div 
+      ref={containerRef}
+      className="relative py-16 px-4 sm:px-6 lg:px-8 overflow-hidden"
+    >
+      {/* Magic curtain effect */}
+      <div 
+        className={`absolute inset-0 bg-gradient-to-br from-purple-50/50 via-blue-50/30 to-transparent transition-all duration-1000 ${
+          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'
+        }`}
+        style={{
+          clipPath: isVisible ? 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)' : 'polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%)',
+          transition: 'clip-path 1.2s cubic-bezier(0.77, 0, 0.175, 1)'
+        }}
+      />
+      
+      {/* Floating magic orbs */}
+      {[...Array(6)].map((_, i) => (
+        <div
+          key={i}
+          className={`absolute rounded-full bg-gradient-to-r from-purple-400/20 to-blue-400/20 backdrop-blur-sm transition-all duration-1000 ${
+            isVisible ? 'opacity-100' : 'opacity-0'
+          }`}
+          style={{
+            width: `${40 + i * 10}px`,
+            height: `${40 + i * 10}px`,
+            left: `${10 + i * 15}%`,
+            top: `${20 + i * 5}%`,
+            animation: isVisible ? `float 8s ease-in-out infinite` : 'none',
+            animationDelay: `${i * 0.5}s`,
+            filter: 'blur(10px)',
+            transitionDelay: `${i * 0.1}s`
+          }}
+        />
+      ))}
+      
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Header with magical entrance */}
+        <div className={`text-center mb-16 transition-all duration-700 ${
+          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+        }`} style={{ transitionDelay: '0.3s' }}>
+          <div className="inline-flex items-center gap-3 mb-6">
+            <div className={`relative transition-all duration-700 ${
+              isVisible ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 rotate-90'
+            }`} style={{ transitionDelay: '0.4s' }}>
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-primary blur-lg rounded-full opacity-60 animate-pulse" />
+              <div className="relative w-16 h-16 bg-gradient-to-br from-white to-purple-50 rounded-2xl flex items-center justify-center shadow-xl border border-white/30">
+                <BuildingStorefrontIcon className="w-8 h-8 text-primary" />
+                <SparklesIcon className="absolute -top-2 -right-2 w-6 h-6 text-yellow-400 animate-spin" />
+              </div>
+            </div>
+            
+            <div className={`h-12 w-1 bg-gradient-to-b from-purple-400 to-primary rounded-full transition-all duration-700 ${
+              isVisible ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0'
+            }`} style={{ transitionDelay: '0.5s' }} />
+            
+            <div className={`relative transition-all duration-700 ${
+              isVisible ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 -rotate-90'
+            }`} style={{ transitionDelay: '0.6s' }}>
+              <div className="absolute inset-0 bg-gradient-to-r from-primary to-blue-500 blur-lg rounded-full opacity-60 animate-pulse" />
+              <div className="relative w-16 h-16 bg-gradient-to-br from-white to-blue-50 rounded-2xl flex items-center justify-center shadow-xl border border-white/30">
+                <SparklesIcon className="w-8 h-8 text-blue-500" />
+              </div>
+            </div>
+          </div>
+          
+          <h2 className={`text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-purple-600 via-primary to-blue-600 bg-clip-text text-transparent transition-all duration-700 ${
+            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+          }`} style={{ transitionDelay: '0.7s' }}>
+            Magically Featured Agencies
+          </h2>
+          
+          <p className={`text-lg text-neutral-600 max-w-2xl mx-auto transition-all duration-700 ${
+            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+          }`} style={{ transitionDelay: '0.8s' }}>
+            Discover properties through our enchanted network of trusted real estate partners
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {agencies.map((agency) => (
+        {/* Agencies grid with staggered entrance */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {featuredAgencies.map((agency, index) => (
             <div
-              key={agency._id}
-              className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow cursor-pointer transform hover:-translate-y-1 transition-transform"
+              key={agency.id}
+              className={`group relative transition-all duration-700 hover:scale-105 ${
+                isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+              }`}
+              style={{
+                transitionDelay: `${0.9 + index * 0.1}s`,
+                transform: isVisible ? 'translateY(0)' : 'translateY(20px)'
+              }}
+              onClick={() => handleAgencyClick(agency.id)}
             >
-              {/* Agency Logo/Cover */}
-              {agency.coverImage || agency.logo ? (
-                <div className="h-48 bg-neutral-200 relative overflow-hidden">
-                  <img
-                    src={agency.coverImage || agency.logo}
-                    alt={agency.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="h-48 bg-gradient-to-br from-primary/20 to-primary-dark/20 flex items-center justify-center">
-                  <BuildingOfficeIcon className="w-24 h-24 text-primary/40" />
-                </div>
-              )}
-
-              {/* Agency Info */}
-              <div className="p-6">
-                <div className="flex items-center gap-3 mb-3">
-                  {agency.logo && !agency.coverImage && (
-                    <img
-                      src={agency.logo}
-                      alt={agency.name}
-                      className="w-12 h-12 rounded-full border-2 border-primary"
+              {/* Magic glow effect */}
+              <div className="absolute -inset-1 bg-gradient-to-r from-purple-400 via-primary to-blue-400 rounded-2xl blur opacity-0 group-hover:opacity-30 transition-opacity duration-500" />
+              
+              {/* Magic trail effect on hover */}
+              <div className="absolute -inset-2 rounded-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                   style={{
+                     backgroundSize: '200% 100%',
+                     animation: 'shimmer 2s infinite linear'
+                   }} />
+              
+              {/* Agency card */}
+              <div className="relative bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/30 overflow-hidden cursor-pointer transform hover:-translate-y-2 transition-all duration-500">
+                {/* Header with gradient */}
+                <div className={`h-32 bg-gradient-to-r ${agency.color} relative overflow-hidden`}>
+                  {/* Animated particles in header */}
+                  {[...Array(8)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="absolute w-2 h-2 bg-white/30 rounded-full"
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        top: `${Math.random() * 100}%`,
+                        animation: `float ${3 + Math.random() * 4}s ease-in-out infinite`,
+                        animationDelay: `${i * 0.3}s`
+                      }}
                     />
-                  )}
-                  <h3 className="text-xl font-bold text-neutral-800">{agency.name}</h3>
-                </div>
-
-                {agency.description && (
-                  <p className="text-neutral-600 text-sm line-clamp-2 mb-4">{agency.description}</p>
-                )}
-
-                {/* Stats */}
-                <div className="flex gap-4 mb-4 text-sm">
-                  <div>
-                    <span className="font-bold text-primary">{agency.totalProperties || 0}</span>
-                    <span className="text-neutral-600 ml-1">Properties</span>
+                  ))}
+                  
+                  <div className="absolute top-4 right-4">
+                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-2xl">
+                      {agency.logo}
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-bold text-primary">{agency.totalAgents || 0}</span>
-                    <span className="text-neutral-600 ml-1">Agents</span>
+                  
+                  <div className="absolute bottom-4 left-4">
+                    <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
+                      <SparklesIcon className="w-4 h-4 text-yellow-300" />
+                      <span className="text-white font-semibold text-sm">{agency.rating}</span>
+                    </div>
                   </div>
                 </div>
-
-                {/* Contact */}
-                <div className="border-t pt-4 space-y-2">
-                  {agency.phone && (
-                    <p className="text-sm text-neutral-700">
-                      <span className="font-semibold">Phone:</span> {agency.phone}
-                    </p>
-                  )}
-                  {agency.email && (
-                    <p className="text-sm text-neutral-700">
-                      <span className="font-semibold">Email:</span> {agency.email}
-                    </p>
-                  )}
+                
+                {/* Content */}
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-neutral-800 mb-2 group-hover:text-primary transition-colors duration-300">
+                    {agency.name}
+                  </h3>
+                  
+                  <p className="text-sm text-neutral-600 mb-4 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-gradient-to-r from-purple-500 to-primary rounded-full animate-pulse" />
+                    {agency.specialty}
+                  </p>
+                  
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="text-left">
+                      <div className="text-2xl font-bold text-primary">{agency.properties}</div>
+                      <div className="text-xs text-neutral-500">Properties</div>
+                    </div>
+                    
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-gradient-to-br from-white to-gray-50 rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300">
+                        <ArrowRightIcon className="w-6 h-6 text-primary group-hover:scale-110 transition-transform duration-300" />
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-primary rounded-full blur opacity-0 group-hover:opacity-70 transition-opacity duration-500" />
+                    </div>
+                  </div>
+                  
+                  {/* Progress bar */}
+                  <div className="relative h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div 
+                      className={`absolute inset-y-0 left-0 bg-gradient-to-r ${agency.color} rounded-full transition-all duration-1000 ${
+                        isVisible ? 'w-full' : 'w-0'
+                      }`}
+                      style={{ transitionDelay: `${1.2 + index * 0.1}s` }}
+                    />
+                  </div>
                 </div>
-
-                {/* View Agency Button */}
-                <button className="mt-4 w-full bg-primary text-white py-2 px-4 rounded-lg font-semibold hover:bg-primary-dark transition-colors flex items-center justify-center gap-2">
-                  View Agency
-                  <ArrowRightIcon className="w-4 h-4" />
-                </button>
+                
+                {/* Magic corner accents */}
+                <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-purple-400/50 rounded-tl-xl" />
+                <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-blue-400/50 rounded-tr-xl" />
+                <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-purple-400/50 rounded-bl-xl" />
+                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-blue-400/50 rounded-br-xl" />
               </div>
             </div>
           ))}
         </div>
+
+        {/* CTA with magical entrance */}
+        <div className={`text-center mt-16 transition-all duration-700 ${
+          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+        }`} style={{ transitionDelay: '1.5s' }}>
+          <button className="group relative px-10 py-4 bg-gradient-to-r from-purple-600 to-primary text-white font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+            <span className="relative z-10 flex items-center gap-3">
+              <SparklesIcon className="w-5 h-5" />
+              Explore All Magical Agencies
+              <SparklesIcon className="w-5 h-5" />
+            </span>
+            <div className="absolute -inset-1 bg-gradient-to-r from-purple-400 to-primary rounded-xl blur opacity-0 group-hover:opacity-70 transition-opacity duration-500" />
+          </button>
+          
+          <p className="text-neutral-500 text-sm mt-6 flex items-center justify-center gap-2">
+            <span className="animate-pulse">✨</span>
+            Each agency is carefully selected by our magical algorithms
+            <span className="animate-pulse">✨</span>
+          </p>
+        </div>
       </div>
+
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-10px) rotate(180deg); }
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .animate-shimmer {
+          animation: shimmer 2s infinite linear;
+        }
+      `}</style>
     </div>
   );
 };
