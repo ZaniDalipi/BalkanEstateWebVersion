@@ -125,27 +125,14 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
     return (
          <div className="space-y-4">
             {!isMobile && (
-                <button
-                    type="button"
-                    onClick={onDrawStart}
-                    className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl border transition-all ${
-                        isDrawing
-                        ? 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
-                        : 'bg-white border-primary text-primary hover:bg-primary-light'
-                    }`}
-                >
-                    {isDrawing ? (
-                        <>
-                            <XCircleIcon className="w-4 h-4" />
-                            <span>Cancel Drawing</span>
-                        </>
-                    ) : (
-                        <>
-                            <PencilIcon className="w-4 h-4" />
-                            <span>Draw on Map</span>
-                        </>
-                    )}
-                </button>
+                <div className="flex items-center gap-2">
+                        <button 
+                            onClick={onResetFilters}
+                            className="flex-grow py-2.5 px-4 border border-neutral-300 text-neutral-600 rounded-lg text-sm font-bold bg-white hover:bg-neutral-100 transition-colors"
+                        >
+                            Reset Filters
+                        </button>
+                    </div>
             )}
 
             <div>
@@ -547,12 +534,6 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                         )}
                     </button>
                      <div className="flex items-center gap-2">
-                        <button 
-                            onClick={onResetFilters}
-                            className="flex-grow py-2.5 px-4 border border-neutral-300 text-neutral-600 rounded-lg text-sm font-bold bg-white hover:bg-neutral-100 transition-colors"
-                        >
-                            Reset
-                        </button>
                         <button 
                             onClick={onSaveSearch} 
                             disabled={isSaving}

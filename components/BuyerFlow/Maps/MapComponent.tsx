@@ -7,7 +7,8 @@ import {
   BellIcon,
   PencilIcon,
   XCircleIcon,
-  CubeTransparentIcon,
+  SearchPlusIcon,
+  MapLegendIcon,
   CrosshairsIcon,
 } from '../../../constants';
 import { CadastreLayer } from '../../Map/CadastreLayer';
@@ -168,7 +169,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       {!isMobile && (
         <>
-          <div className="absolute top-4 right-4 z-[1000] flex flex-col items-end gap-3">
+          <div className="absolute bottom-12 right-4 z-[1000] flex flex-col items-end gap-3">
             <div className="bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-lg flex items-center gap-2">
               <button
                 onClick={onRecenter}
@@ -222,7 +223,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 }`}
                 title="Show cadastral parcels (zoom in to see)"
               >
-                {showCadastre ? '✓ ' : ''}Cadastral Parcels
+                {showCadastre ? '✓ ' : ''} Cadastral Parcels
               </button>
             )}
 
@@ -234,7 +235,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                     disabled={isSaving}
                     className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold rounded-full shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
                   >
-                    <BellIcon className="w-5 h-5" />
+                    <SearchPlusIcon className="w-5 h-5" />
                     <span>{isSaving ? 'Saving...' : 'Save Area'}</span>
                   </button>
                 )}
@@ -279,7 +280,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
             className="bg-white/80 backdrop-blur-sm p-2.5 rounded-full shadow-lg pointer-events-auto"
             title="Map Legend"
           >
-            <CubeTransparentIcon className="w-6 h-6 text-neutral-800" />
+            <MapLegendIcon className="w-6 h-6 text-neutral-800" />
           </button>
         </div>
       )}

@@ -648,3 +648,104 @@ export const BuildingStorefrontIcon: React.FC<{ className?: string }> = ({ class
         })
     )
 );
+
+
+export const SearchPlusIcon: React.FC<{ className?: string }> = ({ className }) => (
+    React.createElement('svg', { 
+        xmlns: "http://www.w3.org/2000/svg", 
+        fill: "none", 
+        viewBox: "0 0 24 24", 
+        strokeWidth: 1.5, 
+        stroke: "currentColor", 
+        className: className 
+    },
+        React.createElement('path', { 
+            strokeLinecap: "round", 
+            strokeLinejoin: "round", 
+            d: "M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" 
+        })
+    )
+);
+
+
+export const MapLegendIcon: React.FC<{ className?: string }> = ({ className }) => (
+    React.createElement('svg', { 
+        xmlns: "http://www.w3.org/2000/svg", 
+        fill: "none", 
+        viewBox: "0 0 24 24", 
+        strokeWidth: 1.5, 
+        stroke: "currentColor", 
+        className: className 
+    },
+        React.createElement('path', { 
+            strokeLinecap: "round", 
+            strokeLinejoin: "round", 
+            d: "M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0l-4.994 2.497c-.619.31-.619 1.258 0 1.567l4.994 2.497a1.125 1.125 0 001.006 0l4.994-2.497c.619-.31.619-1.258 0-1.567l-4.994-2.497a1.125 1.125 0 00-1.006 0L3.622 6.22c-.619.31-.619 1.258 0 1.567l4.994 2.497a1.125 1.125 0 001.006 0l1.378-.689V21" 
+        })
+    )
+);
+export const AgentsIcon: React.FC<{ className?: string }> = ({ className }) => (
+    React.createElement('svg', { 
+        xmlns: "http://www.w3.org/2000/svg", 
+        fill: "none", 
+        viewBox: "0 0 24 24", 
+        strokeWidth: 1.5, 
+        stroke: "currentColor", 
+        className: className 
+    },
+        // House/Property - can animate (grow, highlight)
+        React.createElement('g', { id: "property" },
+            React.createElement('path', { 
+                d: "M8 14V18M16 14V18M12 10V18M5 20V10L12 5L19 10V20H5Z",
+                strokeLinecap: "round",
+                strokeLinejoin: "round"
+            }),
+            React.createElement('path', { 
+                id: "roof",
+                d: "M5 10L12 5L19 10",
+                strokeLinecap: "round",
+                strokeLinejoin: "round"
+            })
+        ),
+        // Agent person - can animate (pulse, move)
+        React.createElement('g', { id: "agent" },
+            React.createElement('circle', {
+                cx: "12",
+                cy: "9",
+                r: "1.5"
+            }),
+            React.createElement('path', {
+                d: "M12 10.5V12M12 12C12 13 11 14 10 14"
+            })
+        ),
+        // Key - can animate (rotate, shine)
+        React.createElement('g', { id: "key" },
+            React.createElement('circle', {
+                cx: "17",
+                cy: "15",
+                r: "1",
+                strokeLinecap: "round"
+            }),
+            React.createElement('path', {
+                d: "M17 16V19M19 17H15",
+                strokeLinecap: "round"
+            })
+        ),
+        // Contract/document - can animate (wave, highlight)
+        React.createElement('g', { id: "contract" },
+            React.createElement('rect', {
+                x: "5",
+                y: "14",
+                width: "3",
+                height: "2",
+                rx: "0.5"
+            }),
+            React.createElement('line', {
+                x1: "5.5",
+                y1: "15",
+                x2: "7.5",
+                y2: "15"
+            })
+        )
+    )
+);

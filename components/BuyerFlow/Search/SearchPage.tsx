@@ -182,7 +182,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             // Set the map to fly to the property location
             setFlyToTarget({
                 center: [focusMapOnProperty.lat, focusMapOnProperty.lng],
-                zoom: 15, // Zoom in closer for individual property
+                zoom: 18, // Zoom in closer for individual property
             });
 
             // Clear the focus state after triggering the map movement

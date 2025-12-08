@@ -190,7 +190,7 @@ export const generateDescriptionFromImages = async (images: File[], language: st
 
     const result = await retryWithBackoff(() =>
         ai.models.generateContent({
-            model: 'gemini-2.5-pro',
+            model: 'gemini-2.5-flash',
             contents: { parts: [{ text: prompt }, ...imageParts] },
             config: {
                 responseMimeType: 'application/json',
@@ -274,7 +274,7 @@ If a location type doesn't apply (e.g., sea for landlocked cities), use 999 to i
 
     const result = await retryWithBackoff(() =>
         ai.models.generateContent({
-            model: 'gemini-2.5-pro',
+            model: 'gemini-2.5-flash',
             contents: { parts: [{ text: prompt }] },
             config: {
                 responseMimeType: 'application/json',
@@ -318,11 +318,13 @@ export const getAiChatResponse = async (history: ChatMessage[], properties: Prop
     const chatHistoryString = history.map(msg => `${msg.sender}: ${msg.text}`).join('\n');
 
     const systemPrompt = `
-        You are a professional, friendly, and helpful real-estate assistant for the "Balkan Estate" agency. Your job is to help buyers find properties in the Balkans that match their preferences by chatting with them naturally.
+        You are a professional, friendly, and helpful real-estate assistant for the "Balkan Estate" agency. Your job is to help buyers find properties in the Balkans that match their preferences by chatting with them naturally also use less tokens as possible for the answer.
 
         Your main goal is to understand the user's needs and convert their conversational request into a structured search query. Be concise and helpful. Never be salesy.
 
         You have access to a list of properties. Use their attributes (city, country, price, beds, baths, livingRooms, sqft, specialFeatures) to understand what's available.
+
+        Always show first the highlighted properties in the search results
 
         **Your instructions are:**
         1.  **Engage Naturally:** Start with a friendly greeting if it's the beginning of the conversation.
@@ -351,7 +353,7 @@ export const getAiChatResponse = async (history: ChatMessage[], properties: Prop
         User: "Përshëndetje, po kërkoj një apartament në Tiranë." (Albanian)
         Your JSON Response:
         {
-            "responseMessage": "Përshëndetje! Mund t'ju ndihmoj me këtë. A keni një buxhet të caktuar ose ndonjë preferencë për numrin e dhomave të gjumit?",
+            "responseMessage": "Përshëndetje! gjithmonë këtu për tju ndihmuar. A keni një buxhet të caktuar ose ndonjë preferencë për numrin e dhomave të gjumit/fjetje/ndenje?",
             "searchQuery": {
                 "location": "Tirana"
             },
@@ -405,12 +407,12 @@ export const getAiChatResponse = async (history: ChatMessage[], properties: Prop
 
     const result = await retryWithBackoff(() =>
         ai.models.generateContent({
-            model: 'gemini-2.5-pro',
+            model: 'gemini-2.5-flash',
             contents: systemPrompt,
             config: {
                 responseMimeType: 'application/json',
                 responseSchema: responseSchema,
-                timeout: 30000, // 30 second timeout
+                timeout: 200000, // 20 second timeout
             },
         })
     );
