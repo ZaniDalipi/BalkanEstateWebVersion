@@ -5,7 +5,7 @@ import type { LatLngBounds } from 'leaflet';
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // Retry configuration for handling 503 and other transient errors
-const MAX_RETRIES = 4;
+const MAX_RETRIES = 3;
 const INITIAL_DELAY = 2000; // 2 seconds
 
 /**
@@ -88,6 +88,8 @@ export const generateDescriptionFromImages = async (images: File[], language: st
 
     const prompt = `You are a professional real estate analyst specializing in Balkan properties. Analyze the following images for a property that is a(n) "${propertyType}". Based on the images and knowing its type, provide a detailed, accurate analysis. The property is located in the Balkans. The description should be written in ${language} and be tailored specifically for a(n) "${propertyType}". Provide the following details in a JSON object:
 
+    Always make sure to organize the text in a bullet list format where applicable for clarity.
+
     1.  **description**: A compelling and detailed property description in ${language}, starting with a short intro paragraph and then a bulleted list of "Key Features" and "Materials & Construction". Make sure the tone and focus of the description are appropriate for a(n) "${propertyType}". The description should highlight what makes this property unique and desirable.
 
     2.  **bedrooms**: Count the number of bedrooms visible in the images. Look for rooms with beds, closets, or typical bedroom furniture. Be precise.
@@ -123,6 +125,8 @@ export const generateDescriptionFromImages = async (images: File[], language: st
     13. **floor_number**: If the property is an 'apartment', estimate which floor it's on (1-20). Look for views, elevator buttons, or stairwell clues. If not an apartment or unclear, omit this field.
 
     14. **total_floors**: If the property is a 'house' or 'villa', count the number of floors visible (typically 1-4). If not a house/villa or unclear, omit this field.
+
+
 
     IMPORTANT: Ensure image_tags array has exactly ${images.length} entries, one for each image provided. Be accurate and thorough in your analysis.
 
