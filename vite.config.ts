@@ -8,6 +8,14 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        allowedHosts: [
+    'localhost',
+    '127.0.0.1',
+    'nebuly-aiyana-unwaving.ngrok-free.dev',
+    'https://nebuly-aiyana-unwaving.ngrok-free.dev',
+    'https://nebuly-aiyana-unwaving.ngrok-free.dev'
+
+  ],
         proxy: {
           '/api': {
             target: 'http://localhost:5001',
@@ -19,8 +27,10 @@ export default defineConfig(({ mode }) => {
             changeOrigin: true,
             secure: false,
             ws: true,
-          }
-        }
+          },
+         
+        },
+        
       },
       plugins: [react()],
       define: {
@@ -31,6 +41,7 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
-      }
+      },
+      
     };
 });

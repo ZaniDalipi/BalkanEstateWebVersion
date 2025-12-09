@@ -29,3 +29,14 @@ backend/.env.example
 *.njsproj
 *.sln
 *.sw?
+
+
+Dockerfile.txt
+
+
+balkanestatehost 
+balkanestatehost.pub 
+balkanestatewebversion
+balkanestatewebversion.pub
+yes 
+yes.pub
