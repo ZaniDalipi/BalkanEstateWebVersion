@@ -397,7 +397,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             if (drawnBounds) { // Priority 1: A user-drawn area
                 const center = drawnBounds.getCenter();
                 const activeFilters = isAreaOnly ? initialFilters : filters;
-                const name = await generateSearchNameFromCoords(center.lat, center.lng, drawnBounds, activeFilters);
+                const name = await generateSearchNameFromCoords(center.lat, center.lng, drawnBounds);
                 newSearch = {
                     id: `ss-${now}`,
                     name,
@@ -420,10 +420,10 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                 };
             } else if (mapBounds) { // Priority 3: The current map view
                 const center = mapBounds.getCenter();
-                const name = await generateSearchNameFromCoords(center.lat, center.lng, mapBounds, initialFilters);
+                const name = await generateSearchNameFromCoords(center.lat, center.lng, mapBounds);
                 newSearch = {
                     id: `ss-${now}`,
-                    name: `Area near ${name}`,
+                    name,
                     filters: initialFilters, // Save only the area, not other empty filters
                     drawnBoundsJSON: JSON.stringify(mapBounds), // Save the current map view as the search area
                     createdAt: now,

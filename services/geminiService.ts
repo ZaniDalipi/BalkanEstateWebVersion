@@ -525,34 +525,29 @@ export const generateSearchNameFromCoords = async (
                 const startAddr = startResult.address;
                 const endAddr = endResult.address;
 
-                // Helper function to get location name with priority
-                const getLocationName = (addr: any) => {
-                    return addr.suburb || addr.neighbourhood || addr.city || addr.town || addr.village;
-                };
+                // Get suburb/neighborhood names
+                const startSuburb = startAddr.suburb || startAddr.neighbourhood;
+                const endSuburb = endAddr.suburb || endAddr.neighbourhood;
 
-                // Helper function to get city name
-                const getCityName = (addr: any) => {
-                    return addr.city || addr.town || addr.village || addr.municipality;
-                };
+                // Get city names
+                const startCity = startAddr.city || startAddr.town || startAddr.village;
+                const endCity = endAddr.city || endAddr.town || endAddr.village;
 
-                const startLocation = getLocationName(startAddr);
-                const endLocation = getLocationName(endAddr);
-                const startCity = getCityName(startAddr);
-                const endCity = getCityName(endAddr);
-
-                // Case 1: Different cities - use "City to City" format
+                // Case 1: Different cities - use "City - City" format (like "Tirana - Durrës")
                 if (startCity && endCity && startCity !== endCity) {
                     locationName = `${startCity} - ${endCity}`;
                 }
-                // Case 2: Same city, different suburbs/neighbourhoods - use "Suburb to Suburb" format
-                else if (startLocation && endLocation && startLocation !== endLocation) {
-                    locationName = `${startLocation} to ${endLocation}`;
+                // Case 2: Same city, different suburbs - use "Suburb to Suburb" format (like "Aerodrom to Karpos")
+                else if (startSuburb && endSuburb && startSuburb !== endSuburb && startCity) {
+                    locationName = `${startSuburb} to ${endSuburb}`;
                 }
-                // Case 3: Same location - use single location name
+                // Case 3: Same suburb or no suburbs - just use city name
                 else if (startCity) {
                     locationName = startCity;
-                } else if (startLocation) {
-                    locationName = startLocation;
+                }
+                // Case 4: Fall back to any location we have
+                else if (startSuburb) {
+                    locationName = startSuburb;
                 }
             }
         } catch (error) {
@@ -568,18 +563,8 @@ export const generateSearchNameFromCoords = async (
 
             if (result && result.address) {
                 const address = result.address;
-
-                // Prioritize the most specific location name based on what's available
-                if (address.suburb) locationName = address.suburb;
-                else if (address.neighbourhood) locationName = address.neighbourhood;
-                else if (address.city) locationName = address.city;
-                else if (address.town) locationName = address.town;
-                else if (address.village) locationName = address.village;
-                else if (address.municipality) locationName = address.municipality;
-                else if (address.county) locationName = address.county;
-                else if (address.state) locationName = address.state;
-                else if (address.country) locationName = address.country;
-                else locationName = 'Area';
+                locationName = address.suburb || address.neighbourhood || address.city ||
+                             address.town || address.village || address.municipality || 'Area';
             }
         } catch (error) {
             console.error('Center-point reverse geocoding failed:', error);
@@ -588,72 +573,17 @@ export const generateSearchNameFromCoords = async (
 
     // If all reverse geocoding fails, use AI as final fallback
     if (!locationName) {
-        const prompt = `
-            You are a helpful real estate assistant. Given the following latitude and longitude coordinates, generate a concise, human-readable name for the geographic area they represent. The name should be suitable for a saved search.
-
-            - Identify the most prominent feature at or very near these coordinates. This could be a village, a specific neighborhood, a mountain, a well-known park, or a coastal area.
-            - The name should be short and descriptive, under 5 words.
-            - For example: "Sirogojno Village Area", "Zlatibor Mountain Center", "Near Partizanska Street, Zlatibor", "Krani lakeside".
-
-            Coordinates:
-            Latitude: ${lat}
-            Longitude: ${lng}
-
-            Return only the generated name string, without any markdown or extra text.
-        `;
+        const prompt = `Generate a short location name (2-3 words max) for coordinates: ${lat}, ${lng}. Just the location name, nothing else.`;
 
         const aiResult = await retryWithBackoff(() =>
             ai.models.generateContent({
                 model: 'gemini-2.5-flash',
                 contents: prompt,
-                config: {
-                    timeout: 15000,
-                },
+                config: { timeout: 15000 },
             })
         );
 
         locationName = aiResult.text.trim();
-    }
-
-    // Now append filter information to make the name more descriptive
-    const filterParts: string[] = [];
-
-    if (filters) {
-        // Price range
-        if (filters.minPrice || filters.maxPrice) {
-            if (filters.minPrice && filters.maxPrice) {
-                filterParts.push(`€${(filters.minPrice / 1000).toFixed(0)}k-€${(filters.maxPrice / 1000).toFixed(0)}k`);
-            } else if (filters.minPrice) {
-                filterParts.push(`over €${(filters.minPrice / 1000).toFixed(0)}k`);
-            } else if (filters.maxPrice) {
-                filterParts.push(`under €${(filters.maxPrice / 1000).toFixed(0)}k`);
-            }
-        }
-
-        // Property type
-        if (filters.propertyType && filters.propertyType !== 'any') {
-            filterParts.push(filters.propertyType);
-        }
-
-        // Bedrooms
-        if (filters.beds) {
-            filterParts.push(`${filters.beds}+ bed${filters.beds > 1 ? 's' : ''}`);
-        }
-
-        // Bathrooms
-        if (filters.baths) {
-            filterParts.push(`${filters.baths}+ bath${filters.baths > 1 ? 's' : ''}`);
-        }
-
-        // Seller type
-        if (filters.sellerType && filters.sellerType !== 'any') {
-            filterParts.push(`by ${filters.sellerType}`);
-        }
-    }
-
-    // Combine location name with filters
-    if (filterParts.length > 0) {
-        return `${locationName}, ${filterParts.join(', ')}`;
     }
 
     return locationName;
