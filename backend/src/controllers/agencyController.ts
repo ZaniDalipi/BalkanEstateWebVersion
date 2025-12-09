@@ -597,28 +597,49 @@ export const getFeaturedAgencies = async (
   try {
     const { limit = 5 } = req.query;
 
-    // Get current month to determine rotation
-    const currentDate = new Date();
-    const currentMonth = currentDate.getMonth();
-
     // Get all featured agencies
     const agencies = await Agency.find({ isFeatured: true })
       .populate('ownerId', 'name email phone avatarUrl')
       .sort({ adRotationOrder: 1, createdAt: -1 });
 
-    // Rotate based on month
-    const rotatedAgencies = [];
     const totalAgencies = agencies.length;
 
-    if (totalAgencies > 0) {
-      const startIndex = currentMonth % totalAgencies;
-      const limitNum = Number(limit);
-
-      for (let i = 0; i < Math.min(limitNum, totalAgencies); i++) {
-        const index = (startIndex + i) % totalAgencies;
-        rotatedAgencies.push(agencies[index]);
-      }
+    if (totalAgencies === 0) {
+      res.json({ agencies: [] });
+      return;
     }
+
+    // Create a rotation seed based on current date and time
+    // This creates different rotations multiple times per day
+    const currentDate = new Date();
+    const dayOfYear = Math.floor((currentDate.getTime() - new Date(currentDate.getFullYear(), 0, 0).getTime()) / 86400000);
+    const hour = currentDate.getHours();
+
+    // Rotate every 4 hours (6 times per day)
+    // This gives all agencies much more exposure
+    const rotationPeriod = Math.floor(hour / 4);
+    const rotationSeed = (dayOfYear * 6) + rotationPeriod;
+
+    // Simple but effective pseudo-random shuffle based on rotation seed
+    // This ensures the same seed always produces the same order (good for caching)
+    // but different seeds produce different orders
+    const shuffledAgencies = [...agencies];
+
+    // Fisher-Yates shuffle with seeded random
+    const seededRandom = (seed: number) => {
+      const x = Math.sin(seed) * 10000;
+      return x - Math.floor(x);
+    };
+
+    for (let i = shuffledAgencies.length - 1; i > 0; i--) {
+      const randomSeed = rotationSeed + i;
+      const j = Math.floor(seededRandom(randomSeed) * (i + 1));
+      [shuffledAgencies[i], shuffledAgencies[j]] = [shuffledAgencies[j], shuffledAgencies[i]];
+    }
+
+    // Take the requested number of agencies from the shuffled array
+    const limitNum = Number(limit);
+    const rotatedAgencies = shuffledAgencies.slice(0, Math.min(limitNum, totalAgencies));
 
     res.json({ agencies: rotatedAgencies });
   } catch (error: any) {

@@ -1,9 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useAppContext } from '../context/AppContext';
+import { useFeaturedAgencies } from '../src/features/agencies/hooks/useAgencies';
+import { Agency } from '../types';
 import { BuildingStorefrontIcon ,SparklesIcon, ArrowRightIcon } from '../constants';
 
 const FeaturedAgencies: React.FC = () => {
   const { state } = useAppContext();
+  const { data: agenciesData, isLoading, isError } = useFeaturedAgencies(8); // Fetch up to 8 agencies
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [hasAnimated, setHasAnimated] = useState(false);
@@ -77,49 +80,74 @@ const FeaturedAgencies: React.FC = () => {
     }
   };
 
-  const featuredAgencies = [
-    {
-      id: 1,
-      name: "Royal Estates",
-      logo: "👑",
-      properties: 124,
-      rating: 4.9,
-      specialty: "Luxury Properties",
-      color: "from-purple-500 to-pink-500"
-    },
-    {
-      id: 2,
-      name: "Golden Keys",
-      logo: "🗝️",
-      properties: 89,
-      rating: 4.8,
-      specialty: "City Apartments",
-      color: "from-amber-500 to-orange-500"
-    },
-    {
-      id: 3,
-      name: "Blue Horizon",
-      logo: "🌊",
-      properties: 156,
-      rating: 4.7,
-      specialty: "Waterfront Homes",
-      color: "from-blue-500 to-cyan-500"
-    },
-    {
-      id: 4,
-      name: "Green Valley",
-      logo: "🏞️",
-      properties: 67,
-      rating: 4.9,
-      specialty: "Country Estates",
-      color: "from-emerald-500 to-green-500"
-    }
-  ];
+  // Helper function to get color gradient based on agency type or index
+  const getAgencyColor = (agency: Agency, index: number): string => {
+    const typeColors: Record<string, string> = {
+      'luxury': 'from-purple-500 to-pink-500',
+      'commercial': 'from-blue-600 to-indigo-600',
+      'boutique': 'from-rose-500 to-pink-500',
+      'team': 'from-emerald-500 to-green-500',
+      'standard': 'from-blue-500 to-cyan-500'
+    };
 
-  const handleAgencyClick = (agencyId: number) => {
-    // Dispatch action to filter by agency
-    console.log('Viewing agency:', agencyId);
+    if (agency.type && typeColors[agency.type]) {
+      return typeColors[agency.type];
+    }
+
+    // Fallback to index-based colors
+    const indexColors = [
+      'from-purple-500 to-pink-500',
+      'from-amber-500 to-orange-500',
+      'from-blue-500 to-cyan-500',
+      'from-emerald-500 to-green-500',
+      'from-rose-500 to-red-500',
+      'from-indigo-500 to-purple-500',
+      'from-teal-500 to-cyan-500',
+      'from-orange-500 to-yellow-500'
+    ];
+
+    return indexColors[index % indexColors.length];
   };
+
+  // Helper function to get logo emoji based on agency type
+  const getAgencyLogo = (agency: Agency): string => {
+    const typeLogos: Record<string, string> = {
+      'luxury': '👑',
+      'commercial': '🏢',
+      'boutique': '💎',
+      'team': '👥',
+      'standard': '🏠'
+    };
+
+    return agency.type && typeLogos[agency.type] ? typeLogos[agency.type] : '🏠';
+  };
+
+  // Helper function to calculate rating based on agency data
+  const getAgencyRating = (agency: Agency): number => {
+    // If we have sales stats, calculate a rating based on performance
+    if (agency.salesStats) {
+      const salesScore = Math.min(agency.salesStats.salesLast12Months / 50, 1);
+      const propertiesScore = Math.min(agency.totalProperties / 100, 1);
+      return Math.round((4 + (salesScore + propertiesScore) / 2) * 10) / 10;
+    }
+
+    // Default to a good rating based on years in business and properties
+    const yearsScore = agency.yearsInBusiness ? Math.min(agency.yearsInBusiness / 20, 1) : 0.5;
+    const propertiesScore = Math.min(agency.totalProperties / 100, 1);
+    return Math.round((4 + (yearsScore + propertiesScore) / 2) * 10) / 10;
+  };
+
+  const agencies: Agency[] = agenciesData?.agencies || [];
+
+  const handleAgencyClick = (agencyId: string) => {
+    // Navigate to agency page
+    window.location.href = `/agencies/${agencyId}`;
+  };
+
+  // Don't show the component if there are no featured agencies or if loading/error
+  if (isLoading || isError || agencies.length === 0) {
+    return null;
+  }
 
   return (
     <div 
@@ -202,9 +230,15 @@ const FeaturedAgencies: React.FC = () => {
 
         {/* Agencies grid with staggered entrance */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {featuredAgencies.map((agency, index) => (
+          {agencies.map((agency, index) => {
+            const color = getAgencyColor(agency, index);
+            const logo = getAgencyLogo(agency);
+            const rating = getAgencyRating(agency);
+            const specialty = agency.specialties?.[0] || agency.type || 'Real Estate';
+
+            return (
             <div
-              key={agency.id}
+              key={agency._id}
               className={`group relative transition-all duration-700 hover:scale-105 ${
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
               }`}
@@ -212,7 +246,7 @@ const FeaturedAgencies: React.FC = () => {
                 transitionDelay: `${0.9 + index * 0.1}s`,
                 transform: isVisible ? 'translateY(0)' : 'translateY(20px)'
               }}
-              onClick={() => handleAgencyClick(agency.id)}
+              onClick={() => handleAgencyClick(agency.slug || agency._id)}
             >
               {/* Magic glow effect */}
               <div className="absolute -inset-1 bg-gradient-to-r from-purple-400 via-primary to-blue-400 rounded-2xl blur opacity-0 group-hover:opacity-30 transition-opacity duration-500" />
@@ -226,8 +260,17 @@ const FeaturedAgencies: React.FC = () => {
               
               {/* Agency card */}
               <div className="relative bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/30 overflow-hidden cursor-pointer transform hover:-translate-y-2 transition-all duration-500">
-                {/* Header with gradient */}
-                <div className={`h-32 bg-gradient-to-r ${agency.color} relative overflow-hidden`}>
+                {/* Header with gradient or cover image */}
+                <div className={`h-32 bg-gradient-to-r ${color} relative overflow-hidden`}>
+                  {/* Show cover image if available */}
+                  {agency.coverImage && (
+                    <img
+                      src={agency.coverImage}
+                      alt={agency.name}
+                      className="absolute inset-0 w-full h-full object-cover opacity-80"
+                    />
+                  )}
+
                   {/* Animated particles in header */}
                   {[...Array(8)].map((_, i) => (
                     <div
@@ -241,38 +284,42 @@ const FeaturedAgencies: React.FC = () => {
                       }}
                     />
                   ))}
-                  
+
                   <div className="absolute top-4 right-4">
-                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-2xl">
-                      {agency.logo}
+                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-2xl overflow-hidden">
+                      {agency.logo ? (
+                        <img src={agency.logo} alt={agency.name} className="w-full h-full object-cover" />
+                      ) : (
+                        logo
+                      )}
                     </div>
                   </div>
-                  
+
                   <div className="absolute bottom-4 left-4">
                     <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
                       <SparklesIcon className="w-4 h-4 text-yellow-300" />
-                      <span className="text-white font-semibold text-sm">{agency.rating}</span>
+                      <span className="text-white font-semibold text-sm">{rating}</span>
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Content */}
                 <div className="p-6">
-                  <h3 className="text-xl font-bold text-neutral-800 mb-2 group-hover:text-primary transition-colors duration-300">
+                  <h3 className="text-xl font-bold text-neutral-800 mb-2 group-hover:text-primary transition-colors duration-300 truncate">
                     {agency.name}
                   </h3>
-                  
+
                   <p className="text-sm text-neutral-600 mb-4 flex items-center gap-2">
                     <span className="w-2 h-2 bg-gradient-to-r from-purple-500 to-primary rounded-full animate-pulse" />
-                    {agency.specialty}
+                    <span className="truncate capitalize">{specialty}</span>
                   </p>
-                  
+
                   <div className="flex items-center justify-between mb-6">
                     <div className="text-left">
-                      <div className="text-2xl font-bold text-primary">{agency.properties}</div>
+                      <div className="text-2xl font-bold text-primary">{agency.totalProperties || 0}</div>
                       <div className="text-xs text-neutral-500">Properties</div>
                     </div>
-                    
+
                     <div className="relative">
                       <div className="w-12 h-12 bg-gradient-to-br from-white to-gray-50 rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300">
                         <ArrowRightIcon className="w-6 h-6 text-primary group-hover:scale-110 transition-transform duration-300" />
@@ -280,18 +327,18 @@ const FeaturedAgencies: React.FC = () => {
                       <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-primary rounded-full blur opacity-0 group-hover:opacity-70 transition-opacity duration-500" />
                     </div>
                   </div>
-                  
+
                   {/* Progress bar */}
                   <div className="relative h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className={`absolute inset-y-0 left-0 bg-gradient-to-r ${agency.color} rounded-full transition-all duration-1000 ${
+                    <div
+                      className={`absolute inset-y-0 left-0 bg-gradient-to-r ${color} rounded-full transition-all duration-1000 ${
                         isVisible ? 'w-full' : 'w-0'
                       }`}
                       style={{ transitionDelay: `${1.2 + index * 0.1}s` }}
                     />
                   </div>
                 </div>
-                
+
                 {/* Magic corner accents */}
                 <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-purple-400/50 rounded-tl-xl" />
                 <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-blue-400/50 rounded-tr-xl" />
@@ -299,7 +346,8 @@ const FeaturedAgencies: React.FC = () => {
                 <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-blue-400/50 rounded-br-xl" />
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* CTA with magical entrance */}
