@@ -56,13 +56,30 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onO
       await updateSavedSearchAccessTime(search.id, allPropertyIds);
       onOpen(); // Call onOpen after updating (in case parent needs to do something)
 
-      // Set fly target for map when opening
+      // Set fly target for map when opening - calculate appropriate zoom to fit bounds
       if (search.drawnBoundsJSON) {
         try {
           const parsed = JSON.parse(search.drawnBoundsJSON);
           const bounds = L.latLngBounds(parsed._southWest, parsed._northEast);
           const center = bounds.getCenter();
-          setMapFlyTarget({ center: [center.lat, center.lng], zoom: 13 });
+
+          // Calculate zoom level to fit the bounds
+          // This is a rough estimate - Leaflet will adjust it based on map size
+          const latDiff = Math.abs(bounds.getNorth() - bounds.getSouth());
+          const lngDiff = Math.abs(bounds.getEast() - bounds.getWest());
+          const maxDiff = Math.max(latDiff, lngDiff);
+
+          // Approximate zoom level based on degree span
+          let zoom = 13; // default
+          if (maxDiff > 1) zoom = 9;
+          else if (maxDiff > 0.5) zoom = 10;
+          else if (maxDiff > 0.2) zoom = 11;
+          else if (maxDiff > 0.1) zoom = 12;
+          else if (maxDiff > 0.05) zoom = 13;
+          else if (maxDiff > 0.02) zoom = 14;
+          else zoom = 15;
+
+          setMapFlyTarget({ center: [center.lat, center.lng], zoom });
         } catch (e) {
           console.error("Failed to parse bounds for fly target", e);
         }

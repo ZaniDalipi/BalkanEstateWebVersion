@@ -499,48 +499,86 @@ export const generateSearchName = async (filters: Filters): Promise<string> => {
 };
 
 export const generateSearchNameFromCoords = async (lat: number, lng: number, bounds?: LatLngBounds): Promise<string> => {
-    // Use reverse geocoding to get actual location name
+    // Helper function to get the best location name from address
+    const getLocationName = (address: any): string | null => {
+        // Prioritize the most specific location name based on what's available
+        if (address.suburb) return address.suburb;
+        if (address.neighbourhood) return address.neighbourhood;
+        if (address.city) return address.city;
+        if (address.town) return address.town;
+        if (address.village) return address.village;
+        if (address.municipality) return address.municipality;
+        if (address.county) return address.county;
+        if (address.state) return address.state;
+        if (address.country) return address.country;
+        return null;
+    };
+
+    // If bounds are provided, get location names for both corners
+    if (bounds) {
+        try {
+            const { reverseGeocode } = await import('./osmService');
+
+            // Get southwest (starting) corner location
+            const sw = bounds.getSouthWest();
+            const swResult = await reverseGeocode(sw.lat, sw.lng);
+
+            // Get northeast (ending) corner location
+            const ne = bounds.getNorthEast();
+            const neResult = await reverseGeocode(ne.lat, ne.lng);
+
+            const swName = swResult?.address ? getLocationName(swResult.address) : null;
+            const neName = neResult?.address ? getLocationName(neResult.address) : null;
+
+            // If both locations are found and different, show as range
+            if (swName && neName) {
+                if (swName === neName) {
+                    // Same location, just return the name
+                    return swName;
+                } else {
+                    // Different locations, show as range
+                    return `${swName} to ${neName}`;
+                }
+            }
+
+            // If only one location found, use it
+            if (swName) return `Area near ${swName}`;
+            if (neName) return `Area near ${neName}`;
+
+            // Fall through to center-based naming if corners don't have good names
+        } catch (error) {
+            console.error('Bounds reverse geocoding failed, trying center:', error);
+        }
+    }
+
+    // Use reverse geocoding for center point (original behavior)
     try {
         const { reverseGeocode } = await import('./osmService');
         const result = await reverseGeocode(lat, lng);
 
         if (result && result.address) {
-            const address = result.address;
-
-            // Prioritize the most specific location name based on what's available
-            // Check for suburb/neighbourhood first (most specific)
-            if (address.suburb) return address.suburb;
-            if (address.neighbourhood) return address.neighbourhood;
-
-            // Then check for city/town/village
-            if (address.city) return address.city;
-            if (address.town) return address.town;
-            if (address.village) return address.village;
-
-            // Fall back to larger areas if no specific location found
-            if (address.municipality) return address.municipality;
-            if (address.county) return address.county;
-            if (address.state) return address.state;
-            if (address.country) return address.country;
-
-            // Last resort
-            return 'Area';
+            const locationName = getLocationName(result.address);
+            if (locationName) return locationName;
         }
     } catch (error) {
         console.error('Reverse geocoding failed, falling back to AI:', error);
     }
 
     // Fallback to AI if reverse geocoding fails
+    const boundsInfo = bounds
+        ? `\nThe area spans from (${bounds.getSouthWest().lat.toFixed(4)}, ${bounds.getSouthWest().lng.toFixed(4)}) to (${bounds.getNorthEast().lat.toFixed(4)}, ${bounds.getNorthEast().lng.toFixed(4)})`
+        : '';
+
     const prompt = `
         You are a helpful real estate assistant. Given the following latitude and longitude coordinates, generate a concise, human-readable name for the geographic area they represent. The name should be suitable for a saved search.
 
         - Identify the most prominent feature at or very near these coordinates. This could be a village, a specific neighborhood, a mountain, a well-known park, or a coastal area.
         - The name should be short and descriptive, under 5 words.
-        - For example: "Sirogojno Village Area", "Zlatibor Mountain Center", "Near Partizanska Street, Zlatibor", "Krani lakeside".
+        - For example: "Sirogojno Village Area", "Zlatibor Mountain Center", "Near Partizanska Street, Zlatibor", "Kranilakeside".
 
-        Coordinates:
+        Center Coordinates:
         Latitude: ${lat}
-        Longitude: ${lng}
+        Longitude: ${lng}${boundsInfo}
 
         Return only the generated name string, without any markdown or extra text.
     `;
