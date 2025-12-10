@@ -9,7 +9,7 @@ import {
   getAllFeaturedSubscriptions,
 } from '../controllers/agencyFeaturedSubscriptionController';
 import { protect } from '../middleware/auth';
-import { requireAdmin } from '../middleware/adminAuth';
+import { checkAdminRole } from '../middleware/adminAuth';
 
 const router = express.Router();
 
@@ -21,7 +21,7 @@ router.post('/agencies/:agencyId/featured-subscription/confirm-payment', protect
 router.post('/agencies/:agencyId/featured-subscription/apply-coupon', protect, applyCoupon);
 
 // Admin routes
-router.get('/admin/featured-subscriptions', protect, requireAdmin, getAllFeaturedSubscriptions);
-router.post('/admin/featured-subscriptions/check-expired', protect, requireAdmin, checkExpiredSubscriptions);
+router.get('/admin/featured-subscriptions', protect, checkAdminRole, getAllFeaturedSubscriptions);
+router.post('/admin/featured-subscriptions/check-expired', protect, checkAdminRole, checkExpiredSubscriptions);
 
 export default router;
