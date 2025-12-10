@@ -8,20 +8,20 @@ import {
   checkExpiredSubscriptions,
   getAllFeaturedSubscriptions,
 } from '../controllers/agencyFeaturedSubscriptionController';
-import { auth, optionalAuth } from '../middleware/auth';
-import { isAdmin } from '../middleware/isAdmin';
+import { protect } from '../middleware/auth';
+import { requireAdmin } from '../middleware/adminAuth';
 
 const router = express.Router();
 
 // Agency owner routes
-router.post('/agencies/:agencyId/featured-subscription', auth, createFeaturedSubscription);
-router.get('/agencies/:agencyId/featured-subscription', optionalAuth, getFeaturedSubscription);
-router.delete('/agencies/:agencyId/featured-subscription', auth, cancelFeaturedSubscription);
-router.post('/agencies/:agencyId/featured-subscription/confirm-payment', auth, confirmPayment);
-router.post('/agencies/:agencyId/featured-subscription/apply-coupon', auth, applyCoupon);
+router.post('/agencies/:agencyId/featured-subscription', protect, createFeaturedSubscription);
+router.get('/agencies/:agencyId/featured-subscription', getFeaturedSubscription);
+router.delete('/agencies/:agencyId/featured-subscription', protect, cancelFeaturedSubscription);
+router.post('/agencies/:agencyId/featured-subscription/confirm-payment', protect, confirmPayment);
+router.post('/agencies/:agencyId/featured-subscription/apply-coupon', protect, applyCoupon);
 
 // Admin routes
-router.get('/admin/featured-subscriptions', auth, isAdmin, getAllFeaturedSubscriptions);
-router.post('/admin/featured-subscriptions/check-expired', auth, isAdmin, checkExpiredSubscriptions);
+router.get('/admin/featured-subscriptions', protect, requireAdmin, getAllFeaturedSubscriptions);
+router.post('/admin/featured-subscriptions/check-expired', protect, requireAdmin, checkExpiredSubscriptions);
 
 export default router;
