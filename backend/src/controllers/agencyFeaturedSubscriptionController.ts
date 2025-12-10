@@ -2,7 +2,13 @@ import { Request, Response } from 'express';
 import AgencyFeaturedSubscription from '../models/AgencyFeaturedSubscription';
 import Agency from '../models/Agency';
 import PromotionCoupon from '../models/PromotionCoupon';
-import { AuthRequest } from '../middleware/auth';
+
+interface AuthRequest extends Request {
+  user?: {
+    id: string;
+    [key: string]: any;
+  };
+}
 
 /**
  * Create or start a featured subscription for an agency
