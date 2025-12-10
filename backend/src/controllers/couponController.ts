@@ -106,98 +106,75 @@ export const createCoupon = async (
  * @route   POST /api/coupons/validate
  * @access  Private
  */
-export const validateCoupon = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const validateCoupon = async (req: Request, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      res.status(401).json({ message: 'Not authorized' });
+    // Support both new and old parameter names for backward compatibility
+    const { couponCode, price, tier, code, amount, promotionTier } = req.body;
+    const userId = (req as any).user?.id || (req as any).user?._id;
+
+    const actualCode = couponCode || code;
+    const actualPrice = price !== undefined ? price : amount;
+    const actualTier = tier || promotionTier;
+
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
       return;
     }
 
-    const { code, promotionTier, amount } = req.body;
-
-    if (!code) {
-      res.status(400).json({ message: 'Coupon code is required' });
+    if (!actualCode || actualPrice === undefined) {
+      res.status(400).json({ error: 'Coupon code and price are required' });
       return;
     }
 
-    const currentUser = req.user as IUser;
-
-    // Find valid coupon
-    const coupon = await (PromotionCoupon as any).findValidCoupon(code);
+    const coupon = await PromotionCoupon.findOne({
+      code: actualCode.toUpperCase(),
+      status: 'active',
+    });
 
     if (!coupon) {
-      res.status(404).json({
-        message: 'Invalid or expired coupon code',
-        code: 'INVALID_COUPON',
-        valid: false,
-      });
+      res.status(404).json({ error: 'Coupon not found or expired' });
       return;
     }
 
-    // Check if user can use this coupon
-    const canUse = await coupon.canBeUsedBy(currentUser._id);
+    if (!coupon.isValid()) {
+      res.status(400).json({ error: 'Coupon is not valid or expired' });
+      return;
+    }
 
+    const canUse = await coupon.canBeUsedBy(userId as any);
     if (!canUse) {
-      res.status(403).json({
-        message: 'You have reached the usage limit for this coupon',
-        code: 'USAGE_LIMIT_REACHED',
-        valid: false,
-      });
+      res.status(400).json({ error: 'You have already used this coupon' });
       return;
     }
 
-    // Check if applicable to tier
-    if (promotionTier && coupon.applicableTiers && coupon.applicableTiers.length > 0) {
-      if (!coupon.applicableTiers.includes(promotionTier)) {
-        res.status(403).json({
-          message: `This coupon is only valid for: ${coupon.applicableTiers.join(', ')}`,
-          code: 'INVALID_TIER',
-          valid: false,
-          applicableTiers: coupon.applicableTiers,
-        });
+    if (actualTier && coupon.applicableTiers && coupon.applicableTiers.length > 0) {
+      if (!coupon.applicableTiers.includes(actualTier)) {
+        res.status(400).json({ error: 'Coupon not applicable to this subscription tier' });
         return;
       }
     }
 
-    // Check minimum purchase amount
-    if (amount && coupon.minimumPurchaseAmount && amount < coupon.minimumPurchaseAmount) {
-      res.status(403).json({
-        message: `Minimum purchase amount of €${coupon.minimumPurchaseAmount} required`,
-        code: 'MINIMUM_NOT_MET',
-        valid: false,
-        minimumRequired: coupon.minimumPurchaseAmount,
+    if (coupon.minimumPurchaseAmount && actualPrice < coupon.minimumPurchaseAmount) {
+      res.status(400).json({
+        error: 'Minimum purchase amount of €' + coupon.minimumPurchaseAmount + ' required'
       });
       return;
     }
 
-    // Calculate discount
-    const discountAmount = amount ? coupon.calculateDiscount(amount) : 0;
-    const finalPrice = amount ? Math.max(0, amount - discountAmount) : 0;
+    const discount = coupon.calculateDiscount(actualPrice);
+    const finalPrice = Math.max(0, actualPrice - discount);
 
     res.json({
       valid: true,
-      coupon: {
-        code: coupon.code,
-        description: coupon.description,
-        discountType: coupon.discountType,
-        discountValue: coupon.discountValue,
-        applicableTiers: coupon.applicableTiers,
-        minimumPurchaseAmount: coupon.minimumPurchaseAmount,
-      },
-      discount: {
-        amount: discountAmount,
-        originalPrice: amount || 0,
-        finalPrice: finalPrice,
-        savings: discountAmount,
-        savingsPercentage: amount ? Math.round((discountAmount / amount) * 100) : 0,
-      },
+      couponCode: coupon.code,
+      discount,
+      finalPrice,
+      discountType: coupon.discountType,
+      discountValue: coupon.discountValue,
     });
-  } catch (error: any) {
-    console.error('Validate coupon error:', error);
-    res.status(500).json({ message: 'Error validating coupon', error: error.message });
+  } catch (error) {
+    console.error('Error validating coupon:', error);
+    res.status(500).json({ error: 'Failed to validate coupon' });
   }
 };
 

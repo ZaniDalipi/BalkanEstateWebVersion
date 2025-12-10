@@ -21,11 +21,59 @@ const FeaturedSubscriptionDialog: React.FC<FeaturedSubscriptionDialogProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [couponApplied, setCouponApplied] = useState(false);
+  const [finalPrice, setFinalPrice] = useState<number | null>(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
 
   const pricing = {
     weekly: { price: 10, period: 'week', savings: 0 },
     monthly: { price: 35, period: 'month', savings: 30 },
     yearly: { price: 400, period: 'year', savings: 23 },
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setError('Please enter a coupon code');
+      return;
+    }
+
+    try {
+      setValidatingCoupon(true);
+      setError(null);
+
+      // Call backend to validate coupon and get final price
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/coupons/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
+        },
+        body: JSON.stringify({
+          couponCode: couponCode.toUpperCase(),
+          price: pricing[interval].price,
+          tier: 'featured',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Invalid coupon');
+      }
+
+      setFinalPrice(data.finalPrice);
+      setDiscountAmount(data.discount);
+      setCouponApplied(true);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || 'Failed to apply coupon');
+      setCouponApplied(false);
+      setFinalPrice(null);
+      setDiscountAmount(0);
+    } finally {
+      setValidatingCoupon(false);
+    }
   };
 
   const handleSubscribe = async () => {
@@ -163,14 +211,48 @@ const FeaturedSubscriptionDialog: React.FC<FeaturedSubscriptionDialogProps> = ({
               <label className="block text-sm font-medium text-neutral-700 mb-2">
                 Have a coupon code?
               </label>
-              <input
-                type="text"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                placeholder="Enter coupon code"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => {
+                    setCouponCode(e.target.value.toUpperCase());
+                    setCouponApplied(false);
+                    setFinalPrice(null);
+                  }}
+                  placeholder="Enter coupon code"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+                <button
+                  onClick={handleApplyCoupon}
+                  disabled={!couponCode.trim() || validatingCoupon}
+                  className="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {validatingCoupon ? 'Validating...' : 'Apply'}
+                </button>
+              </div>
             </div>
+
+            {/* Coupon Applied Success */}
+            {couponApplied && finalPrice !== null && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                  <p className="text-sm font-semibold text-green-800">Coupon Applied Successfully!</p>
+                </div>
+                <div className="text-sm text-green-700">
+                  <p>Original Price: <span className="line-through">€{pricing[interval].price}</span></p>
+                  <p>Discount: <span className="font-bold">-€{discountAmount}</span></p>
+                  <p className="text-lg font-bold mt-1">
+                    Final Price: {finalPrice === 0 ? (
+                      <span className="text-green-600">FREE! 🎉</span>
+                    ) : (
+                      <span>€{finalPrice}</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Error */}
             {error && (
@@ -193,13 +275,25 @@ const FeaturedSubscriptionDialog: React.FC<FeaturedSubscriptionDialogProps> = ({
                 disabled={loading}
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-primary text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300 disabled:opacity-50"
               >
-                {loading ? 'Processing...' : `Subscribe - €${pricing[interval].price}`}
+                {loading ? 'Processing...' : couponApplied && finalPrice !== null
+                  ? finalPrice === 0
+                    ? 'Activate for FREE'
+                    : `Subscribe - €${finalPrice}`
+                  : `Subscribe - €${pricing[interval].price}`}
               </button>
             </div>
 
             <p className="text-xs text-neutral-500 text-center mt-4">
-              By subscribing, you agree to our terms and conditions. You will be charged
-              €{pricing[interval].price} per {pricing[interval].period}.
+              By subscribing, you agree to our terms and conditions.
+              {couponApplied && finalPrice !== null ? (
+                finalPrice === 0 ? (
+                  <span className="font-semibold text-green-600"> No payment required - 100% discount applied!</span>
+                ) : (
+                  <span> You will be charged €{finalPrice} per {pricing[interval].period}.</span>
+                )
+              ) : (
+                <span> You will be charged €{pricing[interval].price} per {pricing[interval].period}.</span>
+              )}
             </p>
           </>
         )}
