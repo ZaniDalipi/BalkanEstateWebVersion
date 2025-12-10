@@ -7,6 +7,7 @@ import { useAppContext } from '../../../context/AppContext';
 import { ArrowLeftIcon } from '../../../constants';
 import ImageViewerModal from '../Modals/ImageViewerModal';
 import FloorPlanViewerModal from '../Modals/FloorPlanViewerModal';
+import FeaturedAgencies from '../../FeaturedAgencies';
 import {
   ImageEditorModal,
   NeighborhoodInsights,
@@ -245,6 +246,12 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
               city={property.city}
               country={property.country}
             />
+
+            {/* Featured Agencies */}
+            <div className="mt-8">
+              <h3 className="text-2xl font-bold text-neutral-800 mb-4">Featured Agencies</h3>
+              <FeaturedAgencies />
+            </div>
           </div>
 
           {/* Right Column - Contact Sidebar */}
