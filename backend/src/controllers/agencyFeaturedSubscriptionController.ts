@@ -10,17 +10,20 @@ export const createFeaturedSubscription = async (req: Request, res: Response): P
     const userId = (req as any).user?.id || (req as any).user?._id;
 
     if (!userId) {
-      return res.status(40      res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
     }
 
     // Check if agency exists and user is the owner
     const agency = await Agency.findById(agencyId);
     if (!agency) {
-      return res.status(40      res.status(404).json({ error: 'Agency not found' });
+      res.status(404).json({ error: 'Agency not found' });
+      return;
     }
 
     if (agency.ownerId.toString() !== userId) {
-      return res.status(40      res.status(403).json({ error: 'Only agency owner can create subscription' });
+      res.status(403).json({ error: 'Only agency owner can create subscription' });
+      return;
     }
 
     // Check if active subscription already exists
@@ -30,10 +33,11 @@ export const createFeaturedSubscription = async (req: Request, res: Response): P
     });
 
     if (existingSubscription) {
-      return res.status(40      res.status(400).json({
+      res.status(400).json({
         error: 'Active subscription already exists',
         subscription: existingSubscription,
       });
+      return;
     }
 
     // Calculate dates
@@ -123,7 +127,7 @@ export const createFeaturedSubscription = async (req: Request, res: Response): P
     });
   } catch (error) {
     console.error('Error creating featured subscription:', error);
-    return res.status(50    res.status(500).json({ error: 'Failed to create subscription' });
+    res.status(500).json({ error: 'Failed to create subscription' });
   }
 };
 
@@ -140,13 +144,14 @@ export const getFeaturedSubscription = async (req: Request, res: Response): Prom
     }).sort({ createdAt: -1 });
 
     if (!subscription) {
-      return res.status(40      res.status(404).json({ error: 'No subscription found' });
+      res.status(404).json({ error: 'No subscription found' });
+      return;
     }
 
     res.json({ subscription });
   } catch (error) {
     console.error('Error fetching featured subscription:', error);
-    return res.status(50    res.status(500).json({ error: 'Failed to fetch subscription' });
+    res.status(500).json({ error: 'Failed to fetch subscription' });
   }
 };
 
@@ -161,7 +166,7 @@ export const cancelFeaturedSubscription = async (req: Request, res: Response): P
     const userId = (req as any).user?.id || (req as any).user?._id;
 
     if (!userId) {
-      return res.status(40      res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({ error: 'Unauthorized' });
     }
 
     const subscription = await AgencyFeaturedSubscription.findOne({
@@ -170,12 +175,14 @@ export const cancelFeaturedSubscription = async (req: Request, res: Response): P
     });
 
     if (!subscription) {
-      return res.status(40      res.status(404).json({ error: 'No active subscription found' });
+      res.status(404).json({ error: 'No active subscription found' });
+      return;
     }
 
     // Check ownership
     if (subscription.userId.toString() !== userId) {
-      return res.status(40      res.status(403).json({ error: 'Unauthorized to cancel this subscription' });
+      res.status(403).json({ error: 'Unauthorized to cancel this subscription' });
+      return;
     }
 
     if (immediately) {
@@ -208,7 +215,7 @@ export const cancelFeaturedSubscription = async (req: Request, res: Response): P
     });
   } catch (error) {
     console.error('Error canceling featured subscription:', error);
-    return res.status(50    res.status(500).json({ error: 'Failed to cancel subscription' });
+    res.status(500).json({ error: 'Failed to cancel subscription' });
   }
 };
 
@@ -227,7 +234,8 @@ export const confirmPayment = async (req: Request, res: Response): Promise<void>
     });
 
     if (!subscription) {
-      return res.status(40      res.status(404).json({ error: 'No pending subscription found' });
+      res.status(404).json({ error: 'No pending subscription found' });
+      return;
     }
 
     // Update subscription
@@ -254,7 +262,7 @@ export const confirmPayment = async (req: Request, res: Response): Promise<void>
     });
   } catch (error) {
     console.error('Error confirming payment:', error);
-    return res.status(50    res.status(500).json({ error: 'Failed to confirm payment' });
+    res.status(500).json({ error: 'Failed to confirm payment' });
   }
 };
 
@@ -269,11 +277,13 @@ export const applyCoupon = async (req: Request, res: Response): Promise<void> =>
     const userId = (req as any).user?.id || (req as any).user?._id;
 
     if (!userId) {
-      return res.status(40      res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
     }
 
     if (!couponCode) {
-      return res.status(40      res.status(400).json({ error: 'Coupon code is required' });
+      res.status(400).json({ error: 'Coupon code is required' });
+      return;
     }
 
     const subscription = await AgencyFeaturedSubscription.findOne({
@@ -282,7 +292,8 @@ export const applyCoupon = async (req: Request, res: Response): Promise<void> =>
     });
 
     if (!subscription) {
-      return res.status(40      res.status(404).json({ error: 'No active subscription found' });
+      res.status(404).json({ error: 'No active subscription found' });
+      return;
     }
 
     // Find coupon
@@ -292,16 +303,19 @@ export const applyCoupon = async (req: Request, res: Response): Promise<void> =>
     });
 
     if (!coupon) {
-      return res.status(40      res.status(404).json({ error: 'Coupon not found or expired' });
+      res.status(404).json({ error: 'Coupon not found or expired' });
+      return;
     }
 
     if (!coupon.isValid()) {
-      return res.status(40      res.status(400).json({ error: 'Coupon is not valid' });
+      res.status(400).json({ error: 'Coupon is not valid' });
+      return;
     }
 
     const canUse = await coupon.canBeUsedBy(userId as any);
     if (!canUse) {
-      return res.status(40      res.status(400).json({ error: 'You cannot use this coupon' });
+      res.status(400).json({ error: 'You cannot use this coupon' });
+      return;
     }
 
     // Calculate discount
@@ -326,7 +340,7 @@ export const applyCoupon = async (req: Request, res: Response): Promise<void> =>
     });
   } catch (error) {
     console.error('Error applying coupon:', error);
-    return res.status(50    res.status(500).json({ error: 'Failed to apply coupon' });
+    res.status(500).json({ error: 'Failed to apply coupon' });
   }
 };
 
@@ -396,7 +410,7 @@ export const checkExpiredSubscriptions = async (req: Request, res: Response) => 
     });
   } catch (error) {
     console.error('Error checking expired subscriptions:', error);
-    return res.status(50    res.status(500).json({ error: 'Failed to check expired subscriptions' });
+    res.status(500).json({ error: 'Failed to check expired subscriptions' });
   }
 };
 
@@ -430,6 +444,6 @@ export const getAllFeaturedSubscriptions = async (req: Request, res: Response) =
     });
   } catch (error) {
     console.error('Error fetching featured subscriptions:', error);
-    return res.status(50    res.status(500).json({ error: 'Failed to fetch subscriptions' });
+    res.status(500).json({ error: 'Failed to fetch subscriptions' });
   }
 };
