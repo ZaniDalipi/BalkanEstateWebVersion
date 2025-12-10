@@ -3,22 +3,11 @@ import AgencyFeaturedSubscription from '../models/AgencyFeaturedSubscription';
 import Agency from '../models/Agency';
 import PromotionCoupon from '../models/PromotionCoupon';
 
-interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    [key: string]: any;
-  };
-}
-
-/**
- * Create or start a featured subscription for an agency
- * POST /api/agencies/:agencyId/featured-subscription
- */
-export const createFeaturedSubscription = async (req: AuthRequest, res: Response) => {
+export const createFeaturedSubscription = async (req: Request, res: Response): Promise<void> => {
   try {
     const { agencyId } = req.params;
     const { interval = 'weekly', couponCode, startTrial = false } = req.body;
-    const userId = req.user?.id;
+    const userId = (req as any).user?.id || (req as any).user?._id;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -142,7 +131,7 @@ export const createFeaturedSubscription = async (req: AuthRequest, res: Response
  * Get agency featured subscription details
  * GET /api/agencies/:agencyId/featured-subscription
  */
-export const getFeaturedSubscription = async (req: AuthRequest, res: Response) => {
+export const getFeaturedSubscription = async (req: Request, res: Response): Promise<void> => {
   try {
     const { agencyId } = req.params;
 
@@ -165,11 +154,11 @@ export const getFeaturedSubscription = async (req: AuthRequest, res: Response) =
  * Cancel featured subscription
  * DELETE /api/agencies/:agencyId/featured-subscription
  */
-export const cancelFeaturedSubscription = async (req: AuthRequest, res: Response) => {
+export const cancelFeaturedSubscription = async (req: Request, res: Response): Promise<void> => {
   try {
     const { agencyId } = req.params;
     const { immediately = false } = req.body;
-    const userId = req.user?.id;
+    const userId = (req as any).user?.id || (req as any).user?._id;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -227,7 +216,7 @@ export const cancelFeaturedSubscription = async (req: AuthRequest, res: Response
  * Confirm payment and activate subscription (admin or payment webhook)
  * POST /api/agencies/:agencyId/featured-subscription/confirm-payment
  */
-export const confirmPayment = async (req: AuthRequest, res: Response) => {
+export const confirmPayment = async (req: Request, res: Response): Promise<void> => {
   try {
     const { agencyId } = req.params;
     const { stripeSubscriptionId, stripeCustomerId } = req.body;
@@ -273,11 +262,11 @@ export const confirmPayment = async (req: AuthRequest, res: Response) => {
  * Apply coupon to subscription
  * POST /api/agencies/:agencyId/featured-subscription/apply-coupon
  */
-export const applyCoupon = async (req: AuthRequest, res: Response) => {
+export const applyCoupon = async (req: Request, res: Response): Promise<void> => {
   try {
     const { agencyId } = req.params;
     const { couponCode } = req.body;
-    const userId = req.user?.id;
+    const userId = (req as any).user?.id || (req as any).user?._id;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
