@@ -171,6 +171,7 @@ app.use('/api/webhooks', webhookRoutes);
 app.use('/api/bank-exports', bankExportRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api', agencyFeaturedSubscriptionRoutes); // Register BEFORE agencyRoutes to prevent conflicts
 app.use('/api/agencies', agencyRoutes);
 app.use('/api/agency-join-requests', agencyJoinRequestRoutes);
 app.use('/api/agents', agentRoutes);
@@ -179,7 +180,6 @@ app.use('/api/geocoding', geocodingRoutes);
 app.use('/api/neighborhood-insights', neighborhoodInsightsRoutes);
 app.use('/api/sales-history', salesHistoryRoutes);
 app.use('/api/discount-codes', discountCodeRoutes);
-app.use('/api', agencyFeaturedSubscriptionRoutes); // Featured subscription routes
 app.use('/api/admin', adminRoutes); // Admin panel routes (VPN + admin role required)
 
 // 404 handler
