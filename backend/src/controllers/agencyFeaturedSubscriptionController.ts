@@ -141,18 +141,27 @@ export const createFeaturedSubscription = async (req: Request, res: Response): P
 
     await subscription.save();
 
-    // Update agency featured status if trial
-    if (isTrial) {
+    // Update agency featured status if free (trial or 100% discount)
+    if (price === 0) {
       agency.isFeatured = true;
       agency.featuredStartDate = now;
       agency.featuredEndDate = currentPeriodEnd;
       await agency.save();
+
+      // Mark as active instead of pending_payment
+      subscription.status = 'active';
+      await subscription.save();
     }
 
     res.status(201).json({
-      message: isTrial ? 'Free trial started successfully' : 'Subscription created, pending payment',
+      message: price === 0
+        ? 'Subscription activated successfully (free)'
+        : isTrial
+          ? 'Free trial started successfully'
+          : 'Subscription created, pending payment',
       subscription,
-      requiresPayment: !isTrial,
+      requiresPayment: price > 0 && !isTrial,
+      finalPrice: price,
     });
   } catch (error) {
     console.error('Error creating featured subscription:', error);

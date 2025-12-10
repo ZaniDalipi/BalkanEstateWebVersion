@@ -39,20 +39,21 @@ const FeaturedSubscriptionDialog: React.FC<FeaturedSubscriptionDialogProps> = ({
         startTrial: false,
       });
 
-      if (response.requiresPayment) {
-        // In a real implementation, integrate with Stripe here
-        // For now, just show success message
+      // If free (100% coupon or trial), activate immediately
+      if (!response.requiresPayment || response.finalPrice === 0) {
         setSuccess(true);
         setTimeout(() => {
           onSuccess?.();
           onClose();
-        }, 2000);
+        }, 1500);
       } else {
+        // Requires payment - integrate with Stripe/PayPal here
+        // For now, show success (in production, open payment modal)
         setSuccess(true);
         setTimeout(() => {
           onSuccess?.();
           onClose();
-        }, 2000);
+        }, 1500);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to create subscription');
