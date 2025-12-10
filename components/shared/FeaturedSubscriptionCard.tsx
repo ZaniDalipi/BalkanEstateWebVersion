@@ -2,6 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { getFeaturedSubscription } from '../../services/apiService';
 import { SparklesIcon, CheckCircleIcon, XCircleIcon, ClockIcon } from '../../constants';
 
+// Add shimmer animation styles
+const shimmerStyles = `
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+`;
+
 interface FeaturedSubscriptionCardProps {
   agencyId: string;
   onUpgrade?: () => void;
@@ -76,18 +91,41 @@ const FeaturedSubscriptionCard: React.FC<FeaturedSubscriptionCardProps> = ({
       )
     : 0;
 
+  // Calculate total days in subscription period for progress bar
+  const totalDays = subscription
+    ? Math.ceil(
+        (new Date(subscription.currentPeriodEnd).getTime() - new Date(subscription.startDate).getTime()) /
+          (1000 * 60 * 60 * 24)
+      )
+    : 0;
+
+  // Calculate progress percentage (100% at start, 0% at end)
+  const progressPercentage = totalDays > 0 ? Math.max(0, Math.min(100, (daysRemaining / totalDays) * 100)) : 0;
+
+  // Get color based on days remaining
+  const getProgressColor = () => {
+    if (daysRemaining > 7) return 'from-green-500 to-green-600';
+    if (daysRemaining > 3) return 'from-yellow-500 to-amber-600';
+    return 'from-red-500 to-red-600';
+  };
+
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-md p-6 animate-pulse">
-        <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-        <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-      </div>
+      <>
+        <style>{shimmerStyles}</style>
+        <div className="bg-white rounded-xl shadow-md p-6 animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+        </div>
+      </>
     );
   }
 
   if (!subscription) {
     return (
-      <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-md p-6 border-2 border-dashed border-purple-300">
+      <>
+        <style>{shimmerStyles}</style>
+        <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-md p-6 border-2 border-dashed border-purple-300">
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-primary rounded-xl flex items-center justify-center flex-shrink-0">
             <SparklesIcon className="w-6 h-6 text-white" />
@@ -109,19 +147,22 @@ const FeaturedSubscriptionCard: React.FC<FeaturedSubscriptionCardProps> = ({
           </div>
         </div>
       </div>
+      </>
     );
   }
 
   const isActive = subscription.status === 'active' || subscription.status === 'trial';
 
   return (
-    <div
-      className={`rounded-xl shadow-md p-6 border-2 ${
-        isActive
-          ? 'bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200'
-          : 'bg-white border-gray-200'
-      }`}
-    >
+    <>
+      <style>{shimmerStyles}</style>
+      <div
+        className={`rounded-xl shadow-md p-6 border-2 ${
+          isActive
+            ? 'bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200'
+            : 'bg-white border-gray-200'
+        }`}
+      >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div
@@ -148,10 +189,49 @@ const FeaturedSubscriptionCard: React.FC<FeaturedSubscriptionCardProps> = ({
       </div>
 
       <div className="space-y-3">
+        {/* Interactive Progress Bar */}
+        {isActive && daysRemaining >= 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-semibold text-neutral-700">
+                {subscription.isTrial ? '🎉 Free Trial Progress' : '📅 Subscription Period'}
+              </span>
+              <span className={`font-bold ${daysRemaining <= 3 ? 'text-red-600 animate-pulse' : daysRemaining <= 7 ? 'text-yellow-600' : 'text-green-600'}`}>
+                {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} left
+              </span>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="relative h-4 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+              <div
+                className={`h-full bg-gradient-to-r ${getProgressColor()} transition-all duration-500 ease-out relative`}
+                style={{ width: `${progressPercentage}%` }}
+              >
+                {/* Animated shine effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+              </div>
+
+              {/* Days remaining label inside progress bar */}
+              {progressPercentage > 20 && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-xs font-bold text-white drop-shadow-lg">
+                    {Math.round(progressPercentage)}%
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-neutral-500">
+              <span>{formatDate(subscription.startDate)}</span>
+              <span>{formatDate(subscription.currentPeriodEnd)}</span>
+            </div>
+          </div>
+        )}
+
         {subscription.isTrial && (
           <div className="bg-blue-100 border border-blue-200 rounded-lg p-3">
             <p className="text-sm font-semibold text-blue-800">
-              🎉 Free Trial - {daysRemaining} days remaining
+              🎉 Free Trial Active
             </p>
             <p className="text-xs text-blue-600 mt-1">
               Your free trial ends on {formatDate(subscription.currentPeriodEnd)}
@@ -210,6 +290,7 @@ const FeaturedSubscriptionCard: React.FC<FeaturedSubscriptionCardProps> = ({
         )}
       </div>
     </div>
+    </>
   );
 };
 

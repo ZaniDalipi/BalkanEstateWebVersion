@@ -40,7 +40,7 @@ export const createFeaturedSubscription = async (req: Request, res: Response): P
       return;
     }
 
-    // Calculate dates
+    // Calculate dates and price
     const now = new Date();
     let currentPeriodEnd = new Date(now);
     let price = 10; // Default weekly price
@@ -49,12 +49,14 @@ export const createFeaturedSubscription = async (req: Request, res: Response): P
     let appliedCouponCode: string | undefined;
     let appliedCouponId: any | undefined;
     let discountApplied = 0;
+    let trialDays = 0;
 
     // Handle trial
     if (startTrial) {
       isTrial = true;
+      trialDays = 7; // Default 7 days trial
       trialEndDate = new Date(now);
-      trialEndDate.setDate(trialEndDate.getDate() + 7); // 7 days trial
+      trialEndDate.setDate(trialEndDate.getDate() + trialDays);
       currentPeriodEnd = new Date(trialEndDate);
       price = 0; // Free during trial
     } else {
@@ -71,8 +73,8 @@ export const createFeaturedSubscription = async (req: Request, res: Response): P
       }
     }
 
-    // Apply coupon if provided
-    if (couponCode && !isTrial) {
+    // Apply coupon if provided (works for both trial and paid subscriptions)
+    if (couponCode) {
       const coupon = await PromotionCoupon.findOne({
         code: couponCode.toUpperCase(),
         status: 'active',
@@ -81,10 +83,37 @@ export const createFeaturedSubscription = async (req: Request, res: Response): P
       if (coupon && coupon.isValid()) {
         const canUse = await coupon.canBeUsedBy(userId as any);
         if (canUse) {
-          discountApplied = coupon.calculateDiscount(price);
-          price -= discountApplied;
-          appliedCouponCode = coupon.code;
-          appliedCouponId = coupon._id;
+          // Check if coupon is applicable to featured tier
+          if (!coupon.applicableTiers || coupon.applicableTiers.length === 0 || coupon.applicableTiers.includes('featured')) {
+            // Check minimum purchase amount
+            if (!coupon.minimumPurchaseAmount || price >= coupon.minimumPurchaseAmount) {
+              // Calculate discount immediately
+              const calculatedDiscount = coupon.calculateDiscount(price);
+
+              // For trial subscriptions, coupon can extend the trial period
+              if (isTrial && coupon.discountType === 'fixed' && coupon.discountValue === 0) {
+                // This is a trial extension coupon - check description for days
+                const daysMatch = coupon.description?.match(/(\d+)\s*day/i);
+                if (daysMatch) {
+                  const extensionDays = parseInt(daysMatch[1], 10);
+                  trialDays = extensionDays;
+                  trialEndDate = new Date(now);
+                  trialEndDate.setDate(trialEndDate.getDate() + extensionDays);
+                  currentPeriodEnd = new Date(trialEndDate);
+                }
+              } else {
+                // Apply price discount
+                discountApplied = calculatedDiscount;
+                price = Math.max(0, price - discountApplied);
+              }
+
+              appliedCouponCode = coupon.code;
+              appliedCouponId = coupon._id;
+
+              // Record coupon usage
+              await coupon.recordUsage(userId as any, agencyId as any, discountApplied);
+            }
+          }
         }
       }
     }
@@ -102,7 +131,7 @@ export const createFeaturedSubscription = async (req: Request, res: Response): P
       currentPeriodEnd,
       trialEndDate,
       isTrial,
-      trialDays: isTrial ? 7 : undefined,
+      trialDays: isTrial ? trialDays : undefined,
       appliedCouponCode,
       appliedCouponId,
       discountApplied,
