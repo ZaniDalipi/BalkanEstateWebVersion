@@ -664,14 +664,35 @@ export const getFeaturedAgencies = async (
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth();
 
-    // Get all featured agencies
+    // Get all featured agencies with agents populated
     const agencies = await Agency.find({ isFeatured: true })
       .populate('ownerId', 'name email phone avatarUrl')
-      .sort({ adRotationOrder: 1, createdAt: -1 });
+      .populate('agents', '_id')
+      .sort({ adRotationOrder: 1, createdAt: -1 })
+      .lean();
+
+    // Import Property model dynamically to avoid circular dependencies
+    const Property = (await import('../models/Property')).default;
+
+    // Calculate totalProperties for each agency
+    const agenciesWithCounts = await Promise.all(
+      agencies.map(async (agency: any) => {
+        const agentIds = agency.agents?.map((agent: any) => agent._id) || [];
+        const propertyCount = await Property.countDocuments({
+          sellerId: { $in: agentIds },
+          status: { $in: ['active', 'pending'] }
+        });
+        return {
+          ...agency,
+          totalProperties: propertyCount,
+          totalAgents: agency.agents?.length || 0,
+        };
+      })
+    );
 
     // Rotate based on month
     const rotatedAgencies = [];
-    const totalAgencies = agencies.length;
+    const totalAgencies = agenciesWithCounts.length;
 
     if (totalAgencies > 0) {
       const startIndex = currentMonth % totalAgencies;
@@ -679,7 +700,7 @@ export const getFeaturedAgencies = async (
 
       for (let i = 0; i < Math.min(limitNum, totalAgencies); i++) {
         const index = (startIndex + i) % totalAgencies;
-        rotatedAgencies.push(agencies[index]);
+        rotatedAgencies.push(agenciesWithCounts[index]);
       }
     }
 

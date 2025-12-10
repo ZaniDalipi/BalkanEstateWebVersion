@@ -26,7 +26,7 @@ export function useAgencies(filters?: { city?: string; featured?: boolean; page?
 
 export function useFeaturedAgencies(limit?: number) {
   const {
-    data: agencies = [],
+    data,
     isLoading,
     error,
   } = useQuery({
@@ -36,5 +36,5 @@ export function useFeaturedAgencies(limit?: number) {
     gcTime: 15 * 60 * 1000,
   });
 
-  return { agencies, isLoading, error };
+  return { agencies: data?.agencies || [], isLoading, error };
 }

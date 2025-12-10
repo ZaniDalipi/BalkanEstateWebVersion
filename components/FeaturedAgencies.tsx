@@ -249,12 +249,19 @@ const FeaturedAgencies: React.FC = () => {
               {/* Agency card */}
               <div className="relative bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/30 overflow-hidden cursor-pointer transform hover:-translate-y-2 transition-all duration-500">
                 {/* Header with gradient or cover image */}
-                <div className={`h-32 bg-gradient-to-r ${colorGradient} relative overflow-hidden`}
-                     style={agency.coverImage ? {
-                       backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url(${agency.coverImage})`,
-                       backgroundSize: 'cover',
-                       backgroundPosition: 'center'
-                     } : {}}>
+                <div
+                  className={`h-32 relative overflow-hidden ${
+                    (agency as any).coverImage
+                      ? ''
+                      : (agency as any).coverGradient
+                        ? `bg-gradient-to-r ${(agency as any).coverGradient}`
+                        : `bg-gradient-to-r ${colorGradient}`
+                  }`}
+                  style={(agency as any).coverImage ? {
+                    backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url(${(agency as any).coverImage})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                  } : {}}>
                   {/* Animated particles in header */}
                   {[...Array(8)].map((_, i) => (
                     <div
