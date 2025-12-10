@@ -130,8 +130,8 @@ const AgenciesListPage: React.FC = () => {
       {/* Gradient Accent */}
       <div className={`absolute top-0 left-0 w-2 h-full ${getRankColor(index)}`} />
 
-      {/* Cover Image - Optional */}
-      {(agency as any).coverImage && (
+      {/* Cover Image or Gradient - Optional */}
+      {(agency as any).coverImage ? (
         <div className="h-32 overflow-hidden">
           <img
             src={(agency as any).coverImage}
@@ -139,7 +139,9 @@ const AgenciesListPage: React.FC = () => {
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
         </div>
-      )}
+      ) : (agency as any).coverGradient ? (
+        <div className={`h-32 bg-gradient-to-br ${(agency as any).coverGradient}`} />
+      ) : null}
 
       <div className="pl-4 pr-6 py-6">
         <div className="flex items-start gap-6">

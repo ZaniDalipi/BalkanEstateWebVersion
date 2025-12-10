@@ -8,6 +8,7 @@ export interface IAgency extends Document {
   description?: string;
   logo?: string;
   coverImage?: string;
+  coverGradient?: string; // Tailwind gradient classes for banner background
   email: string;
   phone: string;
   address?: string;
@@ -102,6 +103,10 @@ const AgencySchema: Schema = new Schema(
     },
     coverImage: {
       type: String,
+    },
+    coverGradient: {
+      type: String,
+      trim: true,
     },
     email: {
       type: String,

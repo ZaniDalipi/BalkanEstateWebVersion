@@ -33,6 +33,18 @@ interface AgencyDetailPageProps {
   agency: Agency;
 }
 
+// Gradient presets for agency banners
+const GRADIENT_PRESETS = [
+  { id: 'default', name: 'Ocean Blue', gradient: 'from-blue-600 via-blue-700 to-indigo-900' },
+  { id: 'sunset', name: 'Sunset', gradient: 'from-orange-500 via-pink-500 to-purple-600' },
+  { id: 'forest', name: 'Forest', gradient: 'from-green-600 via-teal-600 to-cyan-700' },
+  { id: 'royal', name: 'Royal Purple', gradient: 'from-purple-600 via-purple-700 to-indigo-900' },
+  { id: 'fire', name: 'Fire', gradient: 'from-red-600 via-orange-600 to-yellow-500' },
+  { id: 'night', name: 'Night Sky', gradient: 'from-gray-900 via-blue-900 to-purple-900' },
+  { id: 'mint', name: 'Mint Fresh', gradient: 'from-emerald-400 via-teal-500 to-cyan-600' },
+  { id: 'rose', name: 'Rose Gold', gradient: 'from-pink-400 via-rose-400 to-red-500' },
+];
+
 const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const { state, dispatch } = useAppContext();
   const { currentUser, isAuthenticated } = state;
@@ -53,6 +65,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [propertyView, setPropertyView] = useState<'active' | 'sold'>('active');
   const [subscriptionKey, setSubscriptionKey] = useState(0);
+  const [showGradientPicker, setShowGradientPicker] = useState(false);
   const [editForm, setEditForm] = useState({
     name: '',
     description: '',
@@ -501,6 +514,39 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     }
   };
 
+  const handleGradientSelect = async (gradientId: string) => {
+    if (!isOwner) return;
+
+    try {
+      const gradient = GRADIENT_PRESETS.find(g => g.id === gradientId);
+      if (!gradient) return;
+
+      const response = await fetch(`${API_URL}/agencies/${agencyData._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('balkan_estate_token')}`,
+        },
+        body: JSON.stringify({
+          coverGradient: gradient.gradient,
+          coverImage: '', // Clear cover image when selecting gradient
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update gradient');
+      }
+
+      setAgencyData(data.agency);
+      setShowGradientPicker(false);
+      alert('Banner gradient updated successfully!');
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Failed to update gradient');
+    }
+  };
+
   const getRankBadge = (index: number) => {
     if (index === 0) return { emoji: '🥇', color: 'from-yellow-400 to-yellow-600', text: 'Top Agent' };
     if (index === 1) return { emoji: '🥈', color: 'from-gray-300 to-gray-500', text: '2nd Place' };
@@ -529,12 +575,24 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           </>
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary-dark to-black/80" />
+          <div className={`absolute inset-0 bg-gradient-to-br ${(agencyData as any).coverGradient || 'from-primary via-primary-dark to-black/80'}`} />
         )}
 
-        {/* Cover Upload Button - Only for owners */}
+        {/* Cover Controls - Only for owners */}
         {isOwner && (
-          <div className="absolute top-6 right-6 z-10">
+          <div className="absolute top-6 right-6 z-10 flex gap-3">
+            {/* Gradient Picker Button */}
+            <button
+              onClick={() => setShowGradientPicker(!showGradientPicker)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-black/30 backdrop-blur-sm text-white font-semibold rounded-lg hover:bg-black/50 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+              </svg>
+              Gradients
+            </button>
+
+            {/* Upload Image Button */}
             <input
               type="file"
               id="cover-upload"
@@ -555,9 +613,56 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
                   Uploading...
                 </>
               ) : (
-                'Change Cover'
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Upload Image
+                </>
               )}
             </label>
+
+            {/* Gradient Picker Dropdown */}
+            {showGradientPicker && (
+              <div className="absolute top-full right-0 mt-2 bg-white rounded-2xl shadow-2xl p-4 w-80 max-h-96 overflow-y-auto border border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">Choose Gradient</h3>
+                  <button
+                    onClick={() => setShowGradientPicker(false)}
+                    className="text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    <XMarkIcon className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {GRADIENT_PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      onClick={() => handleGradientSelect(preset.id)}
+                      className="group relative h-24 rounded-xl overflow-hidden border-2 border-gray-200 hover:border-primary transition-all hover:scale-105"
+                    >
+                      <div className={`absolute inset-0 bg-gradient-to-br ${preset.gradient}`} />
+                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-white font-bold text-sm drop-shadow-lg">
+                          {preset.name}
+                        </span>
+                      </div>
+                      {(agencyData as any).coverGradient === preset.gradient && (
+                        <div className="absolute top-2 right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-3 text-center">
+                  Or upload a custom image using the button above
+                </p>
+              </div>
+            )}
           </div>
         )}
 
