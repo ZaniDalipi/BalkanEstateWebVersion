@@ -10,17 +10,17 @@ export const createFeaturedSubscription = async (req: Request, res: Response): P
     const userId = (req as any).user?.id || (req as any).user?._id;
 
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({ error: 'Unauthorized' });
     }
 
     // Check if agency exists and user is the owner
     const agency = await Agency.findById(agencyId);
     if (!agency) {
-      return res.status(404).json({ error: 'Agency not found' });
+      res.status(404).json({ error: 'Agency not found' });
     }
 
     if (agency.ownerId.toString() !== userId) {
-      return res.status(403).json({ error: 'Only agency owner can create subscription' });
+      res.status(403).json({ error: 'Only agency owner can create subscription' });
     }
 
     // Check if active subscription already exists
@@ -30,7 +30,7 @@ export const createFeaturedSubscription = async (req: Request, res: Response): P
     });
 
     if (existingSubscription) {
-      return res.status(400).json({
+      res.status(400).json({
         error: 'Active subscription already exists',
         subscription: existingSubscription,
       });
@@ -140,7 +140,7 @@ export const getFeaturedSubscription = async (req: Request, res: Response): Prom
     }).sort({ createdAt: -1 });
 
     if (!subscription) {
-      return res.status(404).json({ error: 'No subscription found' });
+      res.status(404).json({ error: 'No subscription found' });
     }
 
     res.json({ subscription });
@@ -161,7 +161,7 @@ export const cancelFeaturedSubscription = async (req: Request, res: Response): P
     const userId = (req as any).user?.id || (req as any).user?._id;
 
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({ error: 'Unauthorized' });
     }
 
     const subscription = await AgencyFeaturedSubscription.findOne({
@@ -170,12 +170,12 @@ export const cancelFeaturedSubscription = async (req: Request, res: Response): P
     });
 
     if (!subscription) {
-      return res.status(404).json({ error: 'No active subscription found' });
+      res.status(404).json({ error: 'No active subscription found' });
     }
 
     // Check ownership
     if (subscription.userId.toString() !== userId) {
-      return res.status(403).json({ error: 'Unauthorized to cancel this subscription' });
+      res.status(403).json({ error: 'Unauthorized to cancel this subscription' });
     }
 
     if (immediately) {
@@ -227,7 +227,7 @@ export const confirmPayment = async (req: Request, res: Response): Promise<void>
     });
 
     if (!subscription) {
-      return res.status(404).json({ error: 'No pending subscription found' });
+      res.status(404).json({ error: 'No pending subscription found' });
     }
 
     // Update subscription
@@ -269,11 +269,11 @@ export const applyCoupon = async (req: Request, res: Response): Promise<void> =>
     const userId = (req as any).user?.id || (req as any).user?._id;
 
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({ error: 'Unauthorized' });
     }
 
     if (!couponCode) {
-      return res.status(400).json({ error: 'Coupon code is required' });
+      res.status(400).json({ error: 'Coupon code is required' });
     }
 
     const subscription = await AgencyFeaturedSubscription.findOne({
@@ -282,7 +282,7 @@ export const applyCoupon = async (req: Request, res: Response): Promise<void> =>
     });
 
     if (!subscription) {
-      return res.status(404).json({ error: 'No active subscription found' });
+      res.status(404).json({ error: 'No active subscription found' });
     }
 
     // Find coupon
@@ -292,16 +292,16 @@ export const applyCoupon = async (req: Request, res: Response): Promise<void> =>
     });
 
     if (!coupon) {
-      return res.status(404).json({ error: 'Coupon not found or expired' });
+      res.status(404).json({ error: 'Coupon not found or expired' });
     }
 
     if (!coupon.isValid()) {
-      return res.status(400).json({ error: 'Coupon is not valid' });
+      res.status(400).json({ error: 'Coupon is not valid' });
     }
 
     const canUse = await coupon.canBeUsedBy(userId as any);
     if (!canUse) {
-      return res.status(400).json({ error: 'You cannot use this coupon' });
+      res.status(400).json({ error: 'You cannot use this coupon' });
     }
 
     // Calculate discount
