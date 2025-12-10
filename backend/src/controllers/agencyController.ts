@@ -133,7 +133,37 @@ export const createAgency = async (
 
     console.log(`✅ Agency created successfully. User ${user.email} is now admin of agency ${agency.name}`);
 
-    res.status(201).json({ agency, agent: agentProfile });
+    // Automatically start 7-day free trial for featured listing
+    let trialStarted = false;
+    let trialSubscription = null;
+
+    try {
+      const { startAutoFreeTrial } = await import('../utils/featuredSubscriptionUtils');
+      const trialResult = await startAutoFreeTrial(agency._id.toString(), user._id.toString());
+
+      if (trialResult.success) {
+        trialStarted = true;
+        trialSubscription = trialResult.subscription;
+        console.log(`🎁 Automatically started 7-day free featured trial for agency ${agency.name}`);
+      } else {
+        console.log(`⚠️ Could not start free trial: ${trialResult.error}`);
+      }
+    } catch (trialError) {
+      console.error('Error starting auto free trial:', trialError);
+      // Don't fail agency creation if trial fails
+    }
+
+    res.status(201).json({
+      agency,
+      agent: agentProfile,
+      freeTrial: trialStarted
+        ? {
+            active: true,
+            subscription: trialSubscription,
+            message: '🎉 Your agency has been featured for 7 days free!',
+          }
+        : undefined,
+    });
   } catch (error: any) {
     console.error('Create agency error:', error);
     res.status(500).json({ message: 'Error creating agency', error: error.message });

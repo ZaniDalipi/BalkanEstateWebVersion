@@ -33,6 +33,7 @@ import geocodingRoutes from './routes/geocodingRoutes';
 import neighborhoodInsightsRoutes from './routes/neighborhoodInsightsRoutes';
 import salesHistoryRoutes from './routes/salesHistoryRoutes';
 import discountCodeRoutes from './routes/discountCodeRoutes';
+import agencyFeaturedSubscriptionRoutes from './routes/agencyFeaturedSubscriptionRoutes';
 import adminRoutes from './routes/adminRoutes';
 
 // Import services
@@ -177,6 +178,7 @@ app.use('/api/geocoding', geocodingRoutes);
 app.use('/api/neighborhood-insights', neighborhoodInsightsRoutes);
 app.use('/api/sales-history', salesHistoryRoutes);
 app.use('/api/discount-codes', discountCodeRoutes);
+app.use('/api', agencyFeaturedSubscriptionRoutes); // Featured subscription routes
 app.use('/api/admin', adminRoutes); // Admin panel routes (VPN + admin role required)
 
 // 404 handler

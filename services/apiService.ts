@@ -1140,3 +1140,78 @@ export const leaveAgency = async (): Promise<{ message: string; user: { id: stri
     requiresAuth: true,
   });
 };
+
+// --- AGENCY FEATURED SUBSCRIPTION API ---
+
+export const createFeaturedSubscription = async (
+  agencyId: string,
+  data: { interval?: 'weekly' | 'monthly' | 'yearly'; couponCode?: string; startTrial?: boolean }
+): Promise<any> => {
+  return await apiRequest(`/agencies/${agencyId}/featured-subscription`, {
+    method: 'POST',
+    body: data,
+    requiresAuth: true,
+  });
+};
+
+export const getFeaturedSubscription = async (agencyId: string): Promise<any> => {
+  return await apiRequest(`/agencies/${agencyId}/featured-subscription`, {
+    requiresAuth: false,
+  });
+};
+
+export const cancelFeaturedSubscription = async (
+  agencyId: string,
+  immediately: boolean = false
+): Promise<any> => {
+  return await apiRequest(`/agencies/${agencyId}/featured-subscription`, {
+    method: 'DELETE',
+    body: { immediately },
+    requiresAuth: true,
+  });
+};
+
+export const confirmFeaturedPayment = async (
+  agencyId: string,
+  data: { stripeSubscriptionId: string; stripeCustomerId: string }
+): Promise<any> => {
+  return await apiRequest(`/agencies/${agencyId}/featured-subscription/confirm-payment`, {
+    method: 'POST',
+    body: data,
+    requiresAuth: true,
+  });
+};
+
+export const applyFeaturedCoupon = async (
+  agencyId: string,
+  couponCode: string
+): Promise<any> => {
+  return await apiRequest(`/agencies/${agencyId}/featured-subscription/apply-coupon`, {
+    method: 'POST',
+    body: { couponCode },
+    requiresAuth: true,
+  });
+};
+
+// Admin endpoints
+export const getAllFeaturedSubscriptions = async (params?: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}): Promise<any> => {
+  const queryParams = new URLSearchParams();
+  if (params?.status) queryParams.append('status', params.status);
+  if (params?.page) queryParams.append('page', String(params.page));
+  if (params?.limit) queryParams.append('limit', String(params.limit));
+
+  return await apiRequest(`/admin/featured-subscriptions?${queryParams.toString()}`, {
+    requiresAuth: true,
+  });
+};
+
+export const checkExpiredSubscriptions = async (): Promise<any> => {
+  return await apiRequest('/admin/featured-subscriptions/check-expired', {
+    method: 'POST',
+    requiresAuth: true,
+  });
+};
