@@ -38,6 +38,7 @@ import adminRoutes from './routes/adminRoutes';
 
 // Import services
 import { initializeGooglePlayService } from './services/googlePlayService';
+import { startCronJobs } from './cron';
 import { initializeAppStoreService } from './services/appStoreService';
 import { scheduleReconciliation } from './workers/reconciliationWorker';
 import { scheduleExpirationWorker } from './workers/subscriptionExpirationWorker';
@@ -215,6 +216,9 @@ httpServer.listen(PORT, () => {
   console.log('📍 API base URL: http://localhost:' + PORT + '/api');
   console.log('📍 WebSocket URL: ws://localhost:' + PORT);
   console.log('');
+
+  // Start subscription cron jobs
+  startCronJobs();
 });
 
 export default app;
