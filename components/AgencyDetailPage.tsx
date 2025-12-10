@@ -5,6 +5,8 @@ import PropertyCard from './BuyerFlow/PropertyDisplay/PropertyCard';
 import PropertyCardSkeleton from './BuyerFlow/PropertyDisplay/PropertyCardSkeleton';
 import AgencyJoinRequestsModal from './AgencyJoinRequestsModal';
 import InvitationCodeModal from './InvitationCodeModal';
+import FeaturedSubscriptionCard from './shared/FeaturedSubscriptionCard';
+import FeaturedSubscriptionDialog from './shared/FeaturedSubscriptionDialog';
 import { formatPrice } from '../utils/currency';
 import { createJoinRequest, removeAgentFromAgency, addAgencyAdmin, removeAgencyAdmin, verifyInvitationCode, leaveAgency } from '../services/apiService';
 import { Agency } from '../types';
@@ -39,6 +41,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const [loading, setLoading] = useState(true);
   const [isJoinRequestsModalOpen, setIsJoinRequestsModalOpen] = useState(false);
   const [isInvitationCodeModalOpen, setIsInvitationCodeModalOpen] = useState(false);
+  const [isFeaturedSubscriptionDialogOpen, setIsFeaturedSubscriptionDialogOpen] = useState(false);
   const [isRequesting, setIsRequesting] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
@@ -49,6 +52,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   const [isLeavingAgency, setIsLeavingAgency] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [propertyView, setPropertyView] = useState<'active' | 'sold'>('active');
+  const [subscriptionKey, setSubscriptionKey] = useState(0);
   const [editForm, setEditForm] = useState({
     name: '',
     description: '',
@@ -504,6 +508,13 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     return null;
   };
 
+  const handleSubscriptionSuccess = () => {
+    // Refresh agency data to get updated featured status
+    fetchAgencyData();
+    // Force re-render of subscription card
+    setSubscriptionKey((prev) => prev + 1);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 overflow-y-auto">
       {/* Hero Banner with Cover Image - Larger for agency branding */}
@@ -829,6 +840,28 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
           </div>
         </div>
 
+        {/* Featured Subscription Section - Only visible to agency owner */}
+        {isOwner && (
+          <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Featured Subscription</h2>
+              <span className="text-sm text-gray-500">Boost Your Visibility</span>
+            </div>
+
+            <FeaturedSubscriptionCard
+              key={subscriptionKey}
+              agencyId={agencyData._id}
+              onUpgrade={() => setIsFeaturedSubscriptionDialogOpen(true)}
+            />
+
+            <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <p className="text-sm text-gray-700">
+                <strong>💡 Pro Tip:</strong> Featured agencies get up to 5x more visibility and appear at the top of search results!
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Team Members Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
@@ -1114,6 +1147,14 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
         onClose={() => setIsInvitationCodeModalOpen(false)}
         onSubmit={handleSubmitInvitationCode}
         agencyName={agency.name}
+      />
+
+      {/* Featured Subscription Dialog */}
+      <FeaturedSubscriptionDialog
+        isOpen={isFeaturedSubscriptionDialogOpen}
+        onClose={() => setIsFeaturedSubscriptionDialogOpen(false)}
+        agencyId={agencyData._id}
+        onSuccess={handleSubscriptionSuccess}
       />
 
       {/* Edit Agency Modal */}
