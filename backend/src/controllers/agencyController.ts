@@ -139,7 +139,10 @@ export const createAgency = async (
 
     try {
       const { startAutoFreeTrial } = await import('../utils/featuredSubscriptionUtils');
-      const trialResult = await startAutoFreeTrial(agency._id.toString(), user._id.toString());
+      const trialResult = await startAutoFreeTrial(
+        String(agency._id),
+        String(user._id)
+      );
 
       if (trialResult.success) {
         trialStarted = true;

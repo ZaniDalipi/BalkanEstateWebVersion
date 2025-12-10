@@ -105,7 +105,7 @@ const FeaturedAgencies: React.FC = () => {
   };
 
   const handleAgencyClick = (agency: Agency) => {
-    dispatch({ type: 'SET_SELECTED_AGENCY', payload: agency });
+    dispatch({ type: 'SET_SELECTED_AGENCY', payload: agency._id });
     dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
     let urlSlug = agency.slug || agency._id;
     urlSlug = urlSlug.replace(',', '/');
