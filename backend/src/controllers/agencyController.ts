@@ -181,7 +181,7 @@ export const getAgencies = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { city, country, featured, page = 1, limit = 12 } = req.query;
+    const { city, country, featured, page = 1, limit = 12, name } = req.query;
 
     const filter: any = {};
 
@@ -193,6 +193,11 @@ export const getAgencies = async (
     if (country) {
       filter.country = new RegExp(country as string, 'i');
       console.log(`🔍 Filtering agencies by country: ${country}`);
+    }
+
+    if (name) {
+      filter.name = new RegExp(name as string, 'i');
+      console.log(`🔍 Filtering agencies by name: ${name}`);
     }
 
     if (featured === 'true') {
@@ -228,12 +233,34 @@ export const getAgencies = async (
       .limit(limitNum)
       .lean(); // Use lean() for better performance when we don't need document methods
 
+    // Import Property model at the top if not already imported
+    const Property = (await import('../models/Property')).default;
+
+    // Calculate totalProperties for each agency by counting properties from all agents
+    const agenciesWithCounts = await Promise.all(
+      agencies.map(async (agency: any) => {
+        const agentIds = agency.agents?.map((agent: any) => agent._id) || [];
+
+        // Count active properties for all agents in this agency
+        const propertyCount = await Property.countDocuments({
+          sellerId: { $in: agentIds },
+          status: { $in: ['active', 'pending'] }
+        });
+
+        return {
+          ...agency,
+          totalProperties: propertyCount,
+          totalAgents: agency.agents?.length || 0
+        };
+      })
+    );
+
     const total = await Agency.countDocuments(filter);
 
     console.log(`✅ Found ${agencies.length} agencies out of ${total} total`);
 
     res.json({
-      agencies,
+      agencies: agenciesWithCounts,
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -438,10 +465,13 @@ export const getAgency = async (
         : 0,
     };
 
-    // Include sales stats in agency object
+    // Include sales stats and calculated totals in agency object
+    const activeProperties = properties.filter(p => p.status === 'active' || p.status === 'pending');
     const agencyWithStats = {
       ...agency.toObject(),
       salesStats,
+      totalProperties: activeProperties.length,
+      totalAgents: agency.agents?.length || 0,
     };
 
     res.json({ agency: agencyWithStats, properties });
