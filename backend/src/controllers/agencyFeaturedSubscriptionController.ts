@@ -42,6 +42,17 @@ export const createFeaturedSubscription = async (req: Request, res: Response): P
 
     // Calculate dates and price
     const now = new Date();
+
+    // Double-check: If agency is currently featured, prevent duplicate subscription
+    if (agency.isFeatured && agency.featuredEndDate && agency.featuredEndDate > now) {
+      res.status(400).json({
+        error: 'Agency is already featured',
+        message: `Your agency is already featured until ${agency.featuredEndDate.toLocaleDateString()}`,
+        featuredEndDate: agency.featuredEndDate,
+        daysRemaining: Math.ceil((agency.featuredEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+      });
+      return;
+    }
     let currentPeriodEnd = new Date(now);
     let price = 10; // Default weekly price
     let isTrial = false;
@@ -177,16 +188,53 @@ export const getFeaturedSubscription = async (req: Request, res: Response): Prom
   try {
     const { agencyId } = req.params;
 
-    const subscription = await AgencyFeaturedSubscription.findOne({
-      agencyId,
-    }).sort({ createdAt: -1 });
+    // Fetch both subscription and agency data in parallel for optimal performance
+    const [subscription, agency] = await Promise.all([
+      AgencyFeaturedSubscription.findOne({
+        agencyId,
+      })
+        .sort({ createdAt: -1 })
+        .select('-__v') // Exclude version key for lighter payload
+        .lean(), // Use lean() for faster query as we don't need Mongoose document methods
+      Agency.findById(agencyId)
+        .select('isFeatured featuredStartDate featuredEndDate')
+        .lean()
+    ]);
 
     if (!subscription) {
+      // No subscription found, but return agency featured status
+      if (agency) {
+        res.json({
+          subscription: null,
+          agency: {
+            isFeatured: agency.isFeatured || false,
+            featuredStartDate: agency.featuredStartDate,
+            featuredEndDate: agency.featuredEndDate,
+            daysRemaining: agency.featuredEndDate
+              ? Math.max(0, Math.ceil((new Date(agency.featuredEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+              : 0
+          }
+        });
+        return;
+      }
       res.status(404).json({ error: 'No subscription found' });
       return;
     }
 
-    res.json({ subscription });
+    // Calculate days remaining
+    const daysRemaining = subscription.currentPeriodEnd
+      ? Math.max(0, Math.ceil((new Date(subscription.currentPeriodEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+      : 0;
+
+    res.json({
+      subscription,
+      agency: {
+        isFeatured: agency?.isFeatured || false,
+        featuredStartDate: agency?.featuredStartDate,
+        featuredEndDate: agency?.featuredEndDate,
+        daysRemaining
+      }
+    });
   } catch (error) {
     console.error('Error fetching featured subscription:', error);
     res.status(500).json({ error: 'Failed to fetch subscription' });

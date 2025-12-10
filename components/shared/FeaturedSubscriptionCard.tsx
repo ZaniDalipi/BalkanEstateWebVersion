@@ -22,16 +22,24 @@ interface FeaturedSubscriptionCardProps {
   onUpgrade?: () => void;
 }
 
-const FeaturedSubscriptionCard: React.FC<FeaturedSubscriptionCardProps> = ({
+const FeaturedSubscriptionCard: React.FC<FeaturedSubscriptionCardProps> = React.memo(({
   agencyId,
   onUpgrade,
 }) => {
   const [subscription, setSubscription] = useState<any>(null);
+  const [agencyStatus, setAgencyStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Use AbortController to cancel requests if component unmounts
+    const abortController = new AbortController();
+
     fetchSubscription();
+
+    return () => {
+      abortController.abort();
+    };
   }, [agencyId]);
 
   const fetchSubscription = async () => {
@@ -39,6 +47,7 @@ const FeaturedSubscriptionCard: React.FC<FeaturedSubscriptionCardProps> = ({
       setLoading(true);
       const response = await getFeaturedSubscription(agencyId);
       setSubscription(response.subscription);
+      setAgencyStatus(response.agency);
     } catch (err: any) {
       if (err.response?.status !== 404) {
         setError(err.message || 'Failed to load subscription');
@@ -122,6 +131,48 @@ const FeaturedSubscriptionCard: React.FC<FeaturedSubscriptionCardProps> = ({
   }
 
   if (!subscription) {
+    // Check if agency is featured without an active subscription (legacy or direct database update)
+    if (agencyStatus?.isFeatured && agencyStatus?.daysRemaining > 0) {
+      return (
+        <>
+          <style>{shimmerStyles}</style>
+          <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-md p-6 border-2 border-purple-200">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-primary rounded-xl flex items-center justify-center flex-shrink-0">
+                <SparklesIcon className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-neutral-800 mb-2">
+                  Agency Currently Featured ✨
+                </h3>
+                <p className="text-sm text-neutral-600 mb-3">
+                  Your agency is currently featured and receiving enhanced visibility.
+                </p>
+                <div className="bg-white border border-purple-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-neutral-700">Time Remaining</span>
+                    <span className={`text-lg font-bold ${
+                      agencyStatus.daysRemaining <= 3 ? 'text-red-600 animate-pulse' :
+                      agencyStatus.daysRemaining <= 7 ? 'text-yellow-600' :
+                      'text-green-600'
+                    }`}>
+                      {agencyStatus.daysRemaining} {agencyStatus.daysRemaining === 1 ? 'day' : 'days'}
+                    </span>
+                  </div>
+                  {agencyStatus.featuredEndDate && (
+                    <p className="text-xs text-neutral-500">
+                      Expires: {formatDate(agencyStatus.featuredEndDate)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    // No subscription and not featured - show upgrade option
     return (
       <>
         <style>{shimmerStyles}</style>
@@ -292,6 +343,9 @@ const FeaturedSubscriptionCard: React.FC<FeaturedSubscriptionCardProps> = ({
     </div>
     </>
   );
-};
+});
+
+// Memoization comparison function - only re-render if agencyId changes
+FeaturedSubscriptionCard.displayName = 'FeaturedSubscriptionCard';
 
 export default FeaturedSubscriptionCard;
