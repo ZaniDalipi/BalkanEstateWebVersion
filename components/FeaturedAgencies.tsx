@@ -2,11 +2,10 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { BuildingStorefrontIcon ,SparklesIcon, ArrowRightIcon } from '../constants';
 import { useFeaturedAgencies } from '../src/features/agencies/hooks/useAgencies';
-import { useNavigate } from 'react-router-dom';
+import { Agency } from '../types';
 
 const FeaturedAgencies: React.FC = () => {
-  const { state } = useAppContext();
-  const navigate = useNavigate();
+  const { state, dispatch } = useAppContext();
   const { agencies, isLoading } = useFeaturedAgencies(4);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -105,16 +104,17 @@ const FeaturedAgencies: React.FC = () => {
     }
   };
 
-  const handleAgencyClick = (agencySlug?: string, agencyId?: string) => {
-    if (agencySlug) {
-      navigate(`/agency/${agencySlug}`);
-    } else if (agencyId) {
-      navigate(`/agency/${agencyId}`);
-    }
+  const handleAgencyClick = (agency: Agency) => {
+    dispatch({ type: 'SET_SELECTED_AGENCY', payload: agency });
+    dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
+    let urlSlug = agency.slug || agency._id;
+    urlSlug = urlSlug.replace(',', '/');
+    window.history.pushState({}, '', `/agencies/${urlSlug}`);
   };
 
   const handleExploreAll = () => {
-    navigate('/agencies');
+    dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencies' });
+    window.history.pushState({}, '', '/agencies');
   };
 
   return (
@@ -234,7 +234,7 @@ const FeaturedAgencies: React.FC = () => {
                 transitionDelay: `${0.9 + index * 0.1}s`,
                 transform: isVisible ? 'translateY(0)' : 'translateY(20px)'
               }}
-              onClick={() => handleAgencyClick(agency.slug, agency._id)}
+              onClick={() => handleAgencyClick(agency)}
             >
               {/* Magic glow effect */}
               <div className="absolute -inset-1 bg-gradient-to-r from-purple-400 via-primary to-blue-400 rounded-2xl blur opacity-0 group-hover:opacity-30 transition-opacity duration-500" />
@@ -370,7 +370,7 @@ const FeaturedAgencies: React.FC = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
           50% { transform: translateY(-10px) rotate(180deg); }
