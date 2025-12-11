@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Agency } from '../types';
+import { Agent } from '../types';
+import { Property } from '../types';
 import { getAgencies } from '../services/apiService';
 import {
   BuildingOfficeIcon,
@@ -32,6 +34,8 @@ type SearchTab = 'city' | 'name';
 const AgenciesListPage: React.FC = () => {
   const { dispatch, state } = useAppContext();
   const [agencies, setAgencies] = useState<Agency[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'featured' | 'myAgency'>('all');
@@ -407,7 +411,7 @@ const AgenciesListPage: React.FC = () => {
                   Find Your Ideal Agency
                 </h2>
                 <p className="text-neutral-600 text-sm sm:text-base">
-                  Search {agencies.length}+ professional agencies across the Balkans
+                  Search {agencies.length} + professional agencies across the Balkans
                 </p>
               </div>
 
@@ -520,10 +524,28 @@ const AgenciesListPage: React.FC = () => {
                           Sarajevo
                         </button>
                         <button
-                          onClick={() => setSearchQuery('Novi Sad')}
+                          onClick={() => setSearchQuery('Tirana')}
                           className="px-3 py-1.5 text-xs sm:text-sm bg-neutral-50 border border-neutral-200 hover:border-primary hover:bg-primary/5 hover:text-primary text-neutral-700 rounded-lg transition-all duration-300 font-medium"
                         >
-                          Novi Sad
+                         Tirana
+                        </button>
+                        <button
+                          onClick={() => setSearchQuery('Athina')}
+                          className="px-3 py-1.5 text-xs sm:text-sm bg-neutral-50 border border-neutral-200 hover:border-primary hover:bg-primary/5 hover:text-primary text-neutral-700 rounded-lg transition-all duration-300 font-medium"
+                        >
+                         Athina
+                        </button>
+                        <button
+                          onClick={() => setSearchQuery('Sofia')}
+                          className="px-3 py-1.5 text-xs sm:text-sm bg-neutral-50 border border-neutral-200 hover:border-primary hover:bg-primary/5 hover:text-primary text-neutral-700 rounded-lg transition-all duration-300 font-medium"
+                        >
+                         Sofia
+                        </button>
+                        <button
+                          onClick={() => setSearchQuery('Skopje')}
+                          className="px-3 py-1.5 text-xs sm:text-sm bg-neutral-50 border border-neutral-200 hover:border-primary hover:bg-primary/5 hover:text-primary text-neutral-700 rounded-lg transition-all duration-300 font-medium"
+                        >
+                         Skopje
                         </button>
                       </>
                     ) : (
@@ -559,14 +581,14 @@ const AgenciesListPage: React.FC = () => {
                   <div className="flex items-center gap-2 bg-white/90 px-4 py-3 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
                     <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-500 rounded-full animate-pulse"></div>
                     <div className="text-center">
-                      <div className="font-bold text-lg sm:text-2xl text-neutral-900">1500+</div>
+                      <div className="font-bold text-lg sm:text-2xl text-neutral-900">{agents.length}+</div>
                       <div className="text-neutral-600 text-xs sm:text-sm">Expert Agents</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 bg-white/90 px-4 py-3 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
                     <div className="w-2 h-2 sm:w-3 sm:h-3 bg-purple-500 rounded-full animate-pulse"></div>
                     <div className="text-center">
-                      <div className="font-bold text-lg sm:text-2xl text-neutral-900">25,000+</div>
+                      <div className="font-bold text-lg sm:text-2xl text-neutral-900">{properties.length}+</div>
                       <div className="text-neutral-600 text-xs sm:text-sm">Listed Properties</div>
                     </div>
                   </div>
