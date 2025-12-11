@@ -325,55 +325,60 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Agency Branding Bar - Clean white bar with logo */}
+            {/* Agency Branding Bar - Uses agency gradient color with white text for contrast */}
             {isAgencyAgent && (
-                <div className="bg-white border-b border-gray-200 sticky top-0 z-50">
+                <div className={`${headerGradient} sticky top-0 z-40 shadow-lg`}>
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center justify-between h-16">
+                        <div className="flex items-center justify-between h-14 sm:h-16">
+                            {/* Back Button */}
                             <button
                                 onClick={handleBack}
-                                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors group"
+                                className="flex items-center gap-2 text-white/90 hover:text-white font-medium transition-colors group"
                             >
                                 <ArrowLeftIcon className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                                <span className="hidden sm:inline">Back to Agents</span>
+                                <span className="hidden sm:inline">Back</span>
                             </button>
 
+                            {/* Agency Brand - Center */}
                             <button
                                 onClick={handleAgencyClick}
-                                className="flex items-center gap-3 hover:bg-gray-50 px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                                className="flex items-center gap-3 hover:bg-white/10 px-3 sm:px-4 py-2 rounded-lg transition-colors cursor-pointer"
                             >
                                 {agent.agencyLogo ? (
-                                    <img
-                                        src={agent.agencyLogo}
-                                        alt={agent.agencyName}
-                                        className="h-10 w-auto max-w-[140px] object-contain"
-                                    />
+                                    <div className="bg-white rounded-lg p-1.5 shadow-sm">
+                                        <img
+                                            src={agent.agencyLogo}
+                                            alt={agent.agencyName}
+                                            className="h-7 sm:h-8 w-auto max-w-[100px] sm:max-w-[120px] object-contain"
+                                        />
+                                    </div>
                                 ) : (
-                                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${agent.agencyGradient || 'bg-gradient-to-br from-blue-600 to-indigo-700'}`}>
+                                    <div className="bg-white/20 backdrop-blur-sm h-10 w-10 rounded-lg flex items-center justify-center">
                                         <BuildingOfficeIcon className="w-6 h-6 text-white" />
                                     </div>
                                 )}
-                                <div className="hidden sm:block text-left">
-                                    <p className="text-sm font-bold text-gray-900">{agent.agencyName}</p>
-                                    <p className="text-xs text-gray-500">View Agency Profile</p>
+                                <div className="text-left">
+                                    <p className="text-sm sm:text-base font-bold text-white leading-tight">{agent.agencyName}</p>
+                                    <p className="text-xs text-white/70 hidden sm:block">View Agency Profile</p>
                                 </div>
-                                <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+                                <ChevronRightIcon className="w-4 h-4 text-white/70 hidden sm:block" />
                             </button>
 
-                            <div className="flex items-center gap-2">
+                            {/* Actions */}
+                            <div className="flex items-center gap-1 sm:gap-2">
                                 <button
                                     onClick={handleSaveAgent}
-                                    className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-red-500 hover:bg-gray-50 rounded-lg transition-colors"
+                                    className="flex items-center gap-2 px-2 sm:px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                                 >
-                                    <HeartIcon className={`w-5 h-5 ${savedAgent ? 'fill-red-500 text-red-500' : ''}`} />
-                                    <span className="hidden sm:inline text-sm font-medium">{savedAgent ? 'Saved' : 'Save'}</span>
+                                    <HeartIcon className={`w-5 h-5 ${savedAgent ? 'fill-red-400 text-red-400' : ''}`} />
+                                    <span className="hidden md:inline text-sm font-medium">{savedAgent ? 'Saved' : 'Save'}</span>
                                 </button>
                                 <button
                                     onClick={handleShareAgent}
-                                    className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-colors"
+                                    className="flex items-center gap-2 px-2 sm:px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                                 >
                                     <ShareIcon className="w-5 h-5" />
-                                    <span className="hidden sm:inline text-sm font-medium">Share</span>
+                                    <span className="hidden md:inline text-sm font-medium">Share</span>
                                 </button>
                             </div>
                         </div>
@@ -381,30 +386,34 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                 </div>
             )}
 
-            {/* Independent Agent Header - Simple back bar */}
+            {/* Independent Agent Header - Neutral dark bar */}
             {!isAgencyAgent && (
-                <div className="bg-white border-b border-gray-200 sticky top-0 z-50">
+                <div className="bg-gray-800 sticky top-0 z-40 shadow-lg">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex items-center justify-between h-14">
                             <button
                                 onClick={handleBack}
-                                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors group"
+                                className="flex items-center gap-2 text-white/90 hover:text-white font-medium transition-colors group"
                             >
                                 <ArrowLeftIcon className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                                 <span>Back to Agents</span>
                             </button>
 
+                            <div className="flex items-center gap-3">
+                                <span className="text-white font-semibold hidden sm:inline">Independent Agent</span>
+                            </div>
+
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={handleSaveAgent}
-                                    className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-red-500 hover:bg-gray-50 rounded-lg transition-colors"
+                                    className="flex items-center gap-2 px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                                 >
-                                    <HeartIcon className={`w-5 h-5 ${savedAgent ? 'fill-red-500 text-red-500' : ''}`} />
+                                    <HeartIcon className={`w-5 h-5 ${savedAgent ? 'fill-red-400 text-red-400' : ''}`} />
                                     <span className="hidden sm:inline text-sm font-medium">{savedAgent ? 'Saved' : 'Save'}</span>
                                 </button>
                                 <button
                                     onClick={handleShareAgent}
-                                    className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-colors"
+                                    className="flex items-center gap-2 px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                                 >
                                     <ShareIcon className="w-5 h-5" />
                                     <span className="hidden sm:inline text-sm font-medium">Share</span>
@@ -415,18 +424,15 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                 </div>
             )}
 
-            {/* Hero Section with Agency Color */}
-            <div className={`${headerGradient} relative overflow-hidden`}>
-                {/* Subtle pattern overlay */}
-                <div className="absolute inset-0 opacity-10">
-                    <div className="absolute inset-0" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }} />
-                </div>
-
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 relative">
+            {/* Hero Section - Clean white background */}
+            <div className="bg-white border-b border-gray-200">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
                     <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
                         {/* Agent Photo */}
                         <div className="relative flex-shrink-0">
-                            <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-2xl overflow-hidden border-4 border-white shadow-2xl bg-white">
+                            <div className={`w-36 h-36 sm:w-44 sm:h-44 rounded-2xl overflow-hidden shadow-xl ring-4 ${isAgencyAgent ? 'ring-opacity-30' : 'ring-gray-200'}`} style={{
+                                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                            }}>
                                 {agent.avatarUrl ? (
                                     <img
                                         src={agent.avatarUrl}
@@ -434,79 +440,91 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                         className="w-full h-full object-cover"
                                     />
                                 ) : (
-                                    <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                                        <UserCircleIcon className="w-24 h-24 text-gray-400" />
+                                    <div className={`w-full h-full flex items-center justify-center ${headerGradient}`}>
+                                        <UserCircleIcon className="w-24 h-24 text-white/80" />
                                     </div>
                                 )}
                             </div>
                             {/* Verified Badge */}
-                            <div className="absolute -bottom-2 -right-2 bg-green-500 text-white p-2 rounded-full shadow-lg border-2 border-white">
+                            <div className="absolute -bottom-2 -right-2 bg-green-500 text-white p-2.5 rounded-full shadow-lg border-3 border-white">
                                 <CheckBadgeIcon className="w-5 h-5" />
                             </div>
                         </div>
 
                         {/* Agent Info */}
-                        <div className="flex-1 text-center lg:text-left text-white">
-                            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 mb-4">
-                                <h1 className="text-3xl sm:text-4xl font-bold">{agent.name}</h1>
+                        <div className="flex-1 text-center lg:text-left">
+                            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 mb-3">
+                                <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">{agent.name}</h1>
                                 {stats.rating >= 4.5 && (
-                                    <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-semibold">
-                                        <FireIcon className="w-4 h-4 text-orange-300" />
+                                    <span className="inline-flex items-center gap-1.5 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-semibold">
+                                        <FireIcon className="w-4 h-4" />
                                         Top Agent
                                     </span>
                                 )}
                             </div>
 
+                            {/* Agency Tag */}
+                            {isAgencyAgent && (
+                                <button
+                                    onClick={handleAgencyClick}
+                                    className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-3 transition-colors"
+                                >
+                                    <BuildingOfficeIcon className="w-4 h-4" />
+                                    <span className="font-medium">{agent.agencyName}</span>
+                                    <ChevronRightIcon className="w-3 h-3" />
+                                </button>
+                            )}
+
                             {/* Location */}
                             {(agent.city || agent.country) && (
-                                <div className="flex items-center justify-center lg:justify-start gap-2 mb-4 text-white/90">
-                                    <MapPinIcon className="w-5 h-5" />
+                                <div className="flex items-center justify-center lg:justify-start gap-2 mb-4 text-gray-600">
+                                    <MapPinIcon className="w-5 h-5 text-gray-400" />
                                     <span className="text-lg">{[agent.city, agent.country].filter(Boolean).join(', ')}</span>
                                 </div>
                             )}
 
                             {/* Rating */}
                             <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
-                                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-xl">
+                                <div className="flex items-center gap-2">
                                     <div className="flex">
                                         {[1, 2, 3, 4, 5].map((star) => (
                                             <StarIcon
                                                 key={star}
-                                                className={`w-5 h-5 ${star <= Math.round(stats.rating) ? 'text-yellow-400 fill-yellow-400' : 'text-white/30'}`}
+                                                className={`w-5 h-5 ${star <= Math.round(stats.rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`}
                                             />
                                         ))}
                                     </div>
-                                    <span className="text-xl font-bold">{stats.rating.toFixed(1)}</span>
-                                    <span className="text-white/70">({stats.reviews} reviews)</span>
+                                    <span className="text-xl font-bold text-gray-900">{stats.rating.toFixed(1)}</span>
+                                    <span className="text-gray-500">({stats.reviews} reviews)</span>
                                 </div>
                             </div>
 
                             {/* Quick Stats - Horizontal pills */}
                             <div className="flex flex-wrap justify-center lg:justify-start gap-3">
-                                <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-xl">
-                                    <span className="text-2xl font-bold">{stats.totalSales}</span>
-                                    <span className="text-white/70 ml-2">Properties Sold</span>
+                                <div className="bg-blue-50 border border-blue-100 px-4 py-2.5 rounded-xl">
+                                    <span className="text-2xl font-bold text-blue-700">{stats.totalSales}</span>
+                                    <span className="text-blue-600/80 ml-2 text-sm font-medium">Properties Sold</span>
                                 </div>
-                                <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-xl">
-                                    <span className="text-2xl font-bold">{stats.yearsExperience}+</span>
-                                    <span className="text-white/70 ml-2">Years Experience</span>
+                                <div className="bg-green-50 border border-green-100 px-4 py-2.5 rounded-xl">
+                                    <span className="text-2xl font-bold text-green-700">{stats.yearsExperience}+</span>
+                                    <span className="text-green-600/80 ml-2 text-sm font-medium">Years Experience</span>
                                 </div>
-                                <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-xl">
-                                    <span className="text-2xl font-bold">{activeListings.length}</span>
-                                    <span className="text-white/70 ml-2">Active Listings</span>
+                                <div className="bg-purple-50 border border-purple-100 px-4 py-2.5 rounded-xl">
+                                    <span className="text-2xl font-bold text-purple-700">{activeListings.length}</span>
+                                    <span className="text-purple-600/80 ml-2 text-sm font-medium">Active Listings</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Contact Card - Floating on desktop */}
                         <div className="w-full lg:w-auto lg:min-w-[320px]">
-                            <div className="bg-white rounded-2xl shadow-2xl p-6">
+                            <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6">
                                 <h3 className="text-lg font-bold text-gray-900 mb-4">Contact {firstName}</h3>
 
                                 {agent.phone && (
                                     <a
                                         href={`tel:${agent.phone}`}
-                                        className="flex items-center gap-3 w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-xl font-semibold mb-3 transition-colors"
+                                        className="flex items-center gap-3 w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3.5 rounded-xl font-semibold mb-3 transition-colors shadow-sm"
                                     >
                                         <PhoneIcon className="w-5 h-5" />
                                         <span>{agent.phone}</span>
@@ -515,7 +533,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
 
                                 <button
                                     onClick={handleContactAgent}
-                                    className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-xl font-semibold mb-3 transition-colors"
+                                    className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3.5 rounded-xl font-semibold mb-3 transition-colors shadow-sm"
                                 >
                                     <EnvelopeIcon className="w-5 h-5" />
                                     Send Message
@@ -523,14 +541,14 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
 
                                 <button
                                     onClick={handleRequestAppraisal}
-                                    className="flex items-center justify-center gap-2 w-full border-2 border-gray-200 hover:border-gray-300 text-gray-700 px-4 py-3 rounded-xl font-semibold transition-colors"
+                                    className="flex items-center justify-center gap-2 w-full bg-white border-2 border-gray-300 hover:border-gray-400 text-gray-700 px-4 py-3 rounded-xl font-semibold transition-colors"
                                 >
                                     <HomeIcon className="w-5 h-5" />
                                     Request Appraisal
                                 </button>
 
                                 {agent.email && (
-                                    <p className="text-center text-sm text-gray-500 mt-3">
+                                    <p className="text-center text-sm text-gray-500 mt-4">
                                         {agent.email}
                                     </p>
                                 )}
