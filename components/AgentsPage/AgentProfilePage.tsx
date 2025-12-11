@@ -325,210 +325,226 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-  {/* Enhanced Header with Gradient - uses agency's color when available */}
-  <div className={`${headerGradient} text-white sticky top-0 z-40 shadow-lg`}>
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-      <div className="flex items-center justify-between gap-4 relative">
-        {/* Left section - Back button */}
-        <div className="flex items-center gap-3 min-w-0 flex-shrink-0">
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-2 text-white hover:text-blue-100 font-semibold transition-colors group flex-shrink-0"
-          >
-            <ArrowLeftIcon className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-            <span className="hidden sm:inline">Back</span>
-          </button>
-        </div>
+            {/* Agency Branding Bar - Clean white bar with logo */}
+            {isAgencyAgent && (
+                <div className="bg-white border-b border-gray-200 sticky top-0 z-50">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center justify-between h-16">
+                            <button
+                                onClick={handleBack}
+                                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors group"
+                            >
+                                <ArrowLeftIcon className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                                <span className="hidden sm:inline">Back to Agents</span>
+                            </button>
 
-{isAgencyAgent && (
-  <button
-    onClick={handleAgencyClick}
-    className="hidden md:flex items-center gap-2 text-white/90 hover:text-white transition-colors cursor-pointer"
-  >
-    <AgencyBadge
-      agencyName={agent.agencyName}
-      agencyLogo={agent.agencyLogo}
-      type={agent.agencyType as any || 'luxury'}
-      variant="minimal"
-      size="md"
-      className="bg-white/10 hover:bg-white/20 px-3 py-1 border-0"
-      showText={false}
-    />
-    <span className="font-medium">{agent.agencyName}</span>
-    <ChevronRightIcon className="w-4 h-4" />
-  </button>
-)}
-
-        {/* Right section - Save/Share buttons */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={handleSaveAgent}
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-          >
-            <HeartIcon className={`w-5 h-5 ${savedAgent ? 'fill-red-500 text-red-500' : ''}`} />
-            <span className="hidden sm:inline">Save</span>
-          </button>
-          <button
-            onClick={handleShareAgent}
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-          >
-            <ShareIcon className="w-5 h-5" />
-            <span className="hidden sm:inline">Share</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="flex flex-col lg:flex-row gap-8">
-                    {/* Left Column - Main Content */}
-                    <div className="lg:w-2/3">
-                        {/* Top Profile Card with Enhanced Design */}
-                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mb-8">
-                            <div className="p-8">
-                                <div className="flex flex-col md:flex-row gap-8">
-                                    {/* Avatar Section */}
-                                    <div className="flex flex-col items-center">
-                                        <div className="relative">
-                                            <ProfileAvatar agent={agent} />
-                                            <div className="absolute -bottom-2 -right-2 bg-green-500 text-white p-1.5 rounded-full">
-                                                <CheckBadgeIcon className="w-6 h-6" />
-                                            </div>
-                                        </div>
-                                        
-                                        {/* Quick Stats under Avatar */}
-                                        <div className="mt-6 grid grid-cols-3 gap-3 text-center">
-                                            <div className="bg-blue-50 rounded-lg p-2">
-                                                <div className="text-lg font-bold text-blue-700">{stats.totalSales}</div>
-                                                <div className="text-xs text-gray-600">Sales</div>
-                                            </div>
-                                            <div className="bg-green-50 rounded-lg p-2">
-                                                <div className="text-lg font-bold text-green-700">{stats.yearsExperience}</div>
-                                                <div className="text-xs text-gray-600">Years</div>
-                                            </div>
-                                            <div className="bg-purple-50 rounded-lg p-2">
-                                                <div className="text-lg font-bold text-purple-700">{activeListings.length}</div>
-                                                <div className="text-xs text-gray-600">Active</div>
-                                            </div>
-                                        </div>
+                            <button
+                                onClick={handleAgencyClick}
+                                className="flex items-center gap-3 hover:bg-gray-50 px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                            >
+                                {agent.agencyLogo ? (
+                                    <img
+                                        src={agent.agencyLogo}
+                                        alt={agent.agencyName}
+                                        className="h-10 w-auto max-w-[140px] object-contain"
+                                    />
+                                ) : (
+                                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${agent.agencyGradient || 'bg-gradient-to-br from-blue-600 to-indigo-700'}`}>
+                                        <BuildingOfficeIcon className="w-6 h-6 text-white" />
                                     </div>
+                                )}
+                                <div className="hidden sm:block text-left">
+                                    <p className="text-sm font-bold text-gray-900">{agent.agencyName}</p>
+                                    <p className="text-xs text-gray-500">View Agency Profile</p>
+                                </div>
+                                <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+                            </button>
 
-                                    {/* Info Section */}
-                                    <div className="flex-1">
-                                        <div className="flex flex-wrap items-start justify-between mb-4">
-                                            <div>
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <h1 className="text-3xl font-bold text-gray-900">{agent.name}</h1>
-                                                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${isAgencyAgent ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
-                                                        {isAgencyAgent ? 'TEAM' : 'INDEPENDENT'}
-                                                    </span>
-                                                </div>
-                                                
-                                                {isAgencyAgent && (
-                                                    <div className="flex items-center gap-2 text-gray-600 mb-3">
-                                                        <BuildingOfficeIcon className="w-4 h-4" />
-                                                        <span className="font-medium">{agent.agencyName}</span>
-                                                        {agent.role && <span className="text-gray-500">• {agent.role}</span>}
-                                                    </div>
-                                                )}
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleSaveAgent}
+                                    className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-red-500 hover:bg-gray-50 rounded-lg transition-colors"
+                                >
+                                    <HeartIcon className={`w-5 h-5 ${savedAgent ? 'fill-red-500 text-red-500' : ''}`} />
+                                    <span className="hidden sm:inline text-sm font-medium">{savedAgent ? 'Saved' : 'Save'}</span>
+                                </button>
+                                <button
+                                    onClick={handleShareAgent}
+                                    className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-colors"
+                                >
+                                    <ShareIcon className="w-5 h-5" />
+                                    <span className="hidden sm:inline text-sm font-medium">Share</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-                                                <div className="flex items-center gap-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <StarRating rating={agent.rating || 0} />
-                                                        <span className="text-xl font-bold text-gray-900">
-                                                            {agent.rating ? agent.rating.toFixed(1) : '0.0'}
-                                                        </span>
-                                                        <span className="text-gray-600">
-                                                            ({stats.reviews} reviews)
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1 text-green-600">
-                                                        <FireIcon className="w-5 h-5" />
-                                                        <span className="font-semibold">Top Agent</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+            {/* Independent Agent Header - Simple back bar */}
+            {!isAgencyAgent && (
+                <div className="bg-white border-b border-gray-200 sticky top-0 z-50">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center justify-between h-14">
+                            <button
+                                onClick={handleBack}
+                                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors group"
+                            >
+                                <ArrowLeftIcon className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                                <span>Back to Agents</span>
+                            </button>
 
-                                        {/* Quick Contact Bar */}
-                                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-6">
-                                            <div className="flex flex-wrap items-center justify-between gap-4">
-                                                <div className="flex items-center gap-4">
-                                                    {agent.phone && (
-                                                        <a 
-                                                            href={`tel:${agent.phone}`}
-                                                            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold"
-                                                        >
-                                                            <PhoneIcon className="w-5 h-5" />
-                                                            <span>{agent.phone}</span>
-                                                        </a>
-                                                    )}
-                                                    {agent.email && (
-                                                        <a 
-                                                            href={`mailto:${agent.email}`}
-                                                            className="flex items-center gap-2 text-gray-700 hover:text-gray-900"
-                                                        >
-                                                            <EnvelopeIcon className="w-5 h-5" />
-                                                            <span>Email</span>
-                                                        </a>
-                                                    )}
-                                                </div>
-                                                <button
-                                                    onClick={handleContactAgent}
-                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-semibold flex items-center gap-2 transition-colors shadow-md hover:shadow-lg"
-                                                >
-                                                    <ChatBubbleLeftRightIcon className="w-5 h-5" />
-                                                    Contact Agent
-                                                </button>
-                                            </div>
-                                        </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleSaveAgent}
+                                    className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-red-500 hover:bg-gray-50 rounded-lg transition-colors"
+                                >
+                                    <HeartIcon className={`w-5 h-5 ${savedAgent ? 'fill-red-500 text-red-500' : ''}`} />
+                                    <span className="hidden sm:inline text-sm font-medium">{savedAgent ? 'Saved' : 'Save'}</span>
+                                </button>
+                                <button
+                                    onClick={handleShareAgent}
+                                    className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-colors"
+                                >
+                                    <ShareIcon className="w-5 h-5" />
+                                    <span className="hidden sm:inline text-sm font-medium">Share</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-                                        {/* Service Areas & Languages */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                            {agent.serviceAreas && agent.serviceAreas.length > 0 && (
-                                                <div>
-                                                    <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                                                        <MapPinIcon className="w-4 h-4" />
-                                                        Service Areas
-                                                    </h4>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {agent.serviceAreas.slice(0, 3).map(area => (
-                                                            <span key={area} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm">
-                                                                {area}
-                                                            </span>
-                                                        ))}
-                                                        {agent.serviceAreas.length > 3 && (
-                                                            <span className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm">
-                                                                +{agent.serviceAreas.length - 3} more
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-                                            
-                                            {agent.languages && agent.languages.length > 0 && (
-                                                <div>
-                                                    <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                                                        <ChatBubbleLeftRightIcon className="w-4 h-4" />
-                                                        Languages
-                                                    </h4>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {agent.languages.map(lang => (
-                                                            <span key={lang} className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium">
-                                                                {lang}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
+            {/* Hero Section with Agency Color */}
+            <div className={`${headerGradient} relative overflow-hidden`}>
+                {/* Subtle pattern overlay */}
+                <div className="absolute inset-0 opacity-10">
+                    <div className="absolute inset-0" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }} />
+                </div>
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 relative">
+                    <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
+                        {/* Agent Photo */}
+                        <div className="relative flex-shrink-0">
+                            <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-2xl overflow-hidden border-4 border-white shadow-2xl bg-white">
+                                {agent.avatarUrl ? (
+                                    <img
+                                        src={agent.avatarUrl}
+                                        alt={agent.name}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                                        <UserCircleIcon className="w-24 h-24 text-gray-400" />
                                     </div>
+                                )}
+                            </div>
+                            {/* Verified Badge */}
+                            <div className="absolute -bottom-2 -right-2 bg-green-500 text-white p-2 rounded-full shadow-lg border-2 border-white">
+                                <CheckBadgeIcon className="w-5 h-5" />
+                            </div>
+                        </div>
+
+                        {/* Agent Info */}
+                        <div className="flex-1 text-center lg:text-left text-white">
+                            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 mb-4">
+                                <h1 className="text-3xl sm:text-4xl font-bold">{agent.name}</h1>
+                                {stats.rating >= 4.5 && (
+                                    <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-semibold">
+                                        <FireIcon className="w-4 h-4 text-orange-300" />
+                                        Top Agent
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Location */}
+                            {(agent.city || agent.country) && (
+                                <div className="flex items-center justify-center lg:justify-start gap-2 mb-4 text-white/90">
+                                    <MapPinIcon className="w-5 h-5" />
+                                    <span className="text-lg">{[agent.city, agent.country].filter(Boolean).join(', ')}</span>
+                                </div>
+                            )}
+
+                            {/* Rating */}
+                            <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
+                                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-xl">
+                                    <div className="flex">
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <StarIcon
+                                                key={star}
+                                                className={`w-5 h-5 ${star <= Math.round(stats.rating) ? 'text-yellow-400 fill-yellow-400' : 'text-white/30'}`}
+                                            />
+                                        ))}
+                                    </div>
+                                    <span className="text-xl font-bold">{stats.rating.toFixed(1)}</span>
+                                    <span className="text-white/70">({stats.reviews} reviews)</span>
+                                </div>
+                            </div>
+
+                            {/* Quick Stats - Horizontal pills */}
+                            <div className="flex flex-wrap justify-center lg:justify-start gap-3">
+                                <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-xl">
+                                    <span className="text-2xl font-bold">{stats.totalSales}</span>
+                                    <span className="text-white/70 ml-2">Properties Sold</span>
+                                </div>
+                                <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-xl">
+                                    <span className="text-2xl font-bold">{stats.yearsExperience}+</span>
+                                    <span className="text-white/70 ml-2">Years Experience</span>
+                                </div>
+                                <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-xl">
+                                    <span className="text-2xl font-bold">{activeListings.length}</span>
+                                    <span className="text-white/70 ml-2">Active Listings</span>
                                 </div>
                             </div>
                         </div>
 
+                        {/* Contact Card - Floating on desktop */}
+                        <div className="w-full lg:w-auto lg:min-w-[320px]">
+                            <div className="bg-white rounded-2xl shadow-2xl p-6">
+                                <h3 className="text-lg font-bold text-gray-900 mb-4">Contact {firstName}</h3>
+
+                                {agent.phone && (
+                                    <a
+                                        href={`tel:${agent.phone}`}
+                                        className="flex items-center gap-3 w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-xl font-semibold mb-3 transition-colors"
+                                    >
+                                        <PhoneIcon className="w-5 h-5" />
+                                        <span>{agent.phone}</span>
+                                    </a>
+                                )}
+
+                                <button
+                                    onClick={handleContactAgent}
+                                    className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-xl font-semibold mb-3 transition-colors"
+                                >
+                                    <EnvelopeIcon className="w-5 h-5" />
+                                    Send Message
+                                </button>
+
+                                <button
+                                    onClick={handleRequestAppraisal}
+                                    className="flex items-center justify-center gap-2 w-full border-2 border-gray-200 hover:border-gray-300 text-gray-700 px-4 py-3 rounded-xl font-semibold transition-colors"
+                                >
+                                    <HomeIcon className="w-5 h-5" />
+                                    Request Appraisal
+                                </button>
+
+                                {agent.email && (
+                                    <p className="text-center text-sm text-gray-500 mt-3">
+                                        {agent.email}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content Area */}
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="lg:flex lg:gap-8">
+                    {/* Left Column - Main Content */}
+                    <div className="lg:w-2/3">
                         {/* Tabs Navigation - Enhanced */}
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 mb-8 overflow-hidden">
                             <div className="flex border-b border-gray-200">
