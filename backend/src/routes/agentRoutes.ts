@@ -3,7 +3,6 @@ import {
   getAgents,
   getAgent,
   getAgentByUserId,
-  getAgentDetails,
   updateAgentProfile,
   addTestimonial,
   addReview,
@@ -15,7 +14,6 @@ const router = express.Router();
 
 // Public routes
 router.get('/', getAgents);
-router.get('/:id/details', getAgentDetails);
 router.get('/user/:userId', getAgentByUserId);
 router.get('/:id', getAgent);
 
