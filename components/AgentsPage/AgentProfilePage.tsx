@@ -50,6 +50,7 @@ import { formatPrice } from '../../utils/currency';
 import PropertyCard from '../BuyerFlow/PropertyDisplay/PropertyCard';
 import PropertyCardSkeleton from '../BuyerFlow/PropertyDisplay/PropertyCardSkeleton';
 import AgentReviewForm from '../shared/AgentReviewForm';
+import FeaturedAgencies from '../FeaturedAgencies';
 import { slugify } from '../../utils/slug';
 import { getAgencyAgents, getAllAgents } from '../../services/apiService';
 
@@ -1086,6 +1087,14 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                             Schedule Consultation
                         </button>
                     </div>
+                </div>
+            </div>
+
+            {/* Featured Agencies */}
+            <div className="bg-neutral-50 py-8">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <h3 className="text-xl font-bold text-neutral-800 mb-4">Featured Agencies</h3>
+                    <FeaturedAgencies />
                 </div>
             </div>
 

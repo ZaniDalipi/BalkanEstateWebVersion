@@ -2,7 +2,6 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useAppContext } from '../../../context/AppContext';
 import MapComponent from '../Maps/MapComponent';
 import PropertyList from './PropertyList';
-import FeaturedAgencies from '../../FeaturedAgencies';
 import { SavedSearch, ChatMessage, AiSearchQuery, Filters, initialFilters, SearchPageState, Property, NominatimResult } from '../../../types';
 import { getAiChatResponse, generateSearchName, generateSearchNameFromCoords } from '../../../services/geminiService';
 import { searchLocation } from '../../../services/osmService';
@@ -617,12 +616,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                         </div>
                     </div>
                     <PropertyList {...propertyListProps} isMobile={isMobile} showList={true} showFilters={!isMobile} />
-
-                    {/* Featured Agencies */}
-                    <div className="px-4 py-6 bg-neutral-50">
-                        <h3 className="text-xl font-bold text-neutral-800 mb-4">Featured Agencies</h3>
-                        <FeaturedAgencies />
-                    </div>
                 </div>
 
 

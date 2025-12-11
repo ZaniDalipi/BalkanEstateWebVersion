@@ -8,6 +8,7 @@ import ComparisonModal from '../Comparison/ComparisonModal';
 import Toast from '../../shared/Toast';
 import PropertyCardSkeleton from '../PropertyDisplay/PropertyCardSkeleton';
 import AdvertisementBanner from '../../AdvertisementBanner';
+import FeaturedAgencies from '../../FeaturedAgencies';
 import Footer from '../../shared/Footer';
 
 const SavedPropertiesPage: React.FC = () => {
@@ -171,6 +172,14 @@ const SavedPropertiesPage: React.FC = () => {
               onClear={() => dispatch({ type: 'CLEAR_COMPARISON' })}
           />
       )}
+
+      {/* Featured Agencies */}
+      <div className="bg-neutral-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h3 className="text-xl font-bold text-neutral-800 mb-4">Featured Agencies</h3>
+          <FeaturedAgencies />
+        </div>
+      </div>
 
       {/* Footer */}
       <Footer />
