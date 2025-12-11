@@ -3,7 +3,6 @@ import Agent from '../models/Agent';
 import User, { IUser } from '../models/User';
 import Agency from '../models/Agency';
 import Conversation from '../models/Conversation';
-import Property from '../models/Property';
 import { getSocketInstance } from '../utils/socketInstance';
 
 
@@ -15,6 +14,7 @@ export const getAgents = async (req: Request, res: Response): Promise<void> => {
   try {
     const agents = await Agent.find({ isActive: true })
       .populate('userId', 'name email phone avatarUrl city country')
+      .populate('agencyId', 'name logo coverGradient slug')
       .populate('testimonials.userId', 'name avatarUrl')
       .sort({ rating: -1, totalSales: -1 });
 
@@ -66,95 +66,6 @@ export const getAgentByUserId = async (req: Request, res: Response): Promise<voi
     res.status(500).json({ message: 'Error fetching agent', error: error.message });
   }
 };
-
-// @desc    Get agent with detailed stats and properties
-// @route   GET /api/agents/:id/details
-// @access  Public
-export const getAgentDetails = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const agent = await Agent.findById(req.params.id)
-      .populate('userId', 'name email phone avatarUrl city country')
-      .populate('agencyId', 'name logo slug type coverGradient')
-      .populate('testimonials.userId', 'name avatarUrl');
-
-    if (!agent) {
-      res.status(404).json({ message: 'Agent not found' });
-      return;
-    }
-
-    // Get agent's user ID for property lookup
-    const agentUserId = agent.userId._id || agent.userId;
-
-    // Fetch all properties by this agent
-    const allProperties = await Property.find({ sellerId: agentUserId })
-      .populate('sellerId', 'name avatarUrl phone role agencyName')
-      .sort({ createdAt: -1 });
-
-    // Categorize properties
-    const forSale = allProperties.filter(p => p.status === 'active');
-    const sold = allProperties.filter(p => p.status === 'sold');
-    const forRent: any[] = []; // Future: add rent support
-
-    // Calculate performance stats
-    const soldPrices = sold.map(p => p.price);
-    const medianPrice = soldPrices.length > 0
-      ? soldPrices.sort((a, b) => a - b)[Math.floor(soldPrices.length / 2)]
-      : 0;
-
-    // Calculate stats by property type
-    const statsByType = {
-      apartments: {
-        sold: sold.filter(p => p.propertyType === 'apartment').length,
-        medianPrice: calculateMedian(sold.filter(p => p.propertyType === 'apartment').map(p => p.price)),
-      },
-      houses: {
-        sold: sold.filter(p => p.propertyType === 'house').length,
-        medianPrice: calculateMedian(sold.filter(p => p.propertyType === 'house').map(p => p.price)),
-      },
-      villas: {
-        sold: sold.filter(p => p.propertyType === 'villa').length,
-        medianPrice: calculateMedian(sold.filter(p => p.propertyType === 'villa').map(p => p.price)),
-      },
-    };
-
-    // Calculate average days on market (mock for now - would need soldAt and createdAt comparison)
-    const avgDaysOnMarket = 24; // Placeholder
-
-    const stats = {
-      propertiesSold: sold.length,
-      activeListings: forSale.length,
-      totalSalesValue: sold.reduce((sum, p) => sum + p.price, 0),
-      medianPrice,
-      avgDaysOnMarket,
-      statsByType,
-      rating: agent.rating,
-      totalReviews: agent.totalReviews,
-    };
-
-    res.json({
-      agent,
-      properties: {
-        forSale,
-        forRent,
-        sold,
-      },
-      stats,
-    });
-  } catch (error: any) {
-    console.error('Get agent details error:', error);
-    res.status(500).json({ message: 'Error fetching agent details', error: error.message });
-  }
-};
-
-// Helper function to calculate median
-function calculateMedian(numbers: number[]): number {
-  if (numbers.length === 0) return 0;
-  const sorted = [...numbers].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 !== 0
-    ? sorted[mid]
-    : (sorted[mid - 1] + sorted[mid]) / 2;
-}
 
 // @desc    Update agent profile
 // @route   PUT /api/agents/profile

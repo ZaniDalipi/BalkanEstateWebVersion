@@ -92,8 +92,9 @@ export interface Agent extends User {
         soldDate: string;
     }[];
     awards?: string[];
-    agencyLogo?: string; 
-    agencySlug?: string; 
+    agencyLogo?: string;
+    agencySlug?: string;
+    agencyGradient?: string;
     agencyType?: 'standard' | 'luxury' | 'commercial' | 'boutique' | 'team';
     
 }

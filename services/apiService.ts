@@ -1077,6 +1077,8 @@ export const getPromotionStats = async (promotionId: string): Promise<any> => {
 function transformBackendAgent(backendAgent: any): any {
   const user = backendAgent.userId || {};
   const userId = typeof user === 'object' && user._id ? user._id : user;
+  const agency = backendAgent.agencyId || {};
+  const agencyId = typeof agency === 'object' && agency._id ? agency._id : agency;
   return {
     id: backendAgent._id || backendAgent.id,
     userId: String(userId), // The actual user ID for matching properties
@@ -1088,6 +1090,10 @@ function transformBackendAgent(backendAgent: any): any {
     country: user.country,
     role: 'agent',
     agencyName: backendAgent.agencyName,
+    agencyId: agencyId ? String(agencyId) : undefined,
+    agencyLogo: agency.logo,
+    agencyGradient: agency.coverGradient,
+    agencySlug: agency.slug,
     agentId: backendAgent.agentId,
     licenseNumber: backendAgent.licenseNumber,
     licenseVerified: backendAgent.licenseVerified,
@@ -1116,29 +1122,6 @@ function transformBackendAgent(backendAgent: any): any {
 
 export const getAllAgents = async (): Promise<any> => {
   const response = await apiRequest<{ agents?: any[] }>("/agents");
-  if (response.agents) {
-    response.agents = response.agents.map(transformBackendAgent);
-  }
-  return response;
-};
-
-export const getAgentDetails = async (agentId: string): Promise<any> => {
-  const response = await apiRequest<{ agent: any; properties?: any; stats?: any }>(`/agents/${agentId}/details`);
-  if (response.agent) {
-    response.agent = transformBackendAgent(response.agent);
-  }
-  if (response.properties) {
-    response.properties = {
-      forSale: (response.properties.forSale || []).map(transformBackendProperty),
-      forRent: (response.properties.forRent || []).map(transformBackendProperty),
-      sold: (response.properties.sold || []).map(transformBackendProperty),
-    };
-  }
-  return response;
-};
-
-export const getAgencyAgents = async (agencyId: string): Promise<any> => {
-  const response = await apiRequest<{ agents?: any[] }>(`/agencies/${agencyId}/agents`);
   if (response.agents) {
     response.agents = response.agents.map(transformBackendAgent);
   }
