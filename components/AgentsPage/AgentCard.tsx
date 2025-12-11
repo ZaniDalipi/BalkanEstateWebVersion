@@ -1,18 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Agent } from '../../types';
 import StarRating from '../shared/StarRating';
-import { 
-  UserCircleIcon, 
-  BuildingOfficeIcon, 
-  CheckBadgeIcon, 
-  MapPinIcon, 
-  CurrencyDollarIcon, 
+import {
+  UserCircleIcon,
+  BuildingOfficeIcon,
+  CheckBadgeIcon,
+  MapPinIcon,
   HomeIcon,
   ChevronRightIcon,
-  SparklesIcon,
-  ChartBarIcon,
-  TrophyIcon,
-  ArrowTrendingUpIcon
+  StarIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  ChatBubbleLeftIcon
 } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { formatPrice } from '../../utils/currency';
@@ -24,34 +23,34 @@ interface AgentCardProps {
   index?: number;
 }
 
-const AgentAvatar: React.FC<{ agent: Agent }> = ({ agent }) => {
+const AgentAvatar: React.FC<{ agent: Agent; size?: 'sm' | 'md' | 'lg' }> = ({ agent, size = 'md' }) => {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
+  const sizeClasses = {
+    sm: 'w-12 h-12',
+    md: 'w-20 h-20',
+    lg: 'w-24 h-24',
+  };
+
   if (!agent.avatarUrl || error) {
     return (
-      <div className="w-28 h-28 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-500 border-2 border-blue-100">
-        <UserCircleIcon className="w-20 h-20 text-blue-300" />
+      <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border-2 border-white shadow-md`}>
+        <UserCircleIcon className={`${size === 'sm' ? 'w-8 h-8' : size === 'md' ? 'w-14 h-14' : 'w-16 h-16'} text-gray-400`} />
       </div>
     );
   }
 
   return (
-    <div className="relative">
-      {/* Blue glow effect */}
-      <div className="absolute inset-0 bg-blue-400/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-      <img
-        src={agent.avatarUrl}
-        alt={agent.name}
-        className={`w-28 h-28 rounded-full object-cover border-4 border-white shadow-xl transition-all duration-700 ${
-          loaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-        } group-hover:scale-105 group-hover:shadow-blue-300/30 group-hover:border-blue-100`}
-        onError={() => setError(true)}
-        onLoad={() => setLoaded(true)}
-      />
-      {/* Subtle blue ring */}
-      <div className="absolute inset-0 rounded-full border border-blue-200/50 animate-ping-slow opacity-0 group-hover:opacity-100" />
-    </div>
+    <img
+      src={agent.avatarUrl}
+      alt={agent.name}
+      className={`${sizeClasses[size]} rounded-full object-cover border-2 border-white shadow-md transition-all duration-300 ${
+        loaded ? 'opacity-100' : 'opacity-0'
+      }`}
+      onError={() => setError(true)}
+      onLoad={() => setLoaded(true)}
+    />
   );
 };
 
@@ -59,9 +58,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, index = 0 }) => {
   const { dispatch } = useAppContext();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
 
-  // Intersection Observer for scroll animations
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -80,32 +77,16 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, index = 0 }) => {
     return () => observer.disconnect();
   }, []);
 
-  // Calculate price range from agent's sold properties
-  const getPriceRange = () => {
+  const isAgencyAgent = agent.agencyName && agent.agencyName !== 'Independent Agent';
+  const testimonialCount = agent.testimonials?.length || agent.totalReviews || 0;
+
+  // Calculate median sold price
+  const getMedianPrice = () => {
     if (agent.totalSalesValue && agent.propertiesSold > 0) {
-      const avgPrice = agent.totalSalesValue / agent.propertiesSold;
-      const minPrice = avgPrice * 0.5;
-      const maxPrice = avgPrice * 1.8;
-      return `${formatPrice(minPrice, 'Serbia')} - ${formatPrice(maxPrice, 'Serbia')}`;
+      return formatPrice(agent.totalSalesValue / agent.propertiesSold, 'Serbia');
     }
-    return 'Contact for pricing';
+    return '-';
   };
-
-  // Calculate testimonial count
-  const testimonialCount = agent.testimonials?.length || 0;
-
-  // Check if agent is part of a team/agency
-  const isTeam = agent.agencyName && agent.agencyName !== 'Independent Agent';
-
-  // Calculate performance score (0-100)
-  const calculatePerformanceScore = () => {
-    const ratingScore = (agent.rating / 5) * 40;
-    const salesScore = Math.min(agent.propertiesSold * 2, 30);
-    const listingsScore = Math.min((agent.activeListings || 0) * 3, 30);
-    return Math.round(ratingScore + salesScore + listingsScore);
-  };
-
-  const performanceScore = calculatePerformanceScore();
 
   const handleSelectAgent = () => {
     const agentIdentifier = agent.agentId || agent.id;
@@ -143,228 +124,181 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, index = 0 }) => {
     <div
       ref={cardRef}
       className={`
-        relative bg-white rounded-2xl shadow-lg 
-        border border-blue-100 hover:border-blue-300 hover:shadow-xl 
-        transition-all duration-500 cursor-pointer overflow-hidden group
-        ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
+        relative bg-white rounded-xl shadow-sm border border-gray-200
+        hover:shadow-lg hover:border-gray-300
+        transition-all duration-300 cursor-pointer overflow-hidden
+        ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
       `}
-      style={{
-        transitionDelay: `${index * 100}ms`,
-        animation: isVisible ? 'cardGlow 6s ease-in-out infinite alternate' : 'none'
-      }}
+      style={{ transitionDelay: `${index * 50}ms` }}
       onClick={handleSelectAgent}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Subtle blue background gradient on hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white to-blue-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-      
-      {/* Animated border effect - blue */}
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-blue-200/30 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-      
-      {/* Performance Score Badge - Blue theme */}
-      <div className="absolute top-4 right-4 z-10">
-        <div className="relative group/score">
-          <div className="absolute inset-0 bg-blue-500 rounded-full blur opacity-70 group-hover/score:opacity-100 transition-opacity duration-300" />
-          <div className="relative bg-gradient-to-b from-blue-600 to-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
-            <ChartBarIcon className="w-3.5 h-3.5" />
-            <span>{performanceScore}%</span>
-            <ArrowTrendingUpIcon className="w-3 h-3 ml-1 text-blue-200" />
+      {/* Agency Header Bar - Like realestate.com.au */}
+      {isAgencyAgent && (
+        <div
+          className="bg-gradient-to-r from-red-600 to-red-700 px-4 py-2.5 flex items-center justify-between cursor-pointer hover:from-red-700 hover:to-red-800 transition-colors"
+          onClick={handleAgencyClick}
+        >
+          <div className="flex items-center gap-2">
+            {agent.agencyLogo ? (
+              <img
+                src={agent.agencyLogo}
+                alt={agent.agencyName}
+                className="h-6 w-auto max-w-[100px] object-contain bg-white rounded px-1.5 py-0.5"
+              />
+            ) : (
+              <BuildingOfficeIcon className="w-5 h-5 text-white" />
+            )}
+            <span className="text-white font-medium text-sm truncate max-w-[150px]">
+              {agent.agencyName}
+            </span>
           </div>
-        </div>
-      </div>
-
-      {/* Agency Badge - Professional blue */}
-      {isTeam && (
-        <div className="absolute top-4 left-4 z-10">
-          <div className="relative group/agency">
-            <div className="absolute -inset-1 bg-blue-400/30 rounded-full blur opacity-0 group-hover/agency:opacity-70 transition-opacity duration-300" />
-            <button
-              onClick={handleAgencyClick}
-              className="relative bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
-            >
-              <BuildingOfficeIcon className="w-3.5 h-3.5" />
-              <span>AGENCY</span>
-              <ChevronRightIcon className="w-3 h-3 ml-1 transform group-hover/agency:translate-x-1 transition-transform" />
-            </button>
-          </div>
+          <ChevronRightIcon className="w-4 h-4 text-white/70" />
         </div>
       )}
 
-      <div className="p-6 relative z-0">
-        {/* Agent Avatar and Info */}
-        <div className="flex flex-col items-center text-center mb-6">
-          <div className="relative mb-4">
-            <AgentAvatar agent={agent} />
-            
-            {/* Premier Agent Badge with blue animation */}
-            <div className="absolute -bottom-2 -right-2">
-              <div className="relative">
-                <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-20" />
-                <div className="relative bg-gradient-to-br from-blue-600 to-blue-700 rounded-full p-2 shadow-xl">
-                  <CheckBadgeIcon className="w-6 h-6 text-white" />
-                </div>
+      {/* Main Content */}
+      <div className="p-4">
+        {/* Agent Info Row */}
+        <div className="flex gap-4 mb-4">
+          {/* Avatar */}
+          <div className="relative flex-shrink-0">
+            <AgentAvatar agent={agent} size="md" />
+            {agent.licenseVerified && (
+              <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1">
+                <CheckBadgeIcon className="w-4 h-4 text-white" />
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Rating Badge - Clean white with blue accents */}
-          <div className="relative group/rating">
-            <div className="absolute -inset-1 bg-blue-100 rounded-xl blur opacity-0 group-hover/rating:opacity-100 transition-opacity duration-300" />
-            <div className="relative bg-white px-4 py-3 rounded-xl shadow-sm border border-blue-100">
-              <div className="flex items-center justify-center gap-2">
-                <div className="flex items-center">
-                  <StarRating rating={agent.rating} className="w-5 h-5 text-amber-400" />
-                </div>
-                {agent.rating > 0 ? (
-                  <div className="flex flex-col items-start">
-                    <span className="text-base font-bold text-gray-900">
-                      {agent.rating.toFixed(1)}
-                      <span className="text-xs text-blue-600 font-semibold ml-1">★</span>
-                    </span>
-                    <span className="text-xs text-gray-500 mt-0.5">
-                      {testimonialCount} {testimonialCount === 1 ? 'review' : 'reviews'}
-                    </span>
-                  </div>
-                ) : (
-                  <span className="text-sm text-gray-500 italic">No reviews</span>
-                )}
+          {/* Name, Location, Rating */}
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-bold text-gray-900 truncate mb-1">
+              {agent.name}
+            </h3>
+
+            {/* Role/Title */}
+            <p className="text-sm text-gray-600 mb-1.5">
+              {isAgencyAgent ? `Partner | Sales at ${agent.agencyName}` : 'Independent Agent'}
+            </p>
+
+            {/* Location */}
+            {(agent.city || agent.country) && (
+              <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-2">
+                <MapPinIcon className="w-4 h-4 text-gray-400" />
+                <span>{[agent.city, agent.country].filter(Boolean).join(', ')}</span>
               </div>
-            </div>
-          </div>
+            )}
 
-          {/* Agent Name with blue hover */}
-          <h3 className="text-2xl font-bold text-gray-900 mt-4 mb-2 group-hover:text-blue-700 transition-colors duration-300">
-            {agent.name}
-          </h3>
-
-          {/* Location with blue animation */}
-          {agent.city && agent.country && (
-            <div className="flex items-center gap-2 mt-1 group/location">
-              <MapPinIcon className="w-4 h-4 text-blue-500 transform group-hover/location:scale-110 transition-transform duration-300" />
-              <p className="text-sm font-medium text-gray-600 group-hover/location:text-blue-600 transition-colors">
-                {agent.city}, {agent.country}
-              </p>
-              {isHovered && (
-                <SparklesIcon className="w-3.5 h-3.5 text-blue-400 animate-bounce" />
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Animated Divider - Blue */}
-        <div className="relative my-5">
-          <div className="h-px bg-gradient-to-r from-transparent via-blue-200 to-transparent" />
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-1 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transform scale-0 group-hover:scale-100 transition-transform duration-500" />
-        </div>
-
-        {/* Stats Grid */}
-        <div className="space-y-4">
-          {/* Price Range Card - Professional blue */}
-          <div className="relative group/price">
-            <div className="absolute -inset-0.5 bg-blue-100 rounded-xl blur opacity-0 group-hover/price:opacity-100 transition-opacity duration-500" />
-            <div className="relative bg-blue-50 rounded-xl p-4 border border-blue-100">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg">
-                  <CurrencyDollarIcon className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Price Range
+            {/* Rating */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <StarIcon className="w-4 h-4 text-amber-400 fill-amber-400" />
+                <span className="font-semibold text-gray-900">
+                  {agent.rating > 0 ? agent.rating.toFixed(1) : '-'}
                 </span>
               </div>
-              <div className="flex items-baseline justify-between">
-                <span className="text-lg font-bold text-blue-700">
-                  {getPriceRange()}
-                </span>
-                {isTeam && (
-                  <span className="text-xs text-blue-600 font-semibold px-2 py-1 bg-blue-100 rounded-full">
-                    Agency rates
-                  </span>
-                )}
-              </div>
+              <span className="text-sm text-gray-500">
+                ({testimonialCount} {testimonialCount === 1 ? 'review' : 'reviews'})
+              </span>
             </div>
           </div>
-
-          {/* Sales Stats Grid - Clean professional design */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Recent Sales */}
-            <div className="group/sales relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl opacity-0 group-hover/sales:opacity-100 transition-opacity duration-300" />
-              <div className="relative bg-white rounded-xl p-4 border border-gray-200 group-hover/sales:border-blue-200 transition-all duration-300">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-blue-100 rounded-lg">
-                      <HomeIcon className="w-3.5 h-3.5 text-blue-600" />
-                    </div>
-                    <span className="text-xs font-semibold text-gray-700">Sales</span>
-                  </div>
-                  {agent.propertiesSold > 10 && (
-                    <TrophyIcon className="w-4 h-4 text-amber-500" />
-                  )}
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-bold text-gray-900">
-                    {agent.propertiesSold}
-                  </span>
-                  <span className="text-xs text-blue-600 font-semibold">
-                    +{Math.floor(agent.propertiesSold * 0.3)}%
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">last 12 months</p>
-              </div>
-            </div>
-
-            {/* Active Listings */}
-            <div className="group/listings relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl opacity-0 group-hover/listings:opacity-100 transition-opacity duration-300" />
-              <div className="relative bg-white rounded-xl p-4 border border-gray-200 group-hover/listings:border-blue-200 transition-all duration-300">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="p-1.5 bg-blue-100 rounded-lg">
-                    <HomeIcon className="w-3.5 h-3.5 text-blue-600" />
-                  </div>
-                  <span className="text-xs font-semibold text-gray-700">Active</span>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-bold text-gray-900">
-                    {agent.activeListings || 0}
-                  </span>
-                  <span className="text-xs text-blue-600 font-semibold">
-                    {agent.activeListings > 5 ? 'Hot' : 'Available'}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">current listings</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Agency Sales Badge - Professional blue theme */}
-          {isTeam && agent.city && (
-            <div className="relative group/agencyBadge">
-              <div className="absolute inset-0 bg-blue-100 rounded-xl blur opacity-0 group-hover/agencyBadge:opacity-50 transition-opacity duration-500" />
-              <div className="relative bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-3 border border-blue-200">
-                <div className="flex items-center gap-2">
-                  <BuildingOfficeIcon className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm font-semibold text-blue-900">
-                    Agency Network
-                  </span>
-                </div>
-                <p className="text-blue-900 mt-1">
-                  <span className="text-xl font-bold">{agent.propertiesSold * 3}</span>
-                  <span className="text-sm font-medium ml-2">combined sales in {agent.city}</span>
-                </p>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* CTA Button - Professional blue */}
-        <div className="mt-6">
+        {/* Performance Stats - Like realestate.com.au */}
+        <div className="grid grid-cols-3 gap-2 py-3 border-t border-b border-gray-100 mb-4">
+          <div className="text-center">
+            <div className="text-xl font-bold text-gray-900">
+              {agent.propertiesSold || 0}
+            </div>
+            <div className="text-xs text-gray-500">Properties sold</div>
+          </div>
+          <div className="text-center border-x border-gray-100">
+            <div className="text-xl font-bold text-gray-900">
+              {getMedianPrice()}
+            </div>
+            <div className="text-xs text-gray-500">Median sold</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-bold text-gray-900">
+              {agent.activeListings || 0}
+            </div>
+            <div className="text-xs text-gray-500">Active listings</div>
+          </div>
+        </div>
+
+        {/* Quick Tags/Badges */}
+        {agent.specializations && agent.specializations.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {agent.specializations.slice(0, 3).map((spec, idx) => (
+              <span
+                key={idx}
+                className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-full"
+              >
+                {spec}
+              </span>
+            ))}
+            {agent.specializations.length > 3 && (
+              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+                +{agent.specializations.length - 3}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Recent Sold Properties Preview */}
+        {agent.recentsales && agent.recentsales.length > 0 && (
+          <div className="mb-4">
+            <p className="text-xs text-gray-500 mb-2">Recent Sales</p>
+            <div className="flex gap-1.5">
+              {agent.recentsales.slice(0, 3).map((sale, idx) => (
+                <div
+                  key={idx}
+                  className="flex-1 bg-gray-100 rounded-md p-2 text-center"
+                >
+                  <HomeIcon className="w-4 h-4 text-gray-400 mx-auto mb-1" />
+                  <div className="text-xs font-semibold text-gray-700">
+                    {formatPrice(sale.soldPrice, 'Serbia')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
           <button
-            className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:shadow-blue-300/30 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 group/button"
-            onClick={handleSelectAgent}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSelectAgent();
+            }}
+            className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors text-sm"
           >
-            <span>View Profile</span>
-            <ChevronRightIcon className="w-4 h-4 transform group-hover/button:translate-x-1 transition-transform" />
+            View Profile
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (agent.phone) {
+                window.location.href = `tel:${agent.phone}`;
+              }
+            }}
+            className="p-2.5 border border-gray-300 hover:border-gray-400 hover:bg-gray-50 rounded-lg transition-colors"
+            title="Call"
+          >
+            <PhoneIcon className="w-5 h-5 text-gray-600" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (agent.email) {
+                window.location.href = `mailto:${agent.email}`;
+              }
+            }}
+            className="p-2.5 border border-gray-300 hover:border-gray-400 hover:bg-gray-50 rounded-lg transition-colors"
+            title="Email"
+          >
+            <EnvelopeIcon className="w-5 h-5 text-gray-600" />
           </button>
         </div>
       </div>

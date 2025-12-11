@@ -1122,6 +1122,29 @@ export const getAllAgents = async (): Promise<any> => {
   return response;
 };
 
+export const getAgentDetails = async (agentId: string): Promise<any> => {
+  const response = await apiRequest<{ agent: any; properties?: any; stats?: any }>(`/agents/${agentId}/details`);
+  if (response.agent) {
+    response.agent = transformBackendAgent(response.agent);
+  }
+  if (response.properties) {
+    response.properties = {
+      forSale: (response.properties.forSale || []).map(transformBackendProperty),
+      forRent: (response.properties.forRent || []).map(transformBackendProperty),
+      sold: (response.properties.sold || []).map(transformBackendProperty),
+    };
+  }
+  return response;
+};
+
+export const getAgencyAgents = async (agencyId: string): Promise<any> => {
+  const response = await apiRequest<{ agents?: any[] }>(`/agencies/${agencyId}/agents`);
+  if (response.agents) {
+    response.agents = response.agents.map(transformBackendAgent);
+  }
+  return response;
+};
+
 export const addAgentReview = async (agentId: string, review: { quote: string; rating: number; propertyId?: string }): Promise<any> => {
   const response = await apiRequest<{ agent?: any }>(`/agents/${agentId}/reviews`, {
     method: 'POST',
