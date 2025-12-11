@@ -1117,6 +1117,7 @@ function transformBackendAgent(backendAgent: any): any {
     agencyId: agencyId ? String(agencyId) : undefined,
     agencyLogo: agency.logo,
     agencyGradient: agency.coverGradient,
+    agencyCoverImage: agency.coverImage,
     agencySlug: agency.slug,
     agentId: backendAgent.agentId,
     licenseNumber: backendAgent.licenseNumber,

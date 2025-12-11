@@ -95,6 +95,7 @@ export interface Agent extends User {
     agencyLogo?: string;
     agencySlug?: string;
     agencyGradient?: string;
+    agencyCoverImage?: string;
     agencyType?: 'standard' | 'luxury' | 'commercial' | 'boutique' | 'team';
     
 }

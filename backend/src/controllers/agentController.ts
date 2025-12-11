@@ -14,7 +14,7 @@ export const getAgents = async (req: Request, res: Response): Promise<void> => {
   try {
     const agents = await Agent.find({ isActive: true })
       .populate('userId', 'name email phone avatarUrl city country')
-      .populate('agencyId', 'name logo coverGradient slug')
+      .populate('agencyId', 'name logo coverGradient coverImage slug type')
       .populate('testimonials.userId', 'name avatarUrl')
       .sort({ rating: -1, totalSales: -1 });
 

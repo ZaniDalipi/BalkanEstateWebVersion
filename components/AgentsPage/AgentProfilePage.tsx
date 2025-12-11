@@ -323,22 +323,38 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
         ? agent.agencyGradient
         : 'bg-gradient-to-r from-blue-600 to-indigo-700';
 
+    // Check if agency has cover image
+    const hasCoverImage = isAgencyAgent && agent.agencyCoverImage;
+
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Agency Agent Header - Like realestate.com.au */}
+            {/* Agency Agent Header - Banner style with cover image or gradient */}
             {isAgencyAgent && (
                 <div className="sticky top-0 z-40">
-                    {/* Colored Accent Strip - Agency Brand Color */}
-                    <div className={`${headerGradient} h-1.5`} />
+                    {/* Agency Banner Bar - Uses cover image or gradient */}
+                    <div className="relative h-16 sm:h-18 overflow-hidden">
+                        {/* Background: Cover Image or Gradient */}
+                        {hasCoverImage ? (
+                            <>
+                                <img
+                                    src={agent.agencyCoverImage}
+                                    alt=""
+                                    className="absolute inset-0 w-full h-full object-cover"
+                                />
+                                {/* Dark overlay for text readability */}
+                                <div className="absolute inset-0 bg-black/50" />
+                            </>
+                        ) : (
+                            <div className={`absolute inset-0 ${headerGradient}`} />
+                        )}
 
-                    {/* Clean White Navigation Bar */}
-                    <div className="bg-white border-b border-gray-200 shadow-sm">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                            <div className="flex items-center justify-between h-14 sm:h-16">
+                        {/* Navigation Content */}
+                        <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex items-center justify-between h-full">
                                 {/* Back Button */}
                                 <button
                                     onClick={handleBack}
-                                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors group"
+                                    className="flex items-center gap-2 text-white/90 hover:text-white font-medium transition-colors group"
                                 >
                                     <ArrowLeftIcon className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                                     <span className="hidden sm:inline">Back</span>
@@ -347,22 +363,24 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                 {/* Agency Brand - Center */}
                                 <button
                                     onClick={handleAgencyClick}
-                                    className="flex items-center gap-3 hover:bg-gray-50 px-3 sm:px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                                    className="flex items-center gap-3 hover:bg-white/10 px-3 sm:px-4 py-2 rounded-lg transition-colors cursor-pointer"
                                 >
                                     {agent.agencyLogo ? (
-                                        <img
-                                            src={agent.agencyLogo}
-                                            alt={agent.agencyName}
-                                            className="h-8 sm:h-10 w-auto max-w-[120px] sm:max-w-[160px] object-contain"
-                                        />
+                                        <div className="bg-white rounded-lg p-1 shadow-sm">
+                                            <img
+                                                src={agent.agencyLogo}
+                                                alt={agent.agencyName}
+                                                className="h-8 sm:h-9 w-auto max-w-[100px] sm:max-w-[140px] object-contain"
+                                            />
+                                        </div>
                                     ) : (
-                                        <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${headerGradient}`}>
+                                        <div className="bg-white/20 backdrop-blur-sm h-10 w-10 rounded-lg flex items-center justify-center">
                                             <BuildingOfficeIcon className="w-6 h-6 text-white" />
                                         </div>
                                     )}
-                                    <div className="text-left hidden sm:block">
-                                        <p className="text-sm sm:text-base font-bold text-gray-900 leading-tight">{agent.agencyName}</p>
-                                        <p className="text-xs text-gray-500">View Agency Profile →</p>
+                                    <div className="text-left">
+                                        <p className="text-sm sm:text-base font-bold text-white leading-tight drop-shadow-sm">{agent.agencyName}</p>
+                                        <p className="text-xs text-white/80 hidden sm:block">View Agency Profile →</p>
                                     </div>
                                 </button>
 
@@ -370,14 +388,14 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                 <div className="flex items-center gap-1 sm:gap-2">
                                     <button
                                         onClick={handleSaveAgent}
-                                        className="flex items-center gap-2 px-2 sm:px-3 py-2 text-gray-600 hover:text-red-500 hover:bg-gray-50 rounded-lg transition-colors"
+                                        className="flex items-center gap-2 px-2 sm:px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                                     >
-                                        <HeartIcon className={`w-5 h-5 ${savedAgent ? 'fill-red-500 text-red-500' : ''}`} />
+                                        <HeartIcon className={`w-5 h-5 ${savedAgent ? 'fill-red-400 text-red-400' : ''}`} />
                                         <span className="hidden md:inline text-sm font-medium">{savedAgent ? 'Saved' : 'Save'}</span>
                                     </button>
                                     <button
                                         onClick={handleShareAgent}
-                                        className="flex items-center gap-2 px-2 sm:px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-colors"
+                                        className="flex items-center gap-2 px-2 sm:px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                                     >
                                         <ShareIcon className="w-5 h-5" />
                                         <span className="hidden md:inline text-sm font-medium">Share</span>
@@ -392,38 +410,35 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
             {/* Independent Agent Header */}
             {!isAgencyAgent && (
                 <div className="sticky top-0 z-40">
-                    {/* Neutral Accent Strip */}
-                    <div className="bg-gradient-to-r from-gray-700 to-gray-800 h-1.5" />
-
-                    {/* Clean White Navigation Bar */}
-                    <div className="bg-white border-b border-gray-200 shadow-sm">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                            <div className="flex items-center justify-between h-14">
+                    {/* Dark gradient bar for independent agents */}
+                    <div className="relative h-14 bg-gradient-to-r from-gray-800 to-gray-900">
+                        <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex items-center justify-between h-full">
                                 <button
                                     onClick={handleBack}
-                                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors group"
+                                    className="flex items-center gap-2 text-white/90 hover:text-white font-medium transition-colors group"
                                 >
                                     <ArrowLeftIcon className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                                     <span>Back to Agents</span>
                                 </button>
 
                                 <div className="flex items-center gap-3">
-                                    <div className="bg-gray-100 px-3 py-1.5 rounded-full">
-                                        <span className="text-gray-700 font-semibold text-sm">Independent Agent</span>
+                                    <div className="bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                                        <span className="text-white font-semibold text-sm">Independent Agent</span>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={handleSaveAgent}
-                                        className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-red-500 hover:bg-gray-50 rounded-lg transition-colors"
+                                        className="flex items-center gap-2 px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                                     >
-                                        <HeartIcon className={`w-5 h-5 ${savedAgent ? 'fill-red-500 text-red-500' : ''}`} />
+                                        <HeartIcon className={`w-5 h-5 ${savedAgent ? 'fill-red-400 text-red-400' : ''}`} />
                                         <span className="hidden sm:inline text-sm font-medium">{savedAgent ? 'Saved' : 'Save'}</span>
                                     </button>
                                     <button
                                         onClick={handleShareAgent}
-                                        className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-colors"
+                                        className="flex items-center gap-2 px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                                     >
                                         <ShareIcon className="w-5 h-5" />
                                         <span className="hidden sm:inline text-sm font-medium">Share</span>
