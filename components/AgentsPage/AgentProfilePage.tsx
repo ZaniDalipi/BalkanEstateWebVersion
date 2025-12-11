@@ -325,99 +325,110 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Agency Branding Bar - Uses agency gradient color with white text for contrast */}
+            {/* Agency Agent Header - Like realestate.com.au */}
             {isAgencyAgent && (
-                <div className={`${headerGradient} sticky top-0 z-40 shadow-lg`}>
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center justify-between h-14 sm:h-16">
-                            {/* Back Button */}
-                            <button
-                                onClick={handleBack}
-                                className="flex items-center gap-2 text-white/90 hover:text-white font-medium transition-colors group"
-                            >
-                                <ArrowLeftIcon className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                                <span className="hidden sm:inline">Back</span>
-                            </button>
+                <div className="sticky top-0 z-40">
+                    {/* Colored Accent Strip - Agency Brand Color */}
+                    <div className={`${headerGradient} h-1.5`} />
 
-                            {/* Agency Brand - Center */}
-                            <button
-                                onClick={handleAgencyClick}
-                                className="flex items-center gap-3 hover:bg-white/10 px-3 sm:px-4 py-2 rounded-lg transition-colors cursor-pointer"
-                            >
-                                {agent.agencyLogo ? (
-                                    <div className="bg-white rounded-lg p-1.5 shadow-sm">
+                    {/* Clean White Navigation Bar */}
+                    <div className="bg-white border-b border-gray-200 shadow-sm">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex items-center justify-between h-14 sm:h-16">
+                                {/* Back Button */}
+                                <button
+                                    onClick={handleBack}
+                                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors group"
+                                >
+                                    <ArrowLeftIcon className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                                    <span className="hidden sm:inline">Back</span>
+                                </button>
+
+                                {/* Agency Brand - Center */}
+                                <button
+                                    onClick={handleAgencyClick}
+                                    className="flex items-center gap-3 hover:bg-gray-50 px-3 sm:px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                                >
+                                    {agent.agencyLogo ? (
                                         <img
                                             src={agent.agencyLogo}
                                             alt={agent.agencyName}
-                                            className="h-7 sm:h-8 w-auto max-w-[100px] sm:max-w-[120px] object-contain"
+                                            className="h-8 sm:h-10 w-auto max-w-[120px] sm:max-w-[160px] object-contain"
                                         />
+                                    ) : (
+                                        <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${headerGradient}`}>
+                                            <BuildingOfficeIcon className="w-6 h-6 text-white" />
+                                        </div>
+                                    )}
+                                    <div className="text-left hidden sm:block">
+                                        <p className="text-sm sm:text-base font-bold text-gray-900 leading-tight">{agent.agencyName}</p>
+                                        <p className="text-xs text-gray-500">View Agency Profile →</p>
                                     </div>
-                                ) : (
-                                    <div className="bg-white/20 backdrop-blur-sm h-10 w-10 rounded-lg flex items-center justify-center">
-                                        <BuildingOfficeIcon className="w-6 h-6 text-white" />
-                                    </div>
-                                )}
-                                <div className="text-left">
-                                    <p className="text-sm sm:text-base font-bold text-white leading-tight">{agent.agencyName}</p>
-                                    <p className="text-xs text-white/70 hidden sm:block">View Agency Profile</p>
-                                </div>
-                                <ChevronRightIcon className="w-4 h-4 text-white/70 hidden sm:block" />
-                            </button>
+                                </button>
 
-                            {/* Actions */}
-                            <div className="flex items-center gap-1 sm:gap-2">
-                                <button
-                                    onClick={handleSaveAgent}
-                                    className="flex items-center gap-2 px-2 sm:px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                                >
-                                    <HeartIcon className={`w-5 h-5 ${savedAgent ? 'fill-red-400 text-red-400' : ''}`} />
-                                    <span className="hidden md:inline text-sm font-medium">{savedAgent ? 'Saved' : 'Save'}</span>
-                                </button>
-                                <button
-                                    onClick={handleShareAgent}
-                                    className="flex items-center gap-2 px-2 sm:px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                                >
-                                    <ShareIcon className="w-5 h-5" />
-                                    <span className="hidden md:inline text-sm font-medium">Share</span>
-                                </button>
+                                {/* Actions */}
+                                <div className="flex items-center gap-1 sm:gap-2">
+                                    <button
+                                        onClick={handleSaveAgent}
+                                        className="flex items-center gap-2 px-2 sm:px-3 py-2 text-gray-600 hover:text-red-500 hover:bg-gray-50 rounded-lg transition-colors"
+                                    >
+                                        <HeartIcon className={`w-5 h-5 ${savedAgent ? 'fill-red-500 text-red-500' : ''}`} />
+                                        <span className="hidden md:inline text-sm font-medium">{savedAgent ? 'Saved' : 'Save'}</span>
+                                    </button>
+                                    <button
+                                        onClick={handleShareAgent}
+                                        className="flex items-center gap-2 px-2 sm:px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-colors"
+                                    >
+                                        <ShareIcon className="w-5 h-5" />
+                                        <span className="hidden md:inline text-sm font-medium">Share</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Independent Agent Header - Neutral dark bar */}
+            {/* Independent Agent Header */}
             {!isAgencyAgent && (
-                <div className="bg-gray-800 sticky top-0 z-40 shadow-lg">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center justify-between h-14">
-                            <button
-                                onClick={handleBack}
-                                className="flex items-center gap-2 text-white/90 hover:text-white font-medium transition-colors group"
-                            >
-                                <ArrowLeftIcon className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                                <span>Back to Agents</span>
-                            </button>
+                <div className="sticky top-0 z-40">
+                    {/* Neutral Accent Strip */}
+                    <div className="bg-gradient-to-r from-gray-700 to-gray-800 h-1.5" />
 
-                            <div className="flex items-center gap-3">
-                                <span className="text-white font-semibold hidden sm:inline">Independent Agent</span>
-                            </div>
+                    {/* Clean White Navigation Bar */}
+                    <div className="bg-white border-b border-gray-200 shadow-sm">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex items-center justify-between h-14">
+                                <button
+                                    onClick={handleBack}
+                                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors group"
+                                >
+                                    <ArrowLeftIcon className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                                    <span>Back to Agents</span>
+                                </button>
 
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={handleSaveAgent}
-                                    className="flex items-center gap-2 px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                                >
-                                    <HeartIcon className={`w-5 h-5 ${savedAgent ? 'fill-red-400 text-red-400' : ''}`} />
-                                    <span className="hidden sm:inline text-sm font-medium">{savedAgent ? 'Saved' : 'Save'}</span>
-                                </button>
-                                <button
-                                    onClick={handleShareAgent}
-                                    className="flex items-center gap-2 px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                                >
-                                    <ShareIcon className="w-5 h-5" />
-                                    <span className="hidden sm:inline text-sm font-medium">Share</span>
-                                </button>
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-gray-100 px-3 py-1.5 rounded-full">
+                                        <span className="text-gray-700 font-semibold text-sm">Independent Agent</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={handleSaveAgent}
+                                        className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-red-500 hover:bg-gray-50 rounded-lg transition-colors"
+                                    >
+                                        <HeartIcon className={`w-5 h-5 ${savedAgent ? 'fill-red-500 text-red-500' : ''}`} />
+                                        <span className="hidden sm:inline text-sm font-medium">{savedAgent ? 'Saved' : 'Save'}</span>
+                                    </button>
+                                    <button
+                                        onClick={handleShareAgent}
+                                        className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-colors"
+                                    >
+                                        <ShareIcon className="w-5 h-5" />
+                                        <span className="hidden sm:inline text-sm font-medium">Share</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -430,9 +441,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                     <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
                         {/* Agent Photo */}
                         <div className="relative flex-shrink-0">
-                            <div className={`w-36 h-36 sm:w-44 sm:h-44 rounded-2xl overflow-hidden shadow-xl ring-4 ${isAgencyAgent ? 'ring-opacity-30' : 'ring-gray-200'}`} style={{
-                                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-                            }}>
+                            <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-2xl overflow-hidden shadow-xl border-4 border-gray-100">
                                 {agent.avatarUrl ? (
                                     <img
                                         src={agent.avatarUrl}
@@ -446,7 +455,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                 )}
                             </div>
                             {/* Verified Badge */}
-                            <div className="absolute -bottom-2 -right-2 bg-green-500 text-white p-2.5 rounded-full shadow-lg border-3 border-white">
+                            <div className="absolute -bottom-2 -right-2 bg-green-500 text-white p-2 rounded-full shadow-lg border-2 border-white">
                                 <CheckBadgeIcon className="w-5 h-5" />
                             </div>
                         </div>
