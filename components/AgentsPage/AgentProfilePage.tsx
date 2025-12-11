@@ -1,17 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Agent } from '../../types';
 import { Agency } from '../../types';
 import AgencyBadge from '../shared/AgencyBadge';
 import { useAppContext } from '../../context/AppContext';
-import { 
-  ArrowLeftIcon, 
-  BuildingOfficeIcon, 
-  ChartBarIcon, 
-  ChatBubbleBottomCenterTextIcon, 
-  EnvelopeIcon, 
-  PhoneIcon, 
-  UserCircleIcon, 
-  MapPinIcon, 
+import {
+  ArrowLeftIcon,
+  BuildingOfficeIcon,
+  ChartBarIcon,
+  ChatBubbleBottomCenterTextIcon,
+  EnvelopeIcon,
+  PhoneIcon,
+  UserCircleIcon,
+  MapPinIcon,
   GlobeAltIcon,
   CheckCircleIcon,
   HomeIcon,
@@ -42,7 +42,8 @@ import {
   HomeModernIcon,
   HomePinIcon,
   ArrowRightIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  XMarkIcon
 } from '../../constants';
 import StarRating from '../shared/StarRating';
 import { formatPrice } from '../../utils/currency';
@@ -50,6 +51,7 @@ import PropertyCard from '../BuyerFlow/PropertyDisplay/PropertyCard';
 import PropertyCardSkeleton from '../BuyerFlow/PropertyDisplay/PropertyCardSkeleton';
 import AgentReviewForm from '../shared/AgentReviewForm';
 import { slugify } from '../../utils/slug';
+import { getAgencyAgents, getAllAgents } from '../../services/apiService';
 
 
 interface AgentProfilePageProps {
@@ -79,6 +81,14 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     const [activeTab, setActiveTab] = useState<'overview' | 'listings' | 'reviews'>('overview');
     const [showReviewForm, setShowReviewForm] = useState(false);
     const [savedAgent, setSavedAgent] = useState(false);
+    const [showShareToast, setShowShareToast] = useState(false);
+    const [similarAgents, setSimilarAgents] = useState<Agent[]>([]);
+    const [loadingSimilarAgents, setLoadingSimilarAgents] = useState(false);
+    const [showAppraisalModal, setShowAppraisalModal] = useState(false);
+    const [showConsultationModal, setShowConsultationModal] = useState(false);
+    const [appraisalForm, setAppraisalForm] = useState({ address: '', propertyType: '', notes: '' });
+    const [consultationForm, setConsultationForm] = useState({ date: '', time: '', topic: '', notes: '' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const isAgencyAgent = agent.agencyName && agent.agencyName !== 'Independent Agent';
     const agentUserId = agent.userId || agent.id;
@@ -101,19 +111,89 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     const firstName = agent.name?.split(' ')[0] || 'Agent';
     const canWriteReview = currentUser && currentUser.id !== agentUserId;
 
+    // Fetch similar agents from same agency or city
+    useEffect(() => {
+        const fetchSimilarAgents = async () => {
+            setLoadingSimilarAgents(true);
+            try {
+                if (isAgencyAgent && agent.agencyId) {
+                    // Fetch agents from same agency
+                    const response = await getAgencyAgents(agent.agencyId);
+                    const agencyAgents = (response.agents || [])
+                        .filter((a: Agent) => a.id !== agent.id && a.userId !== agent.userId)
+                        .slice(0, 4);
+                    setSimilarAgents(agencyAgents);
+                } else {
+                    // Fetch agents from same city
+                    const response = await getAllAgents();
+                    const cityAgents = (response.agents || [])
+                        .filter((a: Agent) =>
+                            (a.id !== agent.id && a.userId !== agent.userId) &&
+                            (a.city === agent.city || a.country === agent.country)
+                        )
+                        .slice(0, 4);
+                    setSimilarAgents(cityAgents);
+                }
+            } catch (error) {
+                console.error('Error fetching similar agents:', error);
+            } finally {
+                setLoadingSimilarAgents(false);
+            }
+        };
+
+        fetchSimilarAgents();
+    }, [agent.id, agent.agencyId, agent.city, agent.country, isAgencyAgent]);
+
     const handleBack = () => {
         dispatch({ type: 'SET_SELECTED_AGENT', payload: null });
+        window.history.pushState({}, '', '/agents');
     };
 
     const handleSaveAgent = () => {
+        if (!state.isAuthenticated) {
+            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
+            return;
+        }
         setSavedAgent(!savedAgent);
-        // TODO: Implement save agent functionality
+        // Store in localStorage for persistence
+        const savedAgents = JSON.parse(localStorage.getItem('savedAgents') || '[]');
+        if (!savedAgent) {
+            savedAgents.push({ id: agent.id, name: agent.name, savedAt: new Date().toISOString() });
+        } else {
+            const index = savedAgents.findIndex((a: any) => a.id === agent.id);
+            if (index > -1) savedAgents.splice(index, 1);
+        }
+        localStorage.setItem('savedAgents', JSON.stringify(savedAgents));
     };
 
-    const handleShareAgent = () => {
-        // TODO: Implement share functionality
-        navigator.clipboard.writeText(window.location.href);
-        alert('Link copied to clipboard!');
+    // Check if agent is saved on mount
+    useEffect(() => {
+        const savedAgents = JSON.parse(localStorage.getItem('savedAgents') || '[]');
+        const isSaved = savedAgents.some((a: any) => a.id === agent.id);
+        setSavedAgent(isSaved);
+    }, [agent.id]);
+
+    const handleShareAgent = async () => {
+        const shareUrl = window.location.href;
+        const shareData = {
+            title: `${agent.name} - Real Estate Agent`,
+            text: `Check out ${agent.name}, a real estate agent${isAgencyAgent ? ` at ${agent.agencyName}` : ''} on BalkanEstate`,
+            url: shareUrl,
+        };
+
+        try {
+            if (navigator.share && navigator.canShare(shareData)) {
+                await navigator.share(shareData);
+            } else {
+                await navigator.clipboard.writeText(shareUrl);
+                setShowShareToast(true);
+                setTimeout(() => setShowShareToast(false), 3000);
+            }
+        } catch (error) {
+            await navigator.clipboard.writeText(shareUrl);
+            setShowShareToast(true);
+            setTimeout(() => setShowShareToast(false), 3000);
+        }
     };
 
     const handleContactAgent = async () => {
@@ -128,18 +208,36 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
             dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'inbox' });
         } catch (error) {
             console.error('Failed to start conversation:', error);
-            alert('Failed to contact agent. Please try again.');
         }
     };
-
 
     const handleRequestAppraisal = () => {
         if (!state.isAuthenticated) {
             dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
             return;
         }
-        // TODO: Implement appraisal request form
-        alert(`Request appraisal from ${firstName}`);
+        setShowAppraisalModal(true);
+    };
+
+    const handleSubmitAppraisal = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        try {
+            // Send appraisal request via message to agent
+            const conversation = await createConversation(agent.id);
+            const message = `Property Appraisal Request:\n\nAddress: ${appraisalForm.address}\nProperty Type: ${appraisalForm.propertyType}\nNotes: ${appraisalForm.notes || 'No additional notes'}`;
+
+            // The conversation is created, redirect to inbox
+            dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: conversation.id });
+            window.history.pushState({ page: 'inbox' }, '', '/inbox');
+            dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'inbox' });
+            setShowAppraisalModal(false);
+            setAppraisalForm({ address: '', propertyType: '', notes: '' });
+        } catch (error) {
+            console.error('Error submitting appraisal request:', error);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleScheduleConsultation = () => {
@@ -147,13 +245,42 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
             dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
             return;
         }
-        // TODO: Implement consultation scheduling
-        alert(`Schedule consultation with ${firstName}`);
+        setShowConsultationModal(true);
     };
 
-    const handleRequestMarketReport = () => {
-        // TODO: Implement market report request
-        alert(`Request market report for ${agent.city || 'this area'}`);
+    const handleSubmitConsultation = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        try {
+            // Send consultation request via message to agent
+            const conversation = await createConversation(agent.id);
+            const message = `Consultation Request:\n\nPreferred Date: ${consultationForm.date}\nPreferred Time: ${consultationForm.time}\nTopic: ${consultationForm.topic}\nNotes: ${consultationForm.notes || 'No additional notes'}`;
+
+            dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: conversation.id });
+            window.history.pushState({ page: 'inbox' }, '', '/inbox');
+            dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'inbox' });
+            setShowConsultationModal(false);
+            setConsultationForm({ date: '', time: '', topic: '', notes: '' });
+        } catch (error) {
+            console.error('Error submitting consultation request:', error);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleRequestMarketReport = async () => {
+        if (!state.isAuthenticated) {
+            dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
+            return;
+        }
+        try {
+            const conversation = await createConversation(agent.id);
+            dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: conversation.id });
+            window.history.pushState({ page: 'inbox' }, '', '/inbox');
+            dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'inbox' });
+        } catch (error) {
+            console.error('Error requesting market report:', error);
+        }
     };
 
     const handleSearchAllProperties = () => {
@@ -162,22 +289,34 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     };
 
     const handleViewMoreAgents = () => {
+        dispatch({ type: 'SET_SELECTED_AGENT', payload: null });
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agents' });
         window.history.pushState({}, '', '/agents');
     };
 
-    // Get similar agents from the same agency or same city
-    const similarAgents = useMemo(() => {
-        // If agent has an agency, fetch agents from the same agency
-        if (agent.agencyName && agent.agencyName !== 'Independent Agent') {
-            // In a real app, this would be fetched from the backend
-            // For now, we could filter from state if available
-            
-            return [];
+    const handleSelectSimilarAgent = (selectedAgent: Agent) => {
+        const agentIdentifier = selectedAgent.agentId || selectedAgent.id;
+        dispatch({ type: 'SET_SELECTED_AGENT', payload: agentIdentifier });
+        window.history.pushState({}, '', `/agents/${agentIdentifier}`);
+    };
+
+    const handleAgencyClick = async () => {
+        if (!agent.agencyId) return;
+
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+            const response = await fetch(`${API_URL}/agencies/${agent.agencyId}`);
+            if (response.ok) {
+                const data = await response.json();
+                dispatch({ type: 'SET_SELECTED_AGENCY', payload: data.agency });
+                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
+                const urlSlug = data.agency.slug || data.agency._id;
+                window.history.pushState({}, '', `/agencies/${urlSlug}`);
+            }
+        } catch (error) {
+            console.error('Error navigating to agency:', error);
         }
-        // Otherwise, show agents from the same city
-        return [];
-    }, [agent.agencyName, agent.city]);
+    };
 
     // Get header gradient - use agency's gradient or default blue
     const headerGradient = isAgencyAgent && agent.agencyGradient
@@ -201,23 +340,23 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
           </button>
         </div>
 
-        <div className="hidden md:flex items-center justify-center absolute left-1/2 transform -translate-x-1/2">
-</div>
-
 {isAgencyAgent && (
-  <div className="flex items-center gap-2 text-white-600 mb-3">
+  <button
+    onClick={handleAgencyClick}
+    className="hidden md:flex items-center gap-2 text-white/90 hover:text-white transition-colors cursor-pointer"
+  >
     <AgencyBadge
       agencyName={agent.agencyName}
       agencyLogo={agent.agencyLogo}
-      type={agent.agencyType as any || 'luxury'} 
+      type={agent.agencyType as any || 'luxury'}
       variant="minimal"
-      size="lg"
-      className="bg-transparent px-0 py-0 border-0"
+      size="md"
+      className="bg-white/10 hover:bg-white/20 px-3 py-1 border-0"
       showText={false}
     />
     <span className="font-medium">{agent.agencyName}</span>
-    {agent.role && <span className="text-white-500">• {agent.agencySlug}</span>}
-  </div>
+    <ChevronRightIcon className="w-4 h-4" />
+  </button>
 )}
 
         {/* Right section - Save/Share buttons */}
@@ -749,22 +888,46 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                 <UsersIcon className="w-5 h-5 text-blue-600" />
                                 {isAgencyAgent ? 'Agents from Same Agency' : 'Other Agents in Area'}
                             </h3>
-                            {similarAgents.length > 0 ? (
+                            {loadingSimilarAgents ? (
+                                <div className="space-y-4">
+                                    {[1, 2, 3].map((i) => (
+                                        <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
+                                            <div className="w-12 h-12 rounded-full bg-gray-200" />
+                                            <div className="flex-1">
+                                                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                                                <div className="h-3 bg-gray-200 rounded w-1/2" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : similarAgents.length > 0 ? (
                                 <div className="space-y-4">
                                     {similarAgents.map((similarAgent) => (
-                                        <div key={similarAgent.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
-                                            <img
-                                                src={similarAgent.avatarUrl}
-                                                alt={similarAgent.name}
-                                                className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
-                                            />
+                                        <div
+                                            key={similarAgent.id}
+                                            onClick={() => handleSelectSimilarAgent(similarAgent)}
+                                            className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
+                                        >
+                                            {similarAgent.avatarUrl ? (
+                                                <img
+                                                    src={similarAgent.avatarUrl}
+                                                    alt={similarAgent.name}
+                                                    className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                                                />
+                                            ) : (
+                                                <UserCircleIcon className="w-12 h-12 text-gray-300" />
+                                            )}
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-semibold text-gray-900 truncate">{similarAgent.name}</p>
                                                 <div className="flex items-center gap-1">
-                                                    <StarRating rating={similarAgent.rating} />
-                                                    <span className="text-sm text-gray-600">{similarAgent.rating} ({similarAgent.reviews})</span>
+                                                    <StarRating rating={similarAgent.rating || 0} />
+                                                    <span className="text-sm text-gray-600">
+                                                        {(similarAgent.rating || 0).toFixed(1)} ({similarAgent.totalReviews || similarAgent.testimonials?.length || 0})
+                                                    </span>
                                                 </div>
-                                                <p className="text-xs text-gray-500 truncate">{similarAgent.agencyName}</p>
+                                                <p className="text-xs text-gray-500 truncate">
+                                                    {similarAgent.agencyName || `${similarAgent.city || ''}, ${similarAgent.country || ''}`}
+                                                </p>
                                             </div>
                                             <ChevronRightIcon className="w-5 h-5 text-gray-400" />
                                         </div>
@@ -852,7 +1015,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                         Contact {firstName} today for expert real estate advice and personalized service.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <a 
+                        <a
                             href={`tel:${agent.phone || ''}`}
                             className="bg-white text-gray-900 hover:bg-gray-100 font-bold py-3 px-8 rounded-xl transition-colors shadow-lg"
                         >
@@ -867,6 +1030,209 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                     </div>
                 </div>
             </div>
+
+            {/* Share Toast Notification */}
+            {showShareToast && (
+                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-xl z-50 flex items-center gap-3 animate-fade-in">
+                    <CheckCircleIcon className="w-5 h-5 text-green-400" />
+                    <span>Link copied to clipboard!</span>
+                </div>
+            )}
+
+            {/* Appraisal Request Modal */}
+            {showAppraisalModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                            <h3 className="text-xl font-bold text-gray-900">Request Property Appraisal</h3>
+                            <button
+                                onClick={() => setShowAppraisalModal(false)}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <XMarkIcon className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleSubmitAppraisal} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Property Address *
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={appraisalForm.address}
+                                    onChange={(e) => setAppraisalForm({ ...appraisalForm, address: e.target.value })}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="Enter property address"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Property Type *
+                                </label>
+                                <select
+                                    required
+                                    value={appraisalForm.propertyType}
+                                    onChange={(e) => setAppraisalForm({ ...appraisalForm, propertyType: e.target.value })}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                >
+                                    <option value="">Select property type</option>
+                                    <option value="apartment">Apartment</option>
+                                    <option value="house">House</option>
+                                    <option value="villa">Villa</option>
+                                    <option value="land">Land</option>
+                                    <option value="commercial">Commercial</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Additional Notes
+                                </label>
+                                <textarea
+                                    value={appraisalForm.notes}
+                                    onChange={(e) => setAppraisalForm({ ...appraisalForm, notes: e.target.value })}
+                                    rows={3}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                    placeholder="Any additional information about the property..."
+                                />
+                            </div>
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAppraisalModal(false)}
+                                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-emerald-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            Sending...
+                                        </>
+                                    ) : (
+                                        'Submit Request'
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Consultation Request Modal */}
+            {showConsultationModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                            <h3 className="text-xl font-bold text-gray-900">Schedule Consultation</h3>
+                            <button
+                                onClick={() => setShowConsultationModal(false)}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <XMarkIcon className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleSubmitConsultation} className="p-6 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Preferred Date *
+                                    </label>
+                                    <input
+                                        type="date"
+                                        required
+                                        value={consultationForm.date}
+                                        onChange={(e) => setConsultationForm({ ...consultationForm, date: e.target.value })}
+                                        min={new Date().toISOString().split('T')[0]}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Preferred Time *
+                                    </label>
+                                    <select
+                                        required
+                                        value={consultationForm.time}
+                                        onChange={(e) => setConsultationForm({ ...consultationForm, time: e.target.value })}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    >
+                                        <option value="">Select time</option>
+                                        <option value="09:00">09:00 AM</option>
+                                        <option value="10:00">10:00 AM</option>
+                                        <option value="11:00">11:00 AM</option>
+                                        <option value="12:00">12:00 PM</option>
+                                        <option value="13:00">01:00 PM</option>
+                                        <option value="14:00">02:00 PM</option>
+                                        <option value="15:00">03:00 PM</option>
+                                        <option value="16:00">04:00 PM</option>
+                                        <option value="17:00">05:00 PM</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Topic *
+                                </label>
+                                <select
+                                    required
+                                    value={consultationForm.topic}
+                                    onChange={(e) => setConsultationForm({ ...consultationForm, topic: e.target.value })}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                >
+                                    <option value="">Select topic</option>
+                                    <option value="buying">Buying a Property</option>
+                                    <option value="selling">Selling a Property</option>
+                                    <option value="investing">Real Estate Investment</option>
+                                    <option value="market">Market Analysis</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Additional Notes
+                                </label>
+                                <textarea
+                                    value={consultationForm.notes}
+                                    onChange={(e) => setConsultationForm({ ...consultationForm, notes: e.target.value })}
+                                    rows={3}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                    placeholder="What would you like to discuss?"
+                                />
+                            </div>
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConsultationModal(false)}
+                                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            Scheduling...
+                                        </>
+                                    ) : (
+                                        'Schedule Consultation'
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

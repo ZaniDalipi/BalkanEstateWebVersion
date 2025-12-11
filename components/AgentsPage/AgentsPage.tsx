@@ -564,11 +564,20 @@ const AgentsPage: React.FC = () => {
                     showText={true}
                     clickable={true}
                     asLink={false}
-                    onClick={() => {
-                      dispatch({ type: 'SET_SELECTED_AGENCY', payload: agency.name });
-                      dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
-                      const urlSlug = agency.slug || agency._id;
-                      window.history.pushState({}, '', `/agencies/${urlSlug}`);
+                    onClick={async () => {
+                      try {
+                        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+                        const response = await fetch(`${API_URL}/agencies/${agency._id}`);
+                        if (response.ok) {
+                          const data = await response.json();
+                          dispatch({ type: 'SET_SELECTED_AGENCY', payload: data.agency });
+                          dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
+                          const urlSlug = data.agency.slug || data.agency._id;
+                          window.history.pushState({}, '', `/agencies/${urlSlug}`);
+                        }
+                      } catch (error) {
+                        console.error('Error fetching agency:', error);
+                      }
                     }}
                     className="bg-white border border-neutral-200 hover:border-primary hover:shadow-md transition-all"
                   />

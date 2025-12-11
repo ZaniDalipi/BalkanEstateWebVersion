@@ -784,6 +784,30 @@ export const updateAgency = async (agencyId: string, agencyData: any): Promise<a
   });
 };
 
+export const getAgencyAgents = async (agencyId: string): Promise<{ agents: any[] }> => {
+  // The agency endpoint returns agents as part of the agency object
+  const response = await apiRequest<{ agency: any }>(`/agencies/${agencyId}`, {
+    requiresAuth: false,
+  });
+  // Transform the agents from User format to Agent format
+  const agents = (response.agency?.agents || []).map((agent: any) => ({
+    id: agent._id || agent.id,
+    userId: agent._id || agent.id,
+    name: agent.name || '',
+    email: agent.email || '',
+    phone: agent.phone || '',
+    avatarUrl: agent.avatarUrl,
+    role: agent.role || 'agent',
+    agencyName: response.agency?.name,
+    rating: agent.stats?.rating || 0,
+    totalReviews: 0,
+    propertiesSold: agent.stats?.propertiesSold || 0,
+    activeListings: agent.stats?.activeListings || 0,
+    totalSalesValue: agent.stats?.totalSalesValue || 0,
+  }));
+  return { agents };
+};
+
 export const addAgentToAgency = async (agencyId: string, agentUserId: string): Promise<any> => {
   return await apiRequest(`/agencies/${agencyId}/agents`, {
     method: 'POST',
