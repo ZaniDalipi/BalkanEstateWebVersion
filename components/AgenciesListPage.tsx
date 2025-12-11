@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Agency } from '../types';
 import { Agent } from '../types';
 import { Property } from '../types';
@@ -47,6 +47,13 @@ const AgenciesListPage: React.FC = () => {
 
   const currentUser = state.currentUser;
   const hasAgency = currentUser?.role === 'agent' && currentUser?.agencyId;
+
+  // Calculate total stats from agencies data
+  const totalStats = useMemo(() => {
+    const totalAgents = agencies.reduce((sum, agency) => sum + (agency.totalAgents || 0), 0);
+    const totalProperties = agencies.reduce((sum, agency) => sum + (agency.totalProperties || 0), 0);
+    return { totalAgents, totalProperties };
+  }, [agencies]);
 
   useEffect(() => {
     fetchAgencies();
@@ -571,25 +578,31 @@ const AgenciesListPage: React.FC = () => {
               {/* Live Stats */}
               <div className="pt-6 border-t border-neutral-200/50">
                 <div className="flex flex-wrap justify-center gap-4 sm:gap-6 text-sm sm:text-base">
-                  <div className="flex items-center gap-2 bg-white/90 px-4 py-3 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
-                    <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full animate-pulse"></div>
-                    <div className="text-center">
-                      <div className="font-bold text-lg sm:text-2xl text-neutral-900">{agencies.length}+</div>
-                      <div className="text-neutral-600 text-xs sm:text-sm">Professional Agencies</div>
+                  <div className="flex items-center gap-3 bg-gradient-to-br from-green-50 to-emerald-50 px-5 py-4 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-green-100">
+                    <div className="p-2.5 bg-green-500 rounded-xl shadow-md">
+                      <BuildingOfficeIcon className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-2xl sm:text-3xl text-neutral-900">{agencies.length}</div>
+                      <div className="text-green-700 text-xs sm:text-sm font-medium">Professional Agencies</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 bg-white/90 px-4 py-3 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
-                    <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                    <div className="text-center">
-                      <div className="font-bold text-lg sm:text-2xl text-neutral-900">{agents.length}+</div>
-                      <div className="text-neutral-600 text-xs sm:text-sm">Expert Agents</div>
+                  <div className="flex items-center gap-3 bg-gradient-to-br from-blue-50 to-indigo-50 px-5 py-4 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-blue-100">
+                    <div className="p-2.5 bg-blue-500 rounded-xl shadow-md">
+                      <UsersIcon className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-2xl sm:text-3xl text-neutral-900">{totalStats.totalAgents}</div>
+                      <div className="text-blue-700 text-xs sm:text-sm font-medium">Expert Agents</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 bg-white/90 px-4 py-3 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
-                    <div className="w-2 h-2 sm:w-3 sm:h-3 bg-purple-500 rounded-full animate-pulse"></div>
-                    <div className="text-center">
-                      <div className="font-bold text-lg sm:text-2xl text-neutral-900">{properties.length}+</div>
-                      <div className="text-neutral-600 text-xs sm:text-sm">Listed Properties</div>
+                  <div className="flex items-center gap-3 bg-gradient-to-br from-purple-50 to-violet-50 px-5 py-4 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-purple-100">
+                    <div className="p-2.5 bg-purple-500 rounded-xl shadow-md">
+                      <HomeIcon className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-2xl sm:text-3xl text-neutral-900">{totalStats.totalProperties.toLocaleString()}</div>
+                      <div className="text-purple-700 text-xs sm:text-sm font-medium">Listed Properties</div>
                     </div>
                   </div>
                 </div>
