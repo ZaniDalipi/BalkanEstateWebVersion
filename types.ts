@@ -49,6 +49,8 @@ export interface User {
     role: UserRole;
     city?: string;
     country?: string;
+    lat?: number;
+    lng?: number;
     agencyName?: string;
     agentId?: string;
     agencyId?: string; // Agency ID for agents

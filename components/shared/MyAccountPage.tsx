@@ -10,6 +10,7 @@ import AgencyManagementSection from './AgencyManagementSection';
 import { switchRole, joinAgencyByInvitationCode, getAgencies } from '../../services/apiService';
 import Footer from './Footer';
 import { BALKAN_LOCATIONS } from '../../utils/balkanLocations';
+import MapLocationPicker from '../SellerFlow/MapLocationPicker';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
@@ -105,6 +106,9 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
         serviceAreas: user.serviceAreas || [],
         city: user.city || '',
         country: user.country || '',
+        streetAddress: '',
+        lat: user.lat || 0,
+        lng: user.lng || 0,
     });
 
     const handleAgencyClick = async () => {
@@ -130,6 +134,9 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
             serviceAreas: user.serviceAreas || [],
             city: user.city || '',
             country: user.country || '',
+            streetAddress: '',
+            lat: user.lat || 0,
+            lng: user.lng || 0,
         });
     }, [user]);
 
@@ -240,6 +247,21 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
         }));
     };
 
+    const handleLocationChange = (lat: number, lng: number) => {
+        setAgentData(prev => ({
+            ...prev,
+            lat,
+            lng
+        }));
+    };
+
+    const handleAddressChange = (address: string) => {
+        setAgentData(prev => ({
+            ...prev,
+            streetAddress: address
+        }));
+    };
+
     const handleSaveChanges = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
@@ -254,8 +276,21 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 serviceAreas: agentData.serviceAreas,
                 city: agentData.city,
                 country: agentData.country,
+                lat: agentData.lat,
+                lng: agentData.lng,
             };
-            await updateUser(updatedFormData);
+            const savedUser = await updateUser(updatedFormData);
+            setFormData(savedUser);
+            setAgentData({
+                languages: savedUser.languages || ['English'],
+                specializations: savedUser.specializations?.join(', ') || '',
+                serviceAreas: savedUser.serviceAreas || [],
+                city: savedUser.city || '',
+                country: savedUser.country || '',
+                streetAddress: '',
+                lat: savedUser.lat || 0,
+                lng: savedUser.lng || 0,
+            });
             setIsSaved(true);
             setTimeout(() => setIsSaved(false), 2000);
         } catch (error) {
@@ -563,31 +598,39 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                         <p className="text-xs text-neutral-500 mt-1">Enter comma-separated specializations</p>
                     </div>
 
-                    {/* Main Location */}
+                    {/* Main Location with Map Picker */}
                     <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-2">Main Office Location</label>
-                        <select
-                            value={agentData.city}
-                            onChange={(e) => {
-                                const selectedLocation = BALKAN_LOCATIONS.find(loc => loc.name === e.target.value);
-                                if (selectedLocation) {
-                                    handleSetMainLocation(selectedLocation.name, selectedLocation.country);
-                                }
-                            }}
-                            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-                        >
-                            <option value="">Select main office location...</option>
-                            {BALKAN_LOCATIONS.map((location) => (
-                                <option key={`${location.name}-${location.country}`} value={location.name}>
-                                    {location.name}, {location.country}
-                                </option>
-                            ))}
-                        </select>
-                        {agentData.city && (
-                            <p className="text-sm text-neutral-600 mt-2">
-                                <MapPinIcon className="w-4 h-4 inline mr-1" />
-                                {agentData.city}, {agentData.country}
-                            </p>
+                        <label className="block text-sm font-medium text-neutral-700 mb-3">Main Office Location</label>
+                        <p className="text-xs text-neutral-600 mb-3">Search for your office location or drag the marker on the map to set your exact address</p>
+
+                        {/* Map Location Picker */}
+                        <div className="border border-neutral-300 rounded-lg overflow-hidden mb-3">
+                            <MapLocationPicker
+                                lat={agentData.lat || 42.0}
+                                lng={agentData.lng || 21.0}
+                                address={agentData.streetAddress || agentData.city || 'Select location'}
+                                country={agentData.country || 'Serbia'}
+                                city={agentData.city || ''}
+                                cityLat={agentData.lat || 42.0}
+                                cityLng={agentData.lng || 21.0}
+                                onLocationChange={handleLocationChange}
+                                onAddressChange={handleAddressChange}
+                                zoom={10}
+                            />
+                        </div>
+
+                        {/* Location Display */}
+                        {agentData.streetAddress && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                <p className="text-sm font-medium text-neutral-700">
+                                    <MapPinIcon className="w-4 h-4 inline mr-2 text-primary" />
+                                    Selected Address
+                                </p>
+                                <p className="text-sm text-neutral-600 mt-1">{agentData.streetAddress}</p>
+                                <p className="text-xs text-neutral-500 mt-1">
+                                    Coordinates: {agentData.lat.toFixed(6)}, {agentData.lng.toFixed(6)}
+                                </p>
+                            </div>
                         )}
                     </div>
 
