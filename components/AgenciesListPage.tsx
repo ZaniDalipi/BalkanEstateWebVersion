@@ -154,11 +154,11 @@ const AgenciesListPage: React.FC = () => {
         <div className={`h-32 bg-gradient-to-br ${(agency as any).coverGradient}`} />
       ) : null}
 
-      <div className="pl-4 pr-6 py-6">
-        <div className="flex items-start gap-6">
+      <div className="pl-3 pr-4 sm:pl-4 sm:pr-6 py-4 sm:py-6">
+        <div className="flex items-start gap-3 sm:gap-4 md:gap-6">
           {/* Logo Container */}
-          <div className="relative">
-            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg group-hover:scale-105 transition-transform duration-300">
+          <div className="relative flex-shrink-0">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-xl sm:rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg group-hover:scale-105 transition-transform duration-300">
               {agency.logo ? (
                 <img
                   src={agency.logo}
@@ -166,7 +166,7 @@ const AgenciesListPage: React.FC = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <BuildingOfficeIcon className="w-12 h-12 text-primary" />
+                <BuildingOfficeIcon className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-primary" />
               )}
             </div>
 
@@ -241,7 +241,7 @@ const AgenciesListPage: React.FC = () => {
             )}
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
               <div className="flex items-center gap-2">
                 <div className="p-2.5 bg-blue-50 rounded-xl ring-2 ring-blue-100">
                   <HomeIcon className="w-5 h-5 text-blue-600" />

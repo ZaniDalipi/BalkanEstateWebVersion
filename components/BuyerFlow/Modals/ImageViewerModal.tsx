@@ -86,21 +86,21 @@ const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ images, startIndex,
                 <XMarkIcon className="w-8 h-8" />
             </button>
             
-            <div 
-                className="relative w-full sm:w-[80vw] h-full sm:h-[80vh] flex items-center justify-center"
+            <div
+                className="relative w-full sm:w-[90vw] md:w-[85vw] lg:w-[80vw] h-full sm:h-[85vh] md:h-[80vh] flex items-center justify-center overflow-hidden"
                 onTouchStart={onTouchStart}
                 onTouchMove={onTouchMove}
                 onTouchEnd={onTouchEnd}
             >
-                <button onClick={handlePrev} className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-white/20 backdrop-blur-sm p-3 rounded-full hover:bg-white/40 transition-colors z-10">
-                    <ChevronLeftIcon className="w-8 h-8 text-white"/>
+                <button onClick={handlePrev} className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-white/20 backdrop-blur-sm p-2 sm:p-3 rounded-full hover:bg-white/40 transition-colors z-10">
+                    <ChevronLeftIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white"/>
                 </button>
-                
-                <div className="w-full h-full flex items-center justify-center">
+
+                <div className="w-full h-full flex items-center justify-center overflow-hidden">
                     {imageError ? (
-                        <div className="max-w-full max-h-full w-full h-full bg-gradient-to-br from-neutral-600 to-neutral-700 flex flex-col items-center justify-center text-white p-8 rounded-lg">
-                            <BuildingOfficeIcon className="w-24 h-24 text-neutral-400" />
-                            <p className="mt-4 font-semibold">Image could not be loaded</p>
+                        <div className="max-w-full max-h-full w-full h-full bg-gradient-to-br from-neutral-600 to-neutral-700 flex flex-col items-center justify-center text-white p-4 sm:p-6 md:p-8 rounded-lg">
+                            <BuildingOfficeIcon className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 text-neutral-400" />
+                            <p className="mt-3 sm:mt-4 font-semibold text-sm sm:text-base">Image could not be loaded</p>
                         </div>
                     ) : (
                         <img
@@ -112,9 +112,9 @@ const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ images, startIndex,
                         />
                     )}
                 </div>
-                
-                <button onClick={handleNext} className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-white/20 backdrop-blur-sm p-3 rounded-full hover:bg-white/40 transition-colors z-10">
-                    <ChevronRightIcon className="w-8 h-8 text-white"/>
+
+                <button onClick={handleNext} className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-white/20 backdrop-blur-sm p-2 sm:p-3 rounded-full hover:bg-white/40 transition-colors z-10">
+                    <ChevronRightIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white"/>
                 </button>
             </div>
 

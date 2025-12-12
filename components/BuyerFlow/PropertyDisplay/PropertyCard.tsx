@@ -102,14 +102,14 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
       <div className="block w-full relative">
         <button onClick={handleCardClick} className="block w-full">
             {imageError ? (
-                <div className="w-full h-36 bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center">
-                    <BuildingOfficeIcon className="w-10 h-10 text-neutral-400" />
+                <div className="w-full h-32 sm:h-36 md:h-40 bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center">
+                    <BuildingOfficeIcon className="w-8 h-8 sm:w-10 sm:h-10 text-neutral-400" />
                 </div>
             ) : (
                 <img
                   src={property.imageUrl}
                   alt={property.address}
-                  className="w-full h-36 object-cover"
+                  className="w-full h-32 sm:h-36 md:h-40 object-cover"
                   onError={() => setImageError(true)}
                 />
             )}
@@ -152,16 +152,16 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
             </svg>
         </div>
       </div>
-      <div className="p-4 flex flex-col flex-grow">
+      <div className="p-3 sm:p-4 flex flex-col flex-grow">
         <button onClick={handleCardClick} className="text-left flex-grow">
-            <div className="flex items-center text-neutral-600 mb-1">
+            <div className="flex items-center text-neutral-600 mb-1 overflow-hidden">
                 <MapPinIcon className="w-3.5 h-3.5 mr-1 text-neutral-400 flex-shrink-0" />
                 <span className="truncate text-sm font-medium">{property.address}, {property.city}</span>
             </div>
             {property.title && (
-                <h3 className="text-lg font-semibold text-neutral-800 mb-1.5">{property.title}</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-neutral-800 mb-1.5 line-clamp-2">{property.title}</h3>
             )}
-            <p className="text-xl font-bold text-neutral-900 my-1.5">{formatPrice(property.price, property.country)}</p>
+            <p className="text-lg sm:text-xl font-bold text-neutral-900 my-1.5">{formatPrice(property.price, property.country)}</p>
             <div className="flex items-center flex-wrap gap-x-2.5 gap-y-1 text-neutral-700 mb-1.5">
                 <div className="flex items-center gap-1" title={`${property.beds} bedrooms`}>
                     <BedIcon className="w-4 h-4 text-neutral-500" />
@@ -189,24 +189,24 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
                 {showCompareButton && (
                     <button
                         onClick={handleCompareClick}
-                        className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all shadow-sm hover:shadow-md w-full sm:w-auto ${
+                        className={`flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-sm font-semibold transition-all shadow-sm hover:shadow-md w-full sm:w-auto ${
                             isInComparison
                                 ? 'bg-primary-light text-primary-dark border-2 border-primary/50'
                                 : 'bg-white text-neutral-700 border-2 border-neutral-300 hover:bg-neutral-100'
                         }`}
                     >
-                        <ScaleIcon className="w-5 h-5" />
+                        <ScaleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                         <span>{isInComparison ? 'Selected' : 'Compare'}</span>
                     </button>
                 )}
                 <button
                     onClick={handleCardClick}
-                    className="bg-primary text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary-dark transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-1.5 w-full sm:w-auto"
+                    className="bg-primary text-white px-3 sm:px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary-dark transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-1.5 w-full sm:w-auto"
                 >
                     {property.seller.avatarUrl ? (
-                        <img src={property.seller.avatarUrl} alt={property.seller.name} className="w-5 h-5 rounded-full object-cover border-2 border-white/50" />
+                        <img src={property.seller.avatarUrl} alt={property.seller.name} className="w-4 h-4 sm:w-5 sm:h-5 rounded-full object-cover border-2 border-white/50" />
                     ) : (
-                        <UserCircleIcon className="w-5 h-5" />
+                        <UserCircleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                     )}
                     <span>View Details</span>
                 </button>

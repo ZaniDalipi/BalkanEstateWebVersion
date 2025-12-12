@@ -311,7 +311,7 @@ const AgentsPage: React.FC = () => {
               <div className="flex gap-2 mb-6 p-1.5 bg-neutral-100 rounded-2xl w-fit mx-auto">
                 <button
                   onClick={() => setSearchTab('location')}
-                  className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-300 relative min-w-[120px] sm:min-w-[140px] ${
+                  className={`px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-300 relative min-w-[100px] sm:min-w-[120px] ${
                     searchTab === 'location'
                       ? 'text-white shadow-lg'
                       : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'
@@ -332,7 +332,7 @@ const AgentsPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setSearchTab('name')}
-                  className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-300 relative min-w-[120px] sm:min-w-[140px] ${
+                  className={`px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-300 relative min-w-[100px] sm:min-w-[120px] ${
                     searchTab === 'name'
                       ? 'text-white shadow-lg'
                       : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'
@@ -352,7 +352,7 @@ const AgentsPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setSearchTab('specialization')}
-                  className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-300 relative min-w-[120px] sm:min-w-[140px] ${
+                  className={`px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-300 relative min-w-[100px] sm:min-w-[120px] ${
                     searchTab === 'specialization'
                       ? 'text-white shadow-lg'
                       : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'
@@ -390,7 +390,7 @@ const AgentsPage: React.FC = () => {
                       ? "Search by agent's name..."
                       : 'Search by specialization (e.g., Luxury, Commercial)...'
                   }
-                  className="w-full pl-12 pr-32 sm:pl-14 sm:pr-40 py-3 sm:py-4 border-2 border-neutral-200 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all duration-300 bg-white text-base sm:text-lg placeholder:text-neutral-500"
+                  className="w-full pl-10 sm:pl-12 pr-20 sm:pr-32 md:pr-40 py-3 sm:py-4 border-2 border-neutral-200 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all duration-300 bg-white text-base sm:text-lg placeholder:text-neutral-500"
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 sm:gap-2">
                   {searchQuery && (

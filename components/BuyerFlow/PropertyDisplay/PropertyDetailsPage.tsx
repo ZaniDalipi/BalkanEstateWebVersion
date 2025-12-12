@@ -218,10 +218,10 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
       </div>
 
       {/* Main Content */}
-      <main className="max-w-screen-xl mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <main className="max-w-screen-xl mx-auto p-3 sm:p-4 md:p-6 lg:p-8 overflow-x-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Left Column - Property Details */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6 lg:space-y-8">
             {/* Image Gallery */}
             <PropertyGallery
               property={property}
@@ -254,8 +254,8 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
             />
 
             {/* Featured Agencies */}
-            <div className="mt-8">
-              <h3 className="text-2xl font-bold text-neutral-800 mb-4">Featured Agencies</h3>
+            <div className="mt-4 sm:mt-6 lg:mt-8">
+              <h3 className="text-xl sm:text-2xl font-bold text-neutral-800 mb-3 sm:mb-4">Featured Agencies</h3>
               <FeaturedAgencies />
             </div>
           </div>

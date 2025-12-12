@@ -43,8 +43,8 @@ const Footer: React.FC<FooterProps> = ({ className = '' }) => {
             }}></div>
 
             {/* Main Footer Content */}
-            <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 lg:gap-8">
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8">
                     {/* Brand Section */}
                     <div className="lg:col-span-2 space-y-3">
                         <div className="flex items-center gap-2.5">
@@ -159,7 +159,7 @@ const Footer: React.FC<FooterProps> = ({ className = '' }) => {
 
             {/* Bottom Bar with Enhanced Visual Hierarchy */}
             <div className="relative z-10 border-t border-gray-300 bg-white/80 backdrop-blur-sm">
-                <div className="max-w-7xl mx-auto px-6 py-3">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-3 text-sm">
                         <p className="text-gray-600 text-center md:text-left">
                             © {currentYear} <span className="font-semibold text-gray-900">Balkan Estate</span>. All rights reserved.

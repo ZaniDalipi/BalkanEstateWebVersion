@@ -629,10 +629,10 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
                     </div>
 
                     {/* Newsletter Subscription Section */}
-                    <div className="bg-gradient-to-br from-primary-dark via-primary to-primary text-white p-3 flex-shrink-0">
+                    <div className="bg-gradient-to-br from-primary-dark via-primary to-primary text-white p-2 sm:p-3 flex-shrink-0">
                         <div className="max-w-xl mx-auto">
-                            <h3 className="text-sm font-semibold mb-1">Stay Updated with New Properties</h3>
-                            <p className="text-xs text-white/80 mb-2">Subscribe to get notifications about new listings in your area</p>
+                            <h3 className="text-xs sm:text-sm font-semibold mb-1">Stay Updated with New Properties</h3>
+                            <p className="text-xs text-white/80 mb-2 hidden sm:block">Subscribe to get notifications about new listings in your area</p>
                             <form onSubmit={(e) => {
                                 e.preventDefault();
                                 const formData = new FormData(e.currentTarget);
