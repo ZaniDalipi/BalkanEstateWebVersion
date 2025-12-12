@@ -84,6 +84,8 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     twitterUrl: '',
     yearsInBusiness: 0,
     specialties: [] as string[],
+    specializations: [] as string[],
+    serviceAreas: [] as string[],
     certifications: [] as string[],
     languages: [] as string[],
     businessHours: {
@@ -377,6 +379,8 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
       twitterUrl: agencyData.twitterUrl || '',
       yearsInBusiness: agencyData.yearsInBusiness || 0,
       specialties: agencyData.specialties || [],
+      specializations: agencyData.specializations || [],
+      serviceAreas: agencyData.serviceAreas || [],
       certifications: agencyData.certifications || [],
       languages: agencyData.languages || [],
       businessHours: {
@@ -401,6 +405,8 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
       const sanitizedForm = {
         ...editForm,
         specialties: editForm.specialties.filter(s => s),
+        specializations: editForm.specializations.filter(s => s),
+        serviceAreas: editForm.serviceAreas.filter(s => s),
         certifications: editForm.certifications.filter(s => s),
         languages: editForm.languages.filter(s => s),
       };
@@ -882,6 +888,34 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
                   {agencyData.specialties.map((specialty, index) => (
                     <span key={index} className="px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium">
                       {specialty}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Specializations */}
+            {agencyData.specializations && agencyData.specializations.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Specializations</h3>
+                <div className="flex flex-wrap gap-2">
+                  {agencyData.specializations.map((spec, index) => (
+                    <span key={index} className="px-4 py-2 bg-purple-50 text-purple-700 rounded-full text-sm font-medium border border-purple-200">
+                      {spec}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Service Areas */}
+            {agencyData.serviceAreas && agencyData.serviceAreas.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Service Areas</h3>
+                <div className="flex flex-wrap gap-2">
+                  {agencyData.serviceAreas.map((area, index) => (
+                    <span key={index} className="px-4 py-2 bg-green-50 text-green-700 rounded-full text-sm font-medium border border-green-200">
+                      {area}
                     </span>
                   ))}
                 </div>
