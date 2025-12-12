@@ -125,6 +125,7 @@ export interface Agency {
     adRotationOrder?: number;
     specialties?: string[];
     certifications?: string[];
+    languages?: string[];
     facebookUrl?: string;
     instagramUrl?: string;
     linkedinUrl?: string;

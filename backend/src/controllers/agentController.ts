@@ -368,6 +368,15 @@ export const leaveAgency = async (req: Request, res: Response): Promise<void> =>
         }
       }
 
+      // Recalculate agency languages from remaining active agents
+      if (agency.agents.length > 0) {
+        const remainingAgents = await Agent.find({ userId: { $in: agency.agents } });
+        const allLanguages = remainingAgents.flatMap(a => a.languages || []);
+        agency.languages = [...new Set(allLanguages)];
+      } else {
+        agency.languages = [];
+      }
+
       await agency.save();
 
       // Emit socket event to notify agency members

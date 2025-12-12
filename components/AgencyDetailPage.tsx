@@ -85,6 +85,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     yearsInBusiness: 0,
     specialties: [] as string[],
     certifications: [] as string[],
+    languages: [] as string[],
     businessHours: {
       monday: '',
       tuesday: '',
@@ -377,6 +378,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
       yearsInBusiness: agencyData.yearsInBusiness || 0,
       specialties: agencyData.specialties || [],
       certifications: agencyData.certifications || [],
+      languages: agencyData.languages || [],
       businessHours: {
         monday: agencyData.businessHours?.monday || '',
         tuesday: agencyData.businessHours?.tuesday || '',
@@ -400,6 +402,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
         ...editForm,
         specialties: editForm.specialties.filter(s => s),
         certifications: editForm.certifications.filter(s => s),
+        languages: editForm.languages.filter(s => s),
       };
 
       const response = await fetch(`${API_URL}/agencies/${agencyData._id}`, {
@@ -879,6 +882,20 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
                   {agencyData.specialties.map((specialty, index) => (
                     <span key={index} className="px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium">
                       {specialty}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Languages Spoken */}
+            {agencyData.languages && agencyData.languages.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Languages Spoken</h3>
+                <div className="flex flex-wrap gap-2">
+                  {agencyData.languages.map((lang, index) => (
+                    <span key={index} className="px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-medium border border-blue-200">
+                      {lang}
                     </span>
                   ))}
                 </div>
@@ -1529,6 +1546,22 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="Licensed Real Estate Agency, ISO Certified"
                   />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Languages Spoken (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.languages.join(', ')}
+                    onChange={(e) => setEditForm({
+                      ...editForm,
+                      languages: e.target.value.split(',').map(s => s.trim())
+                    })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder="English, Serbian, Croatian, Albanian"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Languages are auto-synced when agents join/leave</p>
                 </div>
               </div>
 

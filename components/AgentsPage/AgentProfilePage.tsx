@@ -723,6 +723,20 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                                 )}
                                             </div>
                                         </div>
+
+                                        {/* Languages Section */}
+                                        {agent.languages && agent.languages.length > 0 && (
+                                            <div>
+                                                <h3 className="text-xl font-bold text-gray-900 mb-4">Languages Spoken</h3>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {agent.languages.map((lang) => (
+                                                        <span key={lang} className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium border border-blue-200">
+                                                            {lang}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
