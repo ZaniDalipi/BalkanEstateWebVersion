@@ -10,6 +10,12 @@ import Footer from '../shared/Footer';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 
+// Bounding box for the Balkan region
+const BALKAN_BOUNDS = L.latLngBounds(
+  [34, 13], // Southwest corner (Southern Greece, Western Croatia)
+  [49, 31] // Northeast corner (Northern Romania, Eastern Bulgaria)
+);
+
 type SearchTab = 'location' | 'name' | 'specialization';
 
 const AgentsPage: React.FC = () => {
@@ -569,9 +575,11 @@ const AgentsPage: React.FC = () => {
                 center={[41.5, 22]}
                 zoom={7}
                 scrollWheelZoom={true}
-                className="w-full h-[400px] sm:h-[500px]"
+                className="w-full h-64 sm:h-80 md:h-96 lg:h-[500px]"
                 maxZoom={18}
                 minZoom={3}
+                maxBounds={BALKAN_BOUNDS}
+                maxBoundsViscosity={1.0}
               >
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
