@@ -104,6 +104,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
         languages: user.languages || ['English'],
         specializations: user.specializations?.join(', ') || '',
         serviceAreas: user.serviceAreas || [],
+        yearsOfExperience: user.yearsOfExperience || 0,
         city: user.city || '',
         country: user.country || '',
         streetAddress: '',
@@ -132,6 +133,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
             languages: user.languages || ['English'],
             specializations: user.specializations?.join(', ') || '',
             serviceAreas: user.serviceAreas || [],
+            yearsOfExperience: user.yearsOfExperience || 0,
             city: user.city || '',
             country: user.country || '',
             streetAddress: '',
@@ -288,6 +290,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 languages: agentData.languages,
                 specializations: parsedSpecializations,
                 serviceAreas: agentData.serviceAreas,
+                yearsOfExperience: agentData.yearsOfExperience,
                 city: agentData.city,
                 country: agentData.country,
                 lat: agentData.lat,
@@ -304,6 +307,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 languages: agentData.languages,
                 specializations: parsedSpecializations,
                 serviceAreas: agentData.serviceAreas,
+                yearsOfExperience: agentData.yearsOfExperience,
                 lat: agentData.lat,
                 lng: agentData.lng,
             };
@@ -313,6 +317,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                     languages: agentData.languages,
                     specializations: parsedSpecializations,
                     serviceAreas: agentData.serviceAreas,
+                    yearsOfExperience: agentData.yearsOfExperience,
                     lat: agentData.lat,
                     lng: agentData.lng,
                 };
@@ -325,6 +330,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                         languages: updatedAgent.languages || agentData.languages,
                         specializations: updatedAgent.specializations || parsedSpecializations,
                         serviceAreas: updatedAgent.serviceAreas || agentData.serviceAreas,
+                        yearsOfExperience: updatedAgent.yearsOfExperience !== undefined ? updatedAgent.yearsOfExperience : agentData.yearsOfExperience,
                         lat: updatedAgent.lat !== undefined ? updatedAgent.lat : agentData.lat,
                         lng: updatedAgent.lng !== undefined ? updatedAgent.lng : agentData.lng,
                     };
@@ -341,6 +347,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 languages: finalUser.languages || ['English'],
                 specializations: finalUser.specializations?.join(', ') || '',
                 serviceAreas: finalUser.serviceAreas || [],
+                yearsOfExperience: finalUser.yearsOfExperience || 0,
                 city: finalUser.city || '',
                 country: finalUser.country || '',
                 lat: finalUser.lat || prev.lat,
@@ -357,6 +364,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 languages: user.languages || ['English'],
                 specializations: user.specializations?.join(', ') || '',
                 serviceAreas: user.serviceAreas || [],
+                yearsOfExperience: user.yearsOfExperience || 0,
                 city: user.city || '',
                 country: user.country || '',
                 streetAddress: '',
@@ -665,6 +673,22 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                             rows={2}
                         />
                         <p className="text-xs text-neutral-500 mt-1">Enter comma-separated specializations</p>
+                    </div>
+
+                    {/* Years of Experience */}
+                    <div>
+                        <label htmlFor="yearsOfExperience" className="block text-sm font-medium text-neutral-700 mb-2">Years of Experience</label>
+                        <input
+                            id="yearsOfExperience"
+                            type="number"
+                            min="0"
+                            max="99"
+                            value={agentData.yearsOfExperience}
+                            onChange={(e) => setAgentData(prev => ({ ...prev, yearsOfExperience: parseInt(e.target.value) || 0 }))}
+                            placeholder="e.g., 5"
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                        />
+                        <p className="text-xs text-neutral-500 mt-1">How many years of experience do you have?</p>
                     </div>
 
                     {/* Main Location with Map Picker */}
