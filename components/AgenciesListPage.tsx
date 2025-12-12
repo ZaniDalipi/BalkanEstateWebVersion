@@ -154,11 +154,11 @@ const AgenciesListPage: React.FC = () => {
         <div className={`h-32 bg-gradient-to-br ${(agency as any).coverGradient}`} />
       ) : null}
 
-      <div className="pl-3 pr-4 sm:pl-4 sm:pr-6 py-4 sm:py-6">
-        <div className="flex items-start gap-3 sm:gap-4 md:gap-6">
+      <div className="pl-2.5 pr-3 sm:pl-4 sm:pr-6 py-3 sm:py-4 md:py-6">
+        <div className="flex items-start gap-2 sm:gap-3 md:gap-4 lg:gap-6">
           {/* Logo Container */}
           <div className="relative flex-shrink-0">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-xl sm:rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg group-hover:scale-105 transition-transform duration-300">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-lg sm:rounded-xl md:rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg group-hover:scale-105 transition-transform duration-300">
               {agency.logo ? (
                 <img
                   src={agency.logo}
@@ -166,7 +166,7 @@ const AgenciesListPage: React.FC = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <BuildingOfficeIcon className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-primary" />
+                <BuildingOfficeIcon className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 text-primary" />
               )}
             </div>
 
@@ -179,11 +179,11 @@ const AgenciesListPage: React.FC = () => {
           </div>
 
           {/* Content */}
-          <div className="flex-1">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2 flex-wrap">
-                  <h3 className="text-2xl font-bold text-gray-900 group-hover:text-primary transition-colors">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between mb-2 sm:mb-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 sm:gap-3 mb-1.5 sm:mb-2 flex-wrap">
+                  <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900 group-hover:text-primary transition-colors line-clamp-2">
                     {agency.name}
                   </h3>
                   {agency.isFeatured && (
@@ -201,9 +201,9 @@ const AgenciesListPage: React.FC = () => {
                 </div>
 
                 {/* Location */}
-                <div className="flex items-center gap-2 text-gray-600 mb-3">
-                  <MapPinIcon className="w-4 h-4 flex-shrink-0" />
-                  <span className="text-sm">
+                <div className="flex items-center gap-1.5 sm:gap-2 text-gray-600 mb-2 sm:mb-3 min-w-0">
+                  <MapPinIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                  <span className="text-xs sm:text-sm truncate">
                     {agency.address && `${agency.address}, `}
                     {agency.city}, {agency.country}
                     {(agency as any).zipCode && ` ${(agency as any).zipCode}`}
@@ -241,44 +241,44 @@ const AgenciesListPage: React.FC = () => {
             )}
 
             {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-3 sm:mb-4">
               <div className="flex items-center gap-2">
-                <div className="p-2.5 bg-blue-50 rounded-xl ring-2 ring-blue-100">
-                  <HomeIcon className="w-5 h-5 text-blue-600" />
+                <div className="p-2 sm:p-2.5 bg-blue-50 rounded-lg sm:rounded-xl ring-2 ring-blue-100 flex-shrink-0">
+                  <HomeIcon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                 </div>
-                <div>
-                  <div className="font-bold text-lg text-gray-900">{agency.totalProperties || 0}</div>
+                <div className="min-w-0">
+                  <div className="font-bold text-sm sm:text-base md:text-lg text-gray-900">{agency.totalProperties || 0}</div>
                   <div className="text-xs text-gray-500">Properties</div>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <div className="p-2.5 bg-green-50 rounded-xl ring-2 ring-green-100">
-                  <UsersIcon className="w-5 h-5 text-green-600" />
+                <div className="p-2 sm:p-2.5 bg-green-50 rounded-lg sm:rounded-xl ring-2 ring-green-100 flex-shrink-0">
+                  <UsersIcon className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                 </div>
-                <div>
-                  <div className="font-bold text-lg text-gray-900">{agency.totalAgents || 0}</div>
+                <div className="min-w-0">
+                  <div className="font-bold text-sm sm:text-base md:text-lg text-gray-900">{agency.totalAgents || 0}</div>
                   <div className="text-xs text-gray-500">Agents</div>
                 </div>
               </div>
 
               {agency.yearsInBusiness ? (
                 <div className="flex items-center gap-2">
-                  <div className="p-2.5 bg-purple-50 rounded-xl ring-2 ring-purple-100">
-                    <CalendarIcon className="w-5 h-5 text-purple-600" />
+                  <div className="p-2 sm:p-2.5 bg-purple-50 rounded-lg sm:rounded-xl ring-2 ring-purple-100 flex-shrink-0">
+                    <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                   </div>
-                  <div>
-                    <div className="font-bold text-lg text-gray-900">{agency.yearsInBusiness}+</div>
+                  <div className="min-w-0">
+                    <div className="font-bold text-sm sm:text-base md:text-lg text-gray-900">{agency.yearsInBusiness}+</div>
                     <div className="text-xs text-gray-500">Years</div>
                   </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className="p-2.5 bg-amber-50 rounded-xl ring-2 ring-amber-100">
-                    <ShieldCheckIcon className="w-5 h-5 text-amber-600" />
+                  <div className="p-2 sm:p-2.5 bg-amber-50 rounded-lg sm:rounded-xl ring-2 ring-amber-100 flex-shrink-0">
+                    <ShieldCheckIcon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
                   </div>
-                  <div>
-                    <div className="font-bold text-lg text-gray-900">{(agency as any).certifications?.length || 0}</div>
+                  <div className="min-w-0">
+                    <div className="font-bold text-sm sm:text-base md:text-lg text-gray-900">{(agency as any).certifications?.length || 0}</div>
                     <div className="text-xs text-gray-500">Certs</div>
                   </div>
                 </div>
@@ -286,15 +286,15 @@ const AgenciesListPage: React.FC = () => {
             </div>
 
             {/* Contact & Social Links */}
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-              <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center justify-between pt-3 sm:pt-4 border-t border-gray-100">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                 {agency.phone && (
                   <a
                     href={`tel:${agency.phone}`}
                     onClick={(e) => e.stopPropagation()}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded-lg text-sm transition-all border border-gray-200 hover:border-blue-300"
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 sm:py-2.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded-lg text-xs sm:text-sm transition-all border border-gray-200 hover:border-blue-300"
                   >
-                    <PhoneIcon className="w-4 h-4" />
+                    <PhoneIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span className="hidden sm:inline font-medium">Call</span>
                   </a>
                 )}

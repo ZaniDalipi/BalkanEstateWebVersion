@@ -146,23 +146,23 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
                 URGENT
             </div>
         )}
-        <div onClick={handleFavoriteClick} className="absolute top-1.5 right-1.5 bg-white/90 backdrop-blur-sm p-1.5 rounded-full cursor-pointer hover:bg-white hover:scale-110 transition-transform duration-200 z-10">
-             <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-colors duration-300 ${isFavorited ? 'text-red-500 fill-current' : 'text-neutral-500 hover:text-red-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div onClick={handleFavoriteClick} className="absolute top-1.5 right-1.5 bg-white/90 backdrop-blur-sm p-2.5 sm:p-2 rounded-full cursor-pointer hover:bg-white hover:scale-110 transition-transform duration-200 z-10">
+             <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 sm:h-4 sm:w-4 transition-colors duration-300 ${isFavorited ? 'text-red-500 fill-current' : 'text-neutral-500 hover:text-red-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
         </div>
       </div>
-      <div className="p-3 sm:p-4 flex flex-col flex-grow">
-        <button onClick={handleCardClick} className="text-left flex-grow">
-            <div className="flex items-center text-neutral-600 mb-1 overflow-hidden">
+      <div className="p-2.5 sm:p-3 md:p-4 flex flex-col flex-grow">
+        <button onClick={handleCardClick} className="text-left flex-grow min-w-0">
+            <div className="flex items-center text-neutral-600 mb-1 overflow-hidden min-w-0">
                 <MapPinIcon className="w-3.5 h-3.5 mr-1 text-neutral-400 flex-shrink-0" />
-                <span className="truncate text-sm font-medium">{property.address}, {property.city}</span>
+                <span className="truncate text-xs sm:text-sm font-medium">{property.address}, {property.city}</span>
             </div>
             {property.title && (
-                <h3 className="text-base sm:text-lg font-semibold text-neutral-800 mb-1.5 line-clamp-2">{property.title}</h3>
+                <h3 className="text-sm sm:text-base md:text-lg font-semibold text-neutral-800 mb-1.5 line-clamp-2">{property.title}</h3>
             )}
-            <p className="text-lg sm:text-xl font-bold text-neutral-900 my-1.5">{formatPrice(property.price, property.country)}</p>
-            <div className="flex items-center flex-wrap gap-x-2.5 gap-y-1 text-neutral-700 mb-1.5">
+            <p className="text-base sm:text-lg md:text-xl font-bold text-neutral-900 my-1.5">{formatPrice(property.price, property.country)}</p>
+            <div className="flex items-center flex-wrap gap-1.5 sm:gap-2.5 text-neutral-700 mb-1.5">
                 <div className="flex items-center gap-1" title={`${property.beds} bedrooms`}>
                     <BedIcon className="w-4 h-4 text-neutral-500" />
                     <span className="font-semibold text-sm">{property.beds}</span>
@@ -184,12 +184,12 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
 
         <div className="flex-grow"></div>
 
-        <div className="mt-3 pt-3 border-t border-neutral-100">
-            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
+        <div className="mt-2.5 sm:mt-3 pt-2.5 sm:pt-3 border-t border-neutral-100">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-2.5">
                 {showCompareButton && (
                     <button
                         onClick={handleCompareClick}
-                        className={`flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-sm font-semibold transition-all shadow-sm hover:shadow-md w-full sm:w-auto ${
+                        className={`flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all shadow-sm hover:shadow-md w-full sm:w-auto ${
                             isInComparison
                                 ? 'bg-primary-light text-primary-dark border-2 border-primary/50'
                                 : 'bg-white text-neutral-700 border-2 border-neutral-300 hover:bg-neutral-100'
@@ -201,7 +201,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
                 )}
                 <button
                     onClick={handleCardClick}
-                    className="bg-primary text-white px-3 sm:px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary-dark transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-1.5 w-full sm:w-auto"
+                    className="bg-primary text-white px-3 sm:px-4 py-2.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold hover:bg-primary-dark transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-1.5 w-full sm:w-auto"
                 >
                     {property.seller.avatarUrl ? (
                         <img src={property.seller.avatarUrl} alt={property.seller.name} className="w-4 h-4 sm:w-5 sm:h-5 rounded-full object-cover border-2 border-white/50" />

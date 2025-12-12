@@ -283,35 +283,35 @@ const AgentsPage: React.FC = () => {
                 </span>
               </div>
               
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-neutral-900 mb-6 leading-tight">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-neutral-900 mb-4 sm:mb-6 leading-tight">
                 Find Your Perfect
-                <span className="block mt-3 animate-gradient-x">
+                <span className="block mt-2 sm:mt-3 animate-gradient-x">
                   Real Estate Partner
                 </span>
               </h1>
-              
-              <p className="text-lg sm:text-xl text-neutral-600 max-w-2xl mx-auto leading-relaxed">
-                Connect with top-rated agents in the Balkans who specialize in your local market 
+
+              <p className="text-sm sm:text-base md:text-lg lg:text-xl text-neutral-600 max-w-2xl mx-auto leading-relaxed px-4 sm:px-0">
+                Connect with top-rated agents in the Balkans who specialize in your local market
                 and have the expertise to guide you home.
               </p>
             </div>
 
             {/* Search Section - Clean and Integrated */}
-            <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-2xl border border-neutral-100 p-6 sm:p-8 animate-fade-in-up animation-delay-200 mt-8">
-              <div className="text-center mb-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-2">
+            <div className="max-w-3xl mx-auto bg-white rounded-xl sm:rounded-2xl shadow-2xl border border-neutral-100 p-4 sm:p-6 md:p-8 animate-fade-in-up animation-delay-200 mt-6 sm:mt-8">
+              <div className="text-center mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-neutral-900 mb-1.5 sm:mb-2">
                   Find Your Ideal Agent
                 </h2>
-                <p className="text-neutral-600 text-sm sm:text-base">
+                <p className="text-neutral-600 text-xs sm:text-sm md:text-base">
                   Search {agents.length}+ verified professionals across the Balkans
                 </p>
               </div>
 
               {/* Search Tabs */}
-              <div className="flex gap-2 mb-6 p-1.5 bg-neutral-100 rounded-2xl w-fit mx-auto">
+              <div className="flex gap-1.5 sm:gap-2 mb-4 sm:mb-6 p-1 sm:p-1.5 bg-neutral-100 rounded-xl sm:rounded-2xl w-fit mx-auto">
                 <button
                   onClick={() => setSearchTab('location')}
-                  className={`px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-300 relative min-w-[100px] sm:min-w-[120px] ${
+                  className={`px-2.5 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl font-semibold transition-all duration-300 relative min-w-[90px] sm:min-w-[100px] md:min-w-[120px] text-xs sm:text-sm md:text-base ${
                     searchTab === 'location'
                       ? 'text-white shadow-lg'
                       : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'
