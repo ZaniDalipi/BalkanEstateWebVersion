@@ -48,6 +48,8 @@ import {
 import StarRating from '../shared/StarRating';
 import { formatPrice } from '../../utils/currency';
 import PropertyCard from '../BuyerFlow/PropertyDisplay/PropertyCard';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
 import PropertyCardSkeleton from '../BuyerFlow/PropertyDisplay/PropertyCardSkeleton';
 import AgentReviewForm from '../shared/AgentReviewForm';
 import FeaturedAgencies from '../FeaturedAgencies';
@@ -522,9 +524,43 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
 
                             {/* Location */}
                             {(agent.city || agent.country) && (
-                                <div className="flex items-center justify-center lg:justify-start gap-2 mb-4 text-gray-600">
+                                <div className="flex items-center justify-center lg:justify-start gap-2 mb-6 text-gray-600">
                                     <MapPinIcon className="w-5 h-5 text-gray-400" />
                                     <span className="text-lg">{[agent.city, agent.country].filter(Boolean).join(', ')}</span>
+                                </div>
+                            )}
+
+                            {/* Agent Location Map */}
+                            {agent.lat != null && agent.lng != null && !isNaN(agent.lat) && !isNaN(agent.lng) && (
+                                <div className="mb-6 rounded-xl overflow-hidden shadow-lg border border-gray-200">
+                                    <MapContainer
+                                        center={[agent.lat, agent.lng]}
+                                        zoom={13}
+                                        scrollWheelZoom={true}
+                                        className="w-full h-64 sm:h-80"
+                                        maxZoom={18}
+                                        minZoom={3}
+                                    >
+                                        <TileLayer
+                                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                        />
+                                        <Marker position={[agent.lat, agent.lng]} icon={L.icon({
+                                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                                            iconSize: [25, 41],
+                                            iconAnchor: [12, 41],
+                                            popupAnchor: [1, -34],
+                                            shadowSize: [41, 41]
+                                        })}>
+                                            <Popup>
+                                                <div className="text-center">
+                                                    <p className="font-bold text-base">{agent.name}</p>
+                                                    <p className="text-sm text-gray-600">{agent.city}, {agent.country}</p>
+                                                </div>
+                                            </Popup>
+                                        </Marker>
+                                    </MapContainer>
                                 </div>
                             )}
 
