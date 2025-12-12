@@ -74,7 +74,7 @@ const createSimpleMarkerIcon = (property: Property, isHovered: boolean = false) 
     html: svgHtml,
     className: isHovered ? 'scale-125' : '',
     iconSize: [30, 30],
-    iconAnchor: [15, 15],
+    iconAnchor: [15, isHovered ? 8 : 15],
     popupAnchor: [0, -15],
   });
 };
@@ -123,7 +123,7 @@ const createDetailedMarkerIcon = (property: Property, isHovered: boolean = false
     html: svgHtml,
     className: '',
     iconSize: [45, 36],
-    iconAnchor: [22.5, 36],
+    iconAnchor: [22.5, isHovered ? 26 : 36],
     popupAnchor: [0, -36],
   });
 };
