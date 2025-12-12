@@ -44,7 +44,7 @@ const createSimpleMarkerIcon = (property: Property, isHovered: boolean = false) 
     property.promotionEndDate &&
     property.promotionEndDate > Date.now();
 
-  // Get ring color based on promotion tier
+  // Get ring color based on promotion tier or property type
   let ringColor = 'none';
   let ringWidth = 2;
   if (isActivelyPromoted) {
@@ -59,22 +59,22 @@ const createSimpleMarkerIcon = (property: Property, isHovered: boolean = false) 
     }
     ringWidth = isHovered ? 4 : 3;
   } else if (isHovered) {
-    ringColor = '#0252CD'; // primary color on hover
-    ringWidth = 3;
+    ringColor = color; // Use property type color on hover
+    ringWidth = 4;
   }
 
   const svgHtml = `
-        <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3)); transition: transform 0.2s ease-out;">
-            <circle cx="15" cy="15" r="${13 + (isHovered ? 2 : 0)}" fill="${color}" stroke="${ringColor !== 'none' ? ringColor : '#FFFFFF'}" stroke-width="${ringWidth}"/>
+        <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3)); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+            <circle cx="15" cy="15" r="${13 + (isHovered ? 3 : 0)}" fill="${color}" stroke="${ringColor !== 'none' ? ringColor : '#FFFFFF'}" stroke-width="${ringWidth}"/>
             <text x="15" y="16" font-family="Inter, sans-serif" font-size="8" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">${price}</text>
         </svg>
     `;
 
   return L.divIcon({
     html: svgHtml,
-    className: isHovered ? 'scale-125' : '',
+    className: isHovered ? 'scale-150 drop-shadow-lg' : '',
     iconSize: [30, 30],
-    iconAnchor: [15, isHovered ? 8 : 15],
+    iconAnchor: [15, isHovered ? 5 : 15],
     popupAnchor: [0, -15],
   });
 };
@@ -91,7 +91,7 @@ const createDetailedMarkerIcon = (property: Property, isHovered: boolean = false
     property.promotionEndDate &&
     property.promotionEndDate > Date.now();
 
-  // Get stroke color based on promotion tier
+  // Get stroke color based on promotion tier or property type
   let strokeColor = '#FFFFFF';
   let strokeWidth = 2;
   if (isActivelyPromoted) {
@@ -106,13 +106,13 @@ const createDetailedMarkerIcon = (property: Property, isHovered: boolean = false
     }
     strokeWidth = isHovered ? 4 : 3;
   } else if (isHovered) {
-    strokeColor = '#0252CD'; // primary color on hover
-    strokeWidth = 3;
+    strokeColor = color; // Use property type color on hover
+    strokeWidth = 4;
   }
 
-  const scale = isHovered ? 1.15 : 1;
+  const scale = isHovered ? 1.25 : 1;
   const svgHtml = `
-        <svg width="45" height="36" viewBox="0 0 70 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3)); transform-origin: bottom center; transform: scale(${scale}); transition: transform 0.2s ease-out;">
+        <svg width="45" height="36" viewBox="0 0 70 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4)); transform-origin: bottom center; transform: scale(${scale}); transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);">
             <path d="M35 56L25 44H45L35 56Z" fill="#003A96" />
             <path d="M65 24.5V44H5V24.5L35 5L65 24.5Z" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
             <text x="35" y="30" font-family="Inter, sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">${price}</text>
@@ -121,9 +121,9 @@ const createDetailedMarkerIcon = (property: Property, isHovered: boolean = false
 
   return L.divIcon({
     html: svgHtml,
-    className: '',
+    className: isHovered ? 'drop-shadow-xl' : '',
     iconSize: [45, 36],
-    iconAnchor: [22.5, isHovered ? 26 : 36],
+    iconAnchor: [22.5, isHovered ? 20 : 36],
     popupAnchor: [0, -36],
   });
 };
