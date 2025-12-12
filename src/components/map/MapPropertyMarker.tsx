@@ -9,7 +9,7 @@ import { formatPrice } from '../../../utils/currency';
 
 const ZOOM_THRESHOLD = 12;
 
-export const PROPERTY_TYPE_COLORS: Record<
+const PROPERTY_TYPE_COLORS: Record<
   NonNullable<Property['propertyType']> | 'other',
   string
 > = {
