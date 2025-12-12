@@ -93,6 +93,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     const [consultationForm, setConsultationForm] = useState({ date: '', time: '', topic: '', notes: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [agencyGradient, setAgencyGradient] = useState<string>('bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-900');
+    const [mapCardOpen, setMapCardOpen] = useState(false);
 
     const isAgencyAgent = agent.agencyName && agent.agencyName !== 'Independent Agent';
     const agentUserId = agent.userId || agent.id;
@@ -704,7 +705,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                                     <MapPinIcon className="w-6 h-6 text-blue-600" />
                                                     Service Area Location
                                                 </h3>
-                                                <div className="rounded-xl overflow-hidden shadow-lg border border-gray-200 relative group">
+                                                <div className="rounded-xl overflow-hidden shadow-lg border border-gray-200 relative">
                                                     <MapContainer
                                                         center={[agent.lat, agent.lng]}
                                                         zoom={13}
@@ -724,7 +725,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                                             iconAnchor: [12, 41],
                                                             popupAnchor: [1, -34],
                                                             shadowSize: [41, 41]
-                                                        })}>
+                                                        })}} eventHandlers={{ click: () => setMapCardOpen(!mapCardOpen) }}>
                                                             <Popup>
                                                                 <div className="text-center min-w-[200px]">
                                                                     {agent.avatarUrl && (
@@ -755,9 +756,9 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                                         </Marker>
                                                     </MapContainer>
 
-                                                    {/* Hover Card with Agent Info */}
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-indigo-950/85 via-indigo-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 pointer-events-none">
-                                                        <div className="w-full text-white text-center">
+                                                    {/* Card with Agent Info - shows on click */}
+                                                    <div className={`absolute inset-0 bg-gradient-to-t from-indigo-950/85 via-indigo-900/40 to-transparent transition-opacity duration-300 flex items-end p-6 ${mapCardOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setMapCardOpen(false)}>
+                                                        <div className="w-full text-white text-center pointer-events-auto" onClick={(e) => e.stopPropagation()}>
                                                             {agent.avatarUrl && (
                                                                 <img src={agent.avatarUrl} alt={agent.name} className="w-20 h-20 rounded-full mx-auto mb-3 object-cover border-4 border-indigo-300" />
                                                             )}
