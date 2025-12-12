@@ -2,10 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { getAgencies } from '../../services/apiService';
 
+// Common languages spoken in the Balkan region
+const BALKAN_LANGUAGES = [
+  'English', 'Serbian', 'Croatian', 'Slovenian', 'Bosnian', 'Macedonian',
+  'Albanian', 'Montenegrin', 'Bulgarian', 'Romanian', 'Greek', 'Turkish',
+  'Hungarian', 'German', 'Italian', 'French', 'Russian', 'Spanish'
+];
+
 interface AgentLicenseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (licenseData: { licenseNumber: string; agencyInvitationCode?: string; agentId?: string; selectedAgencyId?: string }) => Promise<void>;
+  onSubmit: (licenseData: { licenseNumber: string; agencyInvitationCode?: string; agentId?: string; selectedAgencyId?: string; languages?: string[] }) => Promise<void>;
   currentLicenseNumber?: string;
   currentAgentId?: string;
 }
@@ -25,6 +32,15 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
   const [agencies, setAgencies] = useState<any[]>([]);
   const [selectedAgency, setSelectedAgency] = useState<string>('');
   const [loadingAgencies, setLoadingAgencies] = useState(false);
+  const [languages, setLanguages] = useState<string[]>(['English']);
+
+  const handleLanguageToggle = (language: string) => {
+    setLanguages(prev =>
+      prev.includes(language)
+        ? prev.filter(l => l !== language)
+        : [...prev, language]
+    );
+  };
 
   // Check if user is already an agent (joining agency) vs becoming new agent
   const isJoiningAgency = Boolean(currentLicenseNumber && currentAgentId);
@@ -97,6 +113,7 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
         agencyInvitationCode: agencyInvitationCode.trim() || undefined,
         agentId: agentId.trim() || undefined,
         selectedAgencyId: selectedAgency || undefined,
+        languages: languages.length > 0 ? languages : undefined,
       });
 
       console.log('✅ Agent license verification successful');
@@ -219,6 +236,33 @@ const AgentLicenseModal: React.FC<AgentLicenseModalProps> = ({
                   : 'Your unique agent identifier (will be generated if not provided)'}
               </p>
             </div>
+
+            {/* Languages - Only for new agents */}
+            {!isJoiningAgency && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Languages Spoken
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {BALKAN_LANGUAGES.map((language) => (
+                    <button
+                      key={language}
+                      type="button"
+                      onClick={() => handleLanguageToggle(language)}
+                      disabled={isSubmitting}
+                      className={`px-2.5 py-1 text-xs rounded-full border transition-all ${
+                        languages.includes(language)
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                      } disabled:opacity-50`}
+                    >
+                      {language}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-1.5">Select languages you can communicate in</p>
+              </div>
+            )}
 
             {/* Agency Selection - Always shown but optional for new agents */}
             <div>

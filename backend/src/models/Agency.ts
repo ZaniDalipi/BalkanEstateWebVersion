@@ -21,6 +21,7 @@ export interface IAgency extends Document {
   // Agency info
   specialties?: string[];
   certifications?: string[];
+  languages?: string[]; // Languages spoken by agency staff
   // Social media links
   facebookUrl?: string;
   instagramUrl?: string;
@@ -156,6 +157,10 @@ const AgencySchema: Schema = new Schema(
       trim: true,
     }],
     certifications: [{
+      type: String,
+      trim: true,
+    }],
+    languages: [{
       type: String,
       trim: true,
     }],

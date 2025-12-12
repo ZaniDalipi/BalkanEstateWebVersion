@@ -225,7 +225,7 @@ export const updateUser = async (userData: Partial<User>): Promise<User> => {
 
 export const switchRole = async (
   role: UserRole,
-  licenseData?: { licenseNumber: string; agencyInvitationCode?: string; agentId?: string }
+  licenseData?: { licenseNumber: string; agencyInvitationCode?: string; agentId?: string; languages?: string[] }
 ): Promise<User> => {
   const response = await apiRequest<{ user: User; message: string }>('/auth/switch-role', {
     method: 'POST',

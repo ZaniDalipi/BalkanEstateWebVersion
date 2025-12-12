@@ -106,11 +106,15 @@ export const createAgency = async (
     const licenseNumber = req.body.licenseNumber || `LIC-${Date.now()}`;
     let agentProfile = await Agent.findOne({ userId: user._id });
 
+    // Use provided languages or default to English
+    const agentLanguages = req.body.languages && req.body.languages.length > 0 ? req.body.languages : ['English'];
+
     if (agentProfile) {
       // Update existing agent profile with new agency
       agentProfile.agencyId = agency._id as mongoose.Types.ObjectId;
       agentProfile.agencyName = agency.name;
       agentProfile.licenseNumber = licenseNumber;
+      agentProfile.languages = agentLanguages;
       await agentProfile.save();
       console.log(`✅ Updated existing agent profile for ${user.email}`);
     } else {
@@ -123,6 +127,7 @@ export const createAgency = async (
         agentId,
         licenseNumber,
         licenseVerified: false,
+        languages: agentLanguages,
       });
       console.log(`✅ Created new agent profile for ${user.email} with ID: ${agentId}`);
     }

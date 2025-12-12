@@ -14,7 +14,7 @@ import { Readable } from 'stream';
 // @access  Public
 export const signup = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, name, phone, role, licenseNumber, agencyInvitationCode } = req.body;
+    const { email, password, name, phone, role, licenseNumber, agencyInvitationCode, languages } = req.body;
 
     // Check if user already exists
     const userExists = await User.findOne({ email });
@@ -82,6 +82,9 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
 
     // If agent, create Agent record and add to agency
     if (role === 'agent' && licenseNumber) {
+      // Use provided languages or default to English
+      const agentLanguages = languages && languages.length > 0 ? languages : ['English'];
+
       await Agent.create({
         userId: user._id,
         agencyName: agencyName!,
@@ -90,6 +93,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
         licenseNumber,
         licenseVerified: true,
         licenseVerificationDate: new Date(),
+        languages: agentLanguages,
         isActive: true,
       });
 
@@ -101,6 +105,12 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
           if (!agency.agents.some(agentId => agentId.toString() === userObjectId.toString())) {
             agency.agents.push(userObjectId);
             agency.totalAgents = agency.agents.length;
+
+            // Auto-sync agent languages to agency (merge unique languages)
+            const existingLanguages = agency.languages || [];
+            const mergedLanguages = [...new Set([...existingLanguages, ...agentLanguages])];
+            agency.languages = mergedLanguages;
+
             await agency.save();
           }
         }
@@ -410,7 +420,7 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const { role, licenseNumber, agencyInvitationCode, agentId } = req.body;
+    const { role, licenseNumber, agencyInvitationCode, agentId, languages } = req.body;
 
     // Validate role
     const validRoles = ['buyer', 'private_seller', 'agent'];
@@ -542,6 +552,9 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
         // Create or update Agent record in separate table
         const existingAgentRecord = await Agent.findOne({ userId: user._id }).session(session);
 
+        // Use provided languages or default to English
+        const agentLanguages = languages && languages.length > 0 ? languages : ['English'];
+
         if (existingAgentRecord) {
           // Update existing agent record
           existingAgentRecord.agencyName = agencyName;
@@ -550,6 +563,7 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
           existingAgentRecord.licenseNumber = licenseNumber;
           existingAgentRecord.licenseVerified = true;
           existingAgentRecord.licenseVerificationDate = new Date();
+          existingAgentRecord.languages = agentLanguages;
           existingAgentRecord.isActive = true;
           await existingAgentRecord.save({ session });
         } else {
@@ -562,6 +576,7 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
             licenseNumber,
             licenseVerified: true,
             licenseVerificationDate: new Date(),
+            languages: agentLanguages,
             isActive: true,
           }], { session });
         }
@@ -572,6 +587,11 @@ export const switchRole = async (req: Request, res: Response): Promise<void> => 
           if (!agency.agents.some(agentId => agentId.toString() === userObjectId.toString())) {
             agency.agents.push(userObjectId);
             agency.totalAgents = agency.agents.length;
+
+            // Auto-sync agent languages to agency (merge unique languages)
+            const existingLanguages = agency.languages || [];
+            const mergedLanguages = [...new Set([...existingLanguages, ...agentLanguages])];
+            agency.languages = mergedLanguages;
 
             // Add to agentDetails for tracking join order
             if (!agency.agentDetails) {

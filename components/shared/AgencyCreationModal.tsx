@@ -4,6 +4,13 @@ import { BuildingOfficeIcon, CheckCircleIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { BALKAN_LOCATIONS } from '../../utils/balkanLocations';
 
+// Common languages spoken in the Balkan region
+const BALKAN_LANGUAGES = [
+  'English', 'Serbian', 'Croatian', 'Slovenian', 'Bosnian', 'Macedonian',
+  'Albanian', 'Montenegrin', 'Bulgarian', 'Romanian', 'Greek', 'Turkish',
+  'Hungarian', 'German', 'Italian', 'French', 'Russian', 'Spanish'
+];
+
 interface AgencyCreationModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -30,6 +37,7 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
     website: '',
     licenseNumber: '', // Agent license number
     yearsInBusiness: '',
+    languages: [] as string[],
     facebookUrl: '',
     instagramUrl: '',
     linkedinUrl: '',
@@ -104,6 +112,15 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
     setFormData(prev => ({
       ...prev,
       businessHours: { ...prev.businessHours, [day]: value },
+    }));
+  };
+
+  const handleLanguageToggle = (language: string) => {
+    setFormData(prev => ({
+      ...prev,
+      languages: prev.languages.includes(language)
+        ? prev.languages.filter(l => l !== language)
+        : [...prev.languages, language],
     }));
   };
 
@@ -390,6 +407,31 @@ const AgencyCreationModal: React.FC<AgencyCreationModalProps> = ({
                 />
                 <p className="text-xs text-neutral-500 mt-1">How long you've been in real estate</p>
               </div>
+            </div>
+
+            {/* Languages */}
+            <div className="mt-4">
+              <label className={labelClasses}>
+                Languages Spoken
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {BALKAN_LANGUAGES.map((language) => (
+                  <button
+                    key={language}
+                    type="button"
+                    onClick={() => handleLanguageToggle(language)}
+                    disabled={isCreating}
+                    className={`px-3 py-1.5 text-sm rounded-full border transition-all ${
+                      formData.languages.includes(language)
+                        ? 'bg-amber-500 text-white border-amber-500'
+                        : 'bg-white text-neutral-600 border-neutral-300 hover:border-amber-400'
+                    } disabled:opacity-50`}
+                  >
+                    {language}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-neutral-500 mt-2">Select languages your team can communicate in</p>
             </div>
           </div>
 
