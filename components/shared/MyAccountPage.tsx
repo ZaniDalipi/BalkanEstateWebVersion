@@ -668,40 +668,18 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                     </div>
 
                     {/* Main Location with Map Picker */}
-                    <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-3">Main Office Location</label>
-                        <p className="text-xs text-neutral-600 mb-3">Search for your office location or drag the marker on the map to set your exact address</p>
-
-                        {/* Map Location Picker */}
-                        <div className="border border-neutral-300 rounded-lg overflow-hidden mb-3 h-96">
-                            <MapLocationPicker
-                                lat={agentData.lat || 42.0}
-                                lng={agentData.lng || 21.0}
-                                address={agentData.streetAddress || agentData.city || 'Select location'}
-                                country={agentData.country || 'Serbia'}
-                                city={agentData.city || ''}
-                                cityLat={agentData.lat || 42.0}
-                                cityLng={agentData.lng || 21.0}
-                                onLocationChange={handleLocationChange}
-                                onAddressChange={handleAddressChange}
-                                zoom={10}
-                            />
-                        </div>
-
-                        {/* Location Display */}
-                        {agentData.streetAddress && (
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                <p className="text-sm font-medium text-neutral-700">
-                                    <MapPinIcon className="w-4 h-4 inline mr-2 text-primary" />
-                                    Selected Address
-                                </p>
-                                <p className="text-sm text-neutral-600 mt-1">{agentData.streetAddress}</p>
-                                <p className="text-xs text-neutral-500 mt-1">
-                                    Coordinates: {agentData.lat.toFixed(6)}, {agentData.lng.toFixed(6)}
-                                </p>
-                            </div>
-                        )}
-                    </div>
+                    <MapLocationPicker
+                        lat={agentData.lat || 42.0}
+                        lng={agentData.lng || 21.0}
+                        address={agentData.streetAddress || agentData.city || 'Select location'}
+                        country={agentData.country || 'Serbia'}
+                        city={agentData.city || ''}
+                        cityLat={agentData.lat || 42.0}
+                        cityLng={agentData.lng || 21.0}
+                        onLocationChange={handleLocationChange}
+                        onAddressChange={handleAddressChange}
+                        zoom={10}
+                    />
 
                     {/* Service Areas */}
                     <div>
