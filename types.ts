@@ -49,6 +49,8 @@ export interface User {
     role: UserRole;
     city?: string;
     country?: string;
+    lat?: number;
+    lng?: number;
     agencyName?: string;
     agentId?: string;
     agencyId?: string; // Agency ID for agents
@@ -113,9 +115,9 @@ export interface Agency {
     country?: string;
     address?: string;
     zipCode?: string;
-    website?: string;
     lat?: number;
     lng?: number;
+    website?: string;
     totalProperties: number;
     totalAgents: number;
     yearsInBusiness?: number;
@@ -123,9 +125,11 @@ export interface Agency {
     featuredStartDate?: string;
     featuredEndDate?: string;
     adRotationOrder?: number;
+    specializations?: string[];
     specialties?: string[];
     certifications?: string[];
     languages?: string[];
+    serviceAreas?: string[];
     facebookUrl?: string;
     instagramUrl?: string;
     linkedinUrl?: string;

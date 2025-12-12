@@ -99,6 +99,8 @@ export const updateAgentProfile = async (req: Request, res: Response): Promise<v
       yearsOfExperience,
       languages,
       serviceAreas,
+      lat,
+      lng,
       websiteUrl,
       facebookUrl,
       instagramUrl,
@@ -112,6 +114,8 @@ export const updateAgentProfile = async (req: Request, res: Response): Promise<v
     if (yearsOfExperience !== undefined) agent.yearsOfExperience = yearsOfExperience;
     if (languages !== undefined) agent.languages = languages;
     if (serviceAreas !== undefined) agent.serviceAreas = serviceAreas;
+    if (lat !== undefined) agent.lat = lat;
+    if (lng !== undefined) agent.lng = lng;
     if (websiteUrl !== undefined) agent.websiteUrl = websiteUrl;
     if (facebookUrl !== undefined) agent.facebookUrl = facebookUrl;
     if (instagramUrl !== undefined) agent.instagramUrl = instagramUrl;

@@ -156,6 +156,14 @@ const AgencySchema: Schema = new Schema(
       type: String,
       trim: true,
     }],
+    specializations: [{
+      type: String,
+      trim: true,
+    }],
+    serviceAreas: [{
+      type: String,
+      trim: true,
+    }],
     certifications: [{
       type: String,
       trim: true,

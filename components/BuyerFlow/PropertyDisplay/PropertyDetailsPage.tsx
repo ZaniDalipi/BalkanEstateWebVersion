@@ -132,9 +132,15 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
   };
 
   const handleCategorySelect = useCallback((tag: PropertyImageTag | 'all') => {
+    window.scrollTo(0, 0);
     setActiveCategory(tag);
     setCurrentImageIndex(0);
   }, []);
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [property.id]);
 
   // Handle browser back button
   useEffect(() => {

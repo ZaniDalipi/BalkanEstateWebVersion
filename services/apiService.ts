@@ -223,6 +223,16 @@ export const updateUser = async (userData: Partial<User>): Promise<User> => {
   return response.user;
 };
 
+export const updateAgentProfile = async (agentData: any): Promise<any> => {
+  const response = await apiRequest<{ agent: any }>('/agents/profile', {
+    method: 'PUT',
+    body: agentData,
+    requiresAuth: true,
+  });
+
+  return response.agent;
+};
+
 export const switchRole = async (
   role: UserRole,
   licenseData?: { licenseNumber: string; agencyInvitationCode?: string; agentId?: string; languages?: string[] }
@@ -418,6 +428,16 @@ export const updateSavedSearchAccessTime = async (searchId: string, seenProperty
   });
 
   return { success: true };
+};
+
+export const updateSavedSearch = async (searchId: string, name: string): Promise<SavedSearch> => {
+  const response = await apiRequest<{ savedSearch: any }>(`/saved-searches/${searchId}`, {
+    method: 'PUT',
+    requiresAuth: true,
+    body: { name },
+  });
+
+  return transformBackendSavedSearch(response.savedSearch);
 };
 
 export const deleteSavedSearch = async (searchId: string): Promise<void> => {

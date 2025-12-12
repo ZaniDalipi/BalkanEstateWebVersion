@@ -4,13 +4,22 @@ import MyListings from './MyListings';
 import SubscriptionManagement from './SubscriptionManagement';
 import ProfileStatistics from './ProfileStatistics';
 import { User, UserRole, Agency } from '../../types';
-import { BuildingOfficeIcon, ChartBarIcon, UserCircleIcon, ArrowLeftOnRectangleIcon } from '../../constants';
+import { BuildingOfficeIcon, ChartBarIcon, UserCircleIcon, ArrowLeftOnRectangleIcon, XMarkIcon, MapPinIcon } from '../../constants';
 import AgentLicenseModal from './AgentLicenseModal';
 import AgencyManagementSection from './AgencyManagementSection';
-import { switchRole, joinAgencyByInvitationCode, getAgencies } from '../../services/apiService';
+import { switchRole, joinAgencyByInvitationCode, getAgencies, updateAgentProfile } from '../../services/apiService';
 import Footer from './Footer';
+import { BALKAN_LOCATIONS } from '../../utils/balkanLocations';
+import MapLocationPicker from '../SellerFlow/MapLocationPicker';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
+// Common languages spoken in the Balkan region
+const BALKAN_LANGUAGES = [
+  'English', 'Serbian', 'Croatian', 'Slovenian', 'Bosnian', 'Macedonian',
+  'Albanian', 'Montenegrin', 'Bulgarian', 'Romanian', 'Greek', 'Turkish',
+  'Hungarian', 'German', 'Italian', 'French', 'Russian', 'Spanish'
+];
 
 type AccountTab = 'listings' | 'performance' | 'profile' | 'subscription';
 
@@ -91,6 +100,17 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const [isJoiningAgency, setIsJoiningAgency] = useState(false);
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const [agentData, setAgentData] = useState({
+        languages: user.languages || ['English'],
+        specializations: user.specializations?.join(', ') || '',
+        serviceAreas: user.serviceAreas || [],
+        yearsOfExperience: user.yearsOfExperience || 0,
+        city: user.city || '',
+        country: user.country || '',
+        streetAddress: '',
+        lat: user.lat || 0,
+        lng: user.lng || 0,
+    });
 
     const handleAgencyClick = async () => {
         if (formData?.agencyId) {
@@ -109,7 +129,64 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
 
     useEffect(() => {
         setFormData(user);
+        setAgentData({
+            languages: user.languages || ['English'],
+            specializations: user.specializations?.join(', ') || '',
+            serviceAreas: user.serviceAreas || [],
+            yearsOfExperience: user.yearsOfExperience || 0,
+            city: user.city || '',
+            country: user.country || '',
+            streetAddress: '',
+            lat: user.lat || 0,
+            lng: user.lng || 0,
+        });
+
+        // Fetch latest agent data if user is an agent
+        if (user.role === UserRole.AGENT && user.id) {
+            fetchLatestAgentData(user.id);
+        }
     }, [user]);
+
+    // Fetch latest agent data from backend
+    const fetchLatestAgentData = async (userId: string) => {
+        try {
+            const token = localStorage.getItem('balkan_estate_token');
+            if (!token) return;
+
+            const response = await fetch(`${API_URL}/agents/user/${userId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
+
+            if (!response.ok) return;
+
+            const data = await response.json();
+            if (data.agent) {
+                const agent = data.agent;
+                setAgentData(prev => ({
+                    ...prev,
+                    languages: agent.languages || ['English'],
+                    specializations: agent.specializations?.join(', ') || '',
+                    serviceAreas: agent.serviceAreas || [],
+                    yearsOfExperience: agent.yearsOfExperience || 0,
+                    lat: agent.lat || prev.lat,
+                    lng: agent.lng || prev.lng,
+                }));
+                setFormData(prevUser => ({
+                    ...prevUser,
+                    languages: agent.languages || prevUser.languages,
+                    specializations: agent.specializations || prevUser.specializations,
+                    serviceAreas: agent.serviceAreas || prevUser.serviceAreas,
+                    yearsOfExperience: agent.yearsOfExperience || prevUser.yearsOfExperience,
+                    lat: agent.lat || prevUser.lat,
+                    lng: agent.lng || prevUser.lng,
+                }));
+            }
+        } catch (error) {
+            console.error('Error fetching agent data:', error);
+        }
+    };
 
     // Fetch agencies when component mounts or when user is an agent
     useEffect(() => {
@@ -185,15 +262,162 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
         }
     };
 
+    const handleLanguageToggle = (language: string) => {
+        setAgentData(prev => ({
+            ...prev,
+            languages: prev.languages.includes(language)
+                ? prev.languages.filter(l => l !== language)
+                : [...prev.languages, language]
+        }));
+    };
+
+    const handleAddServiceArea = (locationName: string) => {
+        if (!agentData.serviceAreas.includes(locationName)) {
+            setAgentData(prev => ({
+                ...prev,
+                serviceAreas: [...prev.serviceAreas, locationName]
+            }));
+        }
+    };
+
+    const handleRemoveServiceArea = (locationName: string) => {
+        setAgentData(prev => ({
+            ...prev,
+            serviceAreas: prev.serviceAreas.filter(area => area !== locationName)
+        }));
+    };
+
+    const handleSetMainLocation = (city: string, country: string) => {
+        setAgentData(prev => ({
+            ...prev,
+            city,
+            country
+        }));
+    };
+
+    const handleLocationChange = (lat: number, lng: number) => {
+        setAgentData(prev => ({
+            ...prev,
+            lat,
+            lng
+        }));
+    };
+
+    const handleAddressChange = (address: string) => {
+        setAgentData(prev => ({
+            ...prev,
+            streetAddress: address
+        }));
+    };
+
     const handleSaveChanges = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
+
         try {
-            await updateUser(formData);
+            // Prepare the data to be saved
+            const parsedSpecializations = agentData.specializations
+                .split(',')
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+
+            // Basic user data for updateUser
+            const basicUserData = {
+                name: formData.name,
+                phone: formData.phone,
+                city: agentData.city,
+                country: agentData.country,
+                avatarUrl: formData.avatarUrl,
+            };
+
+            // Update UI immediately (optimistic update)
+            const optimisticData = {
+                ...formData,
+                languages: agentData.languages,
+                specializations: parsedSpecializations,
+                serviceAreas: agentData.serviceAreas,
+                yearsOfExperience: agentData.yearsOfExperience,
+                city: agentData.city,
+                country: agentData.country,
+                lat: agentData.lat,
+                lng: agentData.lng,
+            };
+            setFormData(optimisticData);
+
+            // Update basic user profile
+            const savedUser = await updateUser(basicUserData);
+
+            // If agent, also update agent-specific fields
+            let finalUser = {
+                ...savedUser,
+                languages: agentData.languages,
+                specializations: parsedSpecializations,
+                serviceAreas: agentData.serviceAreas,
+                yearsOfExperience: agentData.yearsOfExperience,
+                lat: agentData.lat,
+                lng: agentData.lng,
+            };
+
+            if (formData.role === UserRole.AGENT) {
+                const agentProfileData = {
+                    languages: agentData.languages,
+                    specializations: parsedSpecializations,
+                    serviceAreas: agentData.serviceAreas,
+                    yearsOfExperience: agentData.yearsOfExperience,
+                    lat: agentData.lat,
+                    lng: agentData.lng,
+                };
+
+                try {
+                    const updatedAgent = await updateAgentProfile(agentProfileData);
+                    // Merge agent data with user data
+                    finalUser = {
+                        ...savedUser,
+                        languages: updatedAgent.languages || agentData.languages,
+                        specializations: updatedAgent.specializations || parsedSpecializations,
+                        serviceAreas: updatedAgent.serviceAreas || agentData.serviceAreas,
+                        yearsOfExperience: updatedAgent.yearsOfExperience !== undefined ? updatedAgent.yearsOfExperience : agentData.yearsOfExperience,
+                        lat: updatedAgent.lat !== undefined ? updatedAgent.lat : agentData.lat,
+                        lng: updatedAgent.lng !== undefined ? updatedAgent.lng : agentData.lng,
+                    };
+                } catch (agentError) {
+                    console.error('Error updating agent profile:', agentError);
+                    // Continue with user data even if agent update fails
+                }
+            }
+
+            // Sync with server response to ensure consistency
+            setFormData(finalUser);
+            setAgentData(prev => ({
+                ...prev,
+                languages: finalUser.languages || ['English'],
+                specializations: finalUser.specializations?.join(', ') || '',
+                serviceAreas: finalUser.serviceAreas || [],
+                yearsOfExperience: finalUser.yearsOfExperience || 0,
+                city: finalUser.city || '',
+                country: finalUser.country || '',
+                lat: finalUser.lat || prev.lat,
+                lng: finalUser.lng || prev.lng,
+            }));
+
             setIsSaved(true);
             setTimeout(() => setIsSaved(false), 2000);
         } catch (error) {
-            // Silent error handling
+            console.error('Error saving changes:', error);
+            // Revert to previous state on error
+            setFormData(user);
+            setAgentData({
+                languages: user.languages || ['English'],
+                specializations: user.specializations?.join(', ') || '',
+                serviceAreas: user.serviceAreas || [],
+                yearsOfExperience: user.yearsOfExperience || 0,
+                city: user.city || '',
+                country: user.country || '',
+                streetAddress: '',
+                lat: user.lat || 0,
+                lng: user.lng || 0,
+            });
+            setError('Failed to save changes. Please try again.');
         } finally {
             setIsSaving(false);
         }
@@ -460,6 +684,125 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                             />
                             <label htmlFor="licenseNumber" className={floatingLabelClasses}>License Number</label>
                         </div>
+                    </div>
+
+                    {/* Languages */}
+                    <div className="space-y-3">
+                        <label className="block text-sm font-medium text-neutral-700">Languages Spoken</label>
+                        <div className="flex flex-wrap gap-2">
+                            {BALKAN_LANGUAGES.map((language) => (
+                                <button
+                                    key={language}
+                                    type="button"
+                                    onClick={() => handleLanguageToggle(language)}
+                                    className={`px-3 py-1.5 text-sm rounded-full border transition-all ${
+                                        agentData.languages.includes(language)
+                                            ? 'bg-primary text-white border-primary'
+                                            : 'bg-white text-neutral-600 border-neutral-300 hover:border-primary'
+                                    }`}
+                                >
+                                    {language}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Specializations */}
+                    <div>
+                        <label htmlFor="specializations" className="block text-sm font-medium text-neutral-700 mb-2">Specializations</label>
+                        <textarea
+                            id="specializations"
+                            value={agentData.specializations}
+                            onChange={(e) => setAgentData(prev => ({ ...prev, specializations: e.target.value }))}
+                            placeholder="e.g., Residential, Commercial, Luxury Properties, Investment Properties"
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                            rows={2}
+                        />
+                        <p className="text-xs text-neutral-500 mt-1">Enter comma-separated specializations</p>
+                    </div>
+
+                    {/* Years of Experience */}
+                    <div>
+                        <label htmlFor="yearsOfExperience" className="block text-sm font-medium text-neutral-700 mb-2">Years of Experience</label>
+                        <input
+                            id="yearsOfExperience"
+                            type="number"
+                            min="0"
+                            max="99"
+                            value={agentData.yearsOfExperience}
+                            onChange={(e) => setAgentData(prev => ({ ...prev, yearsOfExperience: parseInt(e.target.value) || 0 }))}
+                            placeholder="e.g., 5"
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                        />
+                        <p className="text-xs text-neutral-500 mt-1">How many years of experience do you have?</p>
+                    </div>
+
+                    {/* Main Location with Map Picker */}
+                    <MapLocationPicker
+                        lat={agentData.lat || 42.0}
+                        lng={agentData.lng || 21.0}
+                        address={agentData.streetAddress || agentData.city || 'Select location'}
+                        country={agentData.country || 'Serbia'}
+                        city={agentData.city || ''}
+                        cityLat={agentData.lat || 42.0}
+                        cityLng={agentData.lng || 21.0}
+                        onLocationChange={handleLocationChange}
+                        onAddressChange={handleAddressChange}
+                        zoom={10}
+                    />
+
+                    {/* Service Areas */}
+                    <div>
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="block text-sm font-medium text-neutral-700">Service Areas</label>
+                            {agentData.serviceAreas.length > 0 && (
+                                <span className="text-xs bg-primary text-white px-2 py-1 rounded-full">
+                                    {agentData.serviceAreas.length} area{agentData.serviceAreas.length !== 1 ? 's' : ''}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Service Areas List */}
+                        {agentData.serviceAreas.length > 0 && (
+                            <div className="mb-3 flex flex-wrap gap-2">
+                                {agentData.serviceAreas.map((area) => (
+                                    <div key={area} className="flex items-center gap-2 bg-primary-light px-3 py-1.5 rounded-full">
+                                        <span className="text-sm font-medium text-neutral-700">{area}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveServiceArea(area)}
+                                            className="text-neutral-500 hover:text-red-500 transition-colors"
+                                        >
+                                            <XMarkIcon className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Add Service Area */}
+                        <select
+                            defaultValue=""
+                            onChange={(e) => {
+                                if (e.target.value) {
+                                    handleAddServiceArea(e.target.value);
+                                    e.target.value = '';
+                                }
+                            }}
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                        >
+                            <option value="">Add service area...</option>
+                            {BALKAN_LOCATIONS.map((location) => (
+                                <option
+                                    key={`${location.name}-${location.country}`}
+                                    value={location.name}
+                                    disabled={agentData.serviceAreas.includes(location.name)}
+                                >
+                                    {location.name} {location.country}
+                                </option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-neutral-500 mt-1">Add cities and countries where you operate</p>
                     </div>
                 </fieldset>
             )}

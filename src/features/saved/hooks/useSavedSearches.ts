@@ -148,3 +148,36 @@ export function useUpdateSavedSearchAccessTime() {
     isUpdating: mutation.isPending,
   };
 }
+
+/**
+ * Hook to update saved search name
+ *
+ * Usage:
+ * ```tsx
+ * const { updateSearch, isUpdating } = useUpdateSavedSearch();
+ * await updateSearch(searchId, newName);
+ * ```
+ */
+export function useUpdateSavedSearch() {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async ({ searchId, name }: { searchId: string; name: string }): Promise<SavedSearch> => {
+      return await api.updateSavedSearch(searchId, name);
+    },
+    onSuccess: (updatedSearch) => {
+      // Update in cache
+      queryClient.setQueryData(savedKeys.searches(), (old: SavedSearch[] = []) => {
+        return old.map(s =>
+          s.id === updatedSearch.id ? updatedSearch : s
+        );
+      });
+    },
+  });
+
+  return {
+    updateSearch: mutation.mutateAsync,
+    isUpdating: mutation.isPending,
+    error: mutation.error,
+  };
+}
