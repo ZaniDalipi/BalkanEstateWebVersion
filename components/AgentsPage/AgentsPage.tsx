@@ -7,6 +7,8 @@ import AgentProfilePage from './AgentProfilePage';
 import AgencyBadge from '../shared/AgencyBadge'; // Added import
 import { MagnifyingGlassIcon, ChevronDownIcon, ChevronUpIcon, UserGroupIcon, PhoneIcon, BuildingOfficeIcon } from '../../constants';
 import Footer from '../shared/Footer';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
 
 type SearchTab = 'location' | 'name' | 'specialization';
 
@@ -559,6 +561,57 @@ const AgentsPage: React.FC = () => {
               )}
             </p>
           </div>
+
+          {/* Agents Map Display */}
+          {filteredAgents.some(a => a.lat != null && a.lng != null) && (
+            <div className="mb-8 sm:mb-12 rounded-xl overflow-hidden shadow-lg border border-neutral-200">
+              <MapContainer
+                center={[41.5, 22]}
+                zoom={7}
+                scrollWheelZoom={true}
+                className="w-full h-[400px] sm:h-[500px]"
+                maxZoom={18}
+                minZoom={3}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {filteredAgents.map((agent) => {
+                  if (agent.lat == null || agent.lng == null || isNaN(agent.lat) || isNaN(agent.lng)) {
+                    return null;
+                  }
+
+                  const agentIcon = L.divIcon({
+                    html: `
+                      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
+                        <circle cx="20" cy="20" r="18" fill="#0252CD" stroke="#FFFFFF" stroke-width="2"/>
+                        <text x="20" y="24" font-family="Inter, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle">✓</text>
+                      </svg>
+                    `,
+                    className: '',
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20],
+                    popupAnchor: [0, -20],
+                  });
+
+                  return (
+                    <Marker key={agent.id} position={[agent.lat, agent.lng]} icon={agentIcon}>
+                      <Popup>
+                        <div className="text-center">
+                          <p className="font-bold text-base mb-1">{agent.name}</p>
+                          <p className="text-xs text-neutral-600 mb-2">{agent.city}, {agent.country}</p>
+                          {agent.rating > 0 && (
+                            <p className="text-xs font-semibold text-amber-500">⭐ {agent.rating.toFixed(1)}</p>
+                          )}
+                        </div>
+                      </Popup>
+                    </Marker>
+                  );
+                })}
+              </MapContainer>
+            </div>
+          )}
 
           {/* Agent Cards Grid */}
           {filteredAgents.length === 0 ? (
