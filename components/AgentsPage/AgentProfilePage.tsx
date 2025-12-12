@@ -530,40 +530,6 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                 </div>
                             )}
 
-                            {/* Agent Location Map */}
-                            {agent.lat != null && agent.lng != null && !isNaN(agent.lat) && !isNaN(agent.lng) && (
-                                <div className="mb-6 rounded-xl overflow-hidden shadow-lg border border-gray-200">
-                                    <MapContainer
-                                        center={[agent.lat, agent.lng]}
-                                        zoom={13}
-                                        scrollWheelZoom={true}
-                                        className="w-full h-64 sm:h-80"
-                                        maxZoom={18}
-                                        minZoom={3}
-                                    >
-                                        <TileLayer
-                                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                        />
-                                        <Marker position={[agent.lat, agent.lng]} icon={L.icon({
-                                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-                                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                                            iconSize: [25, 41],
-                                            iconAnchor: [12, 41],
-                                            popupAnchor: [1, -34],
-                                            shadowSize: [41, 41]
-                                        })}>
-                                            <Popup>
-                                                <div className="text-center">
-                                                    <p className="font-bold text-base">{agent.name}</p>
-                                                    <p className="text-sm text-gray-600">{agent.city}, {agent.country}</p>
-                                                </div>
-                                            </Popup>
-                                        </Marker>
-                                    </MapContainer>
-                                </div>
-                            )}
-
                             {/* Rating */}
                             <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
                                 <div className="flex items-center gap-2">
@@ -730,6 +696,97 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                                 </div>
                                             </div>
                                         </div>
+
+                                        {/* Agent Location Map */}
+                                        {agent.lat != null && agent.lng != null && !isNaN(agent.lat) && !isNaN(agent.lng) && (
+                                            <div>
+                                                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                                    <MapPinIcon className="w-6 h-6 text-blue-600" />
+                                                    Service Area Location
+                                                </h3>
+                                                <div className="rounded-xl overflow-hidden shadow-lg border border-gray-200 relative group">
+                                                    <MapContainer
+                                                        center={[agent.lat, agent.lng]}
+                                                        zoom={13}
+                                                        scrollWheelZoom={true}
+                                                        className="w-full h-80"
+                                                        maxZoom={18}
+                                                        minZoom={3}
+                                                    >
+                                                        <TileLayer
+                                                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                                        />
+                                                        <Marker position={[agent.lat, agent.lng]} icon={L.icon({
+                                                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                                                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                                                            iconSize: [25, 41],
+                                                            iconAnchor: [12, 41],
+                                                            popupAnchor: [1, -34],
+                                                            shadowSize: [41, 41]
+                                                        })}>
+                                                            <Popup>
+                                                                <div className="text-center min-w-[200px]">
+                                                                    {agent.avatarUrl && (
+                                                                        <img src={agent.avatarUrl} alt={agent.name} className="w-16 h-16 rounded-full mx-auto mb-3 object-cover border-2 border-gray-300" />
+                                                                    )}
+                                                                    <p className="font-bold text-base mb-1">{agent.name}</p>
+                                                                    <p className="text-sm text-gray-600 mb-3">{agent.city}, {agent.country}</p>
+                                                                    {agent.phone && (
+                                                                        <a
+                                                                            href={`tel:${agent.phone}`}
+                                                                            className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold mb-2 transition-colors text-sm"
+                                                                        >
+                                                                            <PhoneIcon className="w-4 h-4" />
+                                                                            Call
+                                                                        </a>
+                                                                    )}
+                                                                    {agent.email && (
+                                                                        <a
+                                                                            href={`mailto:${agent.email}`}
+                                                                            className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold transition-colors text-sm"
+                                                                        >
+                                                                            <EnvelopeIcon className="w-4 h-4" />
+                                                                            Email
+                                                                        </a>
+                                                                    )}
+                                                                </div>
+                                                            </Popup>
+                                                        </Marker>
+                                                    </MapContainer>
+
+                                                    {/* Hover Card with Agent Info */}
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 pointer-events-none">
+                                                        <div className="w-full text-white text-center">
+                                                            {agent.avatarUrl && (
+                                                                <img src={agent.avatarUrl} alt={agent.name} className="w-20 h-20 rounded-full mx-auto mb-3 object-cover border-3 border-white" />
+                                                            )}
+                                                            <p className="font-bold text-lg">{agent.name}</p>
+                                                            <p className="text-sm text-gray-200 mb-3">{agent.city}, {agent.country}</p>
+                                                            {agent.email && (
+                                                                <p className="text-xs text-gray-300 mb-4 truncate">{agent.email}</p>
+                                                            )}
+                                                            <div className="flex gap-2">
+                                                                {agent.phone && (
+                                                                    <a
+                                                                        href={`tel:${agent.phone}`}
+                                                                        className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold transition-colors text-sm pointer-events-auto"
+                                                                    >
+                                                                        Call
+                                                                    </a>
+                                                                )}
+                                                                <a
+                                                                    href={`mailto:${agent.email}`}
+                                                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold transition-colors text-sm pointer-events-auto"
+                                                                >
+                                                                    Email
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {/* Specializations Grid */}
                                         <div>
