@@ -756,28 +756,28 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                                     </MapContainer>
 
                                                     {/* Hover Card with Agent Info */}
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 pointer-events-none">
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-indigo-950/85 via-indigo-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 pointer-events-none">
                                                         <div className="w-full text-white text-center">
                                                             {agent.avatarUrl && (
-                                                                <img src={agent.avatarUrl} alt={agent.name} className="w-20 h-20 rounded-full mx-auto mb-3 object-cover border-3 border-white" />
+                                                                <img src={agent.avatarUrl} alt={agent.name} className="w-20 h-20 rounded-full mx-auto mb-3 object-cover border-4 border-indigo-300" />
                                                             )}
                                                             <p className="font-bold text-lg">{agent.name}</p>
-                                                            <p className="text-sm text-gray-200 mb-3">{agent.city}, {agent.country}</p>
+                                                            <p className="text-sm text-indigo-200 mb-3">{agent.city}, {agent.country}</p>
                                                             {agent.email && (
-                                                                <p className="text-xs text-gray-300 mb-4 truncate">{agent.email}</p>
+                                                                <p className="text-xs text-indigo-300 mb-4 truncate">{agent.email}</p>
                                                             )}
                                                             <div className="flex gap-2">
                                                                 {agent.phone && (
                                                                     <a
                                                                         href={`tel:${agent.phone}`}
-                                                                        className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold transition-colors text-sm pointer-events-auto"
+                                                                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg font-semibold transition-colors text-sm pointer-events-auto"
                                                                     >
                                                                         Call
                                                                     </a>
                                                                 )}
                                                                 <a
                                                                     href={`mailto:${agent.email}`}
-                                                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold transition-colors text-sm pointer-events-auto"
+                                                                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-colors text-sm pointer-events-auto"
                                                                 >
                                                                     Email
                                                                 </a>
