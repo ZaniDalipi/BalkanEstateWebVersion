@@ -22,6 +22,8 @@ export interface IAgent extends Document {
   yearsOfExperience?: number;
   languages: string[]; // e.g., ['English', 'Serbian', 'Croatian']
   serviceAreas: string[]; // e.g., ['Belgrade', 'Novi Sad']
+  lat?: number;
+  lng?: number;
   websiteUrl?: string;
   facebookUrl?: string;
   instagramUrl?: string;
@@ -128,6 +130,12 @@ const AgentSchema: Schema = new Schema(
     serviceAreas: {
       type: [String],
       default: [],
+    },
+    lat: {
+      type: Number,
+    },
+    lng: {
+      type: Number,
     },
     websiteUrl: {
       type: String,

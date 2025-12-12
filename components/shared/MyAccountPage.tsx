@@ -140,7 +140,53 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
             lat: user.lat || 0,
             lng: user.lng || 0,
         });
+
+        // Fetch latest agent data if user is an agent
+        if (user.role === UserRole.AGENT && user.id) {
+            fetchLatestAgentData(user.id);
+        }
     }, [user]);
+
+    // Fetch latest agent data from backend
+    const fetchLatestAgentData = async (userId: string) => {
+        try {
+            const token = localStorage.getItem('balkan_estate_token');
+            if (!token) return;
+
+            const response = await fetch(`${API_URL}/agents/user/${userId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
+
+            if (!response.ok) return;
+
+            const data = await response.json();
+            if (data.agent) {
+                const agent = data.agent;
+                setAgentData(prev => ({
+                    ...prev,
+                    languages: agent.languages || ['English'],
+                    specializations: agent.specializations?.join(', ') || '',
+                    serviceAreas: agent.serviceAreas || [],
+                    yearsOfExperience: agent.yearsOfExperience || 0,
+                    lat: agent.lat || prev.lat,
+                    lng: agent.lng || prev.lng,
+                }));
+                setFormData(prevUser => ({
+                    ...prevUser,
+                    languages: agent.languages || prevUser.languages,
+                    specializations: agent.specializations || prevUser.specializations,
+                    serviceAreas: agent.serviceAreas || prevUser.serviceAreas,
+                    yearsOfExperience: agent.yearsOfExperience || prevUser.yearsOfExperience,
+                    lat: agent.lat || prevUser.lat,
+                    lng: agent.lng || prevUser.lng,
+                }));
+            }
+        } catch (error) {
+            console.error('Error fetching agent data:', error);
+        }
+    };
 
     // Fetch agencies when component mounts or when user is an agent
     useEffect(() => {
