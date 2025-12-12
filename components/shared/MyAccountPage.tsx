@@ -7,7 +7,7 @@ import { User, UserRole, Agency } from '../../types';
 import { BuildingOfficeIcon, ChartBarIcon, UserCircleIcon, ArrowLeftOnRectangleIcon, XMarkIcon, MapPinIcon } from '../../constants';
 import AgentLicenseModal from './AgentLicenseModal';
 import AgencyManagementSection from './AgencyManagementSection';
-import { switchRole, joinAgencyByInvitationCode, getAgencies } from '../../services/apiService';
+import { switchRole, joinAgencyByInvitationCode, getAgencies, updateAgentProfile } from '../../services/apiService';
 import Footer from './Footer';
 import { BALKAN_LOCATIONS } from '../../utils/balkanLocations';
 import MapLocationPicker from '../SellerFlow/MapLocationPicker';
@@ -268,37 +268,83 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
 
         try {
             // Prepare the data to be saved
-            const updatedFormData = {
+            const parsedSpecializations = agentData.specializations
+                .split(',')
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+
+            // Basic user data for updateUser
+            const basicUserData = {
+                name: formData.name,
+                phone: formData.phone,
+                city: agentData.city,
+                country: agentData.country,
+                avatarUrl: formData.avatarUrl,
+            };
+
+            // Update UI immediately (optimistic update)
+            const optimisticData = {
                 ...formData,
                 languages: agentData.languages,
-                specializations: agentData.specializations
-                    .split(',')
-                    .map(s => s.trim())
-                    .filter(s => s.length > 0),
+                specializations: parsedSpecializations,
                 serviceAreas: agentData.serviceAreas,
                 city: agentData.city,
                 country: agentData.country,
                 lat: agentData.lat,
                 lng: agentData.lng,
             };
+            setFormData(optimisticData);
 
-            // Update UI immediately (optimistic update)
-            setFormData(updatedFormData);
+            // Update basic user profile
+            const savedUser = await updateUser(basicUserData);
 
-            // Make the API call
-            const savedUser = await updateUser(updatedFormData);
+            // If agent, also update agent-specific fields
+            let finalUser = {
+                ...savedUser,
+                languages: agentData.languages,
+                specializations: parsedSpecializations,
+                serviceAreas: agentData.serviceAreas,
+                lat: agentData.lat,
+                lng: agentData.lng,
+            };
+
+            if (formData.role === UserRole.AGENT) {
+                const agentProfileData = {
+                    languages: agentData.languages,
+                    specializations: parsedSpecializations,
+                    serviceAreas: agentData.serviceAreas,
+                    lat: agentData.lat,
+                    lng: agentData.lng,
+                };
+
+                try {
+                    const updatedAgent = await updateAgentProfile(agentProfileData);
+                    // Merge agent data with user data
+                    finalUser = {
+                        ...savedUser,
+                        languages: updatedAgent.languages || agentData.languages,
+                        specializations: updatedAgent.specializations || parsedSpecializations,
+                        serviceAreas: updatedAgent.serviceAreas || agentData.serviceAreas,
+                        lat: updatedAgent.lat !== undefined ? updatedAgent.lat : agentData.lat,
+                        lng: updatedAgent.lng !== undefined ? updatedAgent.lng : agentData.lng,
+                    };
+                } catch (agentError) {
+                    console.error('Error updating agent profile:', agentError);
+                    // Continue with user data even if agent update fails
+                }
+            }
 
             // Sync with server response to ensure consistency
-            setFormData(savedUser);
+            setFormData(finalUser);
             setAgentData(prev => ({
                 ...prev,
-                languages: savedUser.languages || ['English'],
-                specializations: savedUser.specializations?.join(', ') || '',
-                serviceAreas: savedUser.serviceAreas || [],
-                city: savedUser.city || '',
-                country: savedUser.country || '',
-                lat: savedUser.lat || prev.lat,
-                lng: savedUser.lng || prev.lng,
+                languages: finalUser.languages || ['English'],
+                specializations: finalUser.specializations?.join(', ') || '',
+                serviceAreas: finalUser.serviceAreas || [],
+                city: finalUser.city || '',
+                country: finalUser.country || '',
+                lat: finalUser.lat || prev.lat,
+                lng: finalUser.lng || prev.lng,
             }));
 
             setIsSaved(true);
@@ -627,7 +673,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                         <p className="text-xs text-neutral-600 mb-3">Search for your office location or drag the marker on the map to set your exact address</p>
 
                         {/* Map Location Picker */}
-                        <div className="border border-neutral-300 rounded-lg overflow-hidden mb-3">
+                        <div className="border border-neutral-300 rounded-lg overflow-hidden mb-3 h-96">
                             <MapLocationPicker
                                 lat={agentData.lat || 42.0}
                                 lng={agentData.lng || 21.0}
@@ -704,7 +750,7 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                                     value={location.name}
                                     disabled={agentData.serviceAreas.includes(location.name)}
                                 >
-                                    {location.name}, {location.country}
+                                    {location.name} {location.country}
                                 </option>
                             ))}
                         </select>

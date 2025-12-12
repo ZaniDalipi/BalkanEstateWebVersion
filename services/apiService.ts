@@ -223,6 +223,16 @@ export const updateUser = async (userData: Partial<User>): Promise<User> => {
   return response.user;
 };
 
+export const updateAgentProfile = async (agentData: any): Promise<any> => {
+  const response = await apiRequest<{ agent: any }>('/agents/profile', {
+    method: 'PUT',
+    body: agentData,
+    requiresAuth: true,
+  });
+
+  return response.agent;
+};
+
 export const switchRole = async (
   role: UserRole,
   licenseData?: { licenseNumber: string; agencyInvitationCode?: string; agentId?: string; languages?: string[] }
