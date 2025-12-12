@@ -725,7 +725,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                                             iconAnchor: [12, 41],
                                                             popupAnchor: [1, -34],
                                                             shadowSize: [41, 41]
-                                                        })}} eventHandlers={{ click: () => setMapCardOpen(!mapCardOpen) }}>
+                                                        })} eventHandlers={{ click: () => setMapCardOpen(!mapCardOpen) }}>
                                                             <Popup>
                                                                 <div className="text-center min-w-[200px]">
                                                                     {agent.avatarUrl && (
