@@ -1162,6 +1162,8 @@ function transformBackendAgent(backendAgent: any): any {
     linkedinUrl: backendAgent.linkedinUrl,
     officeAddress: backendAgent.officeAddress,
     officePhone: backendAgent.officePhone,
+    lat: backendAgent.lat,
+    lng: backendAgent.lng,
   };
 }
 
