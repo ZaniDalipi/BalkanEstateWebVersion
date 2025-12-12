@@ -118,7 +118,9 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
 
   const canRequestToJoin = isAuthenticated && currentUser?.role === 'agent' && !currentUser?.agencyId && !isAlreadyMember;
 
+  // Scroll to top on mount and when agency changes
   useEffect(() => {
+    window.scrollTo(0, 0);
     fetchAgencyData();
   }, [agency._id]);
 
@@ -211,6 +213,7 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
   };
 
   const handleAgentClick = (agentDatabaseId: string) => {
+    window.scrollTo(0, 0);
     // Find the agent in the list to get their agentId
     const agent = agents.find(a => (a.id || a._id) === agentDatabaseId);
     // Use agentId if available, fallback to database id
@@ -569,6 +572,11 @@ const AgencyDetailPage: React.FC<AgencyDetailPageProps> = ({ agency }) => {
     // Force re-render of subscription card
     setSubscriptionKey((prev) => prev + 1);
   };
+
+  // Scroll to top when property view changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [propertyView]);
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-y-auto">

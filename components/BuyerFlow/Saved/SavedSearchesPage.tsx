@@ -67,6 +67,11 @@ const SavedSearchesPage: React.FC = () => {
   const { savedSearches, isAuthenticated } = state;
   const [sortBy, setSortBy] = useState<'createdAt' | 'name' | 'lastAccessed'>('createdAt');
 
+  // Scroll to top on mount and when sort changes
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [sortBy]);
+
   const sortedSearches = useMemo(() => {
     const sorted = [...savedSearches];
     sorted.sort((a, b) => {

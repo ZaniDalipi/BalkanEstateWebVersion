@@ -54,6 +54,9 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onO
   const handleToggle = async () => {
     const nextIsOpen = !isOpen;
     if (nextIsOpen) {
+      // Scroll to top when opening accordion
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
       // Mark all matching properties as seen when opening
       const allPropertyIds = matchingProperties.map(p => p.id);
       await updateSavedSearchAccessTime(search.id, allPropertyIds);

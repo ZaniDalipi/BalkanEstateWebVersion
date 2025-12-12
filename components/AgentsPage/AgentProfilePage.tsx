@@ -113,6 +113,11 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     const firstName = agent.name?.split(' ')[0] || 'Agent';
     const canWriteReview = currentUser && currentUser.id !== agentUserId;
 
+    // Scroll to top on mount and tab changes
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [agent.id, activeTab]);
+
     // Fetch similar agents from same agency or city and fetch agency gradient
     useEffect(() => {
         const fetchSimilarAgents = async () => {
@@ -312,6 +317,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     };
 
     const handleSelectSimilarAgent = (selectedAgent: Agent) => {
+        window.scrollTo(0, 0);
         const agentIdentifier = selectedAgent.agentId || selectedAgent.id;
         dispatch({ type: 'SET_SELECTED_AGENT', payload: agentIdentifier });
         window.history.pushState({}, '', `/agents/${agentIdentifier}`);
