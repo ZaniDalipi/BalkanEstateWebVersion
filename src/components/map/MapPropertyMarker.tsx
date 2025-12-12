@@ -272,12 +272,25 @@ interface MarkersProps {
 export const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick, hoveredPropertyId }) => {
   const map = useMap();
   const [zoom, setZoom] = useState(map.getZoom());
+  const markerRefsMap = React.useRef<Map<string, any>>(new Map());
 
   useMapEvents({
     zoomend: () => {
       setZoom(map.getZoom());
     },
   });
+
+  // Update marker icon when hover state changes
+  React.useEffect(() => {
+    properties.forEach((prop) => {
+      const marker = markerRefsMap.current.get(prop.id);
+      if (marker) {
+        const isHovered = prop.id === hoveredPropertyId;
+        const newIcon = createCustomMarkerIcon(prop, zoom, isHovered);
+        marker.setIcon(newIcon);
+      }
+    });
+  }, [hoveredPropertyId, zoom, properties]);
 
   return (
     <>
@@ -286,6 +299,11 @@ export const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick, hove
           key={prop.id}
           position={[prop.lat, prop.lng]}
           icon={createCustomMarkerIcon(prop, zoom, prop.id === hoveredPropertyId)}
+          ref={(marker) => {
+            if (marker) {
+              markerRefsMap.current.set(prop.id, marker);
+            }
+          }}
         >
           <Popup maxWidth={230} minWidth={220}>
             <PropertyPopup property={prop} onPopupClick={onPopupClick} />
