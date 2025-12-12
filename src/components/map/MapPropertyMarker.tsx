@@ -35,20 +35,44 @@ const formatMarkerPrice = (price: number): string => {
 /**
  * Create simple circular marker for zoomed out view
  */
-const createSimpleMarkerIcon = (property: Property) => {
+const createSimpleMarkerIcon = (property: Property, isHovered: boolean = false) => {
   const price = formatMarkerPrice(property.price);
   const color = PROPERTY_TYPE_COLORS[property.propertyType] || PROPERTY_TYPE_COLORS.other;
 
+  // Check if property is actively promoted
+  const isActivelyPromoted = property.isPromoted &&
+    property.promotionEndDate &&
+    property.promotionEndDate > Date.now();
+
+  // Get ring color based on promotion tier
+  let ringColor = 'none';
+  let ringWidth = 2;
+  if (isActivelyPromoted) {
+    if (property.promotionTier === 'premium') {
+      ringColor = '#c084fc'; // purple-400
+    } else if (property.promotionTier === 'highlight') {
+      ringColor = '#fbbf24'; // amber-400
+    } else if (property.promotionTier === 'featured') {
+      ringColor = '#60a5fa'; // blue-400
+    } else {
+      ringColor = '#9ca3af'; // gray-400
+    }
+    ringWidth = isHovered ? 4 : 3;
+  } else if (isHovered) {
+    ringColor = '#0252CD'; // primary color on hover
+    ringWidth = 3;
+  }
+
   const svgHtml = `
-        <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));">
-            <circle cx="15" cy="15" r="13" fill="${color}" stroke="#FFFFFF" stroke-width="2"/>
+        <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3)); transition: transform 0.2s ease-out;">
+            <circle cx="15" cy="15" r="${13 + (isHovered ? 2 : 0)}" fill="${color}" stroke="${ringColor !== 'none' ? ringColor : '#FFFFFF'}" stroke-width="${ringWidth}"/>
             <text x="15" y="16" font-family="Inter, sans-serif" font-size="8" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">${price}</text>
         </svg>
     `;
 
   return L.divIcon({
     html: svgHtml,
-    className: '',
+    className: isHovered ? 'scale-125' : '',
     iconSize: [30, 30],
     iconAnchor: [15, 15],
     popupAnchor: [0, -15],
@@ -58,14 +82,39 @@ const createSimpleMarkerIcon = (property: Property) => {
 /**
  * Create detailed house-shaped marker for zoomed in view
  */
-const createDetailedMarkerIcon = (property: Property) => {
+const createDetailedMarkerIcon = (property: Property, isHovered: boolean = false) => {
   const price = formatMarkerPrice(property.price);
   const color = PROPERTY_TYPE_COLORS[property.propertyType] || PROPERTY_TYPE_COLORS.other;
 
+  // Check if property is actively promoted
+  const isActivelyPromoted = property.isPromoted &&
+    property.promotionEndDate &&
+    property.promotionEndDate > Date.now();
+
+  // Get stroke color based on promotion tier
+  let strokeColor = '#FFFFFF';
+  let strokeWidth = 2;
+  if (isActivelyPromoted) {
+    if (property.promotionTier === 'premium') {
+      strokeColor = '#c084fc'; // purple-400
+    } else if (property.promotionTier === 'highlight') {
+      strokeColor = '#fbbf24'; // amber-400
+    } else if (property.promotionTier === 'featured') {
+      strokeColor = '#60a5fa'; // blue-400
+    } else {
+      strokeColor = '#9ca3af'; // gray-400
+    }
+    strokeWidth = isHovered ? 4 : 3;
+  } else if (isHovered) {
+    strokeColor = '#0252CD'; // primary color on hover
+    strokeWidth = 3;
+  }
+
+  const scale = isHovered ? 1.15 : 1;
   const svgHtml = `
-        <svg width="45" height="36" viewBox="0 0 70 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3)); transform-origin: bottom center;">
+        <svg width="45" height="36" viewBox="0 0 70 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3)); transform-origin: bottom center; transform: scale(${scale}); transition: transform 0.2s ease-out;">
             <path d="M35 56L25 44H45L35 56Z" fill="#003A96" />
-            <path d="M65 24.5V44H5V24.5L35 5L65 24.5Z" fill="${color}" stroke="#FFFFFF" stroke-width="2" />
+            <path d="M65 24.5V44H5V24.5L35 5L65 24.5Z" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
             <text x="35" y="30" font-family="Inter, sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">${price}</text>
         </svg>
     `;
@@ -82,11 +131,11 @@ const createDetailedMarkerIcon = (property: Property) => {
 /**
  * Create appropriate marker icon based on zoom level
  */
-const createCustomMarkerIcon = (property: Property, zoom: number): L.DivIcon => {
+const createCustomMarkerIcon = (property: Property, zoom: number, isHovered: boolean = false): L.DivIcon => {
   if (zoom < ZOOM_THRESHOLD) {
-    return createSimpleMarkerIcon(property);
+    return createSimpleMarkerIcon(property, isHovered);
   }
-  return createDetailedMarkerIcon(property);
+  return createDetailedMarkerIcon(property, isHovered);
 };
 
 /**
@@ -217,9 +266,10 @@ const PropertyPopup: React.FC<{
 interface MarkersProps {
   properties: Property[];
   onPopupClick: (id: string) => void;
+  hoveredPropertyId?: string | null;
 }
 
-export const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) => {
+export const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick, hoveredPropertyId }) => {
   const map = useMap();
   const [zoom, setZoom] = useState(map.getZoom());
 
@@ -235,7 +285,7 @@ export const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick }) =>
         <Marker
           key={prop.id}
           position={[prop.lat, prop.lng]}
-          icon={createCustomMarkerIcon(prop, zoom)}
+          icon={createCustomMarkerIcon(prop, zoom, prop.id === hoveredPropertyId)}
         >
           <Popup maxWidth={230} minWidth={220}>
             <PropertyPopup property={prop} onPopupClick={onPopupClick} />

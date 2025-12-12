@@ -69,6 +69,7 @@ interface MapComponentProps {
   onRecenter: () => void;
   isMobile: boolean;
   searchMode: 'manual' | 'ai';
+  hoveredPropertyId?: string | null;
 }
 
 /**
@@ -104,6 +105,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onRecenter,
   isMobile,
   searchMode,
+  hoveredPropertyId,
 }) => {
   const { dispatch } = useAppContext();
   const [mapType, setMapType] = useState<TileLayerType>('street');
@@ -164,7 +166,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
           url={TILE_LAYERS[mapType].url}
         />
         <CadastreLayer enabled={showCadastre && mapType === 'satellite'} opacity={0.7} />
-        <Markers properties={propertiesInView} onPopupClick={handlePopupClick} />
+        <Markers properties={propertiesInView} onPopupClick={handlePopupClick} hoveredPropertyId={hoveredPropertyId} />
       </MapContainer>
 
       {!isMobile && (
