@@ -265,7 +265,9 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
     const handleSaveChanges = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
+
         try {
+            // Prepare the data to be saved
             const updatedFormData = {
                 ...formData,
                 languages: agentData.languages,
@@ -279,22 +281,43 @@ const ProfileSettings: React.FC<{ user: User }> = ({ user }) => {
                 lat: agentData.lat,
                 lng: agentData.lng,
             };
+
+            // Update UI immediately (optimistic update)
+            setFormData(updatedFormData);
+
+            // Make the API call
             const savedUser = await updateUser(updatedFormData);
+
+            // Sync with server response to ensure consistency
             setFormData(savedUser);
-            setAgentData({
+            setAgentData(prev => ({
+                ...prev,
                 languages: savedUser.languages || ['English'],
                 specializations: savedUser.specializations?.join(', ') || '',
                 serviceAreas: savedUser.serviceAreas || [],
                 city: savedUser.city || '',
                 country: savedUser.country || '',
-                streetAddress: '',
-                lat: savedUser.lat || 0,
-                lng: savedUser.lng || 0,
-            });
+                lat: savedUser.lat || prev.lat,
+                lng: savedUser.lng || prev.lng,
+            }));
+
             setIsSaved(true);
             setTimeout(() => setIsSaved(false), 2000);
         } catch (error) {
-            // Silent error handling
+            console.error('Error saving changes:', error);
+            // Revert to previous state on error
+            setFormData(user);
+            setAgentData({
+                languages: user.languages || ['English'],
+                specializations: user.specializations?.join(', ') || '',
+                serviceAreas: user.serviceAreas || [],
+                city: user.city || '',
+                country: user.country || '',
+                streetAddress: '',
+                lat: user.lat || 0,
+                lng: user.lng || 0,
+            });
+            setError('Failed to save changes. Please try again.');
         } finally {
             setIsSaving(false);
         }
