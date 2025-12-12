@@ -158,6 +158,9 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
                 <MapPinIcon className="w-3.5 h-3.5 mr-1 text-neutral-400 flex-shrink-0" />
                 <span className="truncate text-sm font-medium">{property.address}, {property.city}</span>
             </div>
+            {property.title && (
+                <h3 className="text-lg font-semibold text-neutral-800 mb-1.5">{property.title}</h3>
+            )}
             <p className="text-xl font-bold text-neutral-900 my-1.5">{formatPrice(property.price, property.country)}</p>
             <div className="flex items-center flex-wrap gap-x-2.5 gap-y-1 text-neutral-700 mb-1.5">
                 <div className="flex items-center gap-1" title={`${property.beds} bedrooms`}>
