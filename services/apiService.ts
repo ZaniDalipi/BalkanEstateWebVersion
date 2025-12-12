@@ -420,6 +420,16 @@ export const updateSavedSearchAccessTime = async (searchId: string, seenProperty
   return { success: true };
 };
 
+export const updateSavedSearch = async (searchId: string, name: string): Promise<SavedSearch> => {
+  const response = await apiRequest<{ savedSearch: any }>(`/saved-searches/${searchId}`, {
+    method: 'PUT',
+    requiresAuth: true,
+    body: { name },
+  });
+
+  return transformBackendSavedSearch(response.savedSearch);
+};
+
 export const deleteSavedSearch = async (searchId: string): Promise<void> => {
   await apiRequest(`/saved-searches/${searchId}`, {
     method: 'DELETE',

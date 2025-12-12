@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { SavedSearch } from '../../../types';
 import PropertyCard from '../PropertyDisplay/PropertyCard';
-import { ChevronUpIcon, ChevronDownIcon, TrashIcon } from '../../../constants';
+import { ChevronUpIcon, ChevronDownIcon, TrashIcon, PencilIcon, CheckCircleIcon, XMarkIcon } from '../../../constants';
 import { useAppContext } from '../../../context/AppContext';
 import { filterProperties } from '../../../utils/propertyUtils';
 import PropertyCardSkeleton from '../PropertyDisplay/PropertyCardSkeleton';
@@ -17,6 +17,9 @@ interface SavedSearchAccordionProps {
 const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onOpen }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [newName, setNewName] = useState(search.name);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [mapFlyTarget, setMapFlyTarget] = useState<{ center: [number, number]; zoom: number } | null>(null);
   const { state, dispatch, updateSavedSearchAccessTime } = useAppContext();
   const { isLoadingProperties, allMunicipalities, properties } = state;
@@ -107,15 +110,59 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onO
     }
   };
 
+  const handleStartRename = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsRenaming(true);
+    setNewName(search.name);
+  };
+
+  const handleCancelRename = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsRenaming(false);
+    setNewName(search.name);
+  };
+
+  const handleSaveRename = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (!newName.trim()) {
+      alert('Please enter a name');
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      await api.updateSavedSearch(search.id, newName);
+      dispatch({ type: 'UPDATE_SAVED_SEARCH', payload: { ...search, name: newName } });
+      setIsRenaming(false);
+    } catch (error) {
+      console.error('Failed to rename saved search:', error);
+      alert('Failed to rename saved search. Please try again.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-md border border-neutral-200 overflow-hidden">
       {/* Header */}
-      <div className="w-full p-4 flex justify-between items-center">
+      <div className="w-full p-4 flex justify-between items-center gap-3">
         <button
           onClick={handleToggle}
           className="flex-1 flex justify-between items-center text-left"
         >
-          <h3 className="text-lg font-bold text-neutral-800">{search.name}</h3>
+          {isRenaming ? (
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              className="flex-1 px-3 py-2 border border-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-lg font-bold"
+              placeholder="Search name"
+            />
+          ) : (
+            <h3 className="text-lg font-bold text-neutral-800">{search.name}</h3>
+          )}
           <div className="flex items-center gap-2">
             {newPropertyCount > 0 && (
               <div className="bg-red-500 text-white rounded-full px-3 py-1.5">
@@ -132,14 +179,46 @@ const SavedSearchAccordion: React.FC<SavedSearchAccordionProps> = ({ search, onO
             </div>
           </div>
         </button>
-        <button
-          onClick={handleDelete}
-          disabled={isDeleting}
-          className="ml-3 p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
-          title="Delete search"
-        >
-          <TrashIcon className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          {isRenaming ? (
+            <>
+              <button
+                onClick={handleSaveRename}
+                disabled={isUpdating}
+                className="p-2 text-green-600 hover:bg-green-50 rounded-full transition-colors disabled:opacity-50"
+                title="Save"
+              >
+                <CheckCircleIcon className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleCancelRename}
+                disabled={isUpdating}
+                className="p-2 text-neutral-500 hover:bg-neutral-100 rounded-full transition-colors disabled:opacity-50"
+                title="Cancel"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={handleStartRename}
+                className="p-2 text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors"
+                title="Rename search"
+              >
+                <PencilIcon className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
+                title="Delete search"
+              >
+                <TrashIcon className="w-5 h-5" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Expanded Content */}

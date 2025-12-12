@@ -8,7 +8,7 @@ import AgencyBadge from '../shared/AgencyBadge'; // Added import
 import { MagnifyingGlassIcon, ChevronDownIcon, ChevronUpIcon, UserGroupIcon, PhoneIcon, BuildingOfficeIcon } from '../../constants';
 import Footer from '../shared/Footer';
 
-type SearchTab = 'location' | 'name';
+type SearchTab = 'location' | 'name' | 'specialization';
 
 const AgentsPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
@@ -110,10 +110,15 @@ const AgentsPage: React.FC = () => {
         return city.includes(query) ||
                country.includes(query) ||
                fullLocation.includes(query);
-      } else {
+      } else if (searchTab === 'name') {
         // Search by agent name
         return agent.name.toLowerCase().includes(query);
+      } else if (searchTab === 'specialization') {
+        // Search by specializations
+        const specializations = (agent.specializations || []).map(s => s.toLowerCase());
+        return specializations.some(spec => spec.includes(query));
       }
+      return true;
     });
   }, [agents, searchQuery, searchTab]);
 
@@ -313,8 +318,8 @@ const AgentsPage: React.FC = () => {
                       : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'
                   }`}
                   style={{
-                    background: searchTab === 'location' 
-                      ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)' 
+                    background: searchTab === 'location'
+                      ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
                       : 'transparent'
                   }}
                 >
@@ -334,8 +339,8 @@ const AgentsPage: React.FC = () => {
                       : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'
                   }`}
                   style={{
-                    background: searchTab === 'name' 
-                      ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)' 
+                    background: searchTab === 'name'
+                      ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
                       : 'transparent'
                   }}
                 >
@@ -344,6 +349,26 @@ const AgentsPage: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                     Agent Name
+                  </span>
+                </button>
+                <button
+                  onClick={() => setSearchTab('specialization')}
+                  className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-300 relative min-w-[120px] sm:min-w-[140px] ${
+                    searchTab === 'specialization'
+                      ? 'text-white shadow-lg'
+                      : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'
+                  }`}
+                  style={{
+                    background: searchTab === 'specialization'
+                      ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
+                      : 'transparent'
+                  }}
+                >
+                  <span className="flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Specialization
                   </span>
                 </button>
               </div>
@@ -359,9 +384,13 @@ const AgentsPage: React.FC = () => {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={searchTab === 'location' 
-                    ? 'Search by city, neighborhood, or country...' 
-                    : "Search by agent's name..."}
+                  placeholder={
+                    searchTab === 'location'
+                      ? 'Search by city, neighborhood, or country...'
+                      : searchTab === 'name'
+                      ? "Search by agent's name..."
+                      : 'Search by specialization (e.g., Luxury, Commercial)...'
+                  }
                   className="w-full pl-12 pr-32 sm:pl-14 sm:pr-40 py-3 sm:py-4 border-2 border-neutral-200 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all duration-300 bg-white text-base sm:text-lg placeholder:text-neutral-500"
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 sm:gap-2">
@@ -423,19 +452,46 @@ const AgentsPage: React.FC = () => {
                           Novi Sad
                         </button>
                       </>
+                    ) : searchTab === 'name' ? (
+                      <>
+                        <button
+                          onClick={() => setSearchQuery('John')}
+                          className="px-3 py-1.5 text-xs sm:text-sm bg-neutral-50 border border-neutral-200 hover:border-primary hover:bg-primary/5 hover:text-primary text-neutral-700 rounded-lg transition-all duration-300 font-medium"
+                        >
+                          Popular Names
+                        </button>
+                        <button
+                          onClick={() => setSearchQuery('Agent')}
+                          className="px-3 py-1.5 text-xs sm:text-sm bg-neutral-50 border border-neutral-200 hover:border-primary hover:bg-primary/5 hover:text-primary text-neutral-700 rounded-lg transition-all duration-300 font-medium"
+                        >
+                          View All
+                        </button>
+                      </>
                     ) : (
                       <>
                         <button
-                          onClick={() => setSearchQuery('Top Rated')}
+                          onClick={() => setSearchQuery('Residential')}
                           className="px-3 py-1.5 text-xs sm:text-sm bg-neutral-50 border border-neutral-200 hover:border-primary hover:bg-primary/5 hover:text-primary text-neutral-700 rounded-lg transition-all duration-300 font-medium"
                         >
-                          Top Rated
+                          Residential
                         </button>
                         <button
                           onClick={() => setSearchQuery('Luxury')}
                           className="px-3 py-1.5 text-xs sm:text-sm bg-neutral-50 border border-neutral-200 hover:border-primary hover:bg-primary/5 hover:text-primary text-neutral-700 rounded-lg transition-all duration-300 font-medium"
                         >
-                          Luxury Specialists
+                          Luxury
+                        </button>
+                        <button
+                          onClick={() => setSearchQuery('Commercial')}
+                          className="px-3 py-1.5 text-xs sm:text-sm bg-neutral-50 border border-neutral-200 hover:border-primary hover:bg-primary/5 hover:text-primary text-neutral-700 rounded-lg transition-all duration-300 font-medium"
+                        >
+                          Commercial
+                        </button>
+                        <button
+                          onClick={() => setSearchQuery('Investment')}
+                          className="px-3 py-1.5 text-xs sm:text-sm bg-neutral-50 border border-neutral-200 hover:border-primary hover:bg-primary/5 hover:text-primary text-neutral-700 rounded-lg transition-all duration-300 font-medium"
+                        >
+                          Investment
                         </button>
                       </>
                     )}

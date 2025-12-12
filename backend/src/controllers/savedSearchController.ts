@@ -102,6 +102,54 @@ export const updateAccessTime = async (
   }
 };
 
+// @desc    Update saved search name
+// @route   PUT /api/saved-searches/:id
+// @access  Private
+export const updateSavedSearch = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const savedSearch = await SavedSearch.findById(req.params.id);
+
+    if (!savedSearch) {
+      res.status(404).json({ message: 'Saved search not found' });
+      return;
+    }
+
+    // Check ownership
+    if (savedSearch.userId.toString() !== String((req.user as IUser)._id).toString()) {
+      res.status(403).json({ message: 'Not authorized to update this search' });
+      return;
+    }
+
+    const { name } = req.body;
+
+    if (name !== undefined) {
+      if (!name || name.trim().length === 0) {
+        res.status(400).json({ message: 'Name cannot be empty' });
+        return;
+      }
+      savedSearch.name = name;
+    }
+
+    await savedSearch.save();
+
+    res.json({
+      message: 'Saved search updated successfully',
+      savedSearch,
+    });
+  } catch (error: any) {
+    console.error('Update saved search error:', error);
+    res.status(500).json({ message: 'Error updating saved search', error: error.message });
+  }
+};
+
 // @desc    Delete saved search
 // @route   DELETE /api/saved-searches/:id
 // @access  Private
