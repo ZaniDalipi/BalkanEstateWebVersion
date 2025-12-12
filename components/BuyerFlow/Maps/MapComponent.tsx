@@ -118,15 +118,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
     );
   }, [properties]);
 
+  // Always show all valid properties on the map (up to 500 for performance)
+  // This ensures the map never appears empty and users can navigate to any property
   const propertiesInView = useMemo(() => {
-    if (drawnBounds) {
-      return validProperties.filter((p) => drawnBounds.contains([p.lat, p.lng])).slice(0, 500);
-    }
-    if (!mapBounds) {
-      return [];
-    }
-    return validProperties.filter((p) => mapBounds.contains([p.lat, p.lng])).slice(0, 500);
-  }, [validProperties, mapBounds, drawnBounds]);
+    return validProperties.slice(0, 500);
+  }, [validProperties]);
 
   const { center, zoom } = useMemo(() => {
     if (userLocation) return { center: userLocation, zoom: 13 };
