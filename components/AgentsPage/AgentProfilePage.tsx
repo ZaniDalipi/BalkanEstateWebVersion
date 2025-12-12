@@ -90,6 +90,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     const [appraisalForm, setAppraisalForm] = useState({ address: '', propertyType: '', notes: '' });
     const [consultationForm, setConsultationForm] = useState({ date: '', time: '', topic: '', notes: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [agencyGradient, setAgencyGradient] = useState<string>('bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-900');
 
     const isAgencyAgent = agent.agencyName && agent.agencyName !== 'Independent Agent';
     const agentUserId = agent.userId || agent.id;
@@ -112,18 +113,33 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     const firstName = agent.name?.split(' ')[0] || 'Agent';
     const canWriteReview = currentUser && currentUser.id !== agentUserId;
 
-    // Fetch similar agents from same agency or city
+    // Fetch similar agents from same agency or city and fetch agency gradient
     useEffect(() => {
         const fetchSimilarAgents = async () => {
             setLoadingSimilarAgents(true);
             try {
                 if (isAgencyAgent && agent.agencyId) {
-                    // Fetch agents from same agency
+                    // Fetch agents from same agency and fetch agency gradient
                     const response = await getAgencyAgents(agent.agencyId);
                     const agencyAgents = (response.agents || [])
                         .filter((a: Agent) => a.id !== agent.id && a.userId !== agent.userId)
                         .slice(0, 4);
                     setSimilarAgents(agencyAgents);
+
+                    // Fetch agency details to get the gradient
+                    try {
+                        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+                        const agencyResponse = await fetch(`${API_URL}/agencies/${agent.agencyId}`);
+                        if (agencyResponse.ok) {
+                            const agencyData = await agencyResponse.json();
+                            const gradient = agencyData.agency?.coverGradient;
+                            if (gradient) {
+                                setAgencyGradient(`bg-gradient-to-r ${gradient}`);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error fetching agency gradient:', error);
+                    }
                 } else {
                     // Fetch agents from same city
                     const response = await getAllAgents();
@@ -320,9 +336,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     };
 
     // Get header gradient - use agency's gradient or default blue
-    const headerGradient = isAgencyAgent && agent.agencyGradient
-        ? agent.agencyGradient
-        : 'bg-gradient-to-r from-blue-600 to-indigo-700';
+    const headerGradient = agencyGradient;
 
     // Check if agency has cover image
     const hasCoverImage = isAgencyAgent && agent.agencyCoverImage;
