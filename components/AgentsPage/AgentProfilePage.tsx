@@ -611,34 +611,34 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                 <div className="lg:flex lg:gap-8">
                     {/* Left Column - Main Content */}
                     <div className="lg:w-2/3">
-                        {/* Tabs Navigation - Enhanced */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 mb-8 overflow-hidden">
-                            <div className="flex border-b border-gray-200">
+                        {/* Tabs Navigation - Enhanced - Sticky on Mobile */}
+                        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 mb-6 sm:mb-8 overflow-hidden sticky top-0 md:top-16 z-30">
+                            <div className="flex border-b border-gray-200 overflow-x-auto">
                                 <button
                                     onClick={() => setActiveTab('overview')}
-                                    className={`flex-1 py-5 px-6 text-center font-semibold transition-colors ${activeTab === 'overview' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
+                                    className={`flex-1 py-3 sm:py-4 md:py-5 px-3 sm:px-4 md:px-6 text-center font-semibold transition-colors min-w-[100px] ${activeTab === 'overview' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
                                 >
-                                    <div className="flex items-center justify-center gap-2">
-                                        <UserIcon className="w-5 h-5" />
-                                        Overview
+                                    <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                                        <UserIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                                        <span className="text-xs sm:text-sm md:text-base">Overview</span>
                                     </div>
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('listings')}
-                                    className={`flex-1 py-5 px-6 text-center font-semibold transition-colors ${activeTab === 'listings' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
+                                    className={`flex-1 py-3 sm:py-4 md:py-5 px-3 sm:px-4 md:px-6 text-center font-semibold transition-colors min-w-[100px] ${activeTab === 'listings' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
                                 >
-                                    <div className="flex items-center justify-center gap-2">
-                                        <HomeIcon className="w-5 h-5" />
-                                        Listings ({activeListings.length})
+                                    <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                                        <HomeIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                                        <span className="text-xs sm:text-sm md:text-base">Listings ({activeListings.length})</span>
                                     </div>
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('reviews')}
-                                    className={`flex-1 py-5 px-6 text-center font-semibold transition-colors ${activeTab === 'reviews' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
+                                    className={`flex-1 py-3 sm:py-4 md:py-5 px-3 sm:px-4 md:px-6 text-center font-semibold transition-colors min-w-[100px] ${activeTab === 'reviews' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
                                 >
-                                    <div className="flex items-center justify-center gap-2">
-                                        <StarIcon className="w-5 h-5" />
-                                        Reviews ({stats.reviews})
+                                    <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                                        <StarIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                                        <span className="text-xs sm:text-sm md:text-base">Reviews ({stats.reviews})</span>
                                     </div>
                                 </button>
                             </div>
