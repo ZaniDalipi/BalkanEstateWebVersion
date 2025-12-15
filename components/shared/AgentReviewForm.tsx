@@ -1,20 +1,31 @@
 import React, { useState } from 'react';
 import { addAgentReview } from '../../services/apiService';
-import { StarIcon } from '../../constants';
+import { StarIcon, EnvelopeIcon, HomeIcon } from '../../constants';
+import { Property } from '../../types';
+import { formatPrice } from '../../utils/currency';
 
 interface AgentReviewFormProps {
   agentId: string;
   agentName: string;
+  agentProperties?: Property[];
+  onContactAgent?: () => void;
   onReviewSubmitted: () => void;
 }
 
-const AgentReviewForm: React.FC<AgentReviewFormProps> = ({ agentId, agentName, onReviewSubmitted }) => {
+const AgentReviewForm: React.FC<AgentReviewFormProps> = ({
+  agentId,
+  agentName,
+  agentProperties = [],
+  onContactAgent,
+  onReviewSubmitted
+}) => {
   const [rating, setRating] = useState<number>(5);
   const [hoveredRating, setHoveredRating] = useState<number>(0);
   const [quote, setQuote] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<boolean>(false);
+  const [showProperties, setShowProperties] = useState<boolean>(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +55,16 @@ const AgentReviewForm: React.FC<AgentReviewFormProps> = ({ agentId, agentName, o
         setSuccess(false);
       }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit review. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to submit review. Please try again.';
+      setError(errorMessage);
+
+      // Check if error is about needing to contact agent first
+      if (errorMessage.toLowerCase().includes('conversation') ||
+          errorMessage.toLowerCase().includes('contact') ||
+          errorMessage.toLowerCase().includes('inquire') ||
+          errorMessage.toLowerCase().includes('property')) {
+        setShowProperties(true);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -118,6 +138,89 @@ const AgentReviewForm: React.FC<AgentReviewFormProps> = ({ agentId, agentName, o
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
             {error}
+          </div>
+        )}
+
+        {/* Show Properties if User Needs to Contact Agent First */}
+        {showProperties && agentProperties.length > 0 && (
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+                <HomeIcon className="w-8 h-8 text-blue-600" />
+              </div>
+              <h4 className="text-xl font-bold text-gray-900 mb-2">
+                Before Leaving a Review
+              </h4>
+              <p className="text-gray-700 leading-relaxed">
+                To ensure authentic testimonials, please inquire about one of {agentName}'s properties first.
+                Browse their current offerings below and start a conversation!
+              </p>
+            </div>
+
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {agentProperties.map((property) => (
+                <div
+                  key={property.id}
+                  className="bg-white rounded-lg border border-gray-200 p-4 hover:border-blue-400 hover:shadow-md transition-all"
+                >
+                  <div className="flex gap-4">
+                    {/* Property Image */}
+                    {property.imageUrl && (
+                      <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                        <img
+                          src={property.imageUrl}
+                          alt={property.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+
+                    {/* Property Details */}
+                    <div className="flex-1 min-w-0">
+                      <h5 className="font-bold text-gray-900 mb-1 line-clamp-1">
+                        {property.title}
+                      </h5>
+                      <p className="text-sm text-gray-600 mb-2 line-clamp-1">
+                        {property.address}, {property.city}
+                      </p>
+                      <p className="text-lg font-bold text-blue-600 mb-3">
+                        {formatPrice(property.price, property.country)}
+                      </p>
+
+                      {/* Contact Button */}
+                      <button
+                        onClick={() => {
+                          if (onContactAgent) {
+                            onContactAgent();
+                          }
+                        }}
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                      >
+                        <EnvelopeIcon className="w-4 h-4" />
+                        <span>Inquire About This Property</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {agentProperties.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <HomeIcon className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p>This agent currently has no active listings.</p>
+                <p className="text-sm mt-2">Please contact them directly to start a conversation.</p>
+                {onContactAgent && (
+                  <button
+                    onClick={onContactAgent}
+                    className="mt-4 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors mx-auto"
+                  >
+                    <EnvelopeIcon className="w-5 h-5" />
+                    <span>Contact {agentName}</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 

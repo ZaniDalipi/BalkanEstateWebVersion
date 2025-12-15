@@ -1225,6 +1225,8 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                                 <AgentReviewForm
                                                     agentId={agent.id}
                                                     agentName={agent.name}
+                                                    agentProperties={activeListings}
+                                                    onContactAgent={handleContactAgent}
                                                     onReviewSubmitted={() => {
                                                         setShowReviewForm(false);
                                                         window.location.reload();
