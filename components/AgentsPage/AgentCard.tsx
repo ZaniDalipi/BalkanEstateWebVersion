@@ -39,7 +39,7 @@ const AgentAvatar: React.FC<{ agent: Agent }> = ({ agent }) => {
   return (
     <div className="relative">
       {/* Blue glow effect */}
-      <div className="absolute inset-0 bg-blue-400/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+      <div className="absolute inset-0 bg-blue-400/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-900" />
       <img
         src={agent.avatarUrl}
         alt={agent.name}
@@ -86,7 +86,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, index = 0 }) => {
       const avgPrice = agent.totalSalesValue / agent.propertiesSold;
       const minPrice = avgPrice * 0.5;
       const maxPrice = avgPrice * 1.8;
-      return `${formatPrice(minPrice, 'Serbia')} - ${formatPrice(maxPrice, 'Serbia')}`;
+      return `${formatPrice(minPrice, '')} - ${formatPrice(maxPrice, '')}`;
     }
     return 'Contact for pricing';
   };
@@ -176,9 +176,9 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, index = 0 }) => {
 
       {/* Agency Badge - Uses agency's gradient color */}
       {isTeam && (
-        <div className="absolute top-4 left-4 z-10">
+        <div className="absolute top-4 left-4 z-10 bg-blue-500 rounded-full p-1 shadow-sm">
           <div className="relative group/agency">
-            <div className="absolute -inset-1 bg-blue-400/30 rounded-full blur opacity-0 group-hover/agency:opacity-70 transition-opacity duration-300" />
+            <div className="absolute -inset-1 bg-blue-400/30 rounded-full blur opacity-0 group-hover/agency:opacity-70 transition-opacity duration-800" />
             <button
               onClick={handleAgencyClick}
               className={`relative text-white text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 ${
