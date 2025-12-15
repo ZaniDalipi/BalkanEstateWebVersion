@@ -49,6 +49,7 @@ export interface User {
     role: UserRole;
     city?: string;
     country?: string;
+    address?: string; // Street address for location search
     lat?: number;
     lng?: number;
     agencyName?: string;
@@ -62,6 +63,11 @@ export interface User {
     testimonials?: Testimonial[];
     isSubscribed: boolean;
     publicKey?: string; // E2E encryption public key (JWK format)
+    marketStats?: {
+        avgDaysOnMarket?: number;
+        priceGrowthYoY?: number;
+        activityLevel?: string;
+    };
 }
 
 export interface Agent extends User {
