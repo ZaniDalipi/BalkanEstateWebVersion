@@ -1,10 +1,32 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { CheckCircleIcon, XCircleIcon, SparklesIcon, HomeIcon, ChartBarIcon, CheckIcon } from '../../constants';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { CheckCircleIcon, XCircleIcon, SparklesIcon, HomeIcon, ChartBarIcon, CheckIcon, GiftIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { User } from '../../types';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
 interface SubscriptionManagementProps {
   userId: string;
+}
+
+// Subscription data from backend
+interface SubscriptionData {
+  _id: string;
+  userId: string;
+  store: string;
+  productId: string;
+  purchaseToken?: string;
+  transactionId?: string;
+  startDate: string;
+  renewalDate: string;
+  expirationDate: string;
+  status: 'active' | 'expired' | 'trial' | 'grace' | 'canceled';
+  autoRenewing: boolean;
+  price: number;
+  currency: string;
+  isAcknowledged: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Plan definitions with pricing
@@ -13,7 +35,7 @@ const PLANS: Record<string, {
   name: string;
   price: number;
   period: string;
-  periodDays: number;
+  periodMonths: number;
   features: string[];
   listingLimit: number;
   color: string;
@@ -24,7 +46,7 @@ const PLANS: Record<string, {
     name: 'Free',
     price: 0,
     period: 'forever',
-    periodDays: 0,
+    periodMonths: 0,
     features: ['3 active listings', 'Basic analytics', 'Email support'],
     listingLimit: 3,
     color: 'from-gray-400 to-gray-500',
@@ -35,7 +57,7 @@ const PLANS: Record<string, {
     name: 'Pro Monthly',
     price: 25,
     period: 'month',
-    periodDays: 30,
+    periodMonths: 1,
     features: ['15 active listings', 'Advanced analytics', 'Priority support', 'Featured listings', 'Export data'],
     listingLimit: 15,
     color: 'from-blue-500 to-blue-600',
@@ -46,7 +68,7 @@ const PLANS: Record<string, {
     name: 'Pro Yearly',
     price: 200,
     period: 'year',
-    periodDays: 365,
+    periodMonths: 12,
     features: ['15 active listings', 'Advanced analytics', 'Priority support', 'Featured listings', 'Export data', '33% savings'],
     listingLimit: 15,
     color: 'from-purple-500 to-purple-600',
@@ -57,7 +79,7 @@ const PLANS: Record<string, {
     name: 'Enterprise',
     price: 500,
     period: 'year',
-    periodDays: 365,
+    periodMonths: 12,
     features: ['100 active listings', 'Full analytics suite', 'Dedicated support', 'Custom branding', 'API access', 'Team management', 'Agency creation'],
     listingLimit: 100,
     color: 'from-amber-500 to-orange-600',
@@ -65,44 +87,110 @@ const PLANS: Record<string, {
   },
 };
 
+// Gift/Coupon icon component
+const GiftIconComponent: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+  </svg>
+);
+
 const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId }) => {
   const { state, dispatch } = useAppContext();
   const [loading, setLoading] = useState(true);
+  const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [selectedUpgrade, setSelectedUpgrade] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const user = state.currentUser as User & {
-    subscriptionPlan?: string;
-    subscriptionProductName?: string;
-    subscriptionSource?: string;
-    subscriptionExpiresAt?: string;
-    subscriptionStartedAt?: string;
-    subscriptionStatus?: string;
+  const user = state.currentUser as User;
+
+  // Fetch subscription data from backend
+  const fetchSubscription = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('balkan_estate_token');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/subscriptions/current`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.subscription) {
+          setSubscription(data.subscription);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Initial fetch and polling for real-time updates
+  useEffect(() => {
+    fetchSubscription();
+
+    // Poll every 30 seconds for real-time updates
+    const interval = setInterval(fetchSubscription, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchSubscription, refreshKey]);
+
+  // Listen for payment success events
+  useEffect(() => {
+    const handlePaymentSuccess = () => {
+      // Refresh subscription data after successful payment
+      setRefreshKey(prev => prev + 1);
+      fetchSubscription();
+    };
+
+    window.addEventListener('paymentSuccess', handlePaymentSuccess);
+    window.addEventListener('subscriptionUpdated', handlePaymentSuccess);
+
+    return () => {
+      window.removeEventListener('paymentSuccess', handlePaymentSuccess);
+      window.removeEventListener('subscriptionUpdated', handlePaymentSuccess);
+    };
+  }, [fetchSubscription]);
+
+  // Calculate actual days in the subscription period based on calendar
+  const calculateActualDays = (startDate: Date, endDate: Date): number => {
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
-  useEffect(() => {
-    setLoading(false);
-  }, [userId, state.currentUser]);
-
-  // Calculate subscription details
+  // Calculate subscription details with calendar-based days
   const subscriptionDetails = useMemo(() => {
-    if (!user) return null;
+    if (!subscription) return null;
 
     const now = new Date();
-    const expiresAt = user.subscriptionExpiresAt ? new Date(user.subscriptionExpiresAt) : null;
-    const startedAt = user.subscriptionStartedAt ? new Date(user.subscriptionStartedAt) : null;
+    const startDate = new Date(subscription.startDate);
+    const expirationDate = new Date(subscription.expirationDate);
+    const renewalDate = new Date(subscription.renewalDate);
 
-    const daysRemaining = expiresAt ? Math.max(0, Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
-    const daysUsed = startedAt ? Math.max(0, Math.ceil((now.getTime() - startedAt.getTime()) / (1000 * 60 * 60 * 24))) : 0;
+    // Calculate actual days based on calendar (handles 28, 29, 30, 31 day months)
+    const totalDays = calculateActualDays(startDate, expirationDate);
+    const daysUsed = Math.max(0, Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+    const daysRemaining = Math.max(0, Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 
-    const currentPlanKey = user.subscriptionPlan || 'free';
+    const currentPlanKey = subscription.productId || 'free';
     const currentPlan = PLANS[currentPlanKey] || PLANS.free;
-    const totalDays = currentPlan.periodDays || 30;
 
-    const dailyRate = totalDays > 0 ? currentPlan.price / totalDays : 0;
+    // Calculate daily rate based on actual subscription price and days
+    const actualPrice = subscription.price || currentPlan.price;
+    const dailyRate = totalDays > 0 ? actualPrice / totalDays : 0;
     const usedValue = dailyRate * Math.min(daysUsed, totalDays);
-    const remainingValue = Math.max(0, currentPlan.price - usedValue);
+    const remainingValue = Math.max(0, actualPrice - usedValue);
     const progressPercent = totalDays > 0 ? Math.min(100, (daysUsed / totalDays) * 100) : 0;
+
+    // Check if this is a coupon/free subscription
+    const isCoupon = subscription.price === 0 && currentPlanKey !== 'free';
 
     return {
       daysRemaining,
@@ -114,12 +202,17 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
       progressPercent,
       currentPlan,
       currentPlanKey,
-      isActive: user.subscriptionStatus === 'active' && daysRemaining > 0,
-      isExpired: user.subscriptionStatus === 'expired' || (expiresAt && expiresAt < now),
-      expiresAt,
-      startedAt,
+      isActive: subscription.status === 'active' && daysRemaining > 0,
+      isExpired: subscription.status === 'expired' || expirationDate < now,
+      isCoupon,
+      autoRenewing: subscription.autoRenewing,
+      price: subscription.price,
+      currency: subscription.currency || 'EUR',
+      expirationDate,
+      startDate,
+      renewalDate,
     };
-  }, [user]);
+  }, [subscription]);
 
   // Calculate upgrade price with pro-rated discount
   const calculateUpgradePrice = (targetPlanKey: string) => {
@@ -130,7 +223,13 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
 
     const originalPrice = targetPlan.price;
 
+    // No discount for free users or expired subscriptions
     if (subscriptionDetails.currentPlanKey === 'free' || subscriptionDetails.isExpired) {
+      return { originalPrice, discount: 0, finalPrice: originalPrice, savings: '' };
+    }
+
+    // No discount for coupon users (they paid 0)
+    if (subscriptionDetails.isCoupon) {
       return { originalPrice, discount: 0, finalPrice: originalPrice, savings: '' };
     }
 
@@ -183,11 +282,16 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
 
   const handleConfirmUpgrade = () => {
     if (selectedUpgrade) {
-      const pricing = calculateUpgradePrice(selectedUpgrade);
       // Dispatch to open payment flow
       dispatch({ type: 'TOGGLE_PRICING_MODAL', payload: { isOpen: true, isOffer: false } });
     }
     setShowUpgradeModal(false);
+  };
+
+  // Manual refresh button
+  const handleRefresh = () => {
+    setLoading(true);
+    setRefreshKey(prev => prev + 1);
   };
 
   if (loading) {
@@ -204,7 +308,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
     );
   }
 
-  if (!user?.isSubscribed || !subscriptionDetails) {
+  if (!subscription || !subscriptionDetails) {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="relative overflow-hidden bg-gradient-to-br from-white via-primary-light/5 to-white rounded-2xl shadow-lg border border-neutral-200/50 p-8 md:p-12">
@@ -247,8 +351,30 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
 
   return (
     <div className="space-y-6">
+      {/* Header with refresh */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-neutral-800">Subscription Management</h2>
+        <button
+          onClick={handleRefresh}
+          className="text-sm text-primary hover:text-primary-dark flex items-center gap-1"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Refresh
+        </button>
+      </div>
+
       {/* Current Subscription Card */}
-      <div className={`bg-gradient-to-br ${subscriptionDetails.currentPlan.color} rounded-2xl p-6 text-white shadow-xl`}>
+      <div className={`bg-gradient-to-br ${subscriptionDetails.currentPlan.color} rounded-2xl p-6 text-white shadow-xl relative overflow-hidden`}>
+        {/* Coupon Badge */}
+        {subscriptionDetails.isCoupon && (
+          <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full">
+            <GiftIconComponent className="w-4 h-4" />
+            <span className="text-xs font-semibold">Coupon Applied</span>
+          </div>
+        )}
+
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -257,51 +383,82 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
               </div>
               <div>
                 <h2 className="text-2xl font-bold">{subscriptionDetails.currentPlan.name}</h2>
-                <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(user.subscriptionStatus)}`}>
-                  {user.subscriptionStatus?.toUpperCase() || 'FREE'}
-                </span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(subscription.status)}`}>
+                    {subscription.status?.toUpperCase() || 'FREE'}
+                  </span>
+                  {subscriptionDetails.isCoupon && (
+                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                      FREE TRIAL
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <p className="text-white/80 text-sm">
-              {subscriptionDetails.currentPlan.price > 0
-                ? `€${subscriptionDetails.currentPlan.price}/${subscriptionDetails.currentPlan.period}`
-                : 'Free forever'}
+              {subscriptionDetails.isCoupon ? (
+                'Free coupon subscription'
+              ) : subscriptionDetails.currentPlan.price > 0 ? (
+                `€${subscriptionDetails.price}/${subscriptionDetails.currentPlan.period}`
+              ) : (
+                'Free forever'
+              )}
             </p>
           </div>
 
-          {subscriptionDetails.currentPlan.price > 0 && (
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 min-w-[200px]">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-white/80">Time Remaining</span>
-                <span className="text-xl font-bold">{subscriptionDetails.daysRemaining} days</span>
-              </div>
-              <div className="w-full bg-white/30 rounded-full h-2 overflow-hidden">
-                <div
-                  className="bg-white h-full rounded-full transition-all duration-500"
-                  style={{ width: `${100 - subscriptionDetails.progressPercent}%` }}
-                />
-              </div>
-              <div className="flex justify-between text-xs text-white/70 mt-1">
-                <span>{subscriptionDetails.daysUsed} days used</span>
-                <span>{subscriptionDetails.totalDays} days total</span>
+          {/* Days remaining progress */}
+          <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 min-w-[220px]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-white/80">Time Remaining</span>
+              <span className="text-2xl font-bold">{subscriptionDetails.daysRemaining}</span>
+            </div>
+            <div className="text-xs text-white/70 text-right mb-2">
+              {subscriptionDetails.daysRemaining === 1 ? 'day left' : 'days left'}
+            </div>
+            <div className="w-full bg-white/30 rounded-full h-3 overflow-hidden">
+              <div
+                className="bg-white h-full rounded-full transition-all duration-500 relative"
+                style={{ width: `${100 - subscriptionDetails.progressPercent}%` }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
               </div>
             </div>
-          )}
-        </div>
-
-        {subscriptionDetails.currentPlan.price > 0 && (
-          <div className="mt-4 pt-4 border-t border-white/20 grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-white/70">Started</span>
-              <p className="font-semibold">{formatDate(subscriptionDetails.startedAt)}</p>
-            </div>
-            <div>
-              <span className="text-white/70">Expires</span>
-              <p className="font-semibold">{formatDate(subscriptionDetails.expiresAt)}</p>
+            <div className="flex justify-between text-xs text-white/70 mt-2">
+              <span>{subscriptionDetails.daysUsed} used</span>
+              <span>{subscriptionDetails.totalDays} total</span>
             </div>
           </div>
-        )}
+        </div>
 
+        {/* Subscription dates */}
+        <div className="mt-4 pt-4 border-t border-white/20 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+          <div>
+            <span className="text-white/70">Started</span>
+            <p className="font-semibold">{formatDate(subscriptionDetails.startDate)}</p>
+          </div>
+          <div>
+            <span className="text-white/70">Expires</span>
+            <p className="font-semibold">{formatDate(subscriptionDetails.expirationDate)}</p>
+          </div>
+          <div>
+            <span className="text-white/70">Auto-Renew</span>
+            <p className="font-semibold flex items-center gap-1">
+              {subscriptionDetails.autoRenewing ? (
+                <>
+                  <CheckIcon className="w-4 h-4 text-green-300" />
+                  <span>Enabled</span>
+                </>
+              ) : (
+                <>
+                  <XCircleIcon className="w-4 h-4 text-red-300" />
+                  <span>Disabled</span>
+                </>
+              )}
+            </p>
+          </div>
+        </div>
+
+        {/* Plan features */}
         <div className="mt-4 pt-4 border-t border-white/20">
           <p className="text-sm text-white/70 mb-2">Your plan includes:</p>
           <div className="flex flex-wrap gap-2">
@@ -343,6 +500,27 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
           />
         </div>
       </div>
+
+      {/* Coupon Info Card */}
+      {subscriptionDetails.isCoupon && (
+        <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-yellow-100 rounded-lg flex-shrink-0">
+              <GiftIconComponent className="w-5 h-5 text-yellow-600" />
+            </div>
+            <div>
+              <h4 className="font-semibold text-yellow-900">Coupon Subscription</h4>
+              <p className="text-sm text-yellow-700 mt-1">
+                You're enjoying this plan for free through a coupon code. When your free period ends,
+                you can continue by subscribing to a paid plan.
+              </p>
+              <p className="text-xs text-yellow-600 mt-2">
+                Coupon value: FREE • Expires: {formatDate(subscriptionDetails.expirationDate)}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Upgrade Options */}
       {upgradeOptions.length > 0 && (
@@ -392,7 +570,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
       )}
 
       {/* Pro-rated Calculator Info */}
-      {subscriptionDetails.currentPlan.price > 0 && subscriptionDetails.isActive && (
+      {!subscriptionDetails.isCoupon && subscriptionDetails.currentPlan.price > 0 && subscriptionDetails.isActive && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
           <div className="flex items-start gap-3">
             <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
@@ -408,7 +586,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
               </p>
               <p className="text-xs text-blue-600 mt-2">
                 Daily rate: €{subscriptionDetails.dailyRate.toFixed(2)}/day •
-                Days used: {subscriptionDetails.daysUsed} •
+                Days used: {subscriptionDetails.daysUsed} of {subscriptionDetails.totalDays} •
                 Credit available: €{subscriptionDetails.remainingValue.toFixed(2)}
               </p>
             </div>
@@ -447,7 +625,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
                     </div>
                   </div>
                   {pricing.discount > 0 && (
-                    <p className="text-sm text-green-600 mb-4">🎉 {pricing.savings}</p>
+                    <p className="text-sm text-green-600 mb-4">{pricing.savings}</p>
                   )}
                   <div className="flex gap-3">
                     <button
