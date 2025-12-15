@@ -883,6 +883,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 id: propertyToEdit ? propertyToEdit.id : `prop-${Date.now()}`,
                 sellerId: currentUser.id,
                 status: 'active',
+                title: listingData.title.trim() || undefined,
                 price: Number(listingData.price),
                 address: finalAddress,
                 city: selectedCity,
