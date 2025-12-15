@@ -161,6 +161,59 @@ export const getUserSubscriptions = async (req: Request, res: Response): Promise
 };
 
 /**
+ * @desc    Get user's current active subscription
+ * @route   GET /api/subscriptions/current
+ * @access  Private
+ */
+export const getCurrentSubscription = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = (req as any).user?._id;
+
+    if (!userId) {
+      res.status(401).json({ message: 'User not authenticated' });
+      return;
+    }
+
+    // Find the most recent active subscription for this user
+    const subscription = await Subscription.findOne({
+      userId,
+      status: { $in: ['active', 'trial', 'grace'] },
+      expirationDate: { $gt: new Date() },
+    }).sort({ createdAt: -1 });
+
+    if (!subscription) {
+      // No active subscription found
+      res.status(200).json({ subscription: null });
+      return;
+    }
+
+    res.status(200).json({
+      subscription: {
+        _id: subscription._id,
+        userId: subscription.userId,
+        store: subscription.store,
+        productId: subscription.productId,
+        purchaseToken: subscription.purchaseToken,
+        transactionId: subscription.transactionId,
+        startDate: subscription.startDate,
+        renewalDate: subscription.renewalDate,
+        expirationDate: subscription.expirationDate,
+        status: subscription.status,
+        autoRenewing: subscription.autoRenewing,
+        price: subscription.price,
+        currency: subscription.currency,
+        isAcknowledged: subscription.isAcknowledged,
+        createdAt: subscription.createdAt,
+        updatedAt: subscription.updatedAt,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error getting current subscription:', error);
+    res.status(500).json({ message: 'Error getting current subscription', error: error.message });
+  }
+};
+
+/**
  * @desc    Get a single subscription by ID
  * @route   GET /api/subscriptions/:id
  * @access  Private

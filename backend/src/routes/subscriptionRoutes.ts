@@ -2,6 +2,7 @@ import express from 'express';
 import {
   createSubscription,
   getUserSubscriptions,
+  getCurrentSubscription,
   getSubscriptionById,
   cancelSubscription,
   restoreSubscription,
@@ -19,6 +20,7 @@ router.use(protect);
 // Subscription management
 router.post('/', createSubscription);
 router.get('/', getUserSubscriptions);
+router.get('/current', getCurrentSubscription); // Must be before /:id to avoid conflict
 router.get('/:id', getSubscriptionById);
 router.post('/:id/cancel', cancelSubscription);
 router.post('/:id/restore', restoreSubscription);
