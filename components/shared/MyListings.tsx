@@ -61,7 +61,10 @@ const ListingCard: React.FC<{
             <div className="flex justify-between items-start">
                 <div onClick={handleCardClick} className="cursor-pointer">
                     <StatusBadge status={property.status} />
-                    <p className="font-bold text-lg sm:text-xl text-neutral-800 mt-1">{formatPrice(property.price, property.country)}</p>
+                    {property.title && (
+                        <p className="font-bold text-lg sm:text-xl text-neutral-900 mt-1 line-clamp-1">{property.title}</p>
+                    )}
+                    <p className={`font-bold ${property.title ? 'text-base' : 'text-lg sm:text-xl'} text-primary mt-1`}>{formatPrice(property.price, property.country)}</p>
                     <p className="text-sm text-neutral-600">{property.address}, {property.city}</p>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-shrink-0">
@@ -261,7 +264,7 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
                         setPropertyToPromote(null);
                     }}
                     propertyId={propertyToPromote.id}
-                    propertyTitle={`${propertyToPromote.address}, ${propertyToPromote.city}`}
+                    propertyTitle={propertyToPromote.title || `${propertyToPromote.address}, ${propertyToPromote.city}`}
                     onSuccess={handlePromotionSuccess}
                 />
             )}

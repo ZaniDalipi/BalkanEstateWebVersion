@@ -62,14 +62,14 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({ conversatio
             </div>
             <div className="flex-grow overflow-hidden">
                 <div className="flex justify-between items-center">
-                    <p className={`font-bold text-sm truncate ${isSelected ? 'text-primary-dark' : 'text-neutral-800'}`}>{property.address}</p>
+                    <p className={`font-bold text-sm truncate ${isSelected ? 'text-primary-dark' : 'text-neutral-800'}`}>{property.title || property.address}</p>
                     {unreadCount > 0 && (
                          <span className="bg-primary text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full flex-shrink-0 ml-2">
                             {unreadCount}
                         </span>
                     )}
                 </div>
-                <p className="text-xs text-neutral-500 truncate">{property.city}, {property.country}</p>
+                <p className="text-xs text-neutral-500 truncate">{property.title ? `${property.address}, ` : ''}{property.city}, {property.country}</p>
                 {lastMessage && (
                     <p className={`text-xs mt-1 truncate ${unreadCount > 0 ? 'font-bold text-neutral-800' : 'text-neutral-600'}`}>
                         {(lastMessage.senderId === currentUserId || lastMessage.senderId === 'user') && 'You: '}{lastMessage.text || 'Image'}
