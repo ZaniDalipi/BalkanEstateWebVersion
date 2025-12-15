@@ -276,17 +276,21 @@ export const createProperty = async (
 
     // Tier-based listing limits
     const getTierLimit = (plan: string): number => {
-      switch (plan) {
-        case 'free':
-          return 3;
-        case 'pro_monthly':
-        case 'pro_yearly':
-          return 15;
-        case 'enterprise':
-          return 100; // Effectively unlimited
-        default:
-          return 3;
+      // Normalize plan name for comparison
+      const normalizedPlan = plan?.toLowerCase() || 'free';
+
+      // Check for pro plans (seller or buyer, monthly or yearly)
+      if (normalizedPlan.includes('pro')) {
+        return 15;
       }
+
+      // Check for enterprise plans
+      if (normalizedPlan.includes('enterprise') || normalizedPlan.includes('premium')) {
+        return 100; // Effectively unlimited
+      }
+
+      // Free tier
+      return 3;
     };
 
     let userPlan = user.subscriptionPlan || 'free';
