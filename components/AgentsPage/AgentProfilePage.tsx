@@ -698,6 +698,117 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                                             </div>
                                         </div>
 
+                                        {/* Certificates & Awards */}
+                                        {(agent.certifications || agent.awards) && (
+                                            <div>
+                                                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                                    <AcademicCapIcon className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                                                    Certifications & Awards
+                                                </h3>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                                    {agent.certifications && Array.isArray(agent.certifications) && agent.certifications.map((cert, idx) => (
+                                                        <div key={idx} className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3 sm:p-4 flex items-start gap-3">
+                                                            <CheckBadgeIcon className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <p className="font-semibold text-gray-900 text-sm sm:text-base">{cert}</p>
+                                                                <p className="text-xs text-gray-600 mt-1">Professional Certification</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {agent.awards && Array.isArray(agent.awards) && agent.awards.map((award, idx) => (
+                                                        <div key={idx} className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg p-3 sm:p-4 flex items-start gap-3">
+                                                            <TrophyIcon className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600 flex-shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <p className="font-semibold text-gray-900 text-sm sm:text-base">{award}</p>
+                                                                <p className="text-xs text-gray-600 mt-1">Industry Award</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Properties Map - Shows agent's active and sold properties */}
+                                        {agentProperties.length > 0 && agentProperties.some(p => p.lat && p.lng) && (
+                                            <div>
+                                                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                                    <MapIcon className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                                                    Properties Map
+                                                    <span className="text-sm font-normal text-gray-600 ml-2">
+                                                        ({activeListings.length} active, {soldProperties.length} sold)
+                                                    </span>
+                                                </h3>
+                                                <div className="rounded-xl overflow-hidden shadow-lg border border-gray-200">
+                                                    <MapContainer
+                                                        center={agentProperties.filter(p => p.lat && p.lng)[0] ? [agentProperties.filter(p => p.lat && p.lng)[0].lat!, agentProperties.filter(p => p.lat && p.lng)[0].lng!] : [agent.lat || 42.0, agent.lng || 21.0]}
+                                                        zoom={12}
+                                                        scrollWheelZoom={true}
+                                                        className="w-full h-[400px] sm:h-[500px]"
+                                                        maxZoom={18}
+                                                        minZoom={3}
+                                                    >
+                                                        <TileLayer
+                                                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                                        />
+                                                        {agentProperties.filter(p => p.lat && p.lng).map((property) => (
+                                                            <Marker
+                                                                key={property.id}
+                                                                position={[property.lat!, property.lng!]}
+                                                                icon={L.icon({
+                                                                    iconUrl: property.status === 'sold'
+                                                                        ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png'
+                                                                        : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                                                                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                                                                    iconSize: [25, 41],
+                                                                    iconAnchor: [12, 41],
+                                                                    popupAnchor: [1, -34],
+                                                                    shadowSize: [41, 41]
+                                                                })}
+                                                            >
+                                                                <Popup>
+                                                                    <div className="min-w-[200px]">
+                                                                        {property.imageUrl && (
+                                                                            <img src={property.imageUrl} alt={property.address} className="w-full h-32 object-cover rounded-lg mb-2" />
+                                                                        )}
+                                                                        <p className="font-bold text-sm mb-1">{property.address}</p>
+                                                                        <p className="text-xs text-gray-600 mb-2">{property.city}, {property.country}</p>
+                                                                        <p className="font-bold text-blue-600 mb-2">{formatPrice(property.price, property.country)}</p>
+                                                                        <div className="flex gap-2 text-xs text-gray-600 mb-3">
+                                                                            <span>{property.beds} beds</span>
+                                                                            <span>•</span>
+                                                                            <span>{property.baths} baths</span>
+                                                                            <span>•</span>
+                                                                            <span>{property.sqft} m²</span>
+                                                                        </div>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                dispatch({ type: 'SET_SELECTED_PROPERTY', payload: property });
+                                                                                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'propertyDetail' });
+                                                                            }}
+                                                                            className={`w-full text-white px-3 py-2 rounded-lg font-semibold text-sm ${property.status === 'sold' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
+                                                                        >
+                                                                            {property.status === 'sold' ? 'View Sold Property' : 'View Details'}
+                                                                        </button>
+                                                                    </div>
+                                                                </Popup>
+                                                            </Marker>
+                                                        ))}
+                                                    </MapContainer>
+                                                </div>
+                                                <div className="mt-3 flex items-center justify-center gap-6 text-sm">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                                                        <span className="text-gray-600">For Sale ({activeListings.length})</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                                                        <span className="text-gray-600">Sold ({soldProperties.length})</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {/* Agent Location Map */}
                                         {agent.lat != null && agent.lng != null && !isNaN(agent.lat) && !isNaN(agent.lng) && (
                                             <div>
