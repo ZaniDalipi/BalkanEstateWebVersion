@@ -65,6 +65,13 @@ export interface User {
     testimonials?: Testimonial[];
     isSubscribed: boolean;
     publicKey?: string; // E2E encryption public key (JWK format)
+    // Subscription fields
+    subscriptionPlan?: string; // e.g., 'seller_pro_monthly', 'seller_pro_yearly'
+    subscriptionProductName?: string; // Human-readable name
+    subscriptionStatus?: 'active' | 'expired' | 'trial' | 'grace' | 'canceled';
+    subscriptionExpiresAt?: string | Date;
+    subscriptionStartedAt?: string | Date;
+    subscriptionSource?: 'google' | 'apple' | 'stripe' | 'web';
     marketStats?: {
         avgDaysOnMarket?: number;
         priceGrowthYoY?: number;

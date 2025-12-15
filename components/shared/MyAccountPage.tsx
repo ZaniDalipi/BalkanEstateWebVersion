@@ -4,7 +4,7 @@ import MyListings from './MyListings';
 import SubscriptionManagement from './SubscriptionManagement';
 import ProfileStatistics from './ProfileStatistics';
 import { User, UserRole, Agency } from '../../types';
-import { BuildingOfficeIcon, ChartBarIcon, UserCircleIcon, ArrowLeftOnRectangleIcon, XMarkIcon, MapPinIcon } from '../../constants';
+import { BuildingOfficeIcon, ChartBarIcon, UserCircleIcon, ArrowLeftOnRectangleIcon, XMarkIcon, MapPinIcon, CreditCardIcon } from '../../constants';
 import AgentLicenseModal from './AgentLicenseModal';
 import AgencyManagementSection from './AgencyManagementSection';
 import { switchRole, joinAgencyByInvitationCode, getAgencies, updateAgentProfile } from '../../services/apiService';
@@ -844,7 +844,7 @@ const MyAccountPage: React.FC = () => {
     const isSellerProfile = state.currentUser.role === UserRole.AGENT || state.currentUser.role === UserRole.PRIVATE_SELLER;
 
     useEffect(() => {
-        if (!isSellerProfile && (activeTab === 'listings' || activeTab === 'performance')) {
+        if (!isSellerProfile && (activeTab === 'listings' || activeTab === 'performance' || activeTab === 'subscription')) {
             setActiveTab('profile');
         }
     }, [isSellerProfile, activeTab]);
@@ -939,6 +939,7 @@ const MyAccountPage: React.FC = () => {
                                     <>
                                         <TabButton label="My Listings" icon={<BuildingOfficeIcon className="w-6 h-6"/>} isActive={activeTab === 'listings'} onClick={() => setActiveTab('listings')} />
                                         <TabButton label="Performance" icon={<ChartBarIcon className="w-6 h-6"/>} isActive={activeTab === 'performance'} onClick={() => setActiveTab('performance')} />
+                                        <TabButton label="Subscription" icon={<CreditCardIcon className="w-6 h-6"/>} isActive={activeTab === 'subscription'} onClick={() => setActiveTab('subscription')} />
                                     </>
                                 )}
                                 <TabButton label="Profile Settings" icon={<UserCircleIcon className="w-6 h-6"/>} isActive={activeTab === 'profile'} onClick={() => setActiveTab('profile')} />
