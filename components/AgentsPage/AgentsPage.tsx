@@ -409,10 +409,11 @@ const AgentsPage: React.FC = () => {
                       e.preventDefault();
                       // Trigger search
                     }}
-                    className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-primary to-primary-dark text-white font-bold rounded-lg hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
+                    className="px-2.5 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 bg-gradient-to-r from-primary to-primary-dark text-white font-bold rounded-lg hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm md:text-base whitespace-nowrap"
+                    aria-label="Search agents"
                   >
-                    <MagnifyingGlassIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-                    Search
+                    <MagnifyingGlassIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5 md:w-5 md:h-5 flex-shrink-0" />
+                    <span className="hidden xs:inline">Search</span>
                   </button>
                 </div>
               </div>

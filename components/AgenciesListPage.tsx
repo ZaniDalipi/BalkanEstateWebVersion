@@ -302,9 +302,9 @@ const AgenciesListPage: React.FC = () => {
                   <a
                     href={`mailto:${agency.email}`}
                     onClick={(e) => e.stopPropagation()}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-green-50 text-gray-700 hover:text-green-600 rounded-lg text-sm transition-all border border-gray-200 hover:border-green-300"
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 sm:py-2.5 bg-gray-50 hover:bg-green-50 text-gray-700 hover:text-green-600 rounded-lg text-xs sm:text-sm transition-all border border-gray-200 hover:border-green-300"
                   >
-                    <EnvelopeIcon className="w-4 h-4" />
+                    <EnvelopeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span className="hidden sm:inline font-medium">Email</span>
                   </a>
                 )}
@@ -314,17 +314,18 @@ const AgenciesListPage: React.FC = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg text-sm transition-all border border-gray-200 hover:border-purple-300"
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 sm:py-2.5 bg-gray-50 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg text-xs sm:text-sm transition-all border border-gray-200 hover:border-purple-300"
                   >
-                    <GlobeAltIcon className="w-4 h-4" />
+                    <GlobeAltIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span className="hidden sm:inline font-medium">Website</span>
                   </a>
                 )}
               </div>
 
-              <button className="px-5 py-2.5 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl text-sm font-bold hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2">
-                View Profile
-                <ChevronRightIcon className="w-4 h-4" />
+              <button className="px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-primary to-primary-dark text-white rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold hover:shadow-xl hover:scale-105 transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap flex-shrink-0">
+                <span className="hidden xs:inline">View Profile</span>
+                <span className="xs:hidden">View</span>
+                <ChevronRightIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             </div>
           </div>
@@ -495,10 +496,11 @@ const AgenciesListPage: React.FC = () => {
                       e.preventDefault();
                       fetchAgencies();
                     }}
-                    className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-primary to-primary-dark text-white font-bold rounded-lg hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
+                    className="px-2.5 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 bg-gradient-to-r from-primary to-primary-dark text-white font-bold rounded-lg hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm md:text-base whitespace-nowrap"
+                    aria-label="Search agencies"
                   >
-                    <MagnifyingGlassIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-                    Search
+                    <MagnifyingGlassIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5 md:w-5 md:h-5 flex-shrink-0" />
+                    <span className="hidden xs:inline">Search</span>
                   </button>
                 </div>
               </div>
