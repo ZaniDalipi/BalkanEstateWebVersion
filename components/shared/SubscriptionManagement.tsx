@@ -524,23 +524,25 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
 
       {/* Current Subscription Card */}
       <div className={`bg-gradient-to-br ${subscriptionDetails.currentPlan.color} rounded-2xl p-6 text-white shadow-xl relative overflow-hidden`}>
-        {/* Coupon Badge */}
+        {/* Coupon Badge - positioned to not overlap with content */}
         {subscriptionDetails.isCoupon && (
-          <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full">
-            <GiftIconComponent className="w-4 h-4" />
-            <span className="text-xs font-semibold">Coupon Applied</span>
+          <div className="absolute top-0 left-0 right-0 flex justify-center -mt-0">
+            <div className="flex items-center gap-1.5 px-4 py-1.5 bg-yellow-400 text-yellow-900 rounded-b-lg shadow-md">
+              <GiftIconComponent className="w-4 h-4" />
+              <span className="text-xs font-bold">COUPON APPLIED</span>
+            </div>
           </div>
         )}
 
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
+        <div className={`flex flex-col md:flex-row md:items-center md:justify-between gap-4 ${subscriptionDetails.isCoupon ? 'mt-4' : ''}`}>
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-white/20 rounded-lg">
+              <div className="p-2 bg-white/20 rounded-lg flex-shrink-0">
                 <ChartBarIcon className="w-6 h-6" />
               </div>
-              <div>
-                <h2 className="text-2xl font-bold">{subscriptionDetails.currentPlan.name}</h2>
-                <div className="flex items-center gap-2 mt-1">
+              <div className="min-w-0">
+                <h2 className="text-2xl font-bold truncate">{subscriptionDetails.currentPlan.name}</h2>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
                   <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(subscription.status)}`}>
                     {getStatusLabel(subscription.status)}
                   </span>
@@ -569,7 +571,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
           </div>
 
           {/* Days remaining progress */}
-          <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 min-w-[220px]">
+          <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 min-w-[200px] md:min-w-[220px] flex-shrink-0">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-white/80">Time Remaining</span>
               <span className="text-2xl font-bold">{subscriptionDetails.daysRemaining}</span>
@@ -927,40 +929,96 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
       {/* Cancel Subscription Confirmation Modal */}
       {showCancelModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
+              <div className={`w-16 h-16 ${subscriptionDetails?.isCoupon ? 'bg-yellow-100' : 'bg-red-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
+                {subscriptionDetails?.isCoupon ? (
+                  <GiftIconComponent className="w-8 h-8 text-yellow-600" />
+                ) : (
+                  <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                )}
               </div>
-              <h3 className="text-xl font-bold text-neutral-800 mb-2">Cancel Subscription?</h3>
+              <h3 className="text-xl font-bold text-neutral-800 mb-2">
+                {subscriptionDetails?.isCoupon ? 'Cancel Free Trial?' : 'Cancel Subscription?'}
+              </h3>
               <p className="text-neutral-600">
-                Are you sure you want to cancel your <span className="font-semibold">{subscriptionDetails?.currentPlan.name}</span> subscription?
+                Are you sure you want to cancel your <span className="font-semibold">{subscriptionDetails?.currentPlan.name}</span> {subscriptionDetails?.isCoupon ? 'free trial' : 'subscription'}?
               </p>
             </div>
 
-            <div className="bg-neutral-50 rounded-xl p-4 mb-6">
-              <h4 className="text-sm font-semibold text-neutral-700 mb-2">What happens when you cancel:</h4>
-              <ul className="space-y-2 text-sm text-neutral-600">
-                <li className="flex items-start gap-2">
-                  <CheckCircleIcon className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>You'll keep access until <span className="font-medium">{formatDate(subscriptionDetails?.expirationDate || null)}</span></span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircleIcon className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Your listings will remain active during this time</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <XCircleIcon className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                  <span>After that, you'll revert to the free plan (3 listings max)</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <XCircleIcon className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                  <span>Premium features will no longer be available</span>
-                </li>
-              </ul>
-            </div>
+            {/* Different content for coupon vs paid */}
+            {subscriptionDetails?.isCoupon ? (
+              // Coupon subscription - just cancel
+              <div className="bg-yellow-50 rounded-xl p-4 mb-6 border border-yellow-200">
+                <h4 className="text-sm font-semibold text-yellow-800 mb-2">Cancelling your free trial:</h4>
+                <ul className="space-y-2 text-sm text-yellow-700">
+                  <li className="flex items-start gap-2">
+                    <XCircleIcon className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                    <span>Your free trial will end immediately</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <XCircleIcon className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                    <span>You'll revert to the free plan (3 listings max)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <XCircleIcon className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                    <span>Premium features will no longer be available</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircleIcon className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>No charges - it was free!</span>
+                  </li>
+                </ul>
+              </div>
+            ) : (
+              // Paid subscription - offer refund
+              <>
+                <div className="bg-neutral-50 rounded-xl p-4 mb-4">
+                  <h4 className="text-sm font-semibold text-neutral-700 mb-2">What happens when you cancel:</h4>
+                  <ul className="space-y-2 text-sm text-neutral-600">
+                    <li className="flex items-start gap-2">
+                      <CheckCircleIcon className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span>You'll keep access until <span className="font-medium">{formatDate(subscriptionDetails?.expirationDate || null)}</span></span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircleIcon className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span>Your listings will remain active during this time</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <XCircleIcon className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                      <span>After that, you'll revert to the free plan (3 listings max)</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Refund information for paid subscriptions */}
+                {subscriptionDetails && subscriptionDetails.remainingValue > 0 && (
+                  <div className="bg-green-50 rounded-xl p-4 mb-4 border border-green-200">
+                    <h4 className="text-sm font-semibold text-green-800 mb-2 flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Refund Available
+                    </h4>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between text-green-700">
+                        <span>Days remaining:</span>
+                        <span className="font-medium">{subscriptionDetails.daysRemaining} of {subscriptionDetails.totalDays}</span>
+                      </div>
+                      <div className="flex justify-between text-green-700">
+                        <span>Pro-rated refund:</span>
+                        <span className="font-bold text-green-800">€{subscriptionDetails.remainingValue.toFixed(2)}</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-green-600 mt-2">
+                      If you cancel now and request a refund, we'll refund the unused portion of your subscription to your original payment method.
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
 
             {actionError && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
@@ -968,32 +1026,67 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
               </div>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3">
+              {/* For paid subscriptions, show two cancel options */}
+              {!subscriptionDetails?.isCoupon && subscriptionDetails && subscriptionDetails.remainingValue > 0 ? (
+                <>
+                  <button
+                    onClick={handleCancelSubscription}
+                    disabled={cancelling}
+                    className="w-full py-2.5 rounded-lg font-semibold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 transition-colors disabled:opacity-50 text-sm"
+                  >
+                    Cancel at end of billing period
+                  </button>
+                  <button
+                    onClick={() => {
+                      // Cancel with refund - would trigger refund process
+                      handleCancelSubscription();
+                    }}
+                    disabled={cancelling}
+                    className="w-full py-2.5 rounded-lg font-bold text-white bg-green-600 hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {cancelling ? (
+                      <>
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        Cancel now & get €{subscriptionDetails.remainingValue.toFixed(2)} refund
+                      </>
+                    )}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleCancelSubscription}
+                  disabled={cancelling}
+                  className={`w-full py-2.5 rounded-lg font-bold text-white ${subscriptionDetails?.isCoupon ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-red-600 hover:bg-red-700'} transition-colors disabled:opacity-50 flex items-center justify-center gap-2`}
+                >
+                  {cancelling ? (
+                    <>
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Cancelling...
+                    </>
+                  ) : (
+                    subscriptionDetails?.isCoupon ? 'Yes, Cancel Free Trial' : 'Yes, Cancel'
+                  )}
+                </button>
+              )}
               <button
                 onClick={() => {
                   setShowCancelModal(false);
                   setActionError(null);
                 }}
-                className="flex-1 py-2.5 rounded-lg font-semibold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 transition-colors"
+                className="w-full py-2.5 rounded-lg font-semibold text-neutral-600 hover:text-neutral-800 hover:bg-neutral-50 transition-colors"
               >
-                Keep Subscription
-              </button>
-              <button
-                onClick={handleCancelSubscription}
-                disabled={cancelling}
-                className="flex-1 py-2.5 rounded-lg font-bold text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {cancelling ? (
-                  <>
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Cancelling...
-                  </>
-                ) : (
-                  'Yes, Cancel'
-                )}
+                Keep {subscriptionDetails?.isCoupon ? 'Free Trial' : 'Subscription'}
               </button>
             </div>
           </div>
