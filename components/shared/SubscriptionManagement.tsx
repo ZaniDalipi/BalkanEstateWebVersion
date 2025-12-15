@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { CheckCircleIcon, XCircleIcon, SparklesIcon, HomeIcon, ChartBarIcon, CheckIcon } from '../../constants';
+import { CheckCircleIcon, XCircleIcon, SparklesIcon, HomeIcon, ChartBarIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { User } from '../../types';
 
@@ -516,7 +516,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
             <p className="font-semibold flex items-center gap-1">
               {subscriptionDetails.autoRenewing ? (
                 <>
-                  <CheckIcon className="w-4 h-4 text-green-300" />
+                  <CheckCircleIcon className="w-4 h-4 text-green-300" />
                   <span>Enabled</span>
                 </>
               ) : (
@@ -535,7 +535,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
           <div className="flex flex-wrap gap-2">
             {subscriptionDetails.currentPlan.features.map((feature, idx) => (
               <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 bg-white/20 rounded-full text-xs">
-                <CheckIcon className="w-3 h-3" />
+                <CheckCircleIcon className="w-3 h-3" />
                 {feature}
               </span>
             ))}
@@ -628,7 +628,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
                   <ul className="space-y-2 mb-4">
                     {plan.features.map((feature, idx) => (
                       <li key={idx} className="flex items-center gap-2 text-sm text-neutral-700">
-                        <CheckIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
                         {feature}
                       </li>
                     ))}
