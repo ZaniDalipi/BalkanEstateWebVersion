@@ -170,6 +170,8 @@ export const getProperties = async (
       .map(p => (p.sellerId as any)?.agencyId)
       .filter(Boolean);
 
+    let enrichedProperties: any[] = properties;
+
     if (agencyIds.length > 0) {
       const agencies = await Agency.find(
         { _id: { $in: agencyIds } },
@@ -181,7 +183,7 @@ export const getProperties = async (
       );
 
       // Add agencyLogo to each property's seller
-      properties = properties.map(p => {
+      enrichedProperties = properties.map(p => {
         const prop = p.toObject ? p.toObject() : p;
         const seller = prop.sellerId as any;
         if (seller?.agencyId) {
@@ -195,7 +197,7 @@ export const getProperties = async (
     const total = await Property.countDocuments(filter);
 
     res.json({
-      properties,
+      properties: enrichedProperties,
       pagination: {
         page: pageNum,
         limit: limitNum,
