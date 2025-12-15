@@ -185,32 +185,69 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
         <div className="flex-grow"></div>
 
         <div className="mt-2.5 sm:mt-3 pt-2.5 sm:pt-3 border-t border-neutral-100">
-            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-2.5">
-                {showCompareButton && (
-                    <button
-                        onClick={handleCompareClick}
-                        className={`flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all shadow-sm hover:shadow-md w-full sm:w-auto ${
-                            isInComparison
-                                ? 'bg-primary-light text-primary-dark border-2 border-primary/50'
-                                : 'bg-white text-neutral-700 border-2 border-neutral-300 hover:bg-neutral-100'
-                        }`}
-                    >
-                        <ScaleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-                        <span>{isInComparison ? 'Selected' : 'Compare'}</span>
-                    </button>
-                )}
-                <button
-                    onClick={handleCardClick}
-                    className="bg-primary text-white px-3 sm:px-4 py-2.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold hover:bg-primary-dark transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-1.5 w-full sm:w-auto"
-                >
+            {/* Seller/Agent Info Section */}
+            <div className="flex items-center justify-between gap-2 mb-2">
+                {/* Left: Seller/Agent Info */}
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                     {property.seller.avatarUrl ? (
-                        <img src={property.seller.avatarUrl} alt={property.seller.name} className="w-4 h-4 sm:w-5 sm:h-5 rounded-full object-cover border-2 border-white/50" />
+                        <img
+                            src={property.seller.avatarUrl}
+                            alt={property.seller.name}
+                            className="w-8 h-8 rounded-full object-cover border-2 border-neutral-200 flex-shrink-0"
+                        />
                     ) : (
-                        <UserCircleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <div className="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center flex-shrink-0">
+                            <UserCircleIcon className="w-5 h-5 text-neutral-500" />
+                        </div>
                     )}
-                    <span>View Details</span>
-                </button>
+                    <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-sm font-medium text-neutral-800 truncate">{property.seller.name}</p>
+                        <span className={`inline-flex items-center text-[10px] sm:text-xs font-semibold px-1.5 py-0.5 rounded ${
+                            property.seller.type === 'agent'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-neutral-100 text-neutral-600'
+                        }`}>
+                            {property.seller.type === 'agent' ? 'Agent' : 'Private Seller'}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Right: Agency Logo & Name (if agent with agency) */}
+                {property.seller.type === 'agent' && property.seller.agencyName && (
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {property.seller.agencyLogo ? (
+                            <img
+                                src={property.seller.agencyLogo}
+                                alt={property.seller.agencyName}
+                                className="w-8 h-8 rounded object-contain border border-neutral-200 bg-white p-0.5"
+                            />
+                        ) : (
+                            <div className="w-8 h-8 rounded bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/20">
+                                <BuildingOfficeIcon className="w-4 h-4 text-primary" />
+                            </div>
+                        )}
+                        <div className="hidden sm:block max-w-[80px]">
+                            <p className="text-[10px] text-neutral-500 leading-tight">Agency</p>
+                            <p className="text-xs font-medium text-neutral-700 truncate">{property.seller.agencyName}</p>
+                        </div>
+                    </div>
+                )}
             </div>
+
+            {/* Compare Button (if enabled) */}
+            {showCompareButton && (
+                <button
+                    onClick={handleCompareClick}
+                    className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all shadow-sm hover:shadow-md w-full ${
+                        isInComparison
+                            ? 'bg-primary-light text-primary-dark border-2 border-primary/50'
+                            : 'bg-white text-neutral-700 border-2 border-neutral-300 hover:bg-neutral-100'
+                    }`}
+                >
+                    <ScaleIcon className="w-4 h-4" />
+                    <span>{isInComparison ? 'Remove from Compare' : 'Add to Compare'}</span>
+                </button>
+            )}
         </div>
       </div>
     </div>

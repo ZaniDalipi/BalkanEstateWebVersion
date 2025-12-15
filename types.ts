@@ -25,6 +25,8 @@ export interface Seller {
     avatarUrl?: string;
     phone: string;
     agencyName?: string;
+    agencyLogo?: string;
+    agencyId?: string;
 }
 
 export interface Testimonial {
