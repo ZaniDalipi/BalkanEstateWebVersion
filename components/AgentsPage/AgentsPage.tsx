@@ -8,6 +8,7 @@ import AgencyBadge from '../shared/AgencyBadge'; // Added import
 import { MagnifyingGlassIcon, ChevronDownIcon, ChevronUpIcon, UserGroupIcon, PhoneIcon, BuildingOfficeIcon } from '../../constants';
 import Footer from '../shared/Footer';
 type SearchTab = 'location' | 'name' | 'specialization';
+type SortOption = 'rating' | 'experience' | 'sales' | 'recent' | 'name';
 
 const AgentsPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
@@ -19,6 +20,17 @@ const AgentsPage: React.FC = () => {
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+
+  // Advanced filters
+  const [sortBy, setSortBy] = useState<SortOption>('rating');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    propertyTypes: [] as string[],
+    minRating: 0,
+    minExperience: 0,
+    languages: [] as string[],
+    priceRange: 'all' as 'all' | 'luxury' | 'mid' | 'affordable',
+  });
 
   // Contact form state
   const [contactForm, setContactForm] = useState({
@@ -95,31 +107,100 @@ const AgentsPage: React.FC = () => {
   };
 
   const filteredAgents = useMemo(() => {
-    if (!searchQuery.trim()) return agents;
+    let result = [...agents];
 
-    const query = searchQuery.toLowerCase().trim();
-    return agents.filter(agent => {
-      if (searchTab === 'location') {
-        // Search by city, country, or both
-        const city = (agent.city || '').toLowerCase();
-        const country = (agent.country || '').toLowerCase();
-        const fullLocation = `${city} ${country}`.trim();
+    // Apply search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter(agent => {
+        if (searchTab === 'location') {
+          // Search by city, country, address
+          const city = (agent.city || '').toLowerCase();
+          const country = (agent.country || '').toLowerCase();
+          const address = (agent.address || '').toLowerCase();
+          const fullLocation = `${address} ${city} ${country}`.trim();
 
-        // Check if query matches city, country, or combined location
-        return city.includes(query) ||
-               country.includes(query) ||
-               fullLocation.includes(query);
-      } else if (searchTab === 'name') {
-        // Search by agent name
-        return agent.name.toLowerCase().includes(query);
-      } else if (searchTab === 'specialization') {
-        // Search by specializations
-        const specializations = (agent.specializations || []).map(s => s.toLowerCase());
-        return specializations.some(spec => spec.includes(query));
+          return city.includes(query) ||
+                 country.includes(query) ||
+                 address.includes(query) ||
+                 fullLocation.includes(query);
+        } else if (searchTab === 'name') {
+          // Search by agent name
+          return agent.name.toLowerCase().includes(query);
+        } else if (searchTab === 'specialization') {
+          // Search by specializations and bio
+          const specializations = (agent.specializations || []).map(s => s.toLowerCase());
+          const bio = (agent.bio || '').toLowerCase();
+          return specializations.some(spec => spec.includes(query)) || bio.includes(query);
+        }
+        return true;
+      });
+    }
+
+    // Apply advanced filters
+    result = result.filter(agent => {
+      // Property type filter
+      if (filters.propertyTypes.length > 0) {
+        const agentSpecs = (agent.specializations || []).map(s => s.toLowerCase());
+        const hasMatch = filters.propertyTypes.some(type =>
+          agentSpecs.some(spec => spec.includes(type.toLowerCase()))
+        );
+        if (!hasMatch) return false;
       }
+
+      // Rating filter
+      if (filters.minRating > 0) {
+        const rating = agent.rating || 0;
+        if (rating < filters.minRating) return false;
+      }
+
+      // Experience filter
+      if (filters.minExperience > 0) {
+        const experience = agent.yearsOfExperience || 0;
+        if (experience < filters.minExperience) return false;
+      }
+
+      // Language filter
+      if (filters.languages.length > 0) {
+        const agentLangs = (agent.languages || []).map(l => l.toLowerCase());
+        const hasMatch = filters.languages.some(lang =>
+          agentLangs.includes(lang.toLowerCase())
+        );
+        if (!hasMatch) return false;
+      }
+
+      // Price range filter (based on average sale price)
+      if (filters.priceRange !== 'all') {
+        const avgPrice = agent.averageprice || 0;
+        if (filters.priceRange === 'luxury' && avgPrice < 500000) return false;
+        if (filters.priceRange === 'mid' && (avgPrice < 150000 || avgPrice > 500000)) return false;
+        if (filters.priceRange === 'affordable' && avgPrice > 150000) return false;
+      }
+
       return true;
     });
-  }, [agents, searchQuery, searchTab]);
+
+    // Apply sorting
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'rating':
+          return (b.rating || 0) - (a.rating || 0);
+        case 'experience':
+          return (b.yearsOfExperience || 0) - (a.yearsOfExperience || 0);
+        case 'sales':
+          return (b.propertiesSold || 0) - (a.propertiesSold || 0);
+        case 'recent':
+          // Sort by most recent activity (use a timestamp if available, otherwise keep order)
+          return 0;
+        case 'name':
+          return a.name.localeCompare(b.name);
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [agents, searchQuery, searchTab, filters, sortBy]);
 
   const selectedAgent = useMemo(() => {
     if (!selectedAgentId) return null;
@@ -533,6 +614,140 @@ const AgentsPage: React.FC = () => {
       {/* Main Content - Now this flows properly after the hero section */}
       <main className="w-full flex-grow">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          {/* Filters and Sort Section */}
+          <div className="mb-6">
+            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 sm:p-6">
+              {/* Top Row: Sort and Filters Toggle */}
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-sm font-medium text-gray-700">Sort by:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortOption)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                  >
+                    <option value="rating">Highest Rated</option>
+                    <option value="experience">Most Experienced</option>
+                    <option value="sales">Most Sales</option>
+                    <option value="name">Name (A-Z)</option>
+                  </select>
+                </div>
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors text-sm font-medium"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                  </svg>
+                  {showFilters ? 'Hide Filters' : 'Show Filters'}
+                  {(filters.propertyTypes.length > 0 || filters.minRating > 0 || filters.minExperience > 0 || filters.languages.length > 0 || filters.priceRange !== 'all') && (
+                    <span className="bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {[filters.propertyTypes.length, filters.minRating > 0 ? 1 : 0, filters.minExperience > 0 ? 1 : 0, filters.languages.length, filters.priceRange !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* Advanced Filters Panel */}
+              {showFilters && (
+                <div className="border-t border-gray-200 pt-4 space-y-4 animate-fade-in-up">
+                  {/* Property Types */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Specialization</label>
+                    <div className="flex flex-wrap gap-2">
+                      {['Luxury', 'Commercial', 'Residential', 'Investment', 'New Construction', 'Foreclosures'].map(type => (
+                        <button
+                          key={type}
+                          onClick={() => {
+                            setFilters(prev => ({
+                              ...prev,
+                              propertyTypes: prev.propertyTypes.includes(type)
+                                ? prev.propertyTypes.filter(t => t !== type)
+                                : [...prev.propertyTypes, type]
+                            }));
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                            filters.propertyTypes.includes(type)
+                              ? 'bg-primary text-white shadow-md'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Rating Filter */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Minimum Rating</label>
+                      <select
+                        value={filters.minRating}
+                        onChange={(e) => setFilters(prev => ({ ...prev, minRating: Number(e.target.value) }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                      >
+                        <option value="0">Any Rating</option>
+                        <option value="3">3+ Stars</option>
+                        <option value="4">4+ Stars</option>
+                        <option value="4.5">4.5+ Stars</option>
+                      </select>
+                    </div>
+
+                    {/* Experience Filter */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Experience</label>
+                      <select
+                        value={filters.minExperience}
+                        onChange={(e) => setFilters(prev => ({ ...prev, minExperience: Number(e.target.value) }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                      >
+                        <option value="0">Any Experience</option>
+                        <option value="1">1+ Years</option>
+                        <option value="3">3+ Years</option>
+                        <option value="5">5+ Years</option>
+                        <option value="10">10+ Years</option>
+                      </select>
+                    </div>
+
+                    {/* Price Range Filter */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Price Range Focus</label>
+                      <select
+                        value={filters.priceRange}
+                        onChange={(e) => setFilters(prev => ({ ...prev, priceRange: e.target.value as any }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                      >
+                        <option value="all">All Price Ranges</option>
+                        <option value="affordable">Affordable ({"<"}€150K)</option>
+                        <option value="mid">Mid-Range (€150K-€500K)</option>
+                        <option value="luxury">Luxury ({">"}€500K)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Clear Filters Button */}
+                  {(filters.propertyTypes.length > 0 || filters.minRating > 0 || filters.minExperience > 0 || filters.priceRange !== 'all') && (
+                    <div className="pt-2">
+                      <button
+                        onClick={() => setFilters({
+                          propertyTypes: [],
+                          minRating: 0,
+                          minExperience: 0,
+                          languages: [],
+                          priceRange: 'all'
+                        })}
+                        className="text-sm text-primary hover:text-primary-dark font-medium"
+                      >
+                        Clear all filters
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Section Header */}
           <div className="mb-8">
             <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">
