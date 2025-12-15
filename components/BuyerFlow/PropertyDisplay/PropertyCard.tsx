@@ -11,9 +11,8 @@ interface PropertyCardProps {
 }
 
 const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCompareButton }) => {
-  const { state, dispatch, toggleSavedHome, createConversation } = useAppContext();
+  const { state, dispatch, toggleSavedHome } = useAppContext();
   const [imageError, setImageError] = useState(false);
-  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const isFavorited = state.savedHomes.some(p => p.id === property.id);
   const isInComparison = state.comparisonList.includes(property.id);
@@ -59,13 +58,13 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
       }
   }, [isInComparison, dispatch, property.id, state.comparisonList.length, showToast]);
 
-  // Property type labels
+  // Property type labels (short versions for mobile)
   const propertyTypeLabel = {
-    apartment: 'Apartment',
+    apartment: 'Apt',
     house: 'House',
     villa: 'Villa',
     land: 'Land',
-    commercial: 'Commercial',
+    commercial: 'Comm',
   }[property.propertyType] || 'Property';
 
   // Determine card styles based on promotion tier
@@ -92,11 +91,11 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
       {/* Image Section */}
       <div className="relative overflow-hidden">
         {imageError ? (
-          <div className="w-full h-44 sm:h-48 md:h-52 bg-gradient-to-br from-neutral-100 via-neutral-200 to-neutral-300 flex items-center justify-center">
+          <div className="w-full h-40 sm:h-44 md:h-48 bg-gradient-to-br from-neutral-100 via-neutral-200 to-neutral-300 flex items-center justify-center">
             <BuildingOfficeIcon className="w-12 h-12 text-neutral-400" />
           </div>
         ) : (
-          <div className="relative w-full h-44 sm:h-48 md:h-52 overflow-hidden">
+          <div className="relative w-full h-40 sm:h-44 md:h-48 overflow-hidden">
             <img
               src={property.imageUrl}
               alt={property.address}
@@ -106,27 +105,27 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
               onError={() => setImageError(true)}
             />
             {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
           </div>
         )}
 
         {/* Top badges row */}
-        <div className="absolute top-3 left-3 right-3 flex justify-between items-start z-10">
-          <div className="flex flex-col gap-2">
+        <div className="absolute top-2 left-2 right-2 flex justify-between items-start z-10">
+          <div className="flex flex-col gap-1.5">
             {/* Sold Badge */}
             {isSold && (
-              <div className="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-1.5">
-                <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+              <div className="bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                 SOLD
               </div>
             )}
 
             {/* New Badge */}
             {!isSold && isNew && !isActivelyPromoted && (
-              <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-1.5">
-                <span className="relative flex h-2 w-2">
+              <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg flex items-center gap-1">
+                <span className="relative flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
                 </span>
                 NEW
               </div>
@@ -134,7 +133,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
 
             {/* Promotion Badges */}
             {!isSold && isActivelyPromoted && promotionTier && (
-              <div className={`text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-1.5 ${
+              <div className={`text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg flex items-center gap-1 ${
                 promotionTier === 'premium'
                   ? 'bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600'
                   : promotionTier === 'highlight'
@@ -143,7 +142,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
                   ? 'bg-gradient-to-r from-blue-500 via-blue-600 to-cyan-500'
                   : 'bg-gradient-to-r from-gray-600 to-gray-700'
               }`}>
-                <span className="text-sm">✨</span>
+                <span className="text-xs">✨</span>
                 {promotionTier === 'premium' && 'PREMIUM'}
                 {promotionTier === 'highlight' && 'HIGHLIGHT'}
                 {promotionTier === 'featured' && 'FEATURED'}
@@ -153,8 +152,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
 
             {/* Urgent Badge */}
             {!isSold && isActivelyPromoted && property.hasUrgentBadge && (
-              <div className="bg-gradient-to-r from-red-600 to-rose-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg animate-pulse flex items-center gap-1.5">
-                <span>🔥</span> URGENT
+              <div className="bg-gradient-to-r from-red-600 to-rose-600 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg animate-pulse flex items-center gap-1">
+                🔥 URGENT
               </div>
             )}
           </div>
@@ -162,130 +161,118 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
           {/* Favorite Button */}
           <button
             onClick={handleFavoriteClick}
-            className={`p-2.5 rounded-full shadow-lg transition-all duration-300 ${
+            className={`p-2 rounded-full shadow-lg transition-all duration-300 ${
               isFavorited
                 ? 'bg-red-500 text-white scale-110'
                 : 'bg-white/95 backdrop-blur-sm text-neutral-600 hover:bg-red-500 hover:text-white hover:scale-110'
             }`}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 transition-transform duration-300 ${isFavorited ? 'fill-current scale-110' : ''}`} fill={isFavorited ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-transform duration-300 ${isFavorited ? 'fill-current scale-110' : ''}`} fill={isFavorited ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
           </button>
         </div>
 
-        {/* Property Type Badge - Bottom Left */}
-        <div className="absolute bottom-3 left-3 z-10">
-          <span className="bg-white/95 backdrop-blur-sm text-neutral-800 text-xs font-semibold px-3 py-1.5 rounded-lg shadow-md border border-neutral-200/50">
-            {propertyTypeLabel}
-          </span>
-        </div>
-
-        {/* Price Badge - Bottom Right */}
-        <div className="absolute bottom-3 right-3 z-10">
-          <span className="bg-gradient-to-r from-primary to-primary-dark text-white text-sm sm:text-base font-bold px-4 py-2 rounded-lg shadow-lg">
-            {formatPrice(property.price, property.country)}
-          </span>
+        {/* Bottom info bar on image */}
+        <div className="absolute bottom-0 left-0 right-0 p-2 z-10">
+          <div className="flex items-center justify-between gap-2">
+            {/* Property Type Badge */}
+            <span className="bg-white/95 backdrop-blur-sm text-neutral-800 text-[10px] font-semibold px-2 py-1 rounded-md shadow-md">
+              {propertyTypeLabel}
+            </span>
+            {/* Price Badge */}
+            <span className="bg-gradient-to-r from-primary to-primary-dark text-white text-xs sm:text-sm font-bold px-2.5 py-1 rounded-md shadow-lg">
+              {formatPrice(property.price, property.country)}
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Content Section */}
-      <div className="p-4 sm:p-5 flex flex-col flex-grow">
+      <div className="p-3 sm:p-4 flex flex-col flex-grow">
         {/* Title */}
         {property.title && (
-          <h3 className="text-base sm:text-lg font-bold text-neutral-900 mb-2 line-clamp-1 group-hover:text-primary transition-colors duration-300">
+          <h3 className="text-sm sm:text-base font-bold text-neutral-900 mb-1.5 line-clamp-1 group-hover:text-primary transition-colors duration-300">
             {property.title}
           </h3>
         )}
 
         {/* Location */}
-        <div className="flex items-center gap-2 mb-4">
-          <div className="p-1.5 bg-primary/10 rounded-full">
-            <MapPinIcon className="w-3.5 h-3.5 text-primary" />
-          </div>
-          <span className="text-sm text-neutral-600 truncate font-medium">
+        <div className="flex items-center gap-1.5 mb-3">
+          <MapPinIcon className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+          <span className="text-xs sm:text-sm text-neutral-600 truncate">
             {property.city}, {property.country}
           </span>
         </div>
 
-        {/* Property Stats */}
-        <div className="flex items-center gap-2 sm:gap-3 mb-4">
-          <div className="flex items-center gap-1.5 bg-neutral-100 px-3 py-2 rounded-xl" title={`${property.beds} bedrooms`}>
-            <BedIcon className="w-4 h-4 text-primary" />
-            <span className="font-bold text-sm text-neutral-800">{property.beds}</span>
+        {/* Property Stats - Grid layout for better fit */}
+        <div className="grid grid-cols-4 gap-1.5 mb-3">
+          <div className="flex flex-col items-center bg-neutral-100 py-1.5 px-1 rounded-lg" title={`${property.beds} bedrooms`}>
+            <BedIcon className="w-3.5 h-3.5 text-primary mb-0.5" />
+            <span className="font-bold text-xs text-neutral-800">{property.beds}</span>
           </div>
-          <div className="flex items-center gap-1.5 bg-neutral-100 px-3 py-2 rounded-xl" title={`${property.baths} bathrooms`}>
-            <BathIcon className="w-4 h-4 text-primary" />
-            <span className="font-bold text-sm text-neutral-800">{property.baths}</span>
+          <div className="flex flex-col items-center bg-neutral-100 py-1.5 px-1 rounded-lg" title={`${property.baths} bathrooms`}>
+            <BathIcon className="w-3.5 h-3.5 text-primary mb-0.5" />
+            <span className="font-bold text-xs text-neutral-800">{property.baths}</span>
           </div>
-          <div className="flex items-center gap-1.5 bg-neutral-100 px-3 py-2 rounded-xl" title={`${property.livingRooms} living rooms`}>
-            <LivingRoomIcon className="w-4 h-4 text-primary" />
-            <span className="font-bold text-sm text-neutral-800">{property.livingRooms}</span>
+          <div className="flex flex-col items-center bg-neutral-100 py-1.5 px-1 rounded-lg" title={`${property.livingRooms} living rooms`}>
+            <LivingRoomIcon className="w-3.5 h-3.5 text-primary mb-0.5" />
+            <span className="font-bold text-xs text-neutral-800">{property.livingRooms}</span>
           </div>
-          <div className="flex items-center gap-1.5 bg-primary/10 px-3 py-2 rounded-xl border border-primary/20" title={`${property.sqft} square meters`}>
-            <SqftIcon className="w-4 h-4 text-primary" />
-            <span className="font-bold text-sm text-primary">{property.sqft} m²</span>
+          <div className="flex flex-col items-center bg-primary/10 py-1.5 px-1 rounded-lg border border-primary/20" title={`${property.sqft} m²`}>
+            <SqftIcon className="w-3.5 h-3.5 text-primary mb-0.5" />
+            <span className="font-bold text-xs text-primary">{property.sqft}</span>
           </div>
         </div>
 
         <div className="flex-grow"></div>
 
         {/* Seller/Agent Info Section */}
-        <div className="pt-4 border-t-2 border-neutral-100">
-          <div className="flex items-center justify-between gap-3">
-            {/* Left: Seller/Agent Info */}
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="relative">
-                {property.seller.avatarUrl ? (
-                  <img
-                    src={property.seller.avatarUrl}
-                    alt={property.seller.name}
-                    className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-md"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center shadow-md border-2 border-white">
-                    <UserCircleIcon className="w-6 h-6 text-primary" />
-                  </div>
-                )}
-                {/* Online indicator dot */}
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-neutral-800 truncate">{property.seller.name}</p>
-                <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
-                  property.seller.type === 'agent'
-                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
-                    : 'bg-neutral-200 text-neutral-700'
-                }`}>
-                  {property.seller.type === 'agent' ? (
-                    <>
-                      <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
-                      Agent
-                    </>
-                  ) : (
-                    'Private Seller'
-                  )}
-                </span>
-              </div>
+        <div className="pt-3 border-t border-neutral-100">
+          <div className="flex items-center gap-2">
+            {/* Seller Avatar */}
+            <div className="relative flex-shrink-0">
+              {property.seller.avatarUrl ? (
+                <img
+                  src={property.seller.avatarUrl}
+                  alt={property.seller.name}
+                  className="w-8 h-8 rounded-full object-cover border-2 border-white shadow"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center shadow border-2 border-white">
+                  <UserCircleIcon className="w-5 h-5 text-primary" />
+                </div>
+              )}
+              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></span>
             </div>
 
-            {/* Right: Agency Logo & Name (if agent with agency) */}
+            {/* Seller Info */}
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-neutral-800 truncate">{property.seller.name}</p>
+              <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                property.seller.type === 'agent'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-neutral-200 text-neutral-600'
+              }`}>
+                {property.seller.type === 'agent' ? 'Agent' : 'Private'}
+              </span>
+            </div>
+
+            {/* Agency Logo (if agent with agency) */}
             {property.seller.type === 'agent' && property.seller.agencyName && (
-              <div className="flex items-center gap-2 flex-shrink-0 bg-neutral-50 px-3 py-2 rounded-xl border border-neutral-200">
+              <div className="flex items-center gap-1.5 flex-shrink-0 bg-neutral-50 px-2 py-1.5 rounded-lg border border-neutral-200">
                 {property.seller.agencyLogo ? (
                   <img
                     src={property.seller.agencyLogo}
                     alt={property.seller.agencyName}
-                    className="w-8 h-8 rounded-lg object-contain bg-white p-0.5 border border-neutral-200"
+                    className="w-6 h-6 rounded object-contain bg-white"
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/20">
-                    <BuildingOfficeIcon className="w-4 h-4 text-primary" />
-                  </div>
+                  <BuildingOfficeIcon className="w-5 h-5 text-primary" />
                 )}
-                <div className="hidden sm:block max-w-[90px]">
-                  <p className="text-[10px] text-neutral-500 leading-tight font-medium">Agency</p>
-                  <p className="text-xs font-semibold text-neutral-700 truncate">{property.seller.agencyName}</p>
+                <div className="hidden sm:block">
+                  <p className="text-[9px] text-neutral-500 leading-none">Agency</p>
+                  <p className="text-[10px] font-medium text-neutral-700 truncate max-w-[60px]">{property.seller.agencyName}</p>
                 </div>
               </div>
             )}
@@ -295,14 +282,14 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
           {showCompareButton && (
             <button
               onClick={handleCompareClick}
-              className={`mt-3 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 w-full ${
+              className={`mt-2.5 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all duration-300 w-full ${
                 isInComparison
-                  ? 'bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-primary/30'
-                  : 'bg-neutral-100 text-neutral-700 hover:bg-primary hover:text-white hover:shadow-lg hover:shadow-primary/30'
+                  ? 'bg-primary text-white shadow-md'
+                  : 'bg-neutral-100 text-neutral-700 hover:bg-primary hover:text-white'
               }`}
             >
-              <ScaleIcon className="w-5 h-5" />
-              <span>{isInComparison ? 'Remove from Compare' : 'Add to Compare'}</span>
+              <ScaleIcon className="w-4 h-4" />
+              <span>{isInComparison ? 'In Compare' : 'Add to Compare'}</span>
             </button>
           )}
         </div>
