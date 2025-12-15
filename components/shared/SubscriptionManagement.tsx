@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { CheckCircleIcon, XCircleIcon, SparklesIcon, HomeIcon, ChartBarIcon, CheckIcon, GiftIcon } from '../../constants';
+import { CheckCircleIcon, XCircleIcon, SparklesIcon, HomeIcon, ChartBarIcon, CheckIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
 import { User } from '../../types';
 
@@ -29,8 +29,30 @@ interface SubscriptionData {
   updatedAt: string;
 }
 
-// Plan definitions with pricing
-const PLANS: Record<string, {
+// Product data from backend
+interface ProductData {
+  id: string;
+  productId: string;
+  name: string;
+  description?: string;
+  price: number;
+  currency: string;
+  billingPeriod: 'monthly' | 'yearly' | 'weekly' | 'quarterly' | 'one_time';
+  features: string[];
+  targetRole: string;
+  displayOrder: number;
+  badge?: string;
+  badgeColor?: string;
+  highlighted: boolean;
+  cardStyle?: {
+    backgroundColor?: string;
+    borderColor?: string;
+    textColor?: string;
+  };
+}
+
+// Plan structure for UI
+interface Plan {
   id: string;
   name: string;
   price: number;
@@ -40,51 +62,55 @@ const PLANS: Record<string, {
   listingLimit: number;
   color: string;
   tier: number;
-}> = {
-  free: {
-    id: 'free',
-    name: 'Free',
-    price: 0,
-    period: 'forever',
-    periodMonths: 0,
-    features: ['3 active listings', 'Basic analytics', 'Email support'],
-    listingLimit: 3,
-    color: 'from-gray-400 to-gray-500',
-    tier: 0,
-  },
-  seller_pro_monthly: {
-    id: 'seller_pro_monthly',
-    name: 'Pro Monthly',
-    price: 25,
-    period: 'month',
-    periodMonths: 1,
-    features: ['15 active listings', 'Advanced analytics', 'Priority support', 'Featured listings', 'Export data'],
-    listingLimit: 15,
-    color: 'from-blue-500 to-blue-600',
-    tier: 1,
-  },
-  seller_pro_yearly: {
-    id: 'seller_pro_yearly',
-    name: 'Pro Yearly',
-    price: 200,
-    period: 'year',
-    periodMonths: 12,
-    features: ['15 active listings', 'Advanced analytics', 'Priority support', 'Featured listings', 'Export data', '33% savings'],
-    listingLimit: 15,
-    color: 'from-purple-500 to-purple-600',
-    tier: 2,
-  },
-  seller_enterprise_yearly: {
-    id: 'seller_enterprise_yearly',
-    name: 'Enterprise',
-    price: 500,
-    period: 'year',
-    periodMonths: 12,
-    features: ['100 active listings', 'Full analytics suite', 'Dedicated support', 'Custom branding', 'API access', 'Team management', 'Agency creation'],
-    listingLimit: 100,
-    color: 'from-amber-500 to-orange-600',
-    tier: 3,
-  },
+  badge?: string;
+  badgeColor?: string;
+  highlighted?: boolean;
+}
+
+// Default free plan (not in products DB)
+const FREE_PLAN: Plan = {
+  id: 'free',
+  name: 'Free',
+  price: 0,
+  period: 'forever',
+  periodMonths: 0,
+  features: ['3 active listings', 'Basic analytics', 'Email support'],
+  listingLimit: 3,
+  color: 'from-gray-400 to-gray-500',
+  tier: 0,
+};
+
+// Map billing period to months
+const PERIOD_TO_MONTHS: Record<string, number> = {
+  monthly: 1,
+  yearly: 12,
+  weekly: 0.25,
+  quarterly: 3,
+  one_time: 0,
+};
+
+// Map product IDs to listing limits
+const LISTING_LIMITS: Record<string, number> = {
+  free: 3,
+  seller_pro_monthly: 15,
+  seller_pro_yearly: 15,
+  seller_enterprise_yearly: 100,
+};
+
+// Map product IDs to gradient colors
+const PLAN_COLORS: Record<string, string> = {
+  free: 'from-gray-400 to-gray-500',
+  seller_pro_monthly: 'from-blue-500 to-blue-600',
+  seller_pro_yearly: 'from-purple-500 to-purple-600',
+  seller_enterprise_yearly: 'from-amber-500 to-orange-600',
+};
+
+// Map product IDs to tiers
+const PLAN_TIERS: Record<string, number> = {
+  free: 0,
+  seller_pro_monthly: 1,
+  seller_pro_yearly: 2,
+  seller_enterprise_yearly: 3,
 };
 
 // Gift/Coupon icon component
@@ -98,11 +124,27 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
   const { state, dispatch } = useAppContext();
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
+  const [products, setProducts] = useState<ProductData[]>([]);
   const [selectedUpgrade, setSelectedUpgrade] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const user = state.currentUser as User;
+
+  // Fetch products from database
+  const fetchProducts = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/products?role=seller`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.products) {
+          setProducts(data.products);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  }, []);
 
   // Fetch subscription data from backend
   const fetchSubscription = useCallback(async () => {
@@ -132,15 +174,43 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
     }
   }, []);
 
-  // Initial fetch and polling for real-time updates
+  // Convert product to plan structure
+  const productToPlan = useCallback((product: ProductData): Plan => {
+    return {
+      id: product.productId,
+      name: product.name,
+      price: product.price,
+      period: product.billingPeriod === 'yearly' ? 'year' : product.billingPeriod === 'monthly' ? 'month' : product.billingPeriod,
+      periodMonths: PERIOD_TO_MONTHS[product.billingPeriod] || 1,
+      features: product.features,
+      listingLimit: LISTING_LIMITS[product.productId] || 3,
+      color: PLAN_COLORS[product.productId] || 'from-gray-400 to-gray-500',
+      tier: PLAN_TIERS[product.productId] || 0,
+      badge: product.badge,
+      badgeColor: product.badgeColor,
+      highlighted: product.highlighted,
+    };
+  }, []);
+
+  // Build plans object from products
+  const plans = useMemo(() => {
+    const plansMap: Record<string, Plan> = { free: FREE_PLAN };
+    products.forEach(product => {
+      plansMap[product.productId] = productToPlan(product);
+    });
+    return plansMap;
+  }, [products, productToPlan]);
+
+  // Initial fetch
   useEffect(() => {
+    fetchProducts();
     fetchSubscription();
 
     // Poll every 30 seconds for real-time updates
     const interval = setInterval(fetchSubscription, 30000);
 
     return () => clearInterval(interval);
-  }, [fetchSubscription, refreshKey]);
+  }, [fetchProducts, fetchSubscription, refreshKey]);
 
   // Listen for payment success events
   useEffect(() => {
@@ -180,7 +250,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
     const daysRemaining = Math.max(0, Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 
     const currentPlanKey = subscription.productId || 'free';
-    const currentPlan = PLANS[currentPlanKey] || PLANS.free;
+    const currentPlan = plans[currentPlanKey] || FREE_PLAN;
 
     // Calculate daily rate based on actual subscription price and days
     const actualPrice = subscription.price || currentPlan.price;
@@ -212,13 +282,13 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
       startDate,
       renewalDate,
     };
-  }, [subscription]);
+  }, [subscription, plans]);
 
   // Calculate upgrade price with pro-rated discount
-  const calculateUpgradePrice = (targetPlanKey: string) => {
+  const calculateUpgradePrice = useCallback((targetPlanKey: string) => {
     if (!subscriptionDetails) return { originalPrice: 0, discount: 0, finalPrice: 0, savings: '' };
 
-    const targetPlan = PLANS[targetPlanKey];
+    const targetPlan = plans[targetPlanKey];
     if (!targetPlan) return { originalPrice: 0, discount: 0, finalPrice: 0, savings: '' };
 
     const originalPrice = targetPlan.price;
@@ -239,13 +309,13 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
     const savings = discount > 0 ? `You save €${discount.toFixed(2)} from your current plan!` : '';
 
     return { originalPrice, discount, finalPrice, savings };
-  };
+  }, [subscriptionDetails, plans]);
 
   // Get available upgrade options
   const upgradeOptions = useMemo(() => {
-    if (!subscriptionDetails) return [];
+    if (!subscriptionDetails || products.length === 0) return [];
 
-    return Object.entries(PLANS)
+    return Object.entries(plans)
       .filter(([key, plan]) => {
         if (key === 'free') return false;
         if (key === subscriptionDetails.currentPlanKey) return false;
@@ -256,8 +326,9 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
         key,
         plan,
         pricing: calculateUpgradePrice(key),
-      }));
-  }, [subscriptionDetails]);
+      }))
+      .sort((a, b) => a.plan.tier - b.plan.tier);
+  }, [subscriptionDetails, plans, products, calculateUpgradePrice]);
 
   const formatDate = (date: Date | null) => {
     if (!date) return 'N/A';
@@ -530,8 +601,14 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
             {upgradeOptions.map(({ key, plan, pricing }) => (
               <div
                 key={key}
-                className="bg-white rounded-xl border-2 border-neutral-200 hover:border-primary transition-colors overflow-hidden shadow-sm hover:shadow-md"
+                className={`bg-white rounded-xl border-2 ${plan.highlighted ? 'border-primary' : 'border-neutral-200'} hover:border-primary transition-colors overflow-hidden shadow-sm hover:shadow-md relative`}
               >
+                {/* Badge */}
+                {plan.badge && (
+                  <div className={`absolute top-0 right-0 px-3 py-1 text-xs font-bold text-white ${plan.badgeColor === 'red' ? 'bg-red-500' : plan.badgeColor === 'green' ? 'bg-green-500' : 'bg-amber-500'} rounded-bl-lg`}>
+                    {plan.badge}
+                  </div>
+                )}
                 <div className={`bg-gradient-to-r ${plan.color} p-4 text-white`}>
                   <h4 className="font-bold text-lg">{plan.name}</h4>
                   <div className="flex items-baseline gap-1 mt-1">
@@ -600,8 +677,9 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
             <h3 className="text-xl font-bold text-neutral-800 mb-4">Confirm Upgrade</h3>
             {(() => {
-              const plan = PLANS[selectedUpgrade];
+              const plan = plans[selectedUpgrade];
               const pricing = calculateUpgradePrice(selectedUpgrade);
+              if (!plan) return null;
               return (
                 <>
                   <div className="bg-neutral-50 rounded-xl p-4 mb-4">
