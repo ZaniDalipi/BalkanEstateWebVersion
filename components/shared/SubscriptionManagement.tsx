@@ -20,11 +20,13 @@ interface SubscriptionData {
   startDate: string;
   renewalDate: string;
   expirationDate: string;
-  status: 'active' | 'expired' | 'trial' | 'grace' | 'canceled';
+  status: 'active' | 'expired' | 'trial' | 'grace' | 'canceled' | 'pending_cancellation';
   autoRenewing: boolean;
   price: number;
   currency: string;
   isAcknowledged: boolean;
+  willCancelAt?: string;
+  canceledAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -127,6 +129,10 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
   const [products, setProducts] = useState<ProductData[]>([]);
   const [selectedUpgrade, setSelectedUpgrade] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const user = state.currentUser as User;
@@ -342,7 +348,15 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
       case 'trial': return 'bg-blue-100 text-blue-800';
       case 'grace': return 'bg-yellow-100 text-yellow-800';
       case 'canceled': return 'bg-gray-100 text-gray-800';
+      case 'pending_cancellation': return 'bg-orange-100 text-orange-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusLabel = (status?: string) => {
+    switch (status) {
+      case 'pending_cancellation': return 'CANCELLING';
+      default: return status?.toUpperCase() || 'FREE';
     }
   };
 
@@ -364,6 +378,78 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
     setLoading(true);
     setRefreshKey(prev => prev + 1);
   };
+
+  // Cancel subscription
+  const handleCancelSubscription = async () => {
+    if (!subscription) return;
+
+    try {
+      setCancelling(true);
+      setActionError(null);
+
+      const token = localStorage.getItem('balkan_estate_token');
+      const response = await fetch(`${API_URL}/subscriptions/${subscription._id}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        setShowCancelModal(false);
+        // Refresh subscription data
+        fetchSubscription();
+        // Dispatch event for other components
+        window.dispatchEvent(new Event('subscriptionUpdated'));
+      } else {
+        const data = await response.json();
+        setActionError(data.message || 'Failed to cancel subscription');
+      }
+    } catch (error) {
+      console.error('Error cancelling subscription:', error);
+      setActionError('An error occurred while cancelling your subscription');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  // Restore subscription (undo cancellation)
+  const handleRestoreSubscription = async () => {
+    if (!subscription) return;
+
+    try {
+      setRestoring(true);
+      setActionError(null);
+
+      const token = localStorage.getItem('balkan_estate_token');
+      const response = await fetch(`${API_URL}/subscriptions/${subscription._id}/restore`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // Refresh subscription data
+        fetchSubscription();
+        // Dispatch event for other components
+        window.dispatchEvent(new Event('subscriptionUpdated'));
+      } else {
+        const data = await response.json();
+        setActionError(data.message || 'Failed to restore subscription');
+      }
+    } catch (error) {
+      console.error('Error restoring subscription:', error);
+      setActionError('An error occurred while restoring your subscription');
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  // Check if subscription is pending cancellation
+  const isPendingCancellation = subscription?.status === 'pending_cancellation';
 
   if (loading) {
     return (
@@ -456,11 +542,16 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
                 <h2 className="text-2xl font-bold">{subscriptionDetails.currentPlan.name}</h2>
                 <div className="flex items-center gap-2 mt-1">
                   <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(subscription.status)}`}>
-                    {subscription.status?.toUpperCase() || 'FREE'}
+                    {getStatusLabel(subscription.status)}
                   </span>
                   {subscriptionDetails.isCoupon && (
                     <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
                       FREE TRIAL
+                    </span>
+                  )}
+                  {isPendingCancellation && (
+                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">
+                      Ends {formatDate(subscriptionDetails.expirationDate)}
                     </span>
                   )}
                 </div>
@@ -588,6 +679,113 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
               <p className="text-xs text-yellow-600 mt-2">
                 Coupon value: FREE • Expires: {formatDate(subscriptionDetails.expirationDate)}
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pending Cancellation Notice */}
+      {isPendingCancellation && (
+        <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-orange-100 rounded-lg flex-shrink-0">
+              <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h4 className="font-semibold text-orange-900">Subscription Cancellation Pending</h4>
+              <p className="text-sm text-orange-700 mt-1">
+                Your subscription will be cancelled at the end of your billing period on{' '}
+                <span className="font-semibold">{formatDate(subscriptionDetails.expirationDate)}</span>.
+                You'll continue to have access to all features until then.
+              </p>
+              <button
+                onClick={handleRestoreSubscription}
+                disabled={restoring}
+                className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white text-sm font-semibold rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50"
+              >
+                {restoring ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Restoring...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Keep My Subscription
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Subscription Settings */}
+      {!isPendingCancellation && subscriptionDetails.isActive && (
+        <div className="bg-white rounded-xl border border-neutral-200 p-4 shadow-sm">
+          <h3 className="text-lg font-bold text-neutral-800 mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Subscription Settings
+          </h3>
+
+          {/* Error message */}
+          {actionError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              {actionError}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {/* Auto-Renew Status */}
+            <div className="flex items-center justify-between py-3 border-b border-neutral-100">
+              <div>
+                <p className="font-medium text-neutral-800">Auto-Renewal</p>
+                <p className="text-sm text-neutral-500">
+                  {subscriptionDetails.autoRenewing
+                    ? `Your subscription will automatically renew on ${formatDate(subscriptionDetails.renewalDate)}`
+                    : 'Auto-renewal is disabled'}
+                </p>
+              </div>
+              <span className={`px-3 py-1 text-sm font-medium rounded-full ${subscriptionDetails.autoRenewing ? 'bg-green-100 text-green-800' : 'bg-neutral-100 text-neutral-600'}`}>
+                {subscriptionDetails.autoRenewing ? 'On' : 'Off'}
+              </span>
+            </div>
+
+            {/* Payment Method Info */}
+            <div className="flex items-center justify-between py-3 border-b border-neutral-100">
+              <div>
+                <p className="font-medium text-neutral-800">Payment Source</p>
+                <p className="text-sm text-neutral-500 capitalize">{subscription.store || 'Web'} payment</p>
+              </div>
+              <span className="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800 capitalize">
+                {subscription.store || 'Web'}
+              </span>
+            </div>
+
+            {/* Cancel Subscription */}
+            <div className="flex items-center justify-between py-3">
+              <div>
+                <p className="font-medium text-neutral-800">Cancel Subscription</p>
+                <p className="text-sm text-neutral-500">
+                  You'll keep access until {formatDate(subscriptionDetails.expirationDate)}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowCancelModal(true)}
+                className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                Cancel Plan
+              </button>
             </div>
           </div>
         </div>
@@ -722,6 +920,82 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
                 </>
               );
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Subscription Confirmation Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-neutral-800 mb-2">Cancel Subscription?</h3>
+              <p className="text-neutral-600">
+                Are you sure you want to cancel your <span className="font-semibold">{subscriptionDetails?.currentPlan.name}</span> subscription?
+              </p>
+            </div>
+
+            <div className="bg-neutral-50 rounded-xl p-4 mb-6">
+              <h4 className="text-sm font-semibold text-neutral-700 mb-2">What happens when you cancel:</h4>
+              <ul className="space-y-2 text-sm text-neutral-600">
+                <li className="flex items-start gap-2">
+                  <CheckCircleIcon className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>You'll keep access until <span className="font-medium">{formatDate(subscriptionDetails?.expirationDate || null)}</span></span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircleIcon className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>Your listings will remain active during this time</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <XCircleIcon className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                  <span>After that, you'll revert to the free plan (3 listings max)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <XCircleIcon className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                  <span>Premium features will no longer be available</span>
+                </li>
+              </ul>
+            </div>
+
+            {actionError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                {actionError}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setActionError(null);
+                }}
+                className="flex-1 py-2.5 rounded-lg font-semibold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 transition-colors"
+              >
+                Keep Subscription
+              </button>
+              <button
+                onClick={handleCancelSubscription}
+                disabled={cancelling}
+                className="flex-1 py-2.5 rounded-lg font-bold text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {cancelling ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Cancelling...
+                  </>
+                ) : (
+                  'Yes, Cancel'
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
