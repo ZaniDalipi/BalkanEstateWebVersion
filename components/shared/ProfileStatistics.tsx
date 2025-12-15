@@ -17,6 +17,12 @@ interface UserStats {
   totalSalesValue?: number;
 }
 
+interface SubscriptionInfo {
+  productId: string;
+  status: string;
+  expirationDate: string;
+}
+
 interface SaleRecord {
   _id: string;
   propertyId?: string;
@@ -177,6 +183,8 @@ const SoldPropertyCard: React.FC<{ sale: SaleRecord }> = ({ sale }) => {
   );
 };
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
 const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
   const [stats, setStats] = useState<UserStats>({
     activeListings: user.listingsCount || 0,
@@ -193,22 +201,71 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
 
   // Filter states
   const [typeFilter, setTypeFilter] = useState<PropertyTypeFilter>('all');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [priceFilter, setPriceFilter] = useState<PriceFilter>('all');
 
-  // Check if user has pro/enterprise subscription
-  const canDownload = useMemo(() => {
-    const plan = user.subscriptionPlan?.toLowerCase() || '';
-    return plan.includes('pro') || plan.includes('enterprise') || plan.includes('premium');
-  }, [user.subscriptionPlan]);
-
   // Get auth token helper
   const getAuthToken = useCallback(() => {
     return localStorage.getItem('balkan_estate_token');
   }, []);
+
+  // Fetch subscription data
+  const fetchSubscription = useCallback(async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+
+      const response = await fetch(`${API_URL}/subscriptions/current`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.subscription) {
+          setSubscription({
+            productId: data.subscription.productId,
+            status: data.subscription.status,
+            expirationDate: data.subscription.expirationDate,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+    }
+  }, [getAuthToken]);
+
+  // Check if user has pro/enterprise subscription - check both user object and subscription data
+  const canDownload = useMemo(() => {
+    // Check user.subscriptionPlan first
+    const userPlan = user.subscriptionPlan?.toLowerCase() || '';
+    if (userPlan.includes('pro') || userPlan.includes('enterprise') || userPlan.includes('premium')) {
+      return true;
+    }
+
+    // Check subscription from API
+    if (subscription) {
+      const subPlan = subscription.productId?.toLowerCase() || '';
+      const isActive = subscription.status === 'active' || subscription.status === 'trial' || subscription.status === 'grace';
+      const notExpired = new Date(subscription.expirationDate) > new Date();
+
+      if (isActive && notExpired && (subPlan.includes('pro') || subPlan.includes('enterprise') || subPlan.includes('premium'))) {
+        return true;
+      }
+    }
+
+    // Also check user.isSubscribed as fallback
+    if (user.isSubscribed) {
+      return true;
+    }
+
+    return false;
+  }, [user.subscriptionPlan, user.isSubscribed, subscription]);
 
   // Filter sales based on filters
   const filteredSales = useMemo(() => {
@@ -478,7 +535,8 @@ const ProfileStatistics: React.FC<ProfileStatisticsProps> = ({ user }) => {
   // Initial data load
   useEffect(() => {
     fetchStats();
-  }, [fetchStats]);
+    fetchSubscription();
+  }, [fetchStats, fetchSubscription]);
 
   if (loading) {
     return (
