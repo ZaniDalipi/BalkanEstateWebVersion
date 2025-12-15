@@ -94,6 +94,7 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [agencyGradient, setAgencyGradient] = useState<string>('bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-900');
     const [mapCardOpen, setMapCardOpen] = useState(false);
+    const [agencyData, setAgencyData] = useState<Agency | null>(null);
 
     const isAgencyAgent = agent.agencyName && agent.agencyName !== 'Independent Agent';
     const agentUserId = agent.userId || agent.id;
@@ -134,19 +135,23 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                         .slice(0, 4);
                     setSimilarAgents(agencyAgents);
 
-                    // Fetch agency details to get the gradient
+                    // Fetch agency details
                     try {
                         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
                         const agencyResponse = await fetch(`${API_URL}/agencies/${agent.agencyId}`);
                         if (agencyResponse.ok) {
-                            const agencyData = await agencyResponse.json();
-                            const gradient = agencyData.agency?.coverGradient;
-                            if (gradient) {
-                                setAgencyGradient(`bg-gradient-to-r ${gradient}`);
+                            const agencyDataResponse = await agencyResponse.json();
+                            const agency = agencyDataResponse.agency;
+                            if (agency) {
+                                setAgencyData(agency);
+                                const gradient = agency.coverGradient;
+                                if (gradient) {
+                                    setAgencyGradient(`bg-gradient-to-r ${gradient}`);
+                                }
                             }
                         }
                     } catch (error) {
-                        console.error('Error fetching agency gradient:', error);
+                        console.error('Error fetching agency data:', error);
                     }
                 } else {
                     // Fetch agents from same city
@@ -311,6 +316,15 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
     const handleSearchAllProperties = () => {
         dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
         window.history.pushState({}, '', '/search');
+    };
+
+    const handleVisitAgency = () => {
+        if (agencyData) {
+            dispatch({ type: 'SET_SELECTED_AGENCY', payload: agencyData });
+            dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'agencyDetail' });
+            const urlSlug = agencyData.slug || agencyData._id;
+            window.history.pushState({}, '', `/agencies/${urlSlug}`);
+        }
     };
 
     const handleViewMoreAgents = () => {
@@ -564,44 +578,74 @@ const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agent }) => {
                             </div>
                         </div>
 
-                        {/* Contact Card - Floating on desktop */}
-                        <div className="w-full lg:w-auto lg:min-w-[320px]">
-                            <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6">
-                                <h3 className="text-lg font-bold text-gray-900 mb-4">Contact {firstName}</h3>
+                        {/* Agency Card - Floating on desktop */}
+                        {isAgencyAgent && agencyData && (
+                            <div className="w-full lg:w-auto lg:min-w-[320px]">
+                                <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
+                                    {/* Agency Header with Gradient */}
+                                    <div className={`${agencyGradient} p-6 text-white relative overflow-hidden`}>
+                                        <div className="absolute inset-0 bg-black/10"></div>
+                                        <div className="relative z-10">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                                                    {agencyData.logo ? (
+                                                        <img
+                                                            src={agencyData.logo}
+                                                            alt={agencyData.name}
+                                                            className="w-12 h-12 object-cover rounded-lg"
+                                                        />
+                                                    ) : (
+                                                        <BuildingOfficeIcon className="w-8 h-8 text-blue-600" />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs font-medium text-white/80 mb-1">Member of</p>
+                                                    <h3 className="text-lg font-bold text-white truncate">{agencyData.name}</h3>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                {agent.phone && (
-                                    <a
-                                        href={`tel:${agent.phone}`}
-                                        className="flex items-center gap-3 w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3.5 rounded-xl font-semibold mb-3 transition-colors shadow-sm"
-                                    >
-                                        <PhoneIcon className="w-5 h-5" />
-                                        <span>{agent.phone}</span>
-                                    </a>
-                                )}
+                                    {/* Agency Stats */}
+                                    <div className="p-5 bg-gradient-to-b from-gray-50 to-white">
+                                        <div className="grid grid-cols-2 gap-3 mb-4">
+                                            <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <UsersIcon className="w-4 h-4 text-blue-600" />
+                                                    <span className="text-xs text-gray-600 font-medium">Agents</span>
+                                                </div>
+                                                <p className="text-2xl font-bold text-gray-900">{agencyData.totalAgents || 0}</p>
+                                            </div>
+                                            <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <HomeIcon className="w-4 h-4 text-green-600" />
+                                                    <span className="text-xs text-gray-600 font-medium">Properties</span>
+                                                </div>
+                                                <p className="text-2xl font-bold text-gray-900">{agencyData.totalProperties || 0}</p>
+                                            </div>
+                                        </div>
 
-                                <button
-                                    onClick={handleContactAgent}
-                                    className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3.5 rounded-xl font-semibold mb-3 transition-colors shadow-sm"
-                                >
-                                    <EnvelopeIcon className="w-5 h-5" />
-                                    Send Message
-                                </button>
+                                        {/* Location */}
+                                        {agencyData.city && (
+                                            <div className="flex items-center gap-2 mb-4 text-gray-600 bg-white rounded-lg p-3 border border-gray-200">
+                                                <MapPinIcon className="w-4 h-4 flex-shrink-0 text-gray-500" />
+                                                <span className="text-sm truncate">{agencyData.city}, {agencyData.country}</span>
+                                            </div>
+                                        )}
 
-                                <button
-                                    onClick={handleRequestAppraisal}
-                                    className="flex items-center justify-center gap-2 w-full bg-white border-2 border-gray-300 hover:border-gray-400 text-gray-700 px-4 py-3 rounded-xl font-semibold transition-colors"
-                                >
-                                    <HomeIcon className="w-5 h-5" />
-                                    Request Appraisal
-                                </button>
-
-                                {agent.email && (
-                                    <p className="text-center text-sm text-gray-500 mt-4">
-                                        {agent.email}
-                                    </p>
-                                )}
+                                        {/* Visit Agency Button */}
+                                        <button
+                                            onClick={handleVisitAgency}
+                                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3.5 px-4 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg flex items-center justify-center gap-2 group"
+                                        >
+                                            <BuildingOfficeIcon className="w-5 h-5" />
+                                            <span>Visit Agency</span>
+                                            <ChevronRightIcon className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
