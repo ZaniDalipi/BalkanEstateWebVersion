@@ -1209,11 +1209,16 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                         )}
 
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('title')?.focus()}>
-                            <input type="text" id="title" name="title" value={listingData.title} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " required />
+                            <input type="text" id="title" name="title" value={listingData.title} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " required maxLength={50} />
                             <label htmlFor="title" className={floatingLabelClasses}>Listing Title</label>
-                            <p className="mt-1 text-xs text-neutral-500">
-                                Create an attractive title for your property (e.g., "Modern 3BR Apartment in City Center")
-                            </p>
+                            <div className="flex justify-between items-center mt-1">
+                                <p className="text-xs text-neutral-500">
+                                    Short, catchy title (e.g., "Luxury Sea View Villa", "Cozy Studio Downtown")
+                                </p>
+                                <span className={`text-xs ${listingData.title.length > 40 ? 'text-amber-600' : 'text-neutral-400'}`}>
+                                    {listingData.title.length}/50
+                                </span>
+                            </div>
                         </div>
 
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('streetAddress')?.focus()}>

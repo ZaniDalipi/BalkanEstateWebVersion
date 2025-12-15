@@ -154,14 +154,15 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
       </div>
       <div className="p-2.5 sm:p-3 md:p-4 flex flex-col flex-grow">
         <button onClick={handleCardClick} className="text-left flex-grow min-w-0">
-            <div className="flex items-center text-neutral-600 mb-1 overflow-hidden min-w-0">
-                <MapPinIcon className="w-3.5 h-3.5 mr-1 text-neutral-400 flex-shrink-0" />
-                <span className="truncate text-xs sm:text-sm font-medium">{property.address}, {property.city}</span>
-            </div>
+            {/* Title - shown first and prominently */}
             {property.title && (
-                <h3 className="text-sm sm:text-base md:text-lg font-semibold text-neutral-800 mb-1.5 line-clamp-2">{property.title}</h3>
+                <h3 className="text-sm sm:text-base font-bold text-neutral-900 mb-1 line-clamp-1">{property.title}</h3>
             )}
-            <p className="text-base sm:text-lg md:text-xl font-bold text-neutral-900 my-1.5">{formatPrice(property.price, property.country)}</p>
+            <div className="flex items-center text-neutral-500 mb-1.5 overflow-hidden min-w-0">
+                <MapPinIcon className="w-3 h-3 mr-1 text-neutral-400 flex-shrink-0" />
+                <span className="truncate text-xs">{property.city}, {property.country}</span>
+            </div>
+            <p className="text-base sm:text-lg md:text-xl font-bold text-primary my-1.5">{formatPrice(property.price, property.country)}</p>
             <div className="flex items-center flex-wrap gap-1.5 sm:gap-2.5 text-neutral-700 mb-1.5">
                 <div className="flex items-center gap-1" title={`${property.beds} bedrooms`}>
                     <BedIcon className="w-4 h-4 text-neutral-500" />
