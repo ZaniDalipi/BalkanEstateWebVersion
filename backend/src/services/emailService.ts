@@ -81,4 +81,5 @@ class EmailService {
 
 const emailServiceInstance = new EmailService();
 export default emailServiceInstance;
+export const sendEmail = emailServiceInstance.sendEmail.bind(emailServiceInstance);
 export const sendNewMessageNotification = emailServiceInstance.sendNewMessageNotification.bind(emailServiceInstance);
