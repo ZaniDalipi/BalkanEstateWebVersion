@@ -1552,8 +1552,8 @@ export const setActiveRole = async (req: Request, res: Response): Promise<void> 
         agentId: user.agentId,
         licenseNumber: user.licenseNumber,
         isSubscribed: user.isSubscribed,
-        privateSellerSubscription: user.privateSellerSubscription,
-        agentSubscription: user.agentSubscription,
+        proSubscription: user.proSubscription,
+        freeSubscription: user.freeSubscription,
       },
     });
   } catch (error: any) {
@@ -1638,8 +1638,8 @@ export const addRole = async (req: Request, res: Response): Promise<void> => {
         agentId: user.agentId,
         licenseNumber: user.licenseNumber,
         isSubscribed: user.isSubscribed,
-        privateSellerSubscription: user.privateSellerSubscription,
-        agentSubscription: user.agentSubscription,
+        proSubscription: user.proSubscription,
+        freeSubscription: user.freeSubscription,
       },
     });
   } catch (error: any) {
