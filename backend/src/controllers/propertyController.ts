@@ -84,6 +84,16 @@ export const getProperties = async (
       filter.country = new RegExp(country as string, 'i');
     }
 
+    // Filter by role context (for dual-role system)
+    if (req.query.createdAsRole) {
+      filter.createdAsRole = req.query.createdAsRole;
+    }
+
+    // Filter by specific user (for "My Listings")
+    if (req.query.sellerId) {
+      filter.sellerId = req.query.sellerId;
+    }
+
     if (query) {
       filter.$or = [
         { address: new RegExp(query as string, 'i') },
