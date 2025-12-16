@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { AppleIcon, DevicePhoneMobileIcon, EnvelopeIcon, FacebookIcon, GoogleIcon, LogoIcon, XMarkIcon } from '../../constants';
+import { AppleIcon, DevicePhoneMobileIcon, EnvelopeIcon, FacebookIcon, GoogleIcon, LogoIcon, XMarkIcon, EyeIcon } from '../../constants';
 import { User, UserRole, AuthModalView, Agency } from '../../types';
 import SocialLoginPopup from './SocialLoginPopup';
 
 type Method = 'email' | 'phone';
 type SocialProvider = 'google' | 'facebook' | 'apple';
+
+const EyeSlashIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+    </svg>
+);
 
 interface PasswordRequirements {
     minLength: boolean;
@@ -113,6 +119,10 @@ const AuthPage: React.FC = () => {
         hasSpecialChar: false,
     });
 
+    // Password visibility state
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
     useEffect(() => {
         // Fetch available OAuth providers
         const fetchProviders = async () => {
@@ -158,7 +168,14 @@ const AuthPage: React.FC = () => {
         const newPassword = e.target.value;
         setPassword(newPassword);
         // Update requirements in real-time
-        setPasswordRequirements(checkPasswordRequirements(newPassword));
+        const requirements = checkPasswordRequirements(newPassword);
+        setPasswordRequirements(requirements);
+
+        // Clear error if all requirements are met
+        if (requirements.minLength && requirements.hasUppercase && requirements.hasLowercase &&
+            requirements.hasNumber && requirements.hasSpecialChar) {
+            setError(null);
+        }
     };
     
     // --- Social Login Handlers ---
@@ -323,7 +340,7 @@ const AuthPage: React.FC = () => {
                                 <div>
                                     <div className="relative">
                                         <input
-                                            type="password"
+                                            type={showPassword ? "text" : "password"}
                                             id="password"
                                             value={password}
                                             onChange={state.authModalView === 'signup' ? handlePasswordChange : (e => setPassword(e.target.value))}
@@ -332,6 +349,18 @@ const AuthPage: React.FC = () => {
                                             required
                                         />
                                         <label htmlFor="password" className={floatingLabelClasses}>Password</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                            aria-label={showPassword ? "Hide password" : "Show password"}
+                                        >
+                                            {showPassword ? (
+                                                <EyeSlashIcon className="w-5 h-5" />
+                                            ) : (
+                                                <EyeIcon className="w-5 h-5" />
+                                            )}
+                                        </button>
                                     </div>
                                     {state.authModalView === 'signup' && password && (
                                         <PasswordRequirementsIndicator requirements={passwordRequirements} />
@@ -340,7 +369,30 @@ const AuthPage: React.FC = () => {
                                 {state.authModalView === 'login' && <div className="text-right"><button type="button" onClick={() => dispatch({ type: 'SET_AUTH_MODAL_VIEW', payload: 'forgotPassword'})} className="text-sm font-semibold text-primary hover:underline">Forgot Password?</button></div>}
                                 {state.authModalView === 'signup' && (
                                     <>
-                                        <div className="relative"><input type="password" id="confirmPassword" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="confirmPassword" className={floatingLabelClasses}>Confirm Password</label></div>
+                                        <div className="relative">
+                                            <input
+                                                type={showConfirmPassword ? "text" : "password"}
+                                                id="confirmPassword"
+                                                value={confirmPassword}
+                                                onChange={e => setConfirmPassword(e.target.value)}
+                                                className={floatingInputClasses}
+                                                placeholder=" "
+                                                required
+                                            />
+                                            <label htmlFor="confirmPassword" className={floatingLabelClasses}>Confirm Password</label>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                                            >
+                                                {showConfirmPassword ? (
+                                                    <EyeSlashIcon className="w-5 h-5" />
+                                                ) : (
+                                                    <EyeIcon className="w-5 h-5" />
+                                                )}
+                                            </button>
+                                        </div>
 
                                         {/* Agent checkbox */}
                                         <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
@@ -399,7 +451,30 @@ const AuthPage: React.FC = () => {
                         ) : state.authModalView === 'login' ? (
                             <form onSubmit={handlePhoneLogin} className="space-y-4">
                                 <div className="relative"><input type="tel" id="phone" value={phone} onChange={e => setPhone(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="phone" className={floatingLabelClasses}>Phone Number</label></div>
-                                <div className="relative"><input type="password" id="password" value={password} onChange={e => setPassword(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="password" className={floatingLabelClasses}>Password</label></div>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        id="phonePassword"
+                                        value={password}
+                                        onChange={e => setPassword(e.target.value)}
+                                        className={floatingInputClasses}
+                                        placeholder=" "
+                                        required
+                                    />
+                                    <label htmlFor="phonePassword" className={floatingLabelClasses}>Password</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                    >
+                                        {showPassword ? (
+                                            <EyeSlashIcon className="w-5 h-5" />
+                                        ) : (
+                                            <EyeIcon className="w-5 h-5" />
+                                        )}
+                                    </button>
+                                </div>
                                 <button type="submit" disabled={isLoading} className="w-full mt-2 py-3 px-4 rounded-lg shadow-sm text-base sm:text-lg font-bold text-white bg-primary hover:bg-primary-dark disabled:opacity-50">{isLoading ? 'Processing...' : 'Log In'}</button>
                             </form>
                         ) : (
