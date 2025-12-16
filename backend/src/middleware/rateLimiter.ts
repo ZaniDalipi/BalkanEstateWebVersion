@@ -27,31 +27,31 @@ const accountLimitStore = new Map<string, RateLimitEntry>();
 const RATE_LIMIT_CONFIG = {
   // Login endpoint: 5 attempts per 15 minutes per IP
   LOGIN_IP: {
-    maxAttempts: 5,
+    maxAttempts: 10,
     windowMs: 15 * 60 * 1000, // 15 minutes
     blockDurationMs: 30 * 60 * 1000, // 30 minutes
   },
   // Login endpoint: 3 attempts per 15 minutes per account
   LOGIN_ACCOUNT: {
-    maxAttempts: 3,
+    maxAttempts: 5,
     windowMs: 15 * 60 * 1000,
     blockDurationMs: 60 * 60 * 1000, // 1 hour
   },
   // Signup endpoint: 3 signups per hour per IP
   SIGNUP_IP: {
-    maxAttempts: 3,
+    maxAttempts: 5,
     windowMs: 60 * 60 * 1000, // 1 hour
     blockDurationMs: 2 * 60 * 60 * 1000, // 2 hours
   },
   // Password reset: 3 attempts per hour per IP
   PASSWORD_RESET_IP: {
-    maxAttempts: 3,
+    maxAttempts: 5,
     windowMs: 60 * 60 * 1000,
     blockDurationMs: 2 * 60 * 60 * 1000,
   },
   // Password reset: 2 attempts per hour per account
   PASSWORD_RESET_ACCOUNT: {
-    maxAttempts: 2,
+    maxAttempts: 5,
     windowMs: 60 * 60 * 1000,
     blockDurationMs: 3 * 60 * 60 * 1000, // 3 hours
   },
@@ -127,7 +127,7 @@ export const loginRateLimiterIP = (
 
   if (!result.allowed) {
     res.status(429).json({
-      message: 'Too many login attempts. Please try again later.',
+      message: `Too many login attempts. Please try again later in ${result.retryAfter} seconds.`,
       retryAfter: result.retryAfter,
     });
     return;
