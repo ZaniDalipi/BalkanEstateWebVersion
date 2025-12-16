@@ -322,13 +322,11 @@ export const createProperty = async (
     // Check listing limits based on subscription type
     let currentCount = 0;
     let limit = 0;
-    let subscriptionType = 'free';
 
     if (user.proSubscription && user.proSubscription.isActive) {
       // Pro user - check unified counter (shared across both roles)
       currentCount = user.proSubscription.activeListingsCount || 0;
       limit = user.proSubscription.totalListingsLimit || 15;
-      subscriptionType = user.proSubscription.plan;
 
       if (currentCount >= limit) {
         res.status(403).json({
