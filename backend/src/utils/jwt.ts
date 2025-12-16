@@ -4,16 +4,14 @@ import crypto from 'crypto';
 // Access token: Short-lived (15 minutes)
 export const generateAccessToken = (userId: string): string => {
   const secret: string = process.env.JWT_SECRET || 'secret';
-  return jwt.sign(
-    { id: userId, type: 'access' },
-    secret,
-    { expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || '15m' }
-  );
+  const expiresIn: any = process.env.ACCESS_TOKEN_EXPIRES_IN || '15m';
+  return jwt.sign({ id: userId, type: 'access' }, secret, { expiresIn });
 };
 
 // Refresh token: Long-lived (7 days)
 export const generateRefreshToken = (userId: string): string => {
   const secret: string = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'secret';
+  const expiresIn: any = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d';
 
   // Generate a unique token identifier to allow revocation
   const tokenId = crypto.randomBytes(32).toString('hex');
@@ -21,7 +19,7 @@ export const generateRefreshToken = (userId: string): string => {
   return jwt.sign(
     { id: userId, type: 'refresh', tokenId },
     secret,
-    { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d' }
+    { expiresIn }
   );
 };
 
