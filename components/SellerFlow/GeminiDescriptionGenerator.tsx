@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Property, PropertyImage, PropertyImageTag, Seller, UserRole, NominatimResult } from '../../types';
+import { Property, PropertyImage, PropertyImageTag, Seller, UserRole, NominatimResult, FurnishingStatus, HeatingType, PropertyCondition, ViewType, EnergyRating } from '../../types';
 import { generateDescriptionFromImages, PropertyAnalysisResult, calculatePropertyDistances } from '../../services/geminiService';
 import { searchLocation } from '../../services/osmService';
 import { SparklesIcon, MapPinIcon, SpinnerIcon } from '../../constants';
@@ -45,6 +45,12 @@ interface ListingData {
     hasAirConditioning?: boolean;
     hasPool?: boolean;
     petsAllowed?: boolean;
+    // Advanced property features
+    furnishing: FurnishingStatus;
+    heatingType: HeatingType;
+    condition: PropertyCondition;
+    viewType: ViewType;
+    energyRating: EnergyRating;
 }
 
 interface ImageData {
@@ -80,6 +86,12 @@ const initialListingData: ListingData = {
     hasAirConditioning: undefined,
     hasPool: undefined,
     petsAllowed: undefined,
+    // Advanced property features
+    furnishing: 'any',
+    heatingType: 'any',
+    condition: 'any',
+    viewType: 'any',
+    energyRating: 'any',
 };
 
 // Languages corresponding to supported countries: Kosovo, Albania, North Macedonia, Serbia, Bosnia and Herzegovina, Croatia, Montenegro, Greece, Bulgaria, Romania
@@ -376,6 +388,12 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 hasAirConditioning: propertyToEdit.hasAirConditioning,
                 hasPool: propertyToEdit.hasPool,
                 petsAllowed: propertyToEdit.petsAllowed,
+                // Advanced property features
+                furnishing: propertyToEdit.furnishing || 'any',
+                heatingType: propertyToEdit.heatingType || 'any',
+                condition: propertyToEdit.condition || 'any',
+                viewType: propertyToEdit.viewType || 'any',
+                energyRating: propertyToEdit.energyRating || 'any',
             });
 
             // Set country and city from property
@@ -865,6 +883,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 id: propertyToEdit ? propertyToEdit.id : `prop-${Date.now()}`,
                 sellerId: currentUser.id,
                 status: 'active',
+                title: listingData.title.trim() || undefined,
                 price: Number(listingData.price),
                 address: finalAddress,
                 city: selectedCity,
@@ -907,6 +926,12 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 hasAirConditioning: listingData.hasAirConditioning,
                 hasPool: listingData.hasPool,
                 petsAllowed: listingData.petsAllowed,
+                // Advanced property features
+                furnishing: listingData.furnishing !== 'any' ? listingData.furnishing : undefined,
+                heatingType: listingData.heatingType !== 'any' ? listingData.heatingType : undefined,
+                condition: listingData.condition !== 'any' ? listingData.condition : undefined,
+                viewType: listingData.viewType !== 'any' ? listingData.viewType : undefined,
+                energyRating: listingData.energyRating !== 'any' ? listingData.energyRating : undefined,
                 // Calculated distances
                 distanceToCenter: distances.distanceToCenter,
                 distanceToSea: distances.distanceToSea,
@@ -1185,11 +1210,16 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                         )}
 
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('title')?.focus()}>
-                            <input type="text" id="title" name="title" value={listingData.title} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " required />
+                            <input type="text" id="title" name="title" value={listingData.title} onChange={handleInputChange} className={`${floatingInputClasses} border-neutral-300`} placeholder=" " required maxLength={50} />
                             <label htmlFor="title" className={floatingLabelClasses}>Listing Title</label>
-                            <p className="mt-1 text-xs text-neutral-500">
-                                Create an attractive title for your property (e.g., "Modern 3BR Apartment in City Center")
-                            </p>
+                            <div className="flex justify-between items-center mt-1">
+                                <p className="text-xs text-neutral-500">
+                                    Short, catchy title (e.g., "Luxury Sea View Villa", "Cozy Studio Downtown")
+                                </p>
+                                <span className={`text-xs ${listingData.title.length > 40 ? 'text-amber-600' : 'text-neutral-400'}`}>
+                                    {listingData.title.length}/50
+                                </span>
+                            </div>
                         </div>
 
                         <div className="relative md:col-span-2 cursor-text" onClick={() => document.getElementById('streetAddress')?.focus()}>
@@ -1263,6 +1293,128 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                             />
                         </div>
                         <p className="text-xs text-neutral-500 mt-2">Select "Yes" if available, "No" if not available, or leave as "Any" to skip</p>
+                    </fieldset>
+
+                    {/* Advanced Property Details Section */}
+                    <fieldset className="space-y-4 p-4 bg-neutral-50 rounded-lg border border-neutral-200">
+                        <h3 className="text-base font-semibold text-neutral-800 mb-3">Advanced Property Details</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {/* Furnishing Status */}
+                            <div className="relative">
+                                <select
+                                    id="furnishing"
+                                    name="furnishing"
+                                    value={listingData.furnishing}
+                                    onChange={handleInputChange}
+                                    className={`${floatingInputClasses} border-neutral-300`}
+                                >
+                                    <option value="any">Not Specified</option>
+                                    <option value="furnished">Fully Furnished</option>
+                                    <option value="semi-furnished">Semi-Furnished</option>
+                                    <option value="unfurnished">Unfurnished</option>
+                                </select>
+                                <label htmlFor="furnishing" className={floatingSelectLabelClasses}>Furnishing</label>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
+                                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                </div>
+                            </div>
+
+                            {/* Heating Type */}
+                            <div className="relative">
+                                <select
+                                    id="heatingType"
+                                    name="heatingType"
+                                    value={listingData.heatingType}
+                                    onChange={handleInputChange}
+                                    className={`${floatingInputClasses} border-neutral-300`}
+                                >
+                                    <option value="any">Not Specified</option>
+                                    <option value="central">Central Heating</option>
+                                    <option value="electric">Electric</option>
+                                    <option value="gas">Gas</option>
+                                    <option value="oil">Oil</option>
+                                    <option value="heat-pump">Heat Pump</option>
+                                    <option value="solar">Solar</option>
+                                    <option value="wood">Wood/Fireplace</option>
+                                    <option value="none">No Heating</option>
+                                </select>
+                                <label htmlFor="heatingType" className={floatingSelectLabelClasses}>Heating Type</label>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
+                                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                </div>
+                            </div>
+
+                            {/* Property Condition */}
+                            <div className="relative">
+                                <select
+                                    id="condition"
+                                    name="condition"
+                                    value={listingData.condition}
+                                    onChange={handleInputChange}
+                                    className={`${floatingInputClasses} border-neutral-300`}
+                                >
+                                    <option value="any">Not Specified</option>
+                                    <option value="new">New Construction</option>
+                                    <option value="excellent">Excellent</option>
+                                    <option value="good">Good</option>
+                                    <option value="fair">Fair</option>
+                                    <option value="needs-renovation">Needs Renovation</option>
+                                </select>
+                                <label htmlFor="condition" className={floatingSelectLabelClasses}>Condition</label>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
+                                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                </div>
+                            </div>
+
+                            {/* View Type */}
+                            <div className="relative">
+                                <select
+                                    id="viewType"
+                                    name="viewType"
+                                    value={listingData.viewType}
+                                    onChange={handleInputChange}
+                                    className={`${floatingInputClasses} border-neutral-300`}
+                                >
+                                    <option value="any">Not Specified</option>
+                                    <option value="sea">Sea View</option>
+                                    <option value="mountain">Mountain View</option>
+                                    <option value="city">City View</option>
+                                    <option value="park">Park View</option>
+                                    <option value="garden">Garden View</option>
+                                    <option value="street">Street View</option>
+                                </select>
+                                <label htmlFor="viewType" className={floatingSelectLabelClasses}>View Type</label>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
+                                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                </div>
+                            </div>
+
+                            {/* Energy Rating */}
+                            <div className="relative">
+                                <select
+                                    id="energyRating"
+                                    name="energyRating"
+                                    value={listingData.energyRating}
+                                    onChange={handleInputChange}
+                                    className={`${floatingInputClasses} border-neutral-300`}
+                                >
+                                    <option value="any">Not Specified</option>
+                                    <option value="A+">A+ (Most Efficient)</option>
+                                    <option value="A">A</option>
+                                    <option value="B">B</option>
+                                    <option value="C">C</option>
+                                    <option value="D">D</option>
+                                    <option value="E">E</option>
+                                    <option value="F">F</option>
+                                    <option value="G">G (Least Efficient)</option>
+                                </select>
+                                <label htmlFor="energyRating" className={floatingSelectLabelClasses}>Energy Rating</label>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-500">
+                                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                </div>
+                            </div>
+                        </div>
+                        <p className="text-xs text-neutral-500 mt-2">Provide detailed property information to help buyers find your listing through advanced filters</p>
                     </fieldset>
 
                     <fieldset><label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-1">Description</label><textarea id="description" name="description" value={listingData.description} onChange={handleInputChange} className={`${inputBaseClasses} h-48`} required /></fieldset>

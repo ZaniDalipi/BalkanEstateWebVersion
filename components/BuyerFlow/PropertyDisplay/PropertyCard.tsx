@@ -1,6 +1,6 @@
 import React, { useState, useCallback, memo } from 'react';
 import { Property } from '../../../types';
-import { MapPinIcon, BedIcon, BathIcon, SqftIcon, UserCircleIcon, ScaleIcon, LivingRoomIcon, BuildingOfficeIcon, EnvelopeIcon } from '../../../constants';
+import { MapPinIcon, BedIcon, BathIcon, SqftIcon, UserCircleIcon, ScaleIcon, LivingRoomIcon, BuildingOfficeIcon } from '../../../constants';
 import { useAppContext } from '../../../context/AppContext';
 import { formatPrice } from '../../../utils/currency';
 
@@ -11,9 +11,9 @@ interface PropertyCardProps {
 }
 
 const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCompareButton }) => {
-  const { state, dispatch, toggleSavedHome, createConversation } = useAppContext();
+  const { state, dispatch, toggleSavedHome } = useAppContext();
   const [imageError, setImageError] = useState(false);
-  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const isFavorited = state.savedHomes.some(p => p.id === property.id);
   const isInComparison = state.comparisonList.includes(property.id);
   const isNew = property.createdAt && (Date.now() - property.createdAt < 3 * 24 * 60 * 60 * 1000);
@@ -28,12 +28,11 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
   const handleCardClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     dispatch({ type: 'SET_SELECTED_PROPERTY', payload: property.id });
-    // Update browser history to enable back button navigation (web & mobile)
     window.history.pushState({ propertyId: property.id }, '', `/property/${property.id}`);
   }, [dispatch, property.id]);
 
   const handleFavoriteClick = useCallback(async (e: React.MouseEvent) => {
-      e.stopPropagation(); // Prevent card click
+      e.stopPropagation();
       if (!state.isAuthenticated && !state.user) {
           dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
       } else {
@@ -59,158 +58,240 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
       }
   }, [isInComparison, dispatch, property.id, state.comparisonList.length, showToast]);
 
-  const handleMessageSeller = useCallback(async (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (!state.isAuthenticated && !state.user) {
-          dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true } });
-          return;
-      }
+  // Property type labels (short versions for mobile)
+  const propertyTypeLabel = {
+    apartment: 'Apt',
+    house: 'House',
+    villa: 'Villa',
+    land: 'Land',
+    commercial: 'Comm',
+  }[property.propertyType] || 'Property';
 
-      try {
-          setIsCreatingConversation(true);
-          const conversation = await createConversation(property.id);
-          dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: conversation.id });
-          // Navigate to inbox
-          window.history.pushState({ page: 'inbox' }, '', '/inbox');
-          // Trigger a navigation event to update the app routing
-          dispatch({ type: 'SET_CURRENT_PAGE', payload: 'inbox' });
-      } catch (error) {
-          console.error('Failed to create conversation:', error);
-          showToast?.('Failed to start conversation. Please try again.', 'error');
-      } finally {
-          setIsCreatingConversation(false);
-      }
-  }, [state.isAuthenticated, state.user, dispatch, property.id, createConversation, showToast]);
-
-  // Determine card border/ring style based on promotion tier
-  const promotionCardStyle = isActivelyPromoted
-    ? promotionTier === 'premium'
-      ? 'ring-2 ring-purple-400 border-purple-300'
-      : promotionTier === 'highlight'
-      ? 'ring-2 ring-amber-400 border-amber-300'
-      : promotionTier === 'featured'
-      ? 'ring-2 ring-blue-400 border-blue-300'
-      : 'ring-1 ring-gray-400 border-gray-300'
-    : 'border-neutral-200';
+  // Determine card styles based on promotion tier
+  const getCardStyles = () => {
+    if (isSold) return 'border-neutral-300 opacity-80';
+    if (isActivelyPromoted) {
+      if (promotionTier === 'premium') return 'ring-2 ring-purple-400 border-purple-200 shadow-purple-100';
+      if (promotionTier === 'highlight') return 'ring-2 ring-amber-400 border-amber-200 shadow-amber-100';
+      if (promotionTier === 'featured') return 'ring-2 ring-blue-400 border-blue-200 shadow-blue-100';
+      return 'ring-1 ring-gray-400 border-gray-200';
+    }
+    return 'border-neutral-200 hover:border-primary/30';
+  };
 
   return (
     <div
-      className={`bg-white rounded-lg overflow-hidden shadow-md border hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-left w-full flex flex-col ${
-        isSold ? 'opacity-75 grayscale-[50%]' : ''
-      } ${promotionCardStyle}`}
+      className={`group bg-white rounded-2xl overflow-hidden shadow-lg border-2 transition-all duration-500 text-left w-full flex flex-col cursor-pointer ${getCardStyles()} ${
+        isHovered && !isSold ? 'shadow-2xl -translate-y-2 scale-[1.02]' : 'hover:shadow-xl'
+      }`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={handleCardClick}
     >
-      <div className="block w-full relative">
-        <button onClick={handleCardClick} className="block w-full">
-            {imageError ? (
-                <div className="w-full h-32 sm:h-36 md:h-40 bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center">
-                    <BuildingOfficeIcon className="w-8 h-8 sm:w-10 sm:h-10 text-neutral-400" />
-                </div>
-            ) : (
-                <img
-                  src={property.imageUrl}
-                  alt={property.address}
-                  className="w-full h-32 sm:h-36 md:h-40 object-cover"
-                  onError={() => setImageError(true)}
-                />
-            )}
-        </button>
-        {isSold && (
-            <div className="absolute top-1.5 left-1.5 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-md shadow-lg z-10">
+      {/* Image Section */}
+      <div className="relative overflow-hidden">
+        {imageError ? (
+          <div className="w-full h-40 sm:h-44 md:h-48 bg-gradient-to-br from-neutral-100 via-neutral-200 to-neutral-300 flex items-center justify-center">
+            <BuildingOfficeIcon className="w-12 h-12 text-neutral-400" />
+          </div>
+        ) : (
+          <div className="relative w-full h-40 sm:h-44 md:h-48 overflow-hidden">
+            <img
+              src={property.imageUrl}
+              alt={property.address}
+              className={`w-full h-full object-cover transition-transform duration-700 ${
+                isHovered && !isSold ? 'scale-110' : 'scale-100'
+              } ${isSold ? 'grayscale' : ''}`}
+              onError={() => setImageError(true)}
+            />
+            {/* Gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          </div>
+        )}
+
+        {/* Top badges row */}
+        <div className="absolute top-2 left-2 right-2 flex justify-between items-start z-10">
+          <div className="flex flex-col gap-1.5">
+            {/* Sold Badge */}
+            {isSold && (
+              <div className="bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                 SOLD
-            </div>
-        )}
-        {!isSold && isNew && !isActivelyPromoted && (
-            <div className="absolute top-1.5 left-1.5 bg-secondary text-white text-xs font-bold px-2 py-0.5 rounded-md shadow-lg z-10">
+              </div>
+            )}
+
+            {/* New Badge */}
+            {!isSold && isNew && !isActivelyPromoted && (
+              <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg flex items-center gap-1">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+                </span>
                 NEW
-            </div>
-        )}
-        {/* Promotion Badges */}
-        {!isSold && isActivelyPromoted && promotionTier && (
-            <div className={`absolute top-1.5 left-1.5 text-white text-xs font-bold px-2.5 py-1 rounded-md shadow-lg z-10 flex items-center gap-1 ${
+              </div>
+            )}
+
+            {/* Promotion Badges */}
+            {!isSold && isActivelyPromoted && promotionTier && (
+              <div className={`text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg flex items-center gap-1 ${
                 promotionTier === 'premium'
-                    ? 'bg-gradient-to-r from-purple-600 to-purple-700'
-                    : promotionTier === 'highlight'
-                    ? 'bg-gradient-to-r from-amber-500 to-amber-600'
-                    : promotionTier === 'featured'
-                    ? 'bg-gradient-to-r from-blue-500 to-blue-600'
-                    : 'bg-gradient-to-r from-gray-600 to-gray-700'
-            }`}>
-                {promotionTier === 'premium' && <span>PREMIUM</span>}
-                {promotionTier === 'highlight' && <span>HIGHLIGHT</span>}
-                {promotionTier === 'featured' && <span>FEATURED</span>}
-                {promotionTier === 'standard' && <span>PROMOTED</span>}
-            </div>
-        )}
-        {!isSold && isActivelyPromoted && property.hasUrgentBadge && (
-            <div className="absolute top-10 left-1.5 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-md shadow-lg z-10 animate-pulse">
-                URGENT
-            </div>
-        )}
-        <div onClick={handleFavoriteClick} className="absolute top-1.5 right-1.5 bg-white/90 backdrop-blur-sm p-2.5 sm:p-2 rounded-full cursor-pointer hover:bg-white hover:scale-110 transition-transform duration-200 z-10">
-             <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 sm:h-4 sm:w-4 transition-colors duration-300 ${isFavorited ? 'text-red-500 fill-current' : 'text-neutral-500 hover:text-red-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  ? 'bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600'
+                  : promotionTier === 'highlight'
+                  ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500'
+                  : promotionTier === 'featured'
+                  ? 'bg-gradient-to-r from-blue-500 via-blue-600 to-cyan-500'
+                  : 'bg-gradient-to-r from-gray-600 to-gray-700'
+              }`}>
+                <span className="text-xs">✨</span>
+                {promotionTier === 'premium' && 'PREMIUM'}
+                {promotionTier === 'highlight' && 'HIGHLIGHT'}
+                {promotionTier === 'featured' && 'FEATURED'}
+                {promotionTier === 'standard' && 'PROMOTED'}
+              </div>
+            )}
+
+            {/* Urgent Badge */}
+            {!isSold && isActivelyPromoted && property.hasUrgentBadge && (
+              <div className="bg-gradient-to-r from-red-600 to-rose-600 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg animate-pulse flex items-center gap-1">
+                🔥 URGENT
+              </div>
+            )}
+          </div>
+
+          {/* Favorite Button */}
+          <button
+            onClick={handleFavoriteClick}
+            className={`p-2 rounded-full shadow-lg transition-all duration-300 ${
+              isFavorited
+                ? 'bg-red-500 text-white scale-110'
+                : 'bg-white/95 backdrop-blur-sm text-neutral-600 hover:bg-red-500 hover:text-white hover:scale-110'
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-transform duration-300 ${isFavorited ? 'fill-current scale-110' : ''}`} fill={isFavorited ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
+          </button>
+        </div>
+
+        {/* Bottom info bar on image */}
+        <div className="absolute bottom-0 left-0 right-0 p-2 z-10">
+          <div className="flex items-center justify-between gap-2">
+            {/* Property Type Badge */}
+            <span className="bg-white/95 backdrop-blur-sm text-neutral-800 text-[10px] font-semibold px-2 py-1 rounded-md shadow-md">
+              {propertyTypeLabel}
+            </span>
+            {/* Price Badge */}
+            <span className="bg-gradient-to-r from-primary to-primary-dark text-white text-xs sm:text-sm font-bold px-2.5 py-1 rounded-md shadow-lg">
+              {formatPrice(property.price, property.country)}
+            </span>
+          </div>
         </div>
       </div>
-      <div className="p-2.5 sm:p-3 md:p-4 flex flex-col flex-grow">
-        <button onClick={handleCardClick} className="text-left flex-grow min-w-0">
-            <div className="flex items-center text-neutral-600 mb-1 overflow-hidden min-w-0">
-                <MapPinIcon className="w-3.5 h-3.5 mr-1 text-neutral-400 flex-shrink-0" />
-                <span className="truncate text-xs sm:text-sm font-medium">{property.address}, {property.city}</span>
-            </div>
-            {property.title && (
-                <h3 className="text-sm sm:text-base md:text-lg font-semibold text-neutral-800 mb-1.5 line-clamp-2">{property.title}</h3>
-            )}
-            <p className="text-base sm:text-lg md:text-xl font-bold text-neutral-900 my-1.5">{formatPrice(property.price, property.country)}</p>
-            <div className="flex items-center flex-wrap gap-1.5 sm:gap-2.5 text-neutral-700 mb-1.5">
-                <div className="flex items-center gap-1" title={`${property.beds} bedrooms`}>
-                    <BedIcon className="w-4 h-4 text-neutral-500" />
-                    <span className="font-semibold text-sm">{property.beds}</span>
-                </div>
-                <div className="flex items-center gap-1" title={`${property.baths} bathrooms`}>
-                    <BathIcon className="w-4 h-4 text-neutral-500" />
-                    <span className="font-semibold text-sm">{property.baths}</span>
-                </div>
-                <div className="flex items-center gap-1" title={`${property.livingRooms} living rooms`}>
-                    <LivingRoomIcon className="w-4 h-4 text-neutral-500" />
-                    <span className="font-semibold text-sm">{property.livingRooms}</span>
-                </div>
-                <div className="flex items-center gap-1" title={`${property.sqft} square meters`}>
-                    <SqftIcon className="w-4 h-4 text-neutral-500" />
-                    <span className="font-semibold text-sm">{property.sqft} m²</span>
-                </div>
-            </div>
-        </button>
+
+      {/* Content Section */}
+      <div className="p-3 sm:p-4 flex flex-col flex-grow">
+        {/* Title */}
+        {property.title && (
+          <h3 className="text-sm sm:text-base font-bold text-neutral-900 mb-1.5 line-clamp-1 group-hover:text-primary transition-colors duration-300">
+            {property.title}
+          </h3>
+        )}
+
+        {/* Location */}
+        <div className="flex items-center gap-1.5 mb-3">
+          <MapPinIcon className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+          <span className="text-xs sm:text-sm text-neutral-600 truncate">
+            {property.city}, {property.country}
+          </span>
+        </div>
+
+        {/* Property Stats - Grid layout for better fit */}
+        <div className="grid grid-cols-4 gap-1.5 mb-3">
+          <div className="flex flex-col items-center bg-neutral-100 py-1.5 px-1 rounded-lg" title={`${property.beds} bedrooms`}>
+            <BedIcon className="w-3.5 h-3.5 text-primary mb-0.5" />
+            <span className="font-bold text-xs text-neutral-800">{property.beds}</span>
+          </div>
+          <div className="flex flex-col items-center bg-neutral-100 py-1.5 px-1 rounded-lg" title={`${property.baths} bathrooms`}>
+            <BathIcon className="w-3.5 h-3.5 text-primary mb-0.5" />
+            <span className="font-bold text-xs text-neutral-800">{property.baths}</span>
+          </div>
+          <div className="flex flex-col items-center bg-neutral-100 py-1.5 px-1 rounded-lg" title={`${property.livingRooms} living rooms`}>
+            <LivingRoomIcon className="w-3.5 h-3.5 text-primary mb-0.5" />
+            <span className="font-bold text-xs text-neutral-800">{property.livingRooms}</span>
+          </div>
+          <div className="flex flex-col items-center bg-primary/10 py-1.5 px-1 rounded-lg border border-primary/20" title={`${property.sqft} m²`}>
+            <SqftIcon className="w-3.5 h-3.5 text-primary mb-0.5" />
+            <span className="font-bold text-xs text-primary">{property.sqft}</span>
+          </div>
+        </div>
 
         <div className="flex-grow"></div>
 
-        <div className="mt-2.5 sm:mt-3 pt-2.5 sm:pt-3 border-t border-neutral-100">
-            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-2.5">
-                {showCompareButton && (
-                    <button
-                        onClick={handleCompareClick}
-                        className={`flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all shadow-sm hover:shadow-md w-full sm:w-auto ${
-                            isInComparison
-                                ? 'bg-primary-light text-primary-dark border-2 border-primary/50'
-                                : 'bg-white text-neutral-700 border-2 border-neutral-300 hover:bg-neutral-100'
-                        }`}
-                    >
-                        <ScaleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-                        <span>{isInComparison ? 'Selected' : 'Compare'}</span>
-                    </button>
-                )}
-                <button
-                    onClick={handleCardClick}
-                    className="bg-primary text-white px-3 sm:px-4 py-2.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold hover:bg-primary-dark transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-1.5 w-full sm:w-auto"
-                >
-                    {property.seller.avatarUrl ? (
-                        <img src={property.seller.avatarUrl} alt={property.seller.name} className="w-4 h-4 sm:w-5 sm:h-5 rounded-full object-cover border-2 border-white/50" />
-                    ) : (
-                        <UserCircleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-                    )}
-                    <span>View Details</span>
-                </button>
+        {/* Seller/Agent Info Section */}
+        <div className="pt-3 border-t border-neutral-100">
+          <div className="flex items-center gap-2">
+            {/* Seller Avatar */}
+            <div className="relative flex-shrink-0">
+              {property.seller.avatarUrl ? (
+                <img
+                  src={property.seller.avatarUrl}
+                  alt={property.seller.name}
+                  className="w-8 h-8 rounded-full object-cover border-2 border-white shadow"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center shadow border-2 border-white">
+                  <UserCircleIcon className="w-5 h-5 text-primary" />
+                </div>
+              )}
+              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></span>
             </div>
+
+            {/* Seller Info */}
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-neutral-800 truncate">{property.seller.name}</p>
+              <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                property.seller.type === 'agent'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-neutral-200 text-neutral-600'
+              }`}>
+                {property.seller.type === 'agent' ? 'Agent' : 'Private'}
+              </span>
+            </div>
+
+            {/* Agency Logo (if agent with agency) */}
+            {property.seller.type === 'agent' && property.seller.agencyName && (
+              <div className="flex items-center gap-1.5 flex-shrink-0 bg-neutral-50 px-2 py-1.5 rounded-lg border border-neutral-200">
+                {property.seller.agencyLogo ? (
+                  <img
+                    src={property.seller.agencyLogo}
+                    alt={property.seller.agencyName}
+                    className="w-6 h-6 rounded object-contain bg-white"
+                  />
+                ) : (
+                  <BuildingOfficeIcon className="w-5 h-5 text-primary" />
+                )}
+                <div className="hidden sm:block">
+                  <p className="text-[9px] text-neutral-500 leading-none">Agency</p>
+                  <p className="text-[10px] font-medium text-neutral-700 truncate max-w-[60px]">{property.seller.agencyName}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Compare Button (if enabled) */}
+          {showCompareButton && (
+            <button
+              onClick={handleCompareClick}
+              className={`mt-2.5 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all duration-300 w-full ${
+                isInComparison
+                  ? 'bg-primary text-white shadow-md'
+                  : 'bg-neutral-100 text-neutral-700 hover:bg-primary hover:text-white'
+              }`}
+            >
+              <ScaleIcon className="w-4 h-4" />
+              <span>{isInComparison ? 'In Compare' : 'Add to Compare'}</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

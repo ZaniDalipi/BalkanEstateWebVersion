@@ -601,6 +601,7 @@ function transformBackendProperty(backendProp: any): Property {
     id: backendProp._id,
     sellerId: seller._id || seller,
     status: backendProp.status,
+    title: backendProp.title,
     soldAt: backendProp.soldAt ? new Date(backendProp.soldAt).getTime() : undefined,
     price: backendProp.price,
     address: backendProp.address,
@@ -627,6 +628,8 @@ function transformBackendProperty(backendProp: any): Property {
       phone: seller.phone,
       avatarUrl: seller.avatarUrl,
       agencyName: seller.agencyName,
+      agencyLogo: seller.agencyLogo,
+      agencyId: seller.agencyId,
     },
     propertyType: backendProp.propertyType,
     floorNumber: backendProp.floorNumber,
@@ -661,6 +664,7 @@ function transformBackendProperty(backendProp: any): Property {
 function transformToBackendProperty(frontendProp: Property): any {
   return {
     status: frontendProp.status,
+    title: frontendProp.title,
     price: frontendProp.price,
     address: frontendProp.address,
     city: frontendProp.city,

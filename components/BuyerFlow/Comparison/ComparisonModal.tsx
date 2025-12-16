@@ -26,9 +26,12 @@ const CompareModalImage: React.FC<{ property: Property }> = ({ property }) => {
                     <BuildingOfficeIcon className="w-10 h-10 text-neutral-400" />
                 </div>
             ) : (
-                <img src={property.imageUrl} alt={property.address} className="w-full h-24 object-cover rounded-lg" onError={() => setError(true)} />
+                <img src={property.imageUrl} alt={property.title || property.address} className="w-full h-24 object-cover rounded-lg" onError={() => setError(true)} />
             )}
-            <p className="font-semibold text-sm mt-2 truncate">{property.address}, {property.city}</p>
+            {property.title && (
+                <p className="font-bold text-sm mt-2 truncate text-neutral-900">{property.title}</p>
+            )}
+            <p className={`text-sm ${property.title ? 'text-neutral-500' : 'font-semibold mt-2'} truncate`}>{property.address}, {property.city}</p>
         </>
     )
 }

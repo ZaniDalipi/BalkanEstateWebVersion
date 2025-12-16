@@ -61,8 +61,8 @@ const SavedPropertiesPage: React.FC = () => {
 
     if (isLoadingUserData) {
         return (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {Array.from({ length: 4 }).map((_, index) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: 3 }).map((_, index) => (
                     <PropertyCardSkeleton key={index} />
                 ))}
             </div>
@@ -79,11 +79,11 @@ const SavedPropertiesPage: React.FC = () => {
                     {Object.entries(cities).map(([city, properties]) => (
                       <div key={city}>
                         <h3 className="text-lg font-semibold text-neutral-700 mb-3">{city}</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                           {properties.map((property) => (
-                            <PropertyCard 
-                                key={property.id} 
-                                property={property} 
+                            <PropertyCard
+                                key={property.id}
+                                property={property}
                                 showCompareButton={true}
                                 showToast={showToast}
                              />
@@ -106,11 +106,11 @@ const SavedPropertiesPage: React.FC = () => {
                 </div>
                 <div className="mt-8">
                     <h2 className="text-xl font-bold text-neutral-800 mb-4 text-center">Here are some popular properties</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {exampleProperties.map((property) => (
-                            <PropertyCard 
-                                key={property.id} 
-                                property={property} 
+                            <PropertyCard
+                                key={property.id}
+                                property={property}
                                 showCompareButton={true}
                                 showToast={showToast}
                              />

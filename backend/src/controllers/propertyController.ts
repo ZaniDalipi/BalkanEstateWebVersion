@@ -124,7 +124,7 @@ export const getProperties = async (
     // Fetch more than needed to allow for promoted property sorting
     const fetchLimit = limitNum * 2; // Fetch 2x to ensure we have enough promoted properties
     let properties = await Property.find(filter)
-      .populate('sellerId', 'name email phone avatarUrl role agencyName')
+      .populate('sellerId', 'name email phone avatarUrl role agencyName agencyId')
       .sort(sort)
       .skip(skip)
       .limit(fetchLimit);
@@ -165,11 +165,39 @@ export const getProperties = async (
     // Trim to requested limit after sorting
     properties = properties.slice(0, limitNum);
 
+    // Enrich properties with agency logos for agent sellers
+    const agencyIds = properties
+      .map(p => (p.sellerId as any)?.agencyId)
+      .filter(Boolean);
+
+    let enrichedProperties: any[] = properties;
+
+    if (agencyIds.length > 0) {
+      const agencies = await Agency.find(
+        { _id: { $in: agencyIds } },
+        { _id: 1, logo: 1 }
+      ).lean();
+
+      const agencyLogoMap = new Map(
+        agencies.map(a => [String(a._id), a.logo])
+      );
+
+      // Add agencyLogo to each property's seller
+      enrichedProperties = properties.map(p => {
+        const prop = p.toObject ? p.toObject() : p;
+        const seller = prop.sellerId as any;
+        if (seller?.agencyId) {
+          seller.agencyLogo = agencyLogoMap.get(String(seller.agencyId));
+        }
+        return prop;
+      });
+    }
+
     // Get total count for pagination
     const total = await Property.countDocuments(filter);
 
     res.json({
-      properties,
+      properties: enrichedProperties,
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -193,7 +221,7 @@ export const getProperty = async (
   try {
     const property = await Property.findById(req.params.id).populate(
       'sellerId',
-      'name email phone avatarUrl role agencyName licenseNumber'
+      'name email phone avatarUrl role agencyName agencyId licenseNumber'
     );
 
     if (!property) {
@@ -208,7 +236,17 @@ export const getProperty = async (
     // Update seller's stats in real-time
     await incrementViewCount(String(property.sellerId._id || property.sellerId));
 
-    res.json({ property });
+    // Enrich property with agency logo if seller is an agent
+    let enrichedProperty = property.toObject();
+    const seller = enrichedProperty.sellerId as any;
+    if (seller?.agencyId) {
+      const agency = await Agency.findById(seller.agencyId, { logo: 1 }).lean();
+      if (agency) {
+        seller.agencyLogo = agency.logo;
+      }
+    }
+
+    res.json({ property: enrichedProperty });
   } catch (error: any) {
     console.error('Get property error:', error);
     res.status(500).json({ message: 'Error fetching property', error: error.message });
@@ -238,17 +276,21 @@ export const createProperty = async (
 
     // Tier-based listing limits
     const getTierLimit = (plan: string): number => {
-      switch (plan) {
-        case 'free':
-          return 3;
-        case 'pro_monthly':
-        case 'pro_yearly':
-          return 15;
-        case 'enterprise':
-          return 100; // Effectively unlimited
-        default:
-          return 3;
+      // Normalize plan name for comparison
+      const normalizedPlan = plan?.toLowerCase() || 'free';
+
+      // Check for pro plans (seller or buyer, monthly or yearly)
+      if (normalizedPlan.includes('pro')) {
+        return 15;
       }
+
+      // Check for enterprise plans
+      if (normalizedPlan.includes('enterprise') || normalizedPlan.includes('premium')) {
+        return 100; // Effectively unlimited
+      }
+
+      // Free tier
+      return 3;
     };
 
     let userPlan = user.subscriptionPlan || 'free';

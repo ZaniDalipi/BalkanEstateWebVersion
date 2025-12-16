@@ -198,6 +198,13 @@ const PropertyPopup: React.FC<{
         )}
       </div>
 
+      {/* Title */}
+      {property.title && (
+        <p className="font-bold text-sm text-neutral-900 mb-1 line-clamp-1">
+          {property.title}
+        </p>
+      )}
+
       {/* Price and property type */}
       <div className="mb-1.5">
         <div className="flex items-center justify-between">

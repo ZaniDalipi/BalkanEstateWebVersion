@@ -61,6 +61,12 @@ export interface IProperty extends Document {
   distanceToSea?: number;
   distanceToSchool?: number;
   distanceToHospital?: number;
+  // Advanced property features
+  furnishing?: 'furnished' | 'semi-furnished' | 'unfurnished';
+  heatingType?: 'central' | 'electric' | 'gas' | 'oil' | 'heat-pump' | 'solar' | 'wood' | 'none';
+  condition?: 'new' | 'excellent' | 'good' | 'fair' | 'needs-renovation';
+  viewType?: 'sea' | 'mountain' | 'city' | 'park' | 'garden' | 'street';
+  energyRating?: 'A+' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -291,6 +297,32 @@ const PropertySchema: Schema = new Schema(
     distanceToHospital: {
       type: Number,
       min: 0,
+    },
+    // Advanced property features
+    furnishing: {
+      type: String,
+      enum: ['furnished', 'semi-furnished', 'unfurnished'],
+      index: true,
+    },
+    heatingType: {
+      type: String,
+      enum: ['central', 'electric', 'gas', 'oil', 'heat-pump', 'solar', 'wood', 'none'],
+      index: true,
+    },
+    condition: {
+      type: String,
+      enum: ['new', 'excellent', 'good', 'fair', 'needs-renovation'],
+      index: true,
+    },
+    viewType: {
+      type: String,
+      enum: ['sea', 'mountain', 'city', 'park', 'garden', 'street'],
+      index: true,
+    },
+    energyRating: {
+      type: String,
+      enum: ['A+', 'A', 'B', 'C', 'D', 'E', 'F', 'G'],
+      index: true,
     },
   },
   {
