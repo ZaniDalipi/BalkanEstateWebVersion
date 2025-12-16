@@ -10,6 +10,9 @@ export interface IProperty extends Document {
   sellerId: mongoose.Types.ObjectId;
   createdByName: string; // Name of the user who created this listing
   createdByEmail: string; // Email of the user who created this listing
+  createdAsRole: 'private_seller' | 'agent'; // Which role context was used to create this listing
+  createdByAgencyName?: string; // If created as agent, store agency name
+  createdByLicenseNumber?: string; // If created as agent, store license number
   title?: string; // Optional title/headline for the property listing
   status: 'active' | 'pending' | 'sold' | 'draft';
   soldAt?: Date;
@@ -88,6 +91,22 @@ const PropertySchema: Schema = new Schema(
       type: String,
       required: true,
       index: true,
+    },
+    createdAsRole: {
+      type: String,
+      enum: ['private_seller', 'agent'],
+      required: true,
+      default: 'private_seller',
+      index: true, // Index for filtering by role
+    },
+    createdByAgencyName: {
+      type: String,
+      required: false,
+      index: true, // Index for agency listings
+    },
+    createdByLicenseNumber: {
+      type: String,
+      required: false,
     },
     title: {
       type: String,

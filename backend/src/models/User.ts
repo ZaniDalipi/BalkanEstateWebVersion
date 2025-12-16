@@ -9,7 +9,10 @@ export interface IUser extends Document {
   phone?: string;
   avatarUrl?: string;
   avatarPublicId?: string;
-  role: 'buyer' | 'private_seller' | 'agent' | 'admin' | 'super_admin';
+  role: 'buyer' | 'private_seller' | 'agent' | 'admin' | 'super_admin'; // Deprecated - use availableRoles instead
+  availableRoles: ('buyer' | 'private_seller' | 'agent' | 'admin' | 'super_admin')[]; // What roles user can access
+  activeRole: 'buyer' | 'private_seller' | 'agent' | 'admin' | 'super_admin'; // Current UI context
+  primaryRole: 'buyer' | 'private_seller' | 'agent' | 'admin' | 'super_admin'; // Default/main role
   provider: 'local' | 'google' | 'facebook' | 'apple';
   providerId?: string;
   isEmailVerified: boolean;
@@ -101,6 +104,27 @@ export interface IUser extends Document {
   activeListingsLimit: number; // Max active listings allowed
   paidListingsCount: number; // Count of paid extra listings
 
+  // Role-Based Subscription Tracking
+  privateSellerSubscription?: {
+    isActive: boolean;
+    plan: 'free' | 'pro_monthly' | 'pro_yearly';
+    expiresAt?: Date;
+    listingsLimit: number; // 3 free, 20 pro
+    activeListingsCount: number; // Current count for this role
+  };
+
+  agentSubscription?: {
+    isActive: boolean;
+    plan: 'trial' | 'pro_monthly' | 'pro_yearly';
+    expiresAt?: Date;
+    listingsLimit: number; // 10 trial, 50 pro
+    activeListingsCount: number; // Current count for this role
+    trialStartDate?: Date;
+    trialEndDate?: Date;
+    trialReminderSent?: boolean;
+    trialExpired?: boolean;
+  };
+
   // Neighborhood Insights Usage Tracking
   neighborhoodInsights?: {
     monthlyCount: number;        // Number of insights generated this month
@@ -177,6 +201,21 @@ const UserSchema: Schema = new Schema(
       type: String,
       enum: ['buyer', 'private_seller', 'agent', 'admin', 'super_admin'],
       default: 'buyer',
+    },
+    availableRoles: {
+      type: [String],
+      enum: ['buyer', 'private_seller', 'agent', 'admin', 'super_admin'],
+      default: function() { return [this.role || 'buyer']; }, // Initialize with current role
+    },
+    activeRole: {
+      type: String,
+      enum: ['buyer', 'private_seller', 'agent', 'admin', 'super_admin'],
+      default: function() { return this.role || 'buyer'; }, // Initialize with current role
+    },
+    primaryRole: {
+      type: String,
+      enum: ['buyer', 'private_seller', 'agent', 'admin', 'super_admin'],
+      default: function() { return this.role || 'buyer'; }, // Initialize with current role
     },
     city: {
       type: String,
@@ -396,6 +435,56 @@ const UserSchema: Schema = new Schema(
     paidListingsCount: {
       type: Number,
       default: 0,
+    },
+    // Role-Based Subscription Tracking
+    privateSellerSubscription: {
+      isActive: {
+        type: Boolean,
+        default: false,
+      },
+      plan: {
+        type: String,
+        enum: ['free', 'pro_monthly', 'pro_yearly'],
+        default: 'free',
+      },
+      expiresAt: Date,
+      listingsLimit: {
+        type: Number,
+        default: 3, // 3 for free, 20 for pro
+      },
+      activeListingsCount: {
+        type: Number,
+        default: 0,
+      },
+    },
+    agentSubscription: {
+      isActive: {
+        type: Boolean,
+        default: false,
+      },
+      plan: {
+        type: String,
+        enum: ['trial', 'pro_monthly', 'pro_yearly'],
+      },
+      expiresAt: Date,
+      listingsLimit: {
+        type: Number,
+        default: 10, // 10 for trial, 50 for pro
+      },
+      activeListingsCount: {
+        type: Number,
+        default: 0,
+      },
+      trialStartDate: Date,
+      trialEndDate: Date,
+      trialReminderSent: {
+        type: Boolean,
+        default: false,
+      },
+      trialExpired: {
+        type: Boolean,
+        default: false,
+      },
     },
     neighborhoodInsights: {
       monthlyCount: {
