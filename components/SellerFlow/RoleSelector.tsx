@@ -67,13 +67,13 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({ currentUser, selectedRole, 
                     isTrial: sub.plan === 'trial',
                 };
             }
-            // Default subscription for agent if not set
+            // Agents require Pro subscription - no free trial
             return {
-                plan: 'trial',
-                limit: 10,
+                plan: 'none',
+                limit: 0,
                 used: 0,
-                isActive: true,
-                isTrial: true,
+                isActive: false,
+                isTrial: false,
             };
         }
 
@@ -89,6 +89,8 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({ currentUser, selectedRole, 
                 return <span className="text-xs font-semibold px-2 py-0.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded">Pro</span>;
             case 'free':
                 return <span className="text-xs font-semibold px-2 py-0.5 bg-neutral-200 text-neutral-700 rounded">Free</span>;
+            case 'none':
+                return <span className="text-xs font-semibold px-2 py-0.5 bg-red-100 text-red-700 rounded">Pro Required</span>;
             default:
                 return null;
         }
@@ -163,7 +165,7 @@ const RoleCard: React.FC<RoleCardProps> = ({
     agencyName
 }) => {
     const remaining = subscription ? subscription.limit - subscription.used : 0;
-    const isLimitReached = subscription ? subscription.used >= subscription.limit : false;
+    const isLimitReached = subscription ? (subscription.plan === 'none' || subscription.used >= subscription.limit) : false;
 
     return (
         <button
@@ -200,48 +202,72 @@ const RoleCard: React.FC<RoleCardProps> = ({
                     )}
 
                     {subscription ? (
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-neutral-600">Listings</span>
-                                <span className={`font-semibold ${isLimitReached ? 'text-red-600' : 'text-neutral-800'}`}>
-                                    {subscription.used} / {subscription.limit}
-                                </span>
-                            </div>
-
-                            {/* Progress bar */}
-                            <div className="w-full bg-neutral-200 rounded-full h-1.5">
-                                <div
-                                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                                        isLimitReached
-                                            ? 'bg-red-500'
-                                            : remaining <= 2
-                                                ? 'bg-amber-500'
-                                                : 'bg-green-500'
-                                    }`}
-                                    style={{ width: `${Math.min((subscription.used / subscription.limit) * 100, 100)}%` }}
-                                />
-                            </div>
-
-                            {isLimitReached ? (
-                                <p className="text-xs text-red-600 font-medium mt-1">
-                                    Listing limit reached. Upgrade to post more.
-                                </p>
-                            ) : remaining <= 2 ? (
-                                <p className="text-xs text-amber-600 font-medium mt-1">
-                                    {remaining} listing{remaining !== 1 ? 's' : ''} remaining
-                                </p>
-                            ) : (
-                                <p className="text-xs text-green-600 font-medium mt-1">
-                                    {remaining} listing{remaining !== 1 ? 's' : ''} available
-                                </p>
-                            )}
-
-                            {subscription.isTrial && (
-                                <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-700">
-                                    <strong>Trial Active:</strong> 7-day trial with {subscription.limit} listings
+                        subscription.plan === 'none' ? (
+                            <div className="space-y-2">
+                                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                                    <p className="text-xs text-red-700 font-medium mb-1">
+                                        Pro Subscription Required
+                                    </p>
+                                    <p className="text-xs text-red-600">
+                                        To post listings as an agent, you need to subscribe to the Pro plan.
+                                    </p>
                                 </div>
-                            )}
-                        </div>
+                                <button
+                                    type="button"
+                                    className="w-full px-3 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-sm font-semibold rounded-lg hover:from-amber-500 hover:to-orange-600 transition-all"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        // TODO: Open subscription modal
+                                        alert('Subscription modal will open here');
+                                    }}
+                                >
+                                    Subscribe to Pro
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-neutral-600">Listings</span>
+                                    <span className={`font-semibold ${isLimitReached ? 'text-red-600' : 'text-neutral-800'}`}>
+                                        {subscription.used} / {subscription.limit}
+                                    </span>
+                                </div>
+
+                                {/* Progress bar */}
+                                <div className="w-full bg-neutral-200 rounded-full h-1.5">
+                                    <div
+                                        className={`h-1.5 rounded-full transition-all duration-300 ${
+                                            isLimitReached
+                                                ? 'bg-red-500'
+                                                : remaining <= 2
+                                                    ? 'bg-amber-500'
+                                                    : 'bg-green-500'
+                                        }`}
+                                        style={{ width: `${Math.min((subscription.used / subscription.limit) * 100, 100)}%` }}
+                                    />
+                                </div>
+
+                                {isLimitReached ? (
+                                    <p className="text-xs text-red-600 font-medium mt-1">
+                                        Listing limit reached. Upgrade to post more.
+                                    </p>
+                                ) : remaining <= 2 ? (
+                                    <p className="text-xs text-amber-600 font-medium mt-1">
+                                        {remaining} listing{remaining !== 1 ? 's' : ''} remaining
+                                    </p>
+                                ) : (
+                                    <p className="text-xs text-green-600 font-medium mt-1">
+                                        {remaining} listing{remaining !== 1 ? 's' : ''} available
+                                    </p>
+                                )}
+
+                                {subscription.isTrial && (
+                                    <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-700">
+                                        <strong>Trial Active:</strong> 7-day trial with {subscription.limit} listings
+                                    </div>
+                                )}
+                            </div>
+                        )
                     ) : (
                         <p className="text-xs text-neutral-500">No subscription data</p>
                     )}

@@ -1603,21 +1603,8 @@ export const addRole = async (req: Request, res: Response): Promise<void> => {
       user.licenseNumber = licenseNumber;
       user.agencyName = agencyName;
 
-      // Initialize agent subscription with 7-day trial
-      const now = new Date();
-      const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-      user.agentSubscription = {
-        isActive: true,
-        plan: 'trial',
-        expiresAt: trialEnd,
-        listingsLimit: 10,
-        activeListingsCount: 0,
-        trialStartDate: now,
-        trialEndDate: trialEnd,
-        trialReminderSent: false,
-        trialExpired: false,
-      };
+      // Agents require Pro subscription - no free trial
+      // agentSubscription will remain undefined until they subscribe
     }
 
     // Add role to availableRoles
