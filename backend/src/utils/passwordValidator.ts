@@ -101,13 +101,6 @@ const findSequentialCharacters = (password: string): string | null => {
 };
 
 /**
- * Check for sequential characters in password
- */
-const hasSequentialCharacters = (password: string): boolean => {
-  return findSequentialCharacters(password) !== null;
-};
-
-/**
  * Calculate password strength based on entropy and complexity
  */
 const calculatePasswordStrength = (password: string): 'weak' | 'medium' | 'strong' => {
