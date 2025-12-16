@@ -37,43 +37,46 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({ currentUser, selectedRole, 
     };
 
     const getRoleSubscription = (role: UserRole) => {
+        // Check if user has Pro subscription (shared across both roles)
+        if (currentUser.proSubscription && currentUser.proSubscription.isActive) {
+            const sub = currentUser.proSubscription;
+            const roleCount = role === UserRole.AGENT ? (sub.agentCount || 0) : (sub.privateSellerCount || 0);
+
+            return {
+                plan: sub.plan,
+                limit: sub.totalListingsLimit || 15, // Total shared limit
+                used: sub.activeListingsCount || 0, // Total used (shared)
+                roleCount, // Specific count for this role
+                isActive: true,
+                isPro: true,
+                highlightCoupons: sub.promotionCoupons?.highlightCoupons || 0,
+                usedCoupons: sub.promotionCoupons?.usedHighlightCoupons || 0,
+            };
+        }
+
+        // No Pro subscription
         if (role === UserRole.PRIVATE_SELLER) {
-            if (currentUser.privateSellerSubscription) {
-                const sub = currentUser.privateSellerSubscription;
-                return {
-                    plan: sub.plan,
-                    limit: sub.listingsLimit,
-                    used: sub.activeListingsCount,
-                    isActive: sub.isActive,
-                };
-            }
-            // Default subscription for private seller if not set
+            // Free private seller
+            const freeSub = currentUser.freeSubscription;
             return {
                 plan: 'free',
-                limit: 3,
-                used: 0,
+                limit: freeSub?.listingsLimit || 3,
+                used: freeSub?.activeListingsCount || 0,
+                roleCount: freeSub?.activeListingsCount || 0,
                 isActive: true,
+                isPro: false,
             };
         }
 
         if (role === UserRole.AGENT) {
-            if (currentUser.agentSubscription) {
-                const sub = currentUser.agentSubscription;
-                return {
-                    plan: sub.plan,
-                    limit: sub.listingsLimit,
-                    used: sub.activeListingsCount,
-                    isActive: sub.isActive,
-                    isTrial: sub.plan === 'trial',
-                };
-            }
-            // Agents require Pro subscription - no free trial
+            // Agents require Pro
             return {
                 plan: 'none',
                 limit: 0,
                 used: 0,
+                roleCount: 0,
                 isActive: false,
-                isTrial: false,
+                isPro: false,
             };
         }
 
@@ -226,12 +229,24 @@ const RoleCard: React.FC<RoleCardProps> = ({
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-neutral-600">Listings</span>
-                                    <span className={`font-semibold ${isLimitReached ? 'text-red-600' : 'text-neutral-800'}`}>
-                                        {subscription.used} / {subscription.limit}
-                                    </span>
-                                </div>
+                                {/* Show shared limit info for Pro users */}
+                                {subscription.isPro ? (
+                                    <div className="mb-2 p-2 bg-amber-50 border border-amber-200 rounded">
+                                        <p className="text-xs text-amber-800 font-medium">
+                                            Shared Limit: {subscription.used}/{subscription.limit} total listings
+                                        </p>
+                                        <p className="text-xs text-amber-700 mt-0.5">
+                                            ({subscription.roleCount || 0} as {role === UserRole.AGENT ? 'agent' : 'private seller'})
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-neutral-600">Listings</span>
+                                        <span className={`font-semibold ${isLimitReached ? 'text-red-600' : 'text-neutral-800'}`}>
+                                            {subscription.used} / {subscription.limit}
+                                        </span>
+                                    </div>
+                                )}
 
                                 {/* Progress bar */}
                                 <div className="w-full bg-neutral-200 rounded-full h-1.5">
@@ -249,21 +264,27 @@ const RoleCard: React.FC<RoleCardProps> = ({
 
                                 {isLimitReached ? (
                                     <p className="text-xs text-red-600 font-medium mt-1">
-                                        Listing limit reached. Upgrade to post more.
+                                        {subscription.isPro ? 'Shared limit reached across both roles.' : 'Listing limit reached. Upgrade to Pro for 15 listings.'}
                                     </p>
                                 ) : remaining <= 2 ? (
                                     <p className="text-xs text-amber-600 font-medium mt-1">
-                                        {remaining} listing{remaining !== 1 ? 's' : ''} remaining
+                                        {remaining} listing{remaining !== 1 ? 's' : ''} remaining {subscription.isPro ? '(shared)' : ''}
                                     </p>
                                 ) : (
                                     <p className="text-xs text-green-600 font-medium mt-1">
-                                        {remaining} listing{remaining !== 1 ? 's' : ''} available
+                                        {remaining} listing{remaining !== 1 ? 's' : ''} available {subscription.isPro ? '(shared)' : ''}
                                     </p>
                                 )}
 
-                                {subscription.isTrial && (
-                                    <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-700">
-                                        <strong>Trial Active:</strong> 7-day trial with {subscription.limit} listings
+                                {/* Agent-specific promotion coupons */}
+                                {role === UserRole.AGENT && subscription.isPro && subscription.highlightCoupons !== undefined && (
+                                    <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded text-xs">
+                                        <p className="text-purple-800 font-medium">
+                                            🎟️ Highlight Coupons: {subscription.highlightCoupons - (subscription.usedCoupons || 0)}/{subscription.highlightCoupons}
+                                        </p>
+                                        <p className="text-purple-600 text-xs mt-0.5">
+                                            Use to promote your listings
+                                        </p>
                                     </div>
                                 )}
                             </div>

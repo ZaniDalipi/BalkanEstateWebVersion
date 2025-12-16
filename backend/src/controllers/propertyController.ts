@@ -284,102 +284,6 @@ export const createProperty = async (
       return;
     }
 
-    // Tier-based listing limits
-    const getTierLimit = (plan: string): number => {
-      // Normalize plan name for comparison
-      const normalizedPlan = plan?.toLowerCase() || 'free';
-
-      // Check for pro plans (seller or buyer, monthly or yearly)
-      if (normalizedPlan.includes('pro')) {
-        return 15;
-      }
-
-      // Check for enterprise plans
-      if (normalizedPlan.includes('enterprise') || normalizedPlan.includes('premium')) {
-        return 100; // Effectively unlimited
-      }
-
-      // Free tier
-      return 3;
-    };
-
-    let userPlan = user.subscriptionPlan || 'free';
-    let tierLimit = getTierLimit(userPlan);
-    let subscriptionSource = 'personal';
-
-    // Check if agent can benefit from agency subscription
-    if (user.role === 'agent' && user.agencyId) {
-      const agency = await Agency.findById(user.agencyId);
-      if (agency && agency.agentDetails) {
-        // Find active agents sorted by join date
-        const activeAgents = agency.agentDetails
-          .filter((ad: any) => ad.isActive)
-          .sort((a: any, b: any) => new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime());
-
-        // Check if user is in first 5 agents
-        const agentIndex = activeAgents.findIndex((ad: any) => ad.userId.toString() === String(user._id));
-
-        if (agentIndex !== -1 && agentIndex < 5) {
-          // Agent is in first 5, check agency subscription
-          const agencyPlan = agency.subscriptionPlan || 'free';
-          const agencyLimit = getTierLimit(agencyPlan);
-
-          // Check if agency subscription is active
-          const isAgencySubActive = !agency.subscriptionExpiresAt || agency.subscriptionExpiresAt > new Date();
-
-          // Use higher limit (agency or personal)
-          if (isAgencySubActive && agencyLimit > tierLimit) {
-            tierLimit = agencyLimit;
-            userPlan = agencyPlan;
-            subscriptionSource = 'agency';
-          }
-        }
-      }
-    }
-
-    // Check if subscription is expired for paid tiers
-    if (subscriptionSource === 'personal' && userPlan !== 'free' && user.subscriptionExpiresAt && user.subscriptionExpiresAt < new Date()) {
-      // Subscription expired, revert to free tier limits
-      user.subscriptionPlan = 'free';
-      user.isSubscribed = false;
-      await user.save();
-
-      if (user.listingsCount >= 3) {
-        res.status(403).json({
-          message: 'Your subscription has expired. You can only have 3 active listings on the free tier.',
-          code: 'SUBSCRIPTION_EXPIRED',
-          limit: 3,
-          current: user.listingsCount,
-        });
-        return;
-      }
-    }
-
-    // Check tier-based listing limit
-    if (user.listingsCount >= tierLimit) {
-      const message = subscriptionSource === 'agency'
-        ? `You have reached the limit of ${tierLimit} listings covered by your agency's ${userPlan} subscription.`
-        : `You have reached the limit of ${tierLimit} listings for your ${userPlan} tier. Please upgrade to create more listings.`;
-
-      res.status(403).json({
-        message,
-        code: 'LISTING_LIMIT_REACHED',
-        limit: tierLimit,
-        current: user.listingsCount,
-        tier: userPlan,
-        source: subscriptionSource,
-      });
-      return;
-    }
-
-    // Geocode the property address automatically
-    // Only geocode if we have at least city and country (for precision)
-    const coordinates = await geocodeProperty({
-      address: req.body.address,
-      city: req.body.city,
-      country: req.body.country,
-    });
-
     // Determine which role is being used to create this listing
     const createdAsRole = req.body.createdAsRole || user.activeRole || user.role || 'private_seller';
 
@@ -391,6 +295,85 @@ export const createProperty = async (
       });
       return;
     }
+
+    // **CRITICAL: Agents MUST have Pro subscription to post**
+    if (createdAsRole === 'agent') {
+      if (!user.proSubscription || !user.proSubscription.isActive) {
+        res.status(403).json({
+          message: 'Agents must have an active Pro subscription to post listings. Please subscribe to continue.',
+          code: 'AGENT_PRO_REQUIRED',
+        });
+        return;
+      }
+
+      // Check if Pro subscription is expired
+      if (user.proSubscription.expiresAt && user.proSubscription.expiresAt < new Date()) {
+        user.proSubscription.isActive = false;
+        await user.save();
+
+        res.status(403).json({
+          message: 'Your Pro subscription has expired. Please renew to continue posting as an agent.',
+          code: 'PRO_SUBSCRIPTION_EXPIRED',
+        });
+        return;
+      }
+    }
+
+    // Check listing limits based on subscription type
+    let currentCount = 0;
+    let limit = 0;
+    let subscriptionType = 'free';
+
+    if (user.proSubscription && user.proSubscription.isActive) {
+      // Pro user - check unified counter (shared across both roles)
+      currentCount = user.proSubscription.activeListingsCount || 0;
+      limit = user.proSubscription.totalListingsLimit || 15;
+      subscriptionType = user.proSubscription.plan;
+
+      if (currentCount >= limit) {
+        res.status(403).json({
+          message: `You have reached your Pro limit of ${limit} active listings. The limit is shared between private seller and agent roles. Please delete some listings or upgrade.`,
+          code: 'PRO_LISTING_LIMIT_REACHED',
+          limit,
+          current: currentCount,
+          privateSellerCount: user.proSubscription.privateSellerCount || 0,
+          agentCount: user.proSubscription.agentCount || 0,
+        });
+        return;
+      }
+    } else {
+      // Free user - only private sellers can post
+      if (createdAsRole === 'agent') {
+        res.status(403).json({
+          message: 'Free users cannot post as agents. Please subscribe to Pro to use agent features.',
+          code: 'FREE_AGENT_NOT_ALLOWED',
+        });
+        return;
+      }
+
+      // Free private seller - use freeSubscription
+      currentCount = user.freeSubscription?.activeListingsCount || 0;
+      limit = user.freeSubscription?.listingsLimit || 3;
+      subscriptionType = 'free';
+
+      if (currentCount >= limit) {
+        res.status(403).json({
+          message: `You have reached your free limit of ${limit} active listings. Please subscribe to Pro to create more listings.`,
+          code: 'FREE_LISTING_LIMIT_REACHED',
+          limit,
+          current: currentCount,
+        });
+        return;
+      }
+    }
+
+    // Geocode the property address automatically
+    // Only geocode if we have at least city and country (for precision)
+    const coordinates = await geocodeProperty({
+      address: req.body.address,
+      city: req.body.city,
+      country: req.body.country,
+    });
 
     const propertyData = {
       ...req.body,
@@ -416,11 +399,28 @@ export const createProperty = async (
 
     const property = await Property.create(propertyData);
 
-    // Update role-specific listing counts
-    if (createdAsRole === 'private_seller' && user.privateSellerSubscription) {
-      user.privateSellerSubscription.activeListingsCount = (user.privateSellerSubscription.activeListingsCount || 0) + 1;
-    } else if (createdAsRole === 'agent' && user.agentSubscription) {
-      user.agentSubscription.activeListingsCount = (user.agentSubscription.activeListingsCount || 0) + 1;
+    // Update unified listing counters
+    if (user.proSubscription && user.proSubscription.isActive) {
+      // Pro user - update unified counter and role-specific counter
+      user.proSubscription.activeListingsCount = (user.proSubscription.activeListingsCount || 0) + 1;
+
+      if (createdAsRole === 'private_seller') {
+        user.proSubscription.privateSellerCount = (user.proSubscription.privateSellerCount || 0) + 1;
+        console.log(`📊 Pro User: Total ${user.proSubscription.activeListingsCount}/15 listings (${user.proSubscription.privateSellerCount} as private seller, ${user.proSubscription.agentCount || 0} as agent)`);
+      } else if (createdAsRole === 'agent') {
+        user.proSubscription.agentCount = (user.proSubscription.agentCount || 0) + 1;
+        console.log(`📊 Pro User: Total ${user.proSubscription.activeListingsCount}/15 listings (${user.proSubscription.privateSellerCount || 0} as private seller, ${user.proSubscription.agentCount} as agent)`);
+      }
+    } else {
+      // Free user (private seller only)
+      if (!user.freeSubscription) {
+        user.freeSubscription = {
+          activeListingsCount: 0,
+          listingsLimit: 3,
+        };
+      }
+      user.freeSubscription.activeListingsCount = (user.freeSubscription.activeListingsCount || 0) + 1;
+      console.log(`📊 Free User: ${user.freeSubscription.activeListingsCount}/3 listings`);
     }
 
     // Update user listing counts

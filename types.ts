@@ -85,23 +85,25 @@ export interface User {
     availableRoles?: UserRole[];
     activeRole?: UserRole;
     primaryRole?: UserRole;
-    privateSellerSubscription?: {
+    // Unified Pro Subscription (15 listings shared across both roles)
+    proSubscription?: {
         isActive: boolean;
-        plan: 'free' | 'pro_monthly' | 'pro_yearly';
+        plan: 'pro_monthly' | 'pro_yearly';
         expiresAt?: Date | string;
-        listingsLimit: number;
-        activeListingsCount: number;
+        startedAt?: Date | string;
+        totalListingsLimit: number; // Always 15 for Pro
+        activeListingsCount: number; // Total active listings (private + agent combined)
+        privateSellerCount: number; // Listings posted as private seller
+        agentCount: number; // Listings posted as agent
+        promotionCoupons?: {
+            highlightCoupons: number; // 2 starter highlight coupons for agents
+            usedHighlightCoupons: number;
+        };
     };
-    agentSubscription?: {
-        isActive: boolean;
-        plan: 'trial' | 'pro_monthly' | 'pro_yearly';
-        expiresAt?: Date | string;
-        listingsLimit: number;
-        activeListingsCount: number;
-        trialStartDate?: Date | string;
-        trialEndDate?: Date | string;
-        trialReminderSent?: boolean;
-        trialExpired?: boolean;
+    // Free tier tracking (for non-Pro users)
+    freeSubscription?: {
+        activeListingsCount: number; // 3 free listings for private sellers
+        listingsLimit: number; // Always 3
     };
 }
 

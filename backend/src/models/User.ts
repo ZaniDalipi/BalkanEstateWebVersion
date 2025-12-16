@@ -104,25 +104,27 @@ export interface IUser extends Document {
   activeListingsLimit: number; // Max active listings allowed
   paidListingsCount: number; // Count of paid extra listings
 
-  // Role-Based Subscription Tracking
-  privateSellerSubscription?: {
+  // Unified Pro Subscription (15 listings shared across both roles)
+  proSubscription?: {
     isActive: boolean;
-    plan: 'free' | 'pro_monthly' | 'pro_yearly';
+    plan: 'pro_monthly' | 'pro_yearly';
     expiresAt?: Date;
-    listingsLimit: number; // 3 free, 20 pro
-    activeListingsCount: number; // Current count for this role
+    startedAt?: Date;
+    totalListingsLimit: number; // Always 15 for Pro
+    activeListingsCount: number; // Total active listings (private + agent combined)
+    privateSellerCount: number; // Listings posted as private seller
+    agentCount: number; // Listings posted as agent
+    // Agent-specific benefits
+    promotionCoupons?: {
+      highlightCoupons: number; // 2 starter highlight coupons for agents
+      usedHighlightCoupons: number;
+    };
   };
 
-  agentSubscription?: {
-    isActive: boolean;
-    plan: 'trial' | 'pro_monthly' | 'pro_yearly';
-    expiresAt?: Date;
-    listingsLimit: number; // 10 trial, 50 pro
-    activeListingsCount: number; // Current count for this role
-    trialStartDate?: Date;
-    trialEndDate?: Date;
-    trialReminderSent?: boolean;
-    trialExpired?: boolean;
+  // Free tier tracking (for non-Pro users)
+  freeSubscription?: {
+    activeListingsCount: number; // 3 free listings for private sellers
+    listingsLimit: number; // Always 3
   };
 
   // Neighborhood Insights Usage Tracking
@@ -436,54 +438,54 @@ const UserSchema: Schema = new Schema(
       type: Number,
       default: 0,
     },
-    // Role-Based Subscription Tracking
-    privateSellerSubscription: {
+    // Unified Pro Subscription (15 listings shared across both roles)
+    proSubscription: {
       isActive: {
         type: Boolean,
         default: false,
       },
       plan: {
         type: String,
-        enum: ['free', 'pro_monthly', 'pro_yearly'],
-        default: 'free',
+        enum: ['pro_monthly', 'pro_yearly'],
       },
       expiresAt: Date,
-      listingsLimit: {
+      startedAt: Date,
+      totalListingsLimit: {
         type: Number,
-        default: 3, // 3 for free, 20 for pro
+        default: 15, // Always 15 for Pro
       },
       activeListingsCount: {
         type: Number,
-        default: 0,
+        default: 0, // Total count (private + agent)
+      },
+      privateSellerCount: {
+        type: Number,
+        default: 0, // Listings posted as private seller
+      },
+      agentCount: {
+        type: Number,
+        default: 0, // Listings posted as agent
+      },
+      promotionCoupons: {
+        highlightCoupons: {
+          type: Number,
+          default: 0, // 2 coupons given to agents
+        },
+        usedHighlightCoupons: {
+          type: Number,
+          default: 0,
+        },
       },
     },
-    agentSubscription: {
-      isActive: {
-        type: Boolean,
-        default: false,
-      },
-      plan: {
-        type: String,
-        enum: ['trial', 'pro_monthly', 'pro_yearly'],
-      },
-      expiresAt: Date,
-      listingsLimit: {
-        type: Number,
-        default: 10, // 10 for trial, 50 for pro
-      },
+    // Free tier tracking (3 listings for non-Pro private sellers)
+    freeSubscription: {
       activeListingsCount: {
         type: Number,
         default: 0,
       },
-      trialStartDate: Date,
-      trialEndDate: Date,
-      trialReminderSent: {
-        type: Boolean,
-        default: false,
-      },
-      trialExpired: {
-        type: Boolean,
-        default: false,
+      listingsLimit: {
+        type: Number,
+        default: 3, // Always 3 for free tier
       },
     },
     neighborhoodInsights: {
