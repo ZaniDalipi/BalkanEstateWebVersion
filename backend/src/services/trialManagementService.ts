@@ -34,20 +34,24 @@ export const startAgentTrial = async (user: IUser): Promise<void> => {
     user.primaryRole = user.role || 'agent';
   }
 
-  // Initialize agent subscription with 7-day trial
-  user.agentSubscription = {
+  // Initialize unified Pro subscription with trial period
+  // Trial agents get 10 listings (vs 15 for paid Pro)
+  user.proSubscription = {
     isActive: true,
-    plan: 'trial',
+    plan: 'pro_monthly', // Use monthly plan designation for trial
     expiresAt: trialEnd,
-    listingsLimit: 10,
+    startedAt: now,
+    totalListingsLimit: 10, // Trial: 10 listings (paid Pro gets 15)
     activeListingsCount: 0,
-    trialStartDate: now,
-    trialEndDate: trialEnd,
-    trialReminderSent: false,
-    trialExpired: false,
+    privateSellerCount: 0,
+    agentCount: 0,
+    promotionCoupons: {
+      highlightCoupons: 2, // Trial agents get 2 highlight coupons
+      usedHighlightCoupons: 0,
+    },
   };
 
-  // Keep legacy fields for backwards compatibility
+  // Keep legacy fields for backwards compatibility and trial management
   user.trialStartDate = now;
   user.trialEndDate = trialEnd;
   user.trialReminderSent = false;
@@ -431,12 +435,25 @@ export const expireTrialAndDowngrade = async (user: IUser): Promise<void> => {
   user.trialExpired = true;
   user.subscriptionStatus = 'expired';
 
+  // Deactivate Pro subscription
+  if (user.proSubscription) {
+    user.proSubscription.isActive = false;
+  }
+
   // Downgrade to private_seller
   user.role = 'private_seller';
   user.activeListingsLimit = 3; // Free tier: 3 active listings
   user.isSubscribed = false;
   user.subscriptionPlan = undefined;
   user.subscriptionProductName = undefined;
+
+  // Initialize free subscription for private seller
+  if (!user.freeSubscription) {
+    user.freeSubscription = {
+      activeListingsCount: 0,
+      listingsLimit: 3,
+    };
+  }
 
   await user.save();
 
