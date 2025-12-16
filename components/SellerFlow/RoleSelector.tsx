@@ -10,18 +10,9 @@ interface RoleSelectorProps {
 const RoleSelector: React.FC<RoleSelectorProps> = ({ currentUser, selectedRole, onRoleSelect }) => {
     const availableRoles = currentUser.availableRoles || [currentUser.role];
 
-    // Check if user has both agent and private_seller roles
-    const hasPrivateSeller = availableRoles.includes(UserRole.PRIVATE_SELLER);
-    const hasAgent = availableRoles.includes(UserRole.AGENT);
-
-    // Only show role selector if user has multiple posting roles
-    if (!hasPrivateSeller && !hasAgent) {
-        return null;
-    }
-
-    if (availableRoles.length <= 1 && !availableRoles.includes(UserRole.AGENT) && !availableRoles.includes(UserRole.PRIVATE_SELLER)) {
-        return null;
-    }
+    // Always show both agent and private_seller options
+    const hasPrivateSeller = true; // Always show private seller option
+    const hasAgent = true; // Always show agent option
 
     const getRoleIcon = (role: UserRole) => {
         switch (role) {
@@ -46,24 +37,43 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({ currentUser, selectedRole, 
     };
 
     const getRoleSubscription = (role: UserRole) => {
-        if (role === UserRole.PRIVATE_SELLER && currentUser.privateSellerSubscription) {
-            const sub = currentUser.privateSellerSubscription;
+        if (role === UserRole.PRIVATE_SELLER) {
+            if (currentUser.privateSellerSubscription) {
+                const sub = currentUser.privateSellerSubscription;
+                return {
+                    plan: sub.plan,
+                    limit: sub.listingsLimit,
+                    used: sub.activeListingsCount,
+                    isActive: sub.isActive,
+                };
+            }
+            // Default subscription for private seller if not set
             return {
-                plan: sub.plan,
-                limit: sub.listingsLimit,
-                used: sub.activeListingsCount,
-                isActive: sub.isActive,
+                plan: 'free',
+                limit: 3,
+                used: 0,
+                isActive: true,
             };
         }
 
-        if (role === UserRole.AGENT && currentUser.agentSubscription) {
-            const sub = currentUser.agentSubscription;
+        if (role === UserRole.AGENT) {
+            if (currentUser.agentSubscription) {
+                const sub = currentUser.agentSubscription;
+                return {
+                    plan: sub.plan,
+                    limit: sub.listingsLimit,
+                    used: sub.activeListingsCount,
+                    isActive: sub.isActive,
+                    isTrial: sub.plan === 'trial',
+                };
+            }
+            // Default subscription for agent if not set
             return {
-                plan: sub.plan,
-                limit: sub.listingsLimit,
-                used: sub.activeListingsCount,
-                isActive: sub.isActive,
-                isTrial: sub.plan === 'trial',
+                plan: 'trial',
+                limit: 10,
+                used: 0,
+                isActive: true,
+                isTrial: true,
             };
         }
 
