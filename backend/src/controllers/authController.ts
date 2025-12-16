@@ -9,7 +9,7 @@ import crypto from 'crypto';
 import cloudinary from '../config/cloudinary';
 import { Readable } from 'stream';
 import { validatePassword, passwordContainsUserInfo } from '../utils/passwordValidator';
-import { sendVerificationEmail, sendWelcomeEmail } from '../services/emailVerificationService';
+import { sendVerificationEmail } from '../services/emailVerificationService';
 import { startAgentTrial } from '../services/trialManagementService';
 import { generateTokenPair } from '../services/refreshTokenService';
 import { loginRateLimiterAccount, resetLoginRateLimit } from '../middleware/rateLimiter';
