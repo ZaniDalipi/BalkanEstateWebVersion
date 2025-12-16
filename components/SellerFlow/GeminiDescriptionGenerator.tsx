@@ -5,7 +5,7 @@ import { searchLocation } from '../../services/osmService';
 import { SparklesIcon, MapPinIcon, SpinnerIcon } from '../../constants';
 import { getCurrencySymbol } from '../../utils/currency';
 import { useAppContext } from '../../context/AppContext';
-import WhackAnIconAnimation from './WhackAnIconAnimation';
+import MarketInsightsAnimation from './MarketInsightsAnimation';
 import NumberInputWithSteppers from '../shared/NumberInputWithSteppers';
 import MapLocationPicker from './MapLocationPicker';
 import { BALKAN_LOCATIONS, CityData } from '../../utils/balkanLocations';
@@ -1085,7 +1085,11 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     if (step === 'loading') {
         return (
              <div className="text-center py-12 flex flex-col items-center">
-                <WhackAnIconAnimation mode="loading" />
+                <MarketInsightsAnimation
+                    city={selectedCity?.name}
+                    country={selectedCountry || 'Serbia'}
+                    propertyType={listingData.propertyType}
+                />
             </div>
         );
     }
