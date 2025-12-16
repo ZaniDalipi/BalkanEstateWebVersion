@@ -7,15 +7,41 @@ import SocialLoginPopup from './SocialLoginPopup';
 type Method = 'email' | 'phone';
 type SocialProvider = 'google' | 'facebook' | 'apple';
 
+interface PasswordRequirements {
+    minLength: boolean;
+    hasUppercase: boolean;
+    hasLowercase: boolean;
+    hasNumber: boolean;
+    hasSpecialChar: boolean;
+}
+
+const checkPasswordRequirements = (password: string): PasswordRequirements => {
+    return {
+        minLength: password.length >= 8,
+        hasUppercase: /[A-Z]/.test(password),
+        hasLowercase: /[a-z]/.test(password),
+        hasNumber: /\d/.test(password),
+        hasSpecialChar: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+    };
+};
+
 const validatePassword = (password: string) => {
-    if (password.length < 8) {
+    const requirements = checkPasswordRequirements(password);
+
+    if (!requirements.minLength) {
         return "Password must be at least 8 characters long.";
     }
-    if (!/\d/.test(password)) {
+    if (!requirements.hasUppercase) {
+        return "Password must contain at least one uppercase letter.";
+    }
+    if (!requirements.hasLowercase) {
+        return "Password must contain at least one lowercase letter.";
+    }
+    if (!requirements.hasNumber) {
         return "Password must contain at least one number.";
     }
-    if (!/[A-Z]/.test(password)) {
-        return "Password must contain at least one uppercase letter.";
+    if (!requirements.hasSpecialChar) {
+        return "Password must contain at least one special character.";
     }
     return null;
 };
@@ -26,6 +52,34 @@ const SocialButton: React.FC<{ icon: React.ReactNode; label: string, onClick: ()
         <span className="text-base font-semibold text-neutral-700">{label}</span>
     </button>
 );
+
+const PasswordRequirementsIndicator: React.FC<{ requirements: PasswordRequirements }> = ({ requirements }) => {
+    const RequirementItem: React.FC<{ met: boolean; text: string }> = ({ met, text }) => (
+        <div className="flex items-center gap-2">
+            <div className={`w-4 h-4 rounded-full flex items-center justify-center transition-all ${met ? 'bg-green-500' : 'bg-gray-300'}`}>
+                {met && (
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                )}
+            </div>
+            <span className={`text-xs transition-colors ${met ? 'text-green-700 font-medium' : 'text-gray-600'}`}>
+                {text}
+            </span>
+        </div>
+    );
+
+    return (
+        <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
+            <p className="text-xs font-semibold text-gray-700 mb-2">Password requirements:</p>
+            <RequirementItem met={requirements.minLength} text="At least 8 characters" />
+            <RequirementItem met={requirements.hasUppercase} text="One uppercase letter (A-Z)" />
+            <RequirementItem met={requirements.hasLowercase} text="One lowercase letter (a-z)" />
+            <RequirementItem met={requirements.hasNumber} text="One number (0-9)" />
+            <RequirementItem met={requirements.hasSpecialChar} text="One special character (!@#$%...)" />
+        </div>
+    );
+};
 
 const AuthPage: React.FC = () => {
     const { state, dispatch, login, signup, requestPasswordReset, loginWithSocial, sendPhoneCode, verifyPhoneCode, completePhoneSignup } = useAppContext();
@@ -49,6 +103,15 @@ const AuthPage: React.FC = () => {
     const [agencies, setAgencies] = useState<Agency[]>([]);
     const [licenseNumber, setLicenseNumber] = useState('');
     const [agencyInvitationCode, setAgencyInvitationCode] = useState('');
+
+    // Password requirements state for real-time feedback
+    const [passwordRequirements, setPasswordRequirements] = useState<PasswordRequirements>({
+        minLength: false,
+        hasUppercase: false,
+        hasLowercase: false,
+        hasNumber: false,
+        hasSpecialChar: false,
+    });
 
     useEffect(() => {
         // Fetch available OAuth providers
@@ -89,6 +152,13 @@ const AuthPage: React.FC = () => {
 
     const handleClose = () => {
         dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: false } });
+    };
+
+    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newPassword = e.target.value;
+        setPassword(newPassword);
+        // Update requirements in real-time
+        setPasswordRequirements(checkPasswordRequirements(newPassword));
     };
     
     // --- Social Login Handlers ---
@@ -250,7 +320,23 @@ const AuthPage: React.FC = () => {
                         {method === 'email' ? (
                             <form onSubmit={handleEmailSubmit} className="space-y-4">
                                 <div className="relative"><input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="email" className={floatingLabelClasses}>Email Address</label></div>
-                                <div className="relative"><input type="password" id="password" value={password} onChange={e => setPassword(e.target.value)} className={floatingInputClasses} placeholder=" " required /><label htmlFor="password" className={floatingLabelClasses}>Password</label></div>
+                                <div>
+                                    <div className="relative">
+                                        <input
+                                            type="password"
+                                            id="password"
+                                            value={password}
+                                            onChange={state.authModalView === 'signup' ? handlePasswordChange : (e => setPassword(e.target.value))}
+                                            className={floatingInputClasses}
+                                            placeholder=" "
+                                            required
+                                        />
+                                        <label htmlFor="password" className={floatingLabelClasses}>Password</label>
+                                    </div>
+                                    {state.authModalView === 'signup' && password && (
+                                        <PasswordRequirementsIndicator requirements={passwordRequirements} />
+                                    )}
+                                </div>
                                 {state.authModalView === 'login' && <div className="text-right"><button type="button" onClick={() => dispatch({ type: 'SET_AUTH_MODAL_VIEW', payload: 'forgotPassword'})} className="text-sm font-semibold text-primary hover:underline">Forgot Password?</button></div>}
                                 {state.authModalView === 'signup' && (
                                     <>
