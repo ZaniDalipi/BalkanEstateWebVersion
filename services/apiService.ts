@@ -13,8 +13,17 @@ const setToken = (token: string) => {
   localStorage.setItem('balkan_estate_token', token);
 };
 
+const getRefreshToken = (): string | null => {
+  return localStorage.getItem('balkan_estate_refresh_token');
+};
+
+const setRefreshToken = (token: string) => {
+  localStorage.setItem('balkan_estate_refresh_token', token);
+};
+
 const removeToken = () => {
   localStorage.removeItem('balkan_estate_token');
+  localStorage.removeItem('balkan_estate_refresh_token');
 };
 
 // --- HTTP CLIENT ---
@@ -115,12 +124,22 @@ export const login = async (emailOrPhone: string, password: string): Promise<Use
     ? { email: emailOrPhone, password }
     : { phone: emailOrPhone, password };
 
-  const response = await apiRequest<{ user: User; token: string }>('/auth/login', {
+  const response = await apiRequest<{ user: User; accessToken?: string; refreshToken?: string; token?: string }>('/auth/login', {
     method: 'POST',
     body,
   });
 
-  setToken(response.token);
+  // Handle both new (accessToken/refreshToken) and old (token) formats
+  const accessToken = response.accessToken || response.token;
+  const refreshToken = response.refreshToken;
+
+  if (accessToken) {
+    setToken(accessToken);
+  }
+  if (refreshToken) {
+    setRefreshToken(refreshToken);
+  }
+
   return response.user;
 };
 
@@ -135,7 +154,7 @@ export const signup = async (
     agencyInvitationCode?: string;
   }
 ): Promise<User> => {
-  const response = await apiRequest<{ user: User; token: string }>('/auth/signup', {
+  const response = await apiRequest<{ user: User; accessToken?: string; refreshToken?: string; token?: string }>('/auth/signup', {
     method: 'POST',
     body: {
       email,
@@ -148,13 +167,49 @@ export const signup = async (
     },
   });
 
-  setToken(response.token);
+  // Handle both new (accessToken/refreshToken) and old (token) formats
+  const accessToken = response.accessToken || response.token;
+  const refreshToken = response.refreshToken;
+
+  if (accessToken) {
+    setToken(accessToken);
+  }
+  if (refreshToken) {
+    setRefreshToken(refreshToken);
+  }
 
   return response.user;
 };
 
 export const logout = async (): Promise<void> => {
-  await apiRequest('/auth/logout', { method: 'POST', requiresAuth: true });
+  const refreshToken = getRefreshToken();
+
+  try {
+    // Call enhanced logout endpoint with refresh token
+    await apiRequest('/auth/logout', {
+      method: 'POST',
+      requiresAuth: true,
+      body: { refreshToken }
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    // Continue with local cleanup even if server call fails
+  }
+
+  removeToken();
+};
+
+export const logoutAllDevices = async (): Promise<void> => {
+  try {
+    await apiRequest('/auth/logout-all', {
+      method: 'POST',
+      requiresAuth: true
+    });
+  } catch (error) {
+    console.error('Logout all devices error:', error);
+    // Continue with local cleanup even if server call fails
+  }
+
   removeToken();
 };
 

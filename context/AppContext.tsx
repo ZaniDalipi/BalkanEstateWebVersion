@@ -281,6 +281,7 @@ interface AppContextType {
     login: (emailOrPhone: string, pass: string) => Promise<User>;
     signup: (email: string, pass: string, options?: { name?: string; phone?: string; role?: 'buyer' | 'private_seller' | 'agent'; licenseNumber?: string; agencyInvitationCode?: string; }) => Promise<User>;
     logout: () => Promise<void>;
+    logoutAllDevices: () => Promise<void>;
     requestPasswordReset: (email: string) => Promise<void>;
     resetPassword: (token: string, newPassword: string) => Promise<User>;
     loginWithSocial: (provider: 'google' | 'facebook' | 'apple') => void;
@@ -400,7 +401,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     socketService.disconnect();
     dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null } });
   }, []);
-  
+
+  const logoutAllDevices = useCallback(async () => {
+    await api.logoutAllDevices();
+    // Disconnect from WebSocket
+    socketService.disconnect();
+    dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null } });
+  }, []);
+
   const requestPasswordReset = useCallback(async (email: string) => {
       await api.requestPasswordReset(email);
   }, []);
@@ -579,7 +587,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [state.currentUser]);
 
-  const value = { state, dispatch, checkAuthStatus, login, signup, logout, requestPasswordReset, resetPassword, loginWithSocial, handleOAuthCallback, sendPhoneCode, verifyPhoneCode, completePhoneSignup, fetchProperties, toggleSavedHome, addSavedSearch, createConversation, deleteConversation, sendMessage, createListing, updateListing, updateUser, updateSearchPageState, updateSavedSearchAccessTime };
+  const value = { state, dispatch, checkAuthStatus, login, signup, logout, logoutAllDevices, requestPasswordReset, resetPassword, loginWithSocial, handleOAuthCallback, sendPhoneCode, verifyPhoneCode, completePhoneSignup, fetchProperties, toggleSavedHome, addSavedSearch, createConversation, deleteConversation, sendMessage, createListing, updateListing, updateUser, updateSearchPageState, updateSavedSearchAccessTime };
 
   return (
     <AppContext.Provider value={value}>
