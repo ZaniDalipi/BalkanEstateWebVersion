@@ -1494,3 +1494,169 @@ export const changePassword = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ message: 'Error changing password', error: error.message });
   }
 };
+
+// @desc    Set active role (switch context)
+// @route   POST /api/auth/set-active-role
+// @access  Private
+export const setActiveRole = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const { activeRole } = req.body;
+
+    if (!activeRole) {
+      res.status(400).json({ message: 'Active role is required' });
+      return;
+    }
+
+    const user = await User.findById((req.user as IUser)._id);
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Check if user has access to this role
+    if (!user.availableRoles || !user.availableRoles.includes(activeRole)) {
+      res.status(403).json({
+        message: 'You do not have access to this role',
+        availableRoles: user.availableRoles
+      });
+      return;
+    }
+
+    // Update active role
+    user.activeRole = activeRole;
+    await user.save();
+
+    res.json({
+      message: 'Active role updated successfully',
+      activeRole: user.activeRole,
+      availableRoles: user.availableRoles,
+      user: {
+        id: String(user._id),
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+        availableRoles: user.availableRoles,
+        activeRole: user.activeRole,
+        primaryRole: user.primaryRole,
+        avatarUrl: user.avatarUrl,
+        city: user.city,
+        country: user.country,
+        agencyName: user.agencyName,
+        agentId: user.agentId,
+        licenseNumber: user.licenseNumber,
+        isSubscribed: user.isSubscribed,
+        privateSellerSubscription: user.privateSellerSubscription,
+        agentSubscription: user.agentSubscription,
+      },
+    });
+  } catch (error: any) {
+    console.error('Set active role error:', error);
+    res.status(500).json({ message: 'Error setting active role', error: error.message });
+  }
+};
+
+// @desc    Add role to user (e.g., become an agent)
+// @route   POST /api/auth/add-role
+// @access  Private
+export const addRole = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const { newRole, licenseNumber, agencyName } = req.body;
+
+    if (!newRole) {
+      res.status(400).json({ message: 'New role is required' });
+      return;
+    }
+
+    const user = await User.findById((req.user as IUser)._id);
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Check if user already has this role
+    if (user.availableRoles && user.availableRoles.includes(newRole)) {
+      res.status(400).json({ message: 'You already have this role' });
+      return;
+    }
+
+    // Validate agent role requirements
+    if (newRole === 'agent') {
+      if (!licenseNumber) {
+        res.status(400).json({ message: 'License number is required for agent role' });
+        return;
+      }
+
+      // Set agent fields
+      user.licenseNumber = licenseNumber;
+      user.agencyName = agencyName;
+
+      // Initialize agent subscription with 7-day trial
+      const now = new Date();
+      const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      user.agentSubscription = {
+        isActive: true,
+        plan: 'trial',
+        expiresAt: trialEnd,
+        listingsLimit: 10,
+        activeListingsCount: 0,
+        trialStartDate: now,
+        trialEndDate: trialEnd,
+        trialReminderSent: false,
+        trialExpired: false,
+      };
+    }
+
+    // Add role to availableRoles
+    if (!user.availableRoles) {
+      user.availableRoles = [user.role || 'buyer'];
+    }
+    user.availableRoles.push(newRole);
+
+    // Set as active role
+    user.activeRole = newRole;
+
+    await user.save();
+
+    res.json({
+      message: `Successfully added ${newRole} role`,
+      availableRoles: user.availableRoles,
+      activeRole: user.activeRole,
+      user: {
+        id: String(user._id),
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+        availableRoles: user.availableRoles,
+        activeRole: user.activeRole,
+        primaryRole: user.primaryRole,
+        avatarUrl: user.avatarUrl,
+        city: user.city,
+        country: user.country,
+        agencyName: user.agencyName,
+        agentId: user.agentId,
+        licenseNumber: user.licenseNumber,
+        isSubscribed: user.isSubscribed,
+        privateSellerSubscription: user.privateSellerSubscription,
+        agentSubscription: user.agentSubscription,
+      },
+    });
+  } catch (error: any) {
+    console.error('Add role error:', error);
+    res.status(500).json({ message: 'Error adding role', error: error.message });
+  }
+};

@@ -19,6 +19,8 @@ import {
   getActiveSessions,
   getLoginHistory,
   changePassword,
+  setActiveRole,
+  addRole,
 } from '../controllers/authController';
 import { getUserStats, getAllAgents, syncStats } from '../controllers/userController';
 import { protect } from '../middleware/auth';
@@ -75,6 +77,10 @@ router.post('/resend-verification', resendVerificationEmail);
 router.post('/forgot-password', passwordResetRateLimiterIP, requestPasswordReset);
 router.post('/reset-password', resetPassword);
 router.post('/change-password', protect, changePassword);
+
+// Role management routes
+router.post('/set-active-role', protect, setActiveRole);
+router.post('/add-role', protect, addRole);
 
 // Google OAuth routes
 router.get(
