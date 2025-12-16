@@ -287,6 +287,16 @@ export const createProperty = async (
     // Determine which role is being used to create this listing
     const createdAsRole = req.body.createdAsRole || user.activeRole || user.role || 'private_seller';
 
+    // **CRITICAL: Buyers cannot create listings**
+    if (createdAsRole === 'buyer') {
+      res.status(403).json({
+        message: 'Buyers cannot create property listings. Please switch to or add a Private Seller or Agent role to create listings.',
+        code: 'BUYER_CANNOT_CREATE_LISTING',
+        availableRoles: user.availableRoles,
+      });
+      return;
+    }
+
     // Validate user has access to the role they're trying to use
     if (user.availableRoles && !user.availableRoles.includes(createdAsRole)) {
       res.status(403).json({
