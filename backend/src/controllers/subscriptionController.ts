@@ -96,16 +96,35 @@ export const createSubscription = async (req: Request, res: Response): Promise<v
       productId: product.productId,
     });
 
-    // Update user subscription status
-    await User.findByIdAndUpdate(
-      userId,
-      {
-        isSubscribed: true,
-        subscriptionPlan: product.productId,
-        subscriptionExpiresAt: expirationDate,
+    // Update user subscription status and initialize proSubscription
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    user.isSubscribed = true;
+    user.subscriptionPlan = product.productId;
+    user.subscriptionExpiresAt = expirationDate;
+
+    // Initialize unified Pro subscription
+    const isAgent = user.availableRoles?.includes('agent') || user.role === 'agent';
+    user.proSubscription = {
+      isActive: true,
+      plan: product.billingPeriod === 'monthly' ? 'pro_monthly' : 'pro_yearly',
+      expiresAt: expirationDate,
+      startedAt: startDate,
+      totalListingsLimit: product.listingsLimit || 15,
+      activeListingsCount: 0,
+      privateSellerCount: 0,
+      agentCount: 0,
+      promotionCoupons: {
+        highlightCoupons: isAgent ? (product.highlightCoupons || 2) : 0,
+        usedHighlightCoupons: 0,
       },
-      { runValidators: true, context: 'query' }
-    );
+    };
+
+    await user.save();
 
     res.status(201).json({
       message: 'Subscription created successfully',
@@ -115,6 +134,11 @@ export const createSubscription = async (req: Request, res: Response): Promise<v
         status: subscription.status,
         startDate: subscription.startDate,
         expirationDate: subscription.expirationDate,
+      },
+      user: {
+        id: user._id,
+        email: user.email,
+        proSubscription: user.proSubscription,
       },
     });
   } catch (error: any) {

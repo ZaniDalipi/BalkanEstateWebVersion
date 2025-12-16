@@ -52,6 +52,10 @@ export interface IProduct extends Document {
   // Limits
   maxActiveSubscriptions?: number;
 
+  // Subscription Benefits
+  listingsLimit?: number; // Number of active listings (e.g., 15 for Pro)
+  highlightCoupons?: number; // Number of highlight promotion coupons (e.g., 2 for agents)
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -177,6 +181,16 @@ const ProductSchema: Schema = new Schema(
     // Limits
     maxActiveSubscriptions: {
       type: Number,
+    },
+
+    // Subscription Benefits
+    listingsLimit: {
+      type: Number,
+      default: 15, // Default to 15 for Pro subscriptions
+    },
+    highlightCoupons: {
+      type: Number,
+      default: 0, // Default to 0, set to 2 for agent Pro plans
     },
   },
   {
