@@ -61,13 +61,15 @@ export const validatePassword = (password: string): PasswordValidationResult => 
   }
 
   // Check against common passwords (case insensitive)
-  if (COMMON_PASSWORDS.some(weak => password.toLowerCase().includes(weak.toLowerCase()))) {
-    errors.push('Password is too common. Please choose a more unique password');
+  const commonMatch = COMMON_PASSWORDS.find(weak => password.toLowerCase().includes(weak.toLowerCase()));
+  if (commonMatch) {
+    errors.push(`Password contains a common pattern "${commonMatch}". Please avoid common words and phrases`);
   }
 
   // Check for sequential characters (e.g., "123", "abc")
-  if (hasSequentialCharacters(password)) {
-    errors.push('Password should not contain sequential characters');
+  const sequentialMatch = findSequentialCharacters(password);
+  if (sequentialMatch) {
+    errors.push(`Password contains sequential characters "${sequentialMatch}". Avoid sequences like 123, abc, or qwe`);
   }
 
   // Calculate password strength
@@ -81,21 +83,28 @@ export const validatePassword = (password: string): PasswordValidationResult => 
 };
 
 /**
- * Check for sequential characters in password
+ * Check for sequential characters in password and return the first match found
  */
-const hasSequentialCharacters = (password: string): boolean => {
+const findSequentialCharacters = (password: string): string | null => {
   const sequences = ['0123456789', 'abcdefghijklmnopqrstuvwxyz', 'qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 
   for (const seq of sequences) {
     for (let i = 0; i < seq.length - 2; i++) {
       const subseq = seq.substring(i, i + 3);
       if (password.toLowerCase().includes(subseq)) {
-        return true;
+        return subseq;
       }
     }
   }
 
-  return false;
+  return null;
+};
+
+/**
+ * Check for sequential characters in password
+ */
+const hasSequentialCharacters = (password: string): boolean => {
+  return findSequentialCharacters(password) !== null;
 };
 
 /**

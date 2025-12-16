@@ -31,23 +31,33 @@ const COMMON_PASSWORDS = [
     'passw0rd', 'p@ssword', 'p@ssw0rd'
 ];
 
-const hasSequentialCharacters = (password: string): boolean => {
+const findSequentialCharacters = (password: string): string | null => {
     const sequences = ['0123456789', 'abcdefghijklmnopqrstuvwxyz', 'qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 
     for (const seq of sequences) {
         for (let i = 0; i < seq.length - 2; i++) {
             const subseq = seq.substring(i, i + 3);
             if (password.toLowerCase().includes(subseq)) {
-                return true;
+                return subseq;
             }
         }
     }
 
-    return false;
+    return null;
+};
+
+const hasSequentialCharacters = (password: string): boolean => {
+    return findSequentialCharacters(password) !== null;
+};
+
+const getCommonPasswordMatch = (password: string): string | null => {
+    const lowerPassword = password.toLowerCase();
+    const match = COMMON_PASSWORDS.find(weak => lowerPassword.includes(weak.toLowerCase()));
+    return match || null;
 };
 
 const isCommonPassword = (password: string): boolean => {
-    return COMMON_PASSWORDS.some(weak => password.toLowerCase().includes(weak.toLowerCase()));
+    return getCommonPasswordMatch(password) !== null;
 };
 
 const checkPasswordRequirements = (password: string): PasswordRequirements => {
@@ -81,9 +91,17 @@ const validatePassword = (password: string) => {
         return "Password must contain at least one special character.";
     }
     if (!requirements.noSequential) {
+        const sequentialMatch = findSequentialCharacters(password);
+        if (sequentialMatch) {
+            return `Password contains sequential characters "${sequentialMatch}". Avoid sequences like 123, abc, or qwe.`;
+        }
         return "Password should not contain sequential characters (like 123, abc).";
     }
     if (!requirements.notCommon) {
+        const commonMatch = getCommonPasswordMatch(password);
+        if (commonMatch) {
+            return `Password contains a common pattern "${commonMatch}". Please avoid common words and phrases.`;
+        }
         return "Password is too common. Please choose a more unique password.";
     }
     return null;
