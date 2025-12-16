@@ -35,7 +35,43 @@ interface RequestOptions {
   requiresAuth?: boolean;
 }
 
-const apiRequest = async <T>(endpoint: string, options: RequestOptions = {}): Promise<T> => {
+// Helper function to refresh the access token
+const refreshAccessToken = async (): Promise<string | null> => {
+  try {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) {
+      return null;
+    }
+
+    const response = await fetch(`${API_URL}/auth/refresh-token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    if (data.accessToken) {
+      setToken(data.accessToken);
+      if (data.refreshToken) {
+        setRefreshToken(data.refreshToken);
+      }
+      return data.accessToken;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    return null;
+  }
+};
+
+const apiRequest = async <T>(endpoint: string, options: RequestOptions = {}, retryCount = 0): Promise<T> => {
   const { method = 'GET', body, headers = {}, requiresAuth = false } = options;
 
   const config: RequestInit = {
@@ -68,6 +104,23 @@ const apiRequest = async <T>(endpoint: string, options: RequestOptions = {}): Pr
     // Handle non-JSON responses
     const contentType = response.headers.get('content-type');
     const isJson = contentType && contentType.includes('application/json');
+
+    // Handle 401 Unauthorized - try to refresh token
+    if (response.status === 401 && requiresAuth && retryCount === 0) {
+      console.log('Access token expired, attempting to refresh...');
+      const newAccessToken = await refreshAccessToken();
+
+      if (newAccessToken) {
+        console.log('Token refreshed successfully, retrying request...');
+        // Retry the request with the new token
+        return apiRequest<T>(endpoint, options, 1);
+      } else {
+        // Refresh failed, clear tokens and redirect to login
+        console.log('Token refresh failed, logging out...');
+        removeToken();
+        throw new Error('Session expired. Please login again.');
+      }
+    }
 
     if (!response.ok) {
       const error = isJson ? await response.json() : { message: response.statusText };
@@ -435,7 +488,8 @@ export const getMyListings = async (): Promise<Property[]> => {
  */
 export const uploadPropertyImages = async (
   images: File[],
-  propertyId?: string
+  propertyId?: string,
+  retryCount = 0
 ): Promise<{ url: string; publicId: string; tag: string }[]> => {
   const formData = new FormData();
   images.forEach((image) => {
@@ -447,7 +501,11 @@ export const uploadPropertyImages = async (
     formData.append('propertyId', propertyId);
   }
 
-  const token = getToken();
+  let token = getToken();
+  if (!token) {
+    throw new Error('Not authorized. Please login again.');
+  }
+
   const endpoint = propertyId
     ? `${API_URL}/properties/${propertyId}/upload-images`
     : `${API_URL}/properties/upload-images`;
@@ -459,6 +517,23 @@ export const uploadPropertyImages = async (
     },
     body: formData,
   });
+
+  // Handle 401 Unauthorized - try to refresh token
+  if (response.status === 401 && retryCount === 0) {
+    console.log('Access token expired during image upload, attempting to refresh...');
+    const newAccessToken = await refreshAccessToken();
+
+    if (newAccessToken) {
+      console.log('Token refreshed successfully, retrying image upload...');
+      // Retry the upload with the new token
+      return uploadPropertyImages(images, propertyId, 1);
+    } else {
+      // Refresh failed, clear tokens
+      console.log('Token refresh failed, logging out...');
+      removeToken();
+      throw new Error('Session expired. Please login again.');
+    }
+  }
 
   if (!response.ok) {
     const errorData = await response.json();
