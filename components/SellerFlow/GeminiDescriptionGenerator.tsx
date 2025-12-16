@@ -12,6 +12,7 @@ import { BALKAN_LOCATIONS, CityData } from '../../utils/balkanLocations';
 import * as api from '../../services/apiService';
 import imageCompression from 'browser-image-compression';
 import PromotionSelector from '../promotions/PromotionSelector';
+import RoleSelector from './RoleSelector';
 
 type Step = 'init' | 'loading' | 'form' | 'floorplan' | 'payment' | 'success';
 type Mode = 'ai' | 'manual';
@@ -314,6 +315,9 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [wantToPromote, setWantToPromote] = useState(false);
     const [pendingPropertyData, setPendingPropertyData] = useState<Property | null>(null);
+    const [selectedRole, setSelectedRole] = useState<UserRole>(
+        currentUser?.activeRole || currentUser?.role || UserRole.PRIVATE_SELLER
+    );
 
     // Upload Progress State
     const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -904,7 +908,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 lat: lat,
                 lng: lng,
                 seller: {
-                    type: currentUser.role === UserRole.AGENT ? 'agent' : 'private',
+                    type: selectedRole === UserRole.AGENT ? 'agent' : 'private',
                     name: currentUser.name,
                     phone: currentUser.phone,
                     avatarUrl: currentUser.avatarUrl,
@@ -918,6 +922,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 views: propertyToEdit?.views || 0,
                 saves: propertyToEdit?.saves || 0,
                 inquiries: propertyToEdit?.inquiries || 0,
+                // Dual-role system: Pass the selected role to backend
+                createdAsRole: selectedRole,
                 // Mandatory amenities
                 hasBalcony: listingData.hasBalcony,
                 hasGarden: listingData.hasGarden,
@@ -1106,6 +1112,15 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                     <button type="button" onClick={() => setMode('manual')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap ${mode === 'manual' ? 'bg-white text-primary shadow' : 'text-neutral-600 hover:bg-neutral-200'}`}>Manual Entry</button>
                 </div>
             </div>
+
+            {/* Role Selector - only show if user has multiple roles */}
+            {currentUser && !propertyToEdit && (
+                <RoleSelector
+                    currentUser={currentUser}
+                    selectedRole={selectedRole}
+                    onRoleSelect={setSelectedRole}
+                />
+            )}
 
             {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">{error}</div>}
 

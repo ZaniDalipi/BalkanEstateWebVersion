@@ -563,8 +563,9 @@ UserSchema.pre('save', function (next) {
 
   // Initialize availableRoles, activeRole, and primaryRole based on role field
   const currentRole = this.get('role') || 'buyer';
+  const availableRoles = this.get('availableRoles') as string[] | undefined;
 
-  if (!this.get('availableRoles') || this.get('availableRoles').length === 0) {
+  if (!availableRoles || availableRoles.length === 0) {
     this.set('availableRoles', [currentRole]);
   }
 

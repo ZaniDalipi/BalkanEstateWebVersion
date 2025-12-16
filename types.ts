@@ -81,6 +81,28 @@ export interface User {
         priceGrowthYoY?: number;
         activityLevel?: string;
     };
+    // Dual-Role System fields
+    availableRoles?: UserRole[];
+    activeRole?: UserRole;
+    primaryRole?: UserRole;
+    privateSellerSubscription?: {
+        isActive: boolean;
+        plan: 'free' | 'pro_monthly' | 'pro_yearly';
+        expiresAt?: Date | string;
+        listingsLimit: number;
+        activeListingsCount: number;
+    };
+    agentSubscription?: {
+        isActive: boolean;
+        plan: 'trial' | 'pro_monthly' | 'pro_yearly';
+        expiresAt?: Date | string;
+        listingsLimit: number;
+        activeListingsCount: number;
+        trialStartDate?: Date | string;
+        trialEndDate?: Date | string;
+        trialReminderSent?: boolean;
+        trialExpired?: boolean;
+    };
 }
 
 export interface Agent extends User {
@@ -226,6 +248,8 @@ export interface Property {
     views?: number;
     saves?: number;
     inquiries?: number;
+    // Dual-role system
+    createdAsRole?: UserRole;
     // Advanced property features
     furnishing?: FurnishingStatus;
     heatingType?: HeatingType;
