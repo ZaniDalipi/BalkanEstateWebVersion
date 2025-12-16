@@ -80,6 +80,17 @@ export interface IUser extends Document {
     ipAddress?: string;
   }>;
 
+  // Login History (permanent log of all login events)
+  loginHistory?: Array<{
+    timestamp: Date;
+    success: boolean;
+    ipAddress?: string;
+    userAgent?: string;
+    deviceInfo?: string;
+    location?: string;
+    failureReason?: string;
+  }>;
+
   // Trial Period Management (for agents)
   trialStartDate?: Date;
   trialEndDate?: Date;
@@ -345,6 +356,22 @@ const UserSchema: Schema = new Schema(
       },
       deviceInfo: String,
       ipAddress: String,
+    }],
+    // Login History (permanent log of all login events)
+    loginHistory: [{
+      timestamp: {
+        type: Date,
+        default: Date.now,
+      },
+      success: {
+        type: Boolean,
+        required: true,
+      },
+      ipAddress: String,
+      userAgent: String,
+      deviceInfo: String,
+      location: String,
+      failureReason: String,
     }],
     // Trial Period Management
     trialStartDate: {

@@ -280,7 +280,27 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     // Check password
     const isMatch = await user.comparePassword(password);
 
+    // Get client info for logging
+    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
     if (!isMatch) {
+      // Log failed login attempt
+      if (!user.loginHistory) user.loginHistory = [];
+      user.loginHistory.push({
+        timestamp: new Date(),
+        success: false,
+        ipAddress: clientIp,
+        userAgent: userAgent,
+        deviceInfo: userAgent,
+        failureReason: 'Invalid password',
+      });
+
+      // Keep only last 100 login history entries to prevent unbounded growth
+      if (user.loginHistory.length > 100) {
+        user.loginHistory = user.loginHistory.slice(-100);
+      }
+
       // Increment failed login attempts
       await user.incrementLoginAttempts();
 
@@ -291,8 +311,24 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     // Password is correct - reset login attempts
     await user.resetLoginAttempts();
 
+    // Log successful login
+    if (!user.loginHistory) user.loginHistory = [];
+    user.loginHistory.push({
+      timestamp: new Date(),
+      success: true,
+      ipAddress: clientIp,
+      userAgent: userAgent,
+      deviceInfo: userAgent,
+    });
+
+    // Keep only last 100 login history entries
+    if (user.loginHistory.length > 100) {
+      user.loginHistory = user.loginHistory.slice(-100);
+    }
+
+    await user.save();
+
     // Reset account-level rate limit on successful login
-    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
     resetLoginRateLimit(user.email, clientIp);
 
     // Generate token pair (access + refresh)
@@ -1219,5 +1255,38 @@ export const getActiveSessions = async (req: Request, res: Response): Promise<vo
   } catch (error: any) {
     console.error('Get sessions error:', error);
     res.status(500).json({ message: 'Error fetching sessions', error: error.message });
+  }
+};
+
+// @desc    Get login history
+// @route   GET /api/auth/login-history
+// @access  Private
+export const getLoginHistory = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const user = await User.findById((req.user as IUser)._id).select('loginHistory');
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Return login history sorted by most recent first
+    const history = user.loginHistory || [];
+    const sortedHistory = history.sort((a, b) =>
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+
+    res.json({
+      loginHistory: sortedHistory,
+      total: sortedHistory.length,
+    });
+  } catch (error: any) {
+    console.error('Get login history error:', error);
+    res.status(500).json({ message: 'Error fetching login history', error: error.message });
   }
 };

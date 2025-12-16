@@ -87,6 +87,121 @@ const RoleSelector: React.FC<{
 };
 
 
+const LoginHistorySection: React.FC = () => {
+    const [loginHistory, setLoginHistory] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [showAll, setShowAll] = useState(false);
+
+    useEffect(() => {
+        const fetchLoginHistory = async () => {
+            try {
+                const { getLoginHistory } = await import('../../services/apiService');
+                const history = await getLoginHistory();
+                setLoginHistory(history);
+            } catch (error) {
+                console.error('Failed to fetch login history:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchLoginHistory();
+    }, []);
+
+    const displayedHistory = showAll ? loginHistory : loginHistory.slice(0, 5);
+
+    const formatTimestamp = (timestamp: Date) => {
+        const date = new Date(timestamp);
+        return date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    const getBrowserInfo = (userAgent?: string) => {
+        if (!userAgent) return 'Unknown';
+        if (userAgent.includes('Chrome')) return 'Chrome';
+        if (userAgent.includes('Firefox')) return 'Firefox';
+        if (userAgent.includes('Safari')) return 'Safari';
+        if (userAgent.includes('Edge')) return 'Edge';
+        return 'Unknown Browser';
+    };
+
+    if (isLoading) {
+        return (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-700">Loading login history...</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <div className="flex-1">
+                    <h4 className="font-semibold text-blue-800 text-sm mb-2">Recent Login Activity</h4>
+                    {loginHistory.length === 0 ? (
+                        <p className="text-sm text-blue-700">No login history available.</p>
+                    ) : (
+                        <>
+                            <div className="space-y-2">
+                                {displayedHistory.map((entry, index) => (
+                                    <div key={index} className="bg-white rounded-lg p-3 border border-blue-100">
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    {entry.success ? (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                                            ✓ Success
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                                            ✗ Failed
+                                                        </span>
+                                                    )}
+                                                    <span className="text-xs text-gray-600">{formatTimestamp(entry.timestamp)}</span>
+                                                </div>
+                                                <div className="mt-1 text-xs text-gray-600">
+                                                    <p className="flex items-center gap-1">
+                                                        <span className="font-medium">IP:</span> {entry.ipAddress || 'Unknown'}
+                                                    </p>
+                                                    <p className="flex items-center gap-1">
+                                                        <span className="font-medium">Device:</span> {getBrowserInfo(entry.userAgent)}
+                                                    </p>
+                                                    {!entry.success && entry.failureReason && (
+                                                        <p className="flex items-center gap-1 text-red-600">
+                                                            <span className="font-medium">Reason:</span> {entry.failureReason}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            {loginHistory.length > 5 && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAll(!showAll)}
+                                    className="mt-3 text-sm text-blue-700 hover:text-blue-800 font-medium"
+                                >
+                                    {showAll ? 'Show less' : `Show all ${loginHistory.length} entries`}
+                                </button>
+                            )}
+                        </>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const ProfileSettings: React.FC<{ user: User; logoutAllDevices: () => Promise<void> }> = ({ user, logoutAllDevices }) => {
     const { updateUser, dispatch } = useAppContext();
     const [formData, setFormData] = useState<User>(user);
@@ -809,7 +924,7 @@ const ProfileSettings: React.FC<{ user: User; logoutAllDevices: () => Promise<vo
 
             {/* Security Section */}
             <fieldset className="space-y-4 border-t pt-8">
-                <legend className="text-lg font-semibold text-neutral-700 mb-4">Security</legend>
+                <legend className="text-lg font-semibold text-neutral-700 mb-4">Security & Login Activity</legend>
 
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <div className="flex items-start gap-3">
@@ -836,6 +951,9 @@ const ProfileSettings: React.FC<{ user: User; logoutAllDevices: () => Promise<vo
                         </div>
                     </div>
                 </div>
+
+                {/* Login History */}
+                <LoginHistorySection />
             </fieldset>
 
             <div className="flex justify-end pt-4">

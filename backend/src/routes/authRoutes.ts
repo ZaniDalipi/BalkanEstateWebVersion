@@ -17,6 +17,7 @@ import {
   enhancedLogout,
   logoutAllDevices,
   getActiveSessions,
+  getLoginHistory,
 } from '../controllers/authController';
 import { getUserStats, getAllAgents, syncStats } from '../controllers/userController';
 import { protect } from '../middleware/auth';
@@ -63,6 +64,7 @@ router.post('/upload-avatar', protect, upload.single('avatar'), uploadAvatar);
 // Token management
 router.post('/refresh-token', refreshToken);
 router.get('/sessions', protect, getActiveSessions);
+router.get('/login-history', protect, getLoginHistory);
 
 // Email verification routes
 router.post('/verify-email', verifyEmail);

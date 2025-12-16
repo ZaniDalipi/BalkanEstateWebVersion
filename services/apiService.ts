@@ -213,6 +213,23 @@ export const logoutAllDevices = async (): Promise<void> => {
   removeToken();
 };
 
+export interface LoginHistoryEntry {
+  timestamp: Date;
+  success: boolean;
+  ipAddress?: string;
+  userAgent?: string;
+  deviceInfo?: string;
+  location?: string;
+  failureReason?: string;
+}
+
+export const getLoginHistory = async (): Promise<LoginHistoryEntry[]> => {
+  const response = await apiRequest<{ loginHistory: LoginHistoryEntry[]; total: number }>('/auth/login-history', {
+    requiresAuth: true
+  });
+  return response.loginHistory;
+};
+
 export const requestPasswordReset = async (email: string): Promise<{ message: string; resetToken?: string }> => {
   const response = await apiRequest<{ message: string; resetToken?: string }>('/auth/forgot-password', {
     method: 'POST',
