@@ -19,7 +19,36 @@ interface PasswordRequirements {
     hasLowercase: boolean;
     hasNumber: boolean;
     hasSpecialChar: boolean;
+    noSequential: boolean;
+    notCommon: boolean;
 }
+
+// Common weak passwords to reject (matching backend)
+const COMMON_PASSWORDS = [
+    'password', 'Password1', 'Password123', '12345678', 'qwerty',
+    'abc123', 'password1', 'letmein', 'welcome', 'monkey',
+    '1q2w3e4r', 'qwertyuiop', 'admin', 'root', 'user',
+    'passw0rd', 'p@ssword', 'p@ssw0rd'
+];
+
+const hasSequentialCharacters = (password: string): boolean => {
+    const sequences = ['0123456789', 'abcdefghijklmnopqrstuvwxyz', 'qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+
+    for (const seq of sequences) {
+        for (let i = 0; i < seq.length - 2; i++) {
+            const subseq = seq.substring(i, i + 3);
+            if (password.toLowerCase().includes(subseq)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+};
+
+const isCommonPassword = (password: string): boolean => {
+    return COMMON_PASSWORDS.some(weak => password.toLowerCase().includes(weak.toLowerCase()));
+};
 
 const checkPasswordRequirements = (password: string): PasswordRequirements => {
     return {
@@ -28,6 +57,8 @@ const checkPasswordRequirements = (password: string): PasswordRequirements => {
         hasLowercase: /[a-z]/.test(password),
         hasNumber: /\d/.test(password),
         hasSpecialChar: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+        noSequential: !hasSequentialCharacters(password),
+        notCommon: !isCommonPassword(password),
     };
 };
 
@@ -48,6 +79,12 @@ const validatePassword = (password: string) => {
     }
     if (!requirements.hasSpecialChar) {
         return "Password must contain at least one special character.";
+    }
+    if (!requirements.noSequential) {
+        return "Password should not contain sequential characters (like 123, abc).";
+    }
+    if (!requirements.notCommon) {
+        return "Password is too common. Please choose a more unique password.";
     }
     return null;
 };
@@ -83,6 +120,8 @@ const PasswordRequirementsIndicator: React.FC<{ requirements: PasswordRequiremen
             <RequirementItem met={requirements.hasLowercase} text="One lowercase letter (a-z)" />
             <RequirementItem met={requirements.hasNumber} text="One number (0-9)" />
             <RequirementItem met={requirements.hasSpecialChar} text="One special character (!@#$%...)" />
+            <RequirementItem met={requirements.noSequential} text="No sequential characters (123, abc, qwe)" />
+            <RequirementItem met={requirements.notCommon} text="Not a common password" />
         </div>
     );
 };
@@ -117,6 +156,8 @@ const AuthPage: React.FC = () => {
         hasLowercase: false,
         hasNumber: false,
         hasSpecialChar: false,
+        noSequential: false,
+        notCommon: false,
     });
 
     // Password visibility state
@@ -173,7 +214,8 @@ const AuthPage: React.FC = () => {
 
         // Clear error if all requirements are met
         if (requirements.minLength && requirements.hasUppercase && requirements.hasLowercase &&
-            requirements.hasNumber && requirements.hasSpecialChar) {
+            requirements.hasNumber && requirements.hasSpecialChar && requirements.noSequential &&
+            requirements.notCommon) {
             setError(null);
         }
     };
