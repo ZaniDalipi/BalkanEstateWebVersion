@@ -23,6 +23,31 @@ export const startAgentTrial = async (user: IUser): Promise<void> => {
   const now = new Date();
   const trialEnd = new Date(now.getTime() + TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000);
 
+  // Initialize dual-role system fields
+  if (!user.availableRoles || user.availableRoles.length === 0) {
+    user.availableRoles = [user.role || 'agent'];
+  }
+  if (!user.activeRole) {
+    user.activeRole = user.role || 'agent';
+  }
+  if (!user.primaryRole) {
+    user.primaryRole = user.role || 'agent';
+  }
+
+  // Initialize agent subscription with 7-day trial
+  user.agentSubscription = {
+    isActive: true,
+    plan: 'trial',
+    expiresAt: trialEnd,
+    listingsLimit: 10,
+    activeListingsCount: 0,
+    trialStartDate: now,
+    trialEndDate: trialEnd,
+    trialReminderSent: false,
+    trialExpired: false,
+  };
+
+  // Keep legacy fields for backwards compatibility
   user.trialStartDate = now;
   user.trialEndDate = trialEnd;
   user.trialReminderSent = false;
