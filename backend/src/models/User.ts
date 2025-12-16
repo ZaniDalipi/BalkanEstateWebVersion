@@ -205,17 +205,17 @@ const UserSchema: Schema = new Schema(
     availableRoles: {
       type: [String],
       enum: ['buyer', 'private_seller', 'agent', 'admin', 'super_admin'],
-      default: function() { return [this.role || 'buyer']; }, // Initialize with current role
+      default: ['buyer'], // Will be updated in pre-save hook
     },
     activeRole: {
       type: String,
       enum: ['buyer', 'private_seller', 'agent', 'admin', 'super_admin'],
-      default: function() { return this.role || 'buyer'; }, // Initialize with current role
+      default: 'buyer', // Will be updated in pre-save hook
     },
     primaryRole: {
       type: String,
       enum: ['buyer', 'private_seller', 'agent', 'admin', 'super_admin'],
-      default: function() { return this.role || 'buyer'; }, // Initialize with current role
+      default: 'buyer', // Will be updated in pre-save hook
     },
     city: {
       type: String,
@@ -552,6 +552,31 @@ UserSchema.pre('save', async function (next) {
   } catch (error: any) {
     next(error);
   }
+});
+
+// Initialize role fields for new users
+UserSchema.pre('save', function (next) {
+  // Only run for new documents
+  if (!this.isNew) {
+    return next();
+  }
+
+  // Initialize availableRoles, activeRole, and primaryRole based on role field
+  const currentRole = this.get('role') || 'buyer';
+
+  if (!this.get('availableRoles') || this.get('availableRoles').length === 0) {
+    this.set('availableRoles', [currentRole]);
+  }
+
+  if (!this.get('activeRole')) {
+    this.set('activeRole', currentRole);
+  }
+
+  if (!this.get('primaryRole')) {
+    this.set('primaryRole', currentRole);
+  }
+
+  next();
 });
 
 // Compare password method
