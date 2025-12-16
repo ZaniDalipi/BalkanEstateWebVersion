@@ -1,27 +1,27 @@
-import jwt, { SignOptions } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
 // Access token: Short-lived (15 minutes)
 export const generateAccessToken = (userId: string): string => {
   const secret: string = process.env.JWT_SECRET || 'secret';
-  const expiresIn: string | number = (process.env.ACCESS_TOKEN_EXPIRES_IN || '15m') as string | number;
-  const options: SignOptions = { expiresIn };
-  return jwt.sign({ id: userId, type: 'access' }, secret, options);
+  return jwt.sign(
+    { id: userId, type: 'access' },
+    secret,
+    { expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || '15m' }
+  );
 };
 
 // Refresh token: Long-lived (7 days)
 export const generateRefreshToken = (userId: string): string => {
   const secret: string = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'secret';
-  const expiresIn: string | number = (process.env.REFRESH_TOKEN_EXPIRES_IN || '7d') as string | number;
 
   // Generate a unique token identifier to allow revocation
   const tokenId = crypto.randomBytes(32).toString('hex');
 
-  const options: SignOptions = { expiresIn };
   return jwt.sign(
     { id: userId, type: 'refresh', tokenId },
     secret,
-    options
+    { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d' }
   );
 };
 
