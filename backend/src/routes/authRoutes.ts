@@ -18,6 +18,7 @@ import {
   logoutAllDevices,
   getActiveSessions,
   getLoginHistory,
+  changePassword,
 } from '../controllers/authController';
 import { getUserStats, getAllAgents, syncStats } from '../controllers/userController';
 import { protect } from '../middleware/auth';
@@ -73,6 +74,7 @@ router.post('/resend-verification', resendVerificationEmail);
 // Password reset routes with rate limiting
 router.post('/forgot-password', passwordResetRateLimiterIP, requestPasswordReset);
 router.post('/reset-password', resetPassword);
+router.post('/change-password', protect, changePassword);
 
 // Google OAuth routes
 router.get(

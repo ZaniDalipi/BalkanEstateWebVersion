@@ -827,19 +827,19 @@ export const requestPasswordReset = async (
     // Find user by email
     const user = await User.findOne({ email: email.toLowerCase() });
 
+    // Always return same success message to prevent account enumeration
+    const successMessage = 'If an account with that email exists, a password reset link has been sent.';
+
     if (!user) {
       // Don't reveal if user exists or not for security
-      res.json({
-        message: 'If an account with that email exists, a password reset link has been sent.'
-      });
+      res.json({ message: successMessage });
       return;
     }
 
     // Check if user is a local auth user (has password)
     if (user.provider !== 'local' || !user.password) {
-      res.status(400).json({
-        message: 'This account uses social login. Password reset is not available.'
-      });
+      // Don't reveal account type - return same message
+      res.json({ message: successMessage });
       return;
     }
 
@@ -858,14 +858,62 @@ export const requestPasswordReset = async (
 
     await user.save();
 
-    // In a real application, you would send an email here
-    // For now, we'll return the token in the response (ONLY FOR DEVELOPMENT)
-    // TODO: Implement email sending service
-    console.log('Password reset token:', resetToken);
-    console.log('Reset URL:', `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`);
+    // Send password reset email
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+    try {
+      const emailService = await import('../services/emailService');
+      await emailService.sendEmail({
+        to: user.email,
+        subject: 'Password Reset Request - Balkan Estate',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+              .button { display: inline-block; padding: 12px 30px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+              .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>Password Reset Request</h1>
+              </div>
+              <div class="content">
+                <p>Hi ${user.name},</p>
+                <p>You requested to reset your password for your Balkan Estate account.</p>
+                <p>Click the button below to reset your password:</p>
+                <p style="text-align: center;">
+                  <a href="${resetUrl}" class="button">Reset Password</a>
+                </p>
+                <p>Or copy and paste this link into your browser:</p>
+                <p style="word-break: break-all; color: #2563eb;">${resetUrl}</p>
+                <p><strong>This link will expire in 1 hour.</strong></p>
+                <p>If you didn't request this password reset, please ignore this email. Your password will remain unchanged.</p>
+                <div class="footer">
+                  <p>This is an automated message from Balkan Estate. Please do not reply to this email.</p>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+        text: `Hi ${user.name},\n\nYou requested to reset your password for your Balkan Estate account.\n\nClick the link below to reset your password:\n${resetUrl}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this password reset, please ignore this email.`,
+      });
+      console.log('Password reset email sent to:', user.email);
+    } catch (emailError) {
+      console.error('Failed to send password reset email:', emailError);
+      // Still return success message to prevent account enumeration
+    }
 
     res.json({
-      message: 'If an account with that email exists, a password reset link has been sent.',
+      message: successMessage,
       // ONLY FOR DEVELOPMENT - Remove in production
       resetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined,
     });
@@ -890,12 +938,6 @@ export const resetPassword = async (
       return;
     }
 
-    // Validate password strength
-    if (newPassword.length < 6) {
-      res.status(400).json({ message: 'Password must be at least 6 characters long' });
-      return;
-    }
-
     // Hash the provided token to compare with stored hash
     const hashedToken = crypto
       .createHash('sha256')
@@ -913,6 +955,25 @@ export const resetPassword = async (
       return;
     }
 
+    // Validate password strength using production-grade validation
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.isValid) {
+      res.status(400).json({
+        message: 'Password does not meet security requirements',
+        errors: passwordValidation.errors,
+      });
+      return;
+    }
+
+    // Check if password contains user info (email, name)
+    const userInfo = [user.email.split('@')[0], user.name];
+    if (passwordContainsUserInfo(newPassword, userInfo)) {
+      res.status(400).json({
+        message: 'Password should not contain your email or name',
+      });
+      return;
+    }
+
     // Set new password (will be hashed by pre-save hook)
     user.password = newPassword;
     user.resetPasswordToken = undefined;
@@ -920,12 +981,17 @@ export const resetPassword = async (
 
     await user.save();
 
-    // Generate new auth token
-    const authToken = generateToken(String(user._id));
+    // Generate new token pair (access + refresh)
+    const deviceInfo = {
+      userAgent: req.headers['user-agent'],
+      ipAddress: req.ip || req.socket.remoteAddress,
+    };
+    const tokens = await generateTokenPair(user, deviceInfo);
 
     res.json({
       message: 'Password reset successful',
-      token: authToken,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
       user: {
         id: String(user._id),
         email: user.email,
@@ -1288,5 +1354,143 @@ export const getLoginHistory = async (req: Request, res: Response): Promise<void
   } catch (error: any) {
     console.error('Get login history error:', error);
     res.status(500).json({ message: 'Error fetching login history', error: error.message });
+  }
+};
+
+// @desc    Change password for logged-in user
+// @route   POST /api/auth/change-password
+// @access  Private
+export const changePassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ message: 'Current password and new password are required' });
+      return;
+    }
+
+    const user = await User.findById((req.user as IUser)._id);
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Check if user has a password (local auth only)
+    if (!user.password || user.provider !== 'local') {
+      res.status(400).json({
+        message: 'This account uses social login. Password change is not available.'
+      });
+      return;
+    }
+
+    // Verify current password
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      res.status(401).json({ message: 'Current password is incorrect' });
+      return;
+    }
+
+    // Check if new password is same as current
+    const isSameAsCurrent = await user.comparePassword(newPassword);
+    if (isSameAsCurrent) {
+      res.status(400).json({
+        message: 'New password must be different from current password'
+      });
+      return;
+    }
+
+    // Validate new password strength
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.isValid) {
+      res.status(400).json({
+        message: 'Password does not meet security requirements',
+        errors: passwordValidation.errors,
+      });
+      return;
+    }
+
+    // Check if password contains user info (email, name)
+    const userInfo = [user.email.split('@')[0], user.name];
+    if (passwordContainsUserInfo(newPassword, userInfo)) {
+      res.status(400).json({
+        message: 'Password should not contain your email or name',
+      });
+      return;
+    }
+
+    // Update password (will be hashed by pre-save hook)
+    user.password = newPassword;
+    await user.save();
+
+    // Optionally, revoke all refresh tokens to force re-login on all devices
+    // This is a security best practice when password changes
+    try {
+      const { revokeAllRefreshTokens } = await import('../services/refreshTokenService');
+      await revokeAllRefreshTokens(String(user._id));
+    } catch (error) {
+      console.error('Failed to revoke refresh tokens:', error);
+      // Continue even if this fails
+    }
+
+    // Send confirmation email
+    try {
+      const emailService = await import('../services/emailService');
+      await emailService.sendEmail({
+        to: user.email,
+        subject: 'Password Changed Successfully - Balkan Estate',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #10b981; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+              .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; }
+              .warning { background-color: #fef3c7; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #f59e0b; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>Password Changed Successfully</h1>
+              </div>
+              <div class="content">
+                <p>Hi ${user.name},</p>
+                <p>Your password for your Balkan Estate account has been changed successfully.</p>
+                <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+                <div class="warning">
+                  <p><strong>⚠️ Didn't make this change?</strong></p>
+                  <p>If you didn't change your password, please contact our support team immediately at support@balkanestate.com</p>
+                </div>
+                <p>For your security, you have been logged out of all devices. Please log in again with your new password.</p>
+                <div class="footer">
+                  <p>This is an automated message from Balkan Estate. Please do not reply to this email.</p>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+        text: `Hi ${user.name},\n\nYour password for your Balkan Estate account has been changed successfully on ${new Date().toLocaleString()}.\n\nIf you didn't make this change, please contact our support team immediately.\n\nFor your security, you have been logged out of all devices.`,
+      });
+    } catch (emailError) {
+      console.error('Failed to send password change confirmation email:', emailError);
+      // Don't block the response if email fails
+    }
+
+    res.json({
+      message: 'Password changed successfully. You have been logged out of all devices for security.',
+    });
+  } catch (error: any) {
+    console.error('Change password error:', error);
+    res.status(500).json({ message: 'Error changing password', error: error.message });
   }
 };

@@ -240,13 +240,36 @@ export const requestPasswordReset = async (email: string): Promise<{ message: st
 };
 
 export const resetPassword = async (token: string, newPassword: string): Promise<User> => {
-  const response = await apiRequest<{ user: User; token: string }>('/auth/reset-password', {
+  const response = await apiRequest<{ user: User; accessToken?: string; refreshToken?: string; token?: string }>('/auth/reset-password', {
     method: 'POST',
     body: { token, newPassword },
   });
 
-  setToken(response.token);
+  // Handle both new (accessToken/refreshToken) and old (token) formats
+  const accessToken = response.accessToken || response.token;
+  const refreshToken = response.refreshToken;
+
+  if (accessToken) {
+    setToken(accessToken);
+  }
+  if (refreshToken) {
+    setRefreshToken(refreshToken);
+  }
+
   return response.user;
+};
+
+export const changePassword = async (currentPassword: string, newPassword: string): Promise<{ message: string }> => {
+  const response = await apiRequest<{ message: string }>('/auth/change-password', {
+    method: 'POST',
+    requiresAuth: true,
+    body: { currentPassword, newPassword },
+  });
+
+  // Password change logs out all devices, so remove local tokens
+  removeToken();
+
+  return response;
 };
 
 export const getAvailableOAuthProviders = async (): Promise<{ google: boolean; facebook: boolean; apple: boolean }> => {

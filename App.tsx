@@ -27,6 +27,7 @@ import { LogoIcon } from './constants';
 import ListingLimitWarningModal from './components/shared/ListingLimitWarningModal';
 import DiscountGameModal from './components/shared/DiscountGameModal';
 import AdminDashboard from './components/AdminPanel/AdminDashboard';
+import ResetPasswordPage from './components/auth/ResetPasswordPage';
 
 const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar }) => {
   const { state, dispatch } = useAppContext();
@@ -92,6 +93,7 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
         '/agencies': 'agencies',
         '/create-listing': 'create-listing',
         '/admin': 'admin',
+        '/reset-password': 'reset-password',
       };
 
       const view = routeMap[path];
@@ -231,6 +233,8 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
       return <AgenciesListPage />;
     case 'admin':
       return <AdminDashboard />;
+    case 'reset-password':
+      return <ResetPasswordPage />;
     case 'search':
     default:
       return <SearchPage onToggleSidebar={onToggleSidebar} />;
