@@ -11,12 +11,9 @@ import { cleanupAllExpiredTokens } from '../services/refreshTokenService';
  * - Expires trials and downgrades users automatically
  * - Cleans up expired refresh tokens
  *
- * To use a different schedule, modify the cron expression:
+ * To use a different schedule, modify the cron expression below.
  * Format: second minute hour day month weekday
- * Examples:
- * - '0 9 * * *'    - Every day at 9:00 AM
- * - '0 */6 * * *'  - Every 6 hours
- * - '0 0 * * *'    - Every day at midnight
+ * Examples: Daily at 9AM, Every 6 hours, Daily at midnight
  */
 
 export const startTrialManagementJob = (): void => {
