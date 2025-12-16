@@ -5,7 +5,6 @@ import {
   login,
   getMe,
   updateProfile,
-  logout,
   setPublicKey,
   oauthCallback,
   switchRole,
