@@ -352,7 +352,6 @@ export const createProperty = async (
       // Free private seller - use freeSubscription
       currentCount = user.freeSubscription?.activeListingsCount || 0;
       limit = user.freeSubscription?.listingsLimit || 3;
-      subscriptionType = 'free';
 
       if (currentCount >= limit) {
         res.status(403).json({
