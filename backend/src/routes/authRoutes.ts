@@ -11,11 +11,22 @@ import {
   switchRole,
   requestPasswordReset,
   resetPassword,
-  uploadAvatar
+  uploadAvatar,
+  refreshToken,
+  verifyEmail,
+  resendVerificationEmail,
+  enhancedLogout,
+  logoutAllDevices,
+  getActiveSessions,
 } from '../controllers/authController';
 import { getUserStats, getAllAgents, syncStats } from '../controllers/userController';
 import { protect } from '../middleware/auth';
 import passport, { oauthStrategies } from '../config/passport';
+import {
+  loginRateLimiterIP,
+  signupRateLimiterIP,
+  passwordResetRateLimiterIP,
+} from '../middleware/rateLimiter';
 
 // Configure multer for avatar uploads
 const upload = multer({
@@ -36,10 +47,11 @@ const upload = multer({
 
 const router = express.Router();
 
-// Traditional auth routes
-router.post('/signup', signup);
-router.post('/login', login);
-router.post('/logout', protect, logout);
+// Traditional auth routes with rate limiting
+router.post('/signup', signupRateLimiterIP, signup);
+router.post('/login', loginRateLimiterIP, login);
+router.post('/logout', protect, enhancedLogout);
+router.post('/logout-all', protect, logoutAllDevices);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
 router.post('/set-public-key', protect, setPublicKey);
@@ -49,8 +61,16 @@ router.post('/sync-stats', protect, syncStats);
 router.get('/agents', getAllAgents);
 router.post('/upload-avatar', protect, upload.single('avatar'), uploadAvatar);
 
-// Password reset routes
-router.post('/forgot-password', requestPasswordReset);
+// Token management
+router.post('/refresh-token', refreshToken);
+router.get('/sessions', protect, getActiveSessions);
+
+// Email verification routes
+router.post('/verify-email', verifyEmail);
+router.post('/resend-verification', resendVerificationEmail);
+
+// Password reset routes with rate limiting
+router.post('/forgot-password', passwordResetRateLimiterIP, requestPasswordReset);
 router.post('/reset-password', resetPassword);
 
 // Google OAuth routes

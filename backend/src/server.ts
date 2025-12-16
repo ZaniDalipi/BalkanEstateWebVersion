@@ -43,6 +43,7 @@ import { initializeAppStoreService } from './services/appStoreService';
 import { scheduleReconciliation } from './workers/reconciliationWorker';
 import { scheduleExpirationWorker } from './workers/subscriptionExpirationWorker';
 import { startPromotionRefreshWorker } from './workers/promotionRefreshWorker';
+import { startTrialManagementJob } from './jobs/trialManagementJob';
 
 // Create Express app
 const app: Application = express();
@@ -110,6 +111,10 @@ console.log('✅ Subscription expiration worker started');
 // Start promotion refresh worker (for Highlight tier auto-refresh and expired promotion cleanup)
 startPromotionRefreshWorker();
 console.log('✅ Promotion refresh worker started');
+
+// Start trial management job (for agent trial reminders and expirations)
+startTrialManagementJob();
+console.log('✅ Trial management job started');
 
 // ============================================================================
 // MANUAL CORS MIDDLEWARE - Handle ALL CORS manually for maximum control

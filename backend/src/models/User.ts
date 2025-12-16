@@ -60,6 +60,36 @@ export interface IUser extends Document {
   resetPasswordExpires?: Date;
   publicKey?: string; // E2E encryption public key (JWK format)
 
+  // Email Verification
+  emailVerificationToken?: string;
+  emailVerificationExpires?: Date;
+
+  // Security & Account Protection
+  loginAttempts: number;
+  lockUntil?: Date;
+  lastFailedLogin?: Date;
+  lastSuccessfulLogin?: Date;
+  passwordChangedAt?: Date;
+
+  // Refresh Token Management
+  refreshTokens?: Array<{
+    token: string;
+    createdAt: Date;
+    expiresAt: Date;
+    deviceInfo?: string;
+    ipAddress?: string;
+  }>;
+
+  // Trial Period Management (for agents)
+  trialStartDate?: Date;
+  trialEndDate?: Date;
+  trialReminderSent?: boolean;
+  trialExpired?: boolean;
+
+  // Listing Limits
+  activeListingsLimit: number; // Max active listings allowed
+  paidListingsCount: number; // Count of paid extra listings
+
   // Neighborhood Insights Usage Tracking
   neighborhoodInsights?: {
     monthlyCount: number;        // Number of insights generated this month
@@ -81,6 +111,13 @@ export interface IUser extends Document {
   // Methods
   hasActiveSubscription(): boolean;
   canAccessPremiumFeatures(): boolean;
+  isAccountLocked(): boolean;
+  incrementLoginAttempts(): Promise<void>;
+  resetLoginAttempts(): Promise<void>;
+  getActiveListingsLimit(): number;
+  canCreateListing(): Promise<boolean>;
+  isTrialActive(): boolean;
+  isTrialExpiring(): boolean;
 }
 
 const UserSchema: Schema = new Schema(
@@ -268,6 +305,71 @@ const UserSchema: Schema = new Schema(
       type: String,
       required: false,
     },
+    // Email Verification
+    emailVerificationToken: {
+      type: String,
+    },
+    emailVerificationExpires: {
+      type: Date,
+    },
+    // Security & Account Protection
+    loginAttempts: {
+      type: Number,
+      default: 0,
+    },
+    lockUntil: {
+      type: Date,
+    },
+    lastFailedLogin: {
+      type: Date,
+    },
+    lastSuccessfulLogin: {
+      type: Date,
+    },
+    passwordChangedAt: {
+      type: Date,
+    },
+    // Refresh Token Management
+    refreshTokens: [{
+      token: {
+        type: String,
+        required: true,
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+      expiresAt: {
+        type: Date,
+        required: true,
+      },
+      deviceInfo: String,
+      ipAddress: String,
+    }],
+    // Trial Period Management
+    trialStartDate: {
+      type: Date,
+    },
+    trialEndDate: {
+      type: Date,
+    },
+    trialReminderSent: {
+      type: Boolean,
+      default: false,
+    },
+    trialExpired: {
+      type: Boolean,
+      default: false,
+    },
+    // Listing Limits
+    activeListingsLimit: {
+      type: Number,
+      default: 3, // Default for private sellers (free)
+    },
+    paidListingsCount: {
+      type: Number,
+      default: 0,
+    },
     neighborhoodInsights: {
       monthlyCount: {
         type: Number,
@@ -377,7 +479,110 @@ UserSchema.methods.canAccessPremiumFeatures = function (): boolean {
   return false;
 };
 
+// Check if account is locked due to failed login attempts
+UserSchema.methods.isAccountLocked = function (): boolean {
+  if (!this.lockUntil) return false;
+  return this.lockUntil > new Date();
+};
+
+// Increment login attempts and lock account if threshold reached
+UserSchema.methods.incrementLoginAttempts = async function (): Promise<void> {
+  const MAX_LOGIN_ATTEMPTS = 5;
+  const LOCK_TIME = 30 * 60 * 1000; // 30 minutes
+
+  this.loginAttempts += 1;
+  this.lastFailedLogin = new Date();
+
+  // Lock account after max attempts
+  if (this.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+    this.lockUntil = new Date(Date.now() + LOCK_TIME);
+  }
+
+  await this.save();
+};
+
+// Reset login attempts after successful login
+UserSchema.methods.resetLoginAttempts = async function (): Promise<void> {
+  if (this.loginAttempts === 0 && !this.lockUntil) return;
+
+  this.loginAttempts = 0;
+  this.lockUntil = undefined;
+  this.lastSuccessfulLogin = new Date();
+  await this.save();
+};
+
+// Get active listings limit based on role and subscription
+UserSchema.methods.getActiveListingsLimit = function (): number {
+  // Agents (on paid plan or trial)
+  if (this.role === 'agent') {
+    if (this.isTrialActive()) {
+      return 10; // Trial agents get 10 active listings
+    }
+    if (this.hasActiveSubscription()) {
+      return 50; // Paid agent subscription allows 50 active listings
+    }
+    // Agent with expired trial/subscription - treated as private seller
+    return 3;
+  }
+
+  // Private sellers
+  if (this.role === 'private_seller') {
+    if (this.hasActiveSubscription()) {
+      return 20; // Paid private sellers get 20 active listings
+    }
+    return 3; // Free private sellers get 3 active listings
+  }
+
+  // Buyers cannot create listings
+  return 0;
+};
+
+// Check if user can create a new listing
+UserSchema.methods.canCreateListing = async function (): Promise<boolean> {
+  const limit = this.getActiveListingsLimit();
+
+  // Buyer role cannot create listings
+  if (this.role === 'buyer') return false;
+
+  // Check if under the limit
+  const currentActiveListings = this.listingsCount || 0;
+  return currentActiveListings < limit;
+};
+
+// Check if trial period is active
+UserSchema.methods.isTrialActive = function (): boolean {
+  if (!this.trialStartDate || !this.trialEndDate) return false;
+  if (this.trialExpired) return false;
+
+  const now = new Date();
+  return now >= this.trialStartDate && now <= this.trialEndDate;
+};
+
+// Check if trial is expiring soon (within 3 days)
+UserSchema.methods.isTrialExpiring = function (): boolean {
+  if (!this.isTrialActive()) return false;
+
+  const now = new Date();
+  const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+
+  return this.trialEndDate! <= threeDaysFromNow;
+};
+
+// Update password changed timestamp
+UserSchema.pre('save', function(next) {
+  if (this.isModified('password') && !this.isNew) {
+    this.passwordChangedAt = new Date();
+  }
+  next();
+});
+
 // Index for finding expiring subscriptions
 UserSchema.index({ subscriptionExpiresAt: 1, isSubscribed: 1 });
+
+// Index for finding expiring trials
+UserSchema.index({ trialEndDate: 1, trialExpired: 1 });
+
+// Index for account lockout
+UserSchema.index({ lockUntil: 1 });
 
 export default mongoose.model<IUser>('User', UserSchema);

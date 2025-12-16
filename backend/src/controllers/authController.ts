@@ -8,6 +8,11 @@ import { IUser } from '../models/User';
 import crypto from 'crypto';
 import cloudinary from '../config/cloudinary';
 import { Readable } from 'stream';
+import { validatePassword, passwordContainsUserInfo } from '../utils/passwordValidator';
+import { sendVerificationEmail, sendWelcomeEmail } from '../services/emailVerificationService';
+import { startAgentTrial } from '../services/trialManagementService';
+import { generateTokenPair } from '../services/refreshTokenService';
+import { loginRateLimiterAccount, resetLoginRateLimit } from '../middleware/rateLimiter';
 
 // @desc    Register new user
 // @route   POST /api/auth/signup
@@ -16,8 +21,40 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password, name, phone, role, licenseNumber, agencyInvitationCode, languages } = req.body;
 
-    // Check if user already exists
-    const userExists = await User.findOne({ email });
+    // Validate required fields
+    if (!email || !password || !name) {
+      res.status(400).json({ message: 'Email, password, and name are required' });
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      res.status(400).json({ message: 'Invalid email format' });
+      return;
+    }
+
+    // Validate password strength
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      res.status(400).json({
+        message: 'Password does not meet security requirements',
+        errors: passwordValidation.errors,
+      });
+      return;
+    }
+
+    // Check if password contains user info (email, name)
+    const userInfo = [email.split('@')[0], name];
+    if (passwordContainsUserInfo(password, userInfo)) {
+      res.status(400).json({
+        message: 'Password should not contain your email or name',
+      });
+      return;
+    }
+
+    // Check if user already exists (case-insensitive)
+    const userExists = await User.findOne({ email: email.toLowerCase() });
 
     if (userExists) {
       res.status(400).json({ message: 'User already exists' });
@@ -59,9 +96,15 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       generatedAgentId = `AG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     }
 
+    // Determine listing limit based on role
+    let activeListingsLimit = 3; // Default for buyers and private sellers
+    if (role === 'agent') {
+      activeListingsLimit = 10; // Trial agents get 10 listings
+    }
+
     // Create user with initialized stats
     const user = await User.create({
-      email,
+      email: email.toLowerCase(),
       password,
       name,
       phone,
@@ -70,6 +113,8 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       agencyName: agencyName,
       agencyId: agencyId,
       agentId: generatedAgentId,
+      isEmailVerified: false, // Require email verification
+      activeListingsLimit,
       stats: {
         totalViews: 0,
         totalSaves: 0,
@@ -80,7 +125,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       }
     });
 
-    // If agent, create Agent record and add to agency
+    // If agent, create Agent record, add to agency, and start trial
     if (role === 'agent' && licenseNumber) {
       // Use provided languages or default to English
       const agentLanguages = languages && languages.length > 0 ? languages : ['English'];
@@ -115,13 +160,29 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
           }
         }
       }
+
+      // Start 7-day trial period for agent
+      await startAgentTrial(user);
     }
 
-    // Generate token
-    const token = generateToken(String(user._id));
+    // Send email verification
+    try {
+      await sendVerificationEmail(user);
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      // Don't block signup if email fails
+    }
+
+    // Generate token pair (access + refresh)
+    const deviceInfo = {
+      userAgent: req.headers['user-agent'],
+      ipAddress: req.ip || req.socket.remoteAddress,
+    };
+    const tokens = await generateTokenPair(user, deviceInfo);
 
     res.status(201).json({
-      token,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
       user: {
         id: String(user._id),
         email: user.email,
@@ -135,6 +196,10 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
         agentId: user.agentId,
         licenseNumber: user.licenseNumber,
         isSubscribed: user.isSubscribed,
+        isEmailVerified: user.isEmailVerified,
+        trialActive: role === 'agent' ? user.isTrialActive() : false,
+        trialEndDate: role === 'agent' ? user.trialEndDate : undefined,
+        activeListingsLimit: user.getActiveListingsLimit(),
       },
     });
   } catch (error: any) {
@@ -163,14 +228,44 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     // Find user by email or phone
     let user;
+    const identifier = email ? email.toLowerCase() : phone?.trim();
+
     if (email) {
-      user = await User.findOne({ email: email.toLowerCase() });
+      user = await User.findOne({ email: identifier });
     } else if (phone) {
-      user = await User.findOne({ phone: phone.trim() });
+      user = await User.findOne({ phone: identifier });
     }
 
+    // Generic error message to prevent account enumeration
+    const invalidCredentialsMsg = 'Invalid credentials';
+
     if (!user) {
-      res.status(401).json({ message: 'Invalid credentials' });
+      // Use timing-safe comparison to prevent timing attacks
+      // Perform fake password comparison to maintain consistent response time
+      await User.findOne({ email: 'nonexistent@example.com' });
+      res.status(401).json({ message: invalidCredentialsMsg });
+      return;
+    }
+
+    // Check account-level rate limiting
+    const rateLimitResult = loginRateLimiterAccount(user.email);
+    if (!rateLimitResult.allowed) {
+      res.status(429).json({
+        message: 'Too many failed login attempts for this account. Please try again later.',
+        retryAfter: rateLimitResult.retryAfter,
+      });
+      return;
+    }
+
+    // Check if account is locked
+    if (user.isAccountLocked()) {
+      const lockTime = user.lockUntil!.getTime() - Date.now();
+      const minutesRemaining = Math.ceil(lockTime / (60 * 1000));
+
+      res.status(423).json({
+        message: `Account temporarily locked due to multiple failed login attempts. Please try again in ${minutesRemaining} minutes.`,
+        lockedUntil: user.lockUntil,
+      });
       return;
     }
 
@@ -186,15 +281,30 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const isMatch = await user.comparePassword(password);
 
     if (!isMatch) {
-      res.status(401).json({ message: 'Invalid credentials' });
+      // Increment failed login attempts
+      await user.incrementLoginAttempts();
+
+      res.status(401).json({ message: invalidCredentialsMsg });
       return;
     }
 
-    // Generate token
-    const token = generateToken(String(user._id));
+    // Password is correct - reset login attempts
+    await user.resetLoginAttempts();
+
+    // Reset account-level rate limit on successful login
+    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+    resetLoginRateLimit(user.email, clientIp);
+
+    // Generate token pair (access + refresh)
+    const deviceInfo = {
+      userAgent: req.headers['user-agent'],
+      ipAddress: clientIp,
+    };
+    const tokens = await generateTokenPair(user, deviceInfo);
 
     res.json({
-      token,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
       user: {
         id: String(user._id),
         email: user.email,
@@ -208,6 +318,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         agentId: user.agentId,
         licenseNumber: user.licenseNumber,
         isSubscribed: user.isSubscribed,
+        isEmailVerified: user.isEmailVerified,
+        trialActive: user.role === 'agent' ? user.isTrialActive() : false,
+        trialEndDate: user.role === 'agent' ? user.trialEndDate : undefined,
+        trialExpiring: user.role === 'agent' ? user.isTrialExpiring() : false,
+        activeListingsLimit: user.getActiveListingsLimit(),
       },
     });
   } catch (error: any) {
@@ -930,5 +1045,179 @@ export const uploadAvatar = async (
     if (!res.headersSent) {
       res.status(500).json({ message: 'Error uploading avatar', error: error.message });
     }
+  }
+};
+
+// @desc    Refresh access token
+// @route   POST /api/auth/refresh-token
+// @access  Public
+export const refreshToken = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { refreshToken: token } = req.body;
+
+    if (!token) {
+      res.status(400).json({ message: 'Refresh token is required' });
+      return;
+    }
+
+    const deviceInfo = {
+      userAgent: req.headers['user-agent'],
+      ipAddress: req.ip || req.socket.remoteAddress,
+    };
+
+    const { refreshAccessToken } = await import('../services/refreshTokenService');
+    const result = await refreshAccessToken(token, deviceInfo);
+
+    if (!result.success) {
+      res.status(401).json({ message: result.error || 'Invalid refresh token' });
+      return;
+    }
+
+    res.json({
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    });
+  } catch (error: any) {
+    console.error('Refresh token error:', error);
+    res.status(500).json({ message: 'Error refreshing token', error: error.message });
+  }
+};
+
+// @desc    Verify email with token
+// @route   POST /api/auth/verify-email
+// @access  Public
+export const verifyEmail = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      res.status(400).json({ message: 'Verification token is required' });
+      return;
+    }
+
+    const { verifyEmailToken, sendWelcomeEmail } = await import('../services/emailVerificationService');
+    const result = await verifyEmailToken(token);
+
+    if (!result.success) {
+      res.status(400).json({ message: result.message });
+      return;
+    }
+
+    // Send welcome email
+    if (result.user) {
+      try {
+        await sendWelcomeEmail(result.user);
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        // Don't block verification if email fails
+      }
+    }
+
+    res.json({
+      message: result.message,
+      user: result.user ? {
+        id: String(result.user._id),
+        email: result.user.email,
+        name: result.user.name,
+        isEmailVerified: result.user.isEmailVerified,
+      } : undefined,
+    });
+  } catch (error: any) {
+    console.error('Email verification error:', error);
+    res.status(500).json({ message: 'Error verifying email', error: error.message });
+  }
+};
+
+// @desc    Resend verification email
+// @route   POST /api/auth/resend-verification
+// @access  Public
+export const resendVerificationEmail = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      res.status(400).json({ message: 'Email is required' });
+      return;
+    }
+
+    const { resendVerificationEmail: resendEmail } = await import('../services/emailVerificationService');
+    const result = await resendEmail(email);
+
+    // Always return success to prevent account enumeration
+    res.json({ message: result.message });
+  } catch (error: any) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({ message: 'Error resending verification email', error: error.message });
+  }
+};
+
+// @desc    Logout user (revoke refresh token)
+// @route   POST /api/auth/logout
+// @access  Private
+export const enhancedLogout = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { refreshToken: token } = req.body;
+
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const userId = String((req.user as IUser)._id);
+
+    if (token) {
+      // Revoke specific refresh token
+      const { revokeRefreshToken } = await import('../services/refreshTokenService');
+      await revokeRefreshToken(userId, token);
+    }
+
+    res.json({ message: 'Logged out successfully' });
+  } catch (error: any) {
+    console.error('Logout error:', error);
+    res.status(500).json({ message: 'Error logging out', error: error.message });
+  }
+};
+
+// @desc    Logout from all devices
+// @route   POST /api/auth/logout-all
+// @access  Private
+export const logoutAllDevices = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const userId = String((req.user as IUser)._id);
+
+    const { revokeAllRefreshTokens } = await import('../services/refreshTokenService');
+    await revokeAllRefreshTokens(userId);
+
+    res.json({ message: 'Logged out from all devices successfully' });
+  } catch (error: any) {
+    console.error('Logout all devices error:', error);
+    res.status(500).json({ message: 'Error logging out', error: error.message });
+  }
+};
+
+// @desc    Get active sessions
+// @route   GET /api/auth/sessions
+// @access  Private
+export const getActiveSessions = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const userId = String((req.user as IUser)._id);
+
+    const { getActiveSessions: getSessions } = await import('../services/refreshTokenService');
+    const sessions = await getSessions(userId);
+
+    res.json({ sessions });
+  } catch (error: any) {
+    console.error('Get sessions error:', error);
+    res.status(500).json({ message: 'Error fetching sessions', error: error.message });
   }
 };
