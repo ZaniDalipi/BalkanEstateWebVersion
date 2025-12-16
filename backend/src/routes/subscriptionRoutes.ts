@@ -9,6 +9,7 @@ import {
   getSubscriptionEvents,
   getSubscriptionPayments,
   verifySubscription,
+  activateTestProSubscription,
 } from '../controllers/subscriptionController';
 import { protect } from '../middleware/auth';
 
@@ -21,6 +22,8 @@ router.use(protect);
 router.post('/', createSubscription);
 router.get('/', getUserSubscriptions);
 router.get('/current', getCurrentSubscription); // Must be before /:id to avoid conflict
+router.post('/activate-test-pro', activateTestProSubscription); // Development only - must be before /:id
+
 router.get('/:id', getSubscriptionById);
 router.post('/:id/cancel', cancelSubscription);
 router.post('/:id/restore', restoreSubscription);

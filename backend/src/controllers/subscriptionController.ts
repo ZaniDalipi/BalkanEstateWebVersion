@@ -561,3 +561,90 @@ export const verifySubscription = async (req: Request, res: Response): Promise<v
     res.status(500).json({ message: 'Error verifying subscription', error: error.message });
   }
 };
+
+/**
+ * @desc    Activate Pro subscription for testing (Development Only)
+ * @route   POST /api/subscriptions/activate-test-pro
+ * @access  Private
+ */
+export const activateTestProSubscription = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Only allow in development mode
+    if (process.env.NODE_ENV === 'production') {
+      res.status(403).json({ message: 'This endpoint is only available in development mode' });
+      return;
+    }
+
+    const userId = (req as any).user?._id;
+    const { plan = 'pro_monthly', durationMonths = 1 } = req.body;
+
+    if (!userId) {
+      res.status(401).json({ message: 'User not authenticated' });
+      return;
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Calculate expiration date
+    const startDate = new Date();
+    const expirationDate = new Date();
+    expirationDate.setMonth(expirationDate.getMonth() + durationMonths);
+
+    // Determine if user is agent
+    const isAgent = user.availableRoles?.includes('agent') || user.role === 'agent';
+
+    // Initialize/update Pro subscription
+    user.proSubscription = {
+      isActive: true,
+      plan: plan as 'pro_monthly' | 'pro_yearly',
+      expiresAt: expirationDate,
+      startedAt: startDate,
+      totalListingsLimit: 15,
+      activeListingsCount: user.proSubscription?.activeListingsCount || 0,
+      privateSellerCount: user.proSubscription?.privateSellerCount || 0,
+      agentCount: user.proSubscription?.agentCount || 0,
+      promotionCoupons: {
+        highlightCoupons: isAgent ? 2 : 0,
+        usedHighlightCoupons: user.proSubscription?.promotionCoupons?.usedHighlightCoupons || 0,
+      },
+    };
+
+    // Update legacy fields
+    user.isSubscribed = true;
+    user.subscriptionPlan = 'test_pro_subscription';
+    user.subscriptionProductName = `Test Pro ${plan === 'pro_monthly' ? 'Monthly' : 'Yearly'}`;
+    user.subscriptionExpiresAt = expirationDate;
+    user.subscriptionStartedAt = startDate;
+    user.subscriptionStatus = 'active';
+
+    await user.save();
+
+    console.log(`✅ Test Pro subscription activated for user ${user.email}`);
+    console.log(`   Plan: ${plan}`);
+    console.log(`   Expires: ${expirationDate.toISOString()}`);
+    console.log(`   Listings: ${user.proSubscription.activeListingsCount}/15`);
+    console.log(`   Highlight Coupons: ${user.proSubscription.promotionCoupons.highlightCoupons}`);
+
+    res.status(200).json({
+      message: 'Test Pro subscription activated successfully',
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        availableRoles: user.availableRoles,
+        proSubscription: user.proSubscription,
+        freeSubscription: user.freeSubscription,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error activating test Pro subscription:', error);
+    res.status(500).json({
+      message: 'Error activating test Pro subscription',
+      error: error.message,
+    });
+  }
+};
