@@ -370,12 +370,30 @@ export const createProperty = async (
       country: req.body.country,
     });
 
+    // Determine which role is being used to create this listing
+    const createdAsRole = req.body.createdAsRole || user.activeRole || user.role || 'private_seller';
+
+    // Validate user has access to the role they're trying to use
+    if (user.availableRoles && !user.availableRoles.includes(createdAsRole)) {
+      res.status(403).json({
+        message: `You do not have access to create listings as ${createdAsRole}`,
+        availableRoles: user.availableRoles
+      });
+      return;
+    }
+
     const propertyData = {
       ...req.body,
       sellerId: String(currentUser._id),
       // Add user identification for 1:1 relationship tracking
       createdByName: user.name,
       createdByEmail: user.email,
+      // Role context tracking
+      createdAsRole,
+      ...(createdAsRole === 'agent' && {
+        createdByAgencyName: user.agencyName,
+        createdByLicenseNumber: user.licenseNumber,
+      }),
       // Add geocoded coordinates (will be undefined if geocoding failed)
       ...(coordinates.lat && coordinates.lng && {
         lat: coordinates.lat,
@@ -384,9 +402,16 @@ export const createProperty = async (
     };
 
     console.log(`📍 Creating property with coordinates:`, coordinates.lat ? `${coordinates.lat}, ${coordinates.lng}` : 'No coordinates');
-    console.log(`👤 Property created by: ${user.name} (${user.email})`);
+    console.log(`👤 Property created by: ${user.name} (${user.email}) as ${createdAsRole}`);
 
     const property = await Property.create(propertyData);
+
+    // Update role-specific listing counts
+    if (createdAsRole === 'private_seller' && user.privateSellerSubscription) {
+      user.privateSellerSubscription.activeListingsCount = (user.privateSellerSubscription.activeListingsCount || 0) + 1;
+    } else if (createdAsRole === 'agent' && user.agentSubscription) {
+      user.agentSubscription.activeListingsCount = (user.agentSubscription.activeListingsCount || 0) + 1;
+    }
 
     // Update user listing counts
     user.listingsCount += 1;
