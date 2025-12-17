@@ -14,6 +14,7 @@ export interface IProduct extends Document {
   price: number;
   currency: string;
   billingPeriod?: BillingPeriod;
+  durationDays?: number; // Subscription validity in days (30 for monthly, 365 for yearly)
 
   // Store IDs
   googlePlayProductId?: string;
@@ -95,6 +96,10 @@ const ProductSchema: Schema = new Schema(
     billingPeriod: {
       type: String,
       enum: ['monthly', 'yearly', 'weekly', 'quarterly', 'one_time'],
+    },
+    durationDays: {
+      type: Number,
+      default: 30, // Default to 30 days (monthly)
     },
 
     // Store IDs

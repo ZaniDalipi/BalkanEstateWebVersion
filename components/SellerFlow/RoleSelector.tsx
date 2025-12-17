@@ -10,6 +10,18 @@ interface RoleSelectorProps {
 const RoleSelector: React.FC<RoleSelectorProps> = ({ currentUser, selectedRole, onRoleSelect }) => {
     const availableRoles = currentUser.availableRoles || [currentUser.role];
 
+    // Debug logging to diagnose subscription display issues
+    console.log('🔍 RoleSelector Debug:', {
+        userId: currentUser.id,
+        email: currentUser.email,
+        hasProSubscription: !!currentUser.proSubscription,
+        proIsActive: currentUser.proSubscription?.isActive,
+        proLimit: currentUser.proSubscription?.totalListingsLimit,
+        proUsed: currentUser.proSubscription?.activeListingsCount,
+        freeLimit: currentUser.freeSubscription?.listingsLimit,
+        freeUsed: currentUser.freeSubscription?.activeListingsCount,
+    });
+
     // Always show both agent and private_seller options
     const hasPrivateSeller = true; // Always show private seller option
     const hasAgent = true; // Always show agent option
