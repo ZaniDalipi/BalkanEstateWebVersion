@@ -377,7 +377,17 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const user = req.user as IUser;
+    const currentUser = req.user as IUser;
+
+    // CRITICAL: Fetch full user from database to get ALL fields including proSubscription
+    // req.user from middleware only has basic JWT payload data
+    const user = await User.findById(String(currentUser._id));
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
     res.json({
       user: {
         id: String(user._id),
