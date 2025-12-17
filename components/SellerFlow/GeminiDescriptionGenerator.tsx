@@ -302,7 +302,7 @@ const TriStateCheckbox: React.FC<{
 
 // --- Main Component ---
 const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> = ({ propertyToEdit }) => {
-    const { state, dispatch, updateUser, createListing, updateListing } = useAppContext();
+    const { state, dispatch, updateUser, createListing, updateListing, checkAuthStatus } = useAppContext();
     const { currentUser, properties, isPricingModalOpen, pendingProperty } = state;
     const [mode, setMode] = useState<Mode>('ai');
     const [step, setStep] = useState<Step>('init');
@@ -327,12 +327,19 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     // Drag & Drop State
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
-    
+
     // Location State
     const [selectedCountry, setSelectedCountry] = useState('');
     const [selectedCity, setSelectedCity] = useState('');
     const [availableCities, setAvailableCities] = useState<CityData[]>([]);
-    
+
+    // Refresh user data on component mount to ensure subscription data is up-to-date
+    useEffect(() => {
+        console.log('🔄 Refreshing user data to get latest subscription status...');
+        checkAuthStatus();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Empty dependency array - only run on mount
+
     // Track modal state to react to it closing
     const wasModalOpen = useRef(isPricingModalOpen);
     useEffect(() => {
