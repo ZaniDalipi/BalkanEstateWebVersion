@@ -720,11 +720,13 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             }));
             setStep('form');
         } catch (e) {
+            console.error('⚠️ AI description generation failed:', e);
             if (e instanceof Error) {
-                setError(e.message);
+                setError(`AI generation failed: ${e.message}. You can continue with manual entry instead.`);
             } else {
-                setError('An unexpected error occurred during AI generation.');
+                setError('AI generation is temporarily unavailable. You can continue with manual entry instead.');
             }
+            // Allow user to continue with manual entry by going back to init
             setStep('init');
         }
     };
@@ -869,7 +871,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             // Use the address from Property Location (map search) - do not duplicate city/country
             const finalAddress = listingData.streetAddress.trim();
 
-            // Calculate distances using Gemini AI
+            // Calculate distances using Gemini AI (optional - won't block listing creation)
             let distances = {
                 distanceToCenter: undefined,
                 distanceToSea: undefined,
@@ -894,8 +896,10 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 };
                 console.log('✅ Distances calculated:', distances);
             } catch (error) {
-                console.error('⚠️ Failed to calculate distances:', error);
+                console.warn('⚠️ Failed to calculate distances with Gemini AI. Listing will be created without distance information.');
+                console.error('Distance calculation error details:', error);
                 // Continue without distances - they will be undefined
+                // This is intentional - we don't want to block listing creation if Gemini API fails
             }
 
             console.log('✅ FINAL COORDINATES BEING SAVED TO PROPERTY:', { lat, lng });
