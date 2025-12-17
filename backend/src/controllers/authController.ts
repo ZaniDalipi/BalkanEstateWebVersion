@@ -385,6 +385,9 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
         name: user.name,
         phone: user.phone,
         role: user.role,
+        availableRoles: user.availableRoles,
+        activeRole: user.activeRole,
+        primaryRole: user.primaryRole,
         avatarUrl: user.avatarUrl,
         city: user.city,
         country: user.country,
@@ -392,6 +395,10 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
         agentId: user.agentId,
         licenseNumber: user.licenseNumber,
         isSubscribed: user.isSubscribed,
+        subscriptionPlan: user.subscriptionPlan,
+        subscriptionExpiresAt: user.subscriptionExpiresAt,
+        proSubscription: user.proSubscription,
+        freeSubscription: user.freeSubscription,
       },
     });
   } catch (error: any) {
