@@ -25,10 +25,22 @@ const PropertyLocationMap: React.FC<PropertyLocationMapProps> = ({ lat, lng, add
     }
 
     return (
-        <MapContainer center={[lat, lng]} zoom={15} scrollWheelZoom={false} className="w-full h-full rounded-lg">
+        <MapContainer
+            center={[lat, lng]}
+            zoom={15}
+            scrollWheelZoom={false}
+            className="w-full h-full rounded-lg"
+            preferCanvas={true}
+            updateWhenIdle={true}
+            updateWhenZooming={false}
+        >
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                keepBuffer={2}
+                updateWhenIdle={true}
+                updateWhenZooming={false}
+                updateInterval={150}
             />
             <Marker position={[lat, lng]}>
                 <Popup>

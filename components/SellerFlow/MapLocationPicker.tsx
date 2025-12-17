@@ -38,6 +38,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const streetLayerRef = useRef<L.TileLayer | null>(null);
   const satelliteLayerRef = useRef<L.TileLayer | null>(null);
+  const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Calculate distance between two coordinates in kilometers
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -54,25 +55,37 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    // Initialize map with broader zoom range for better navigation
+    // Initialize map with performance optimizations
     const map = L.map(mapContainerRef.current, {
       minZoom: 6,  // Allow zooming out to see entire region
       maxZoom: 19,
       zoomControl: true, // Enable zoom controls
+      preferCanvas: true, // Use canvas renderer for better performance
+      updateWhenIdle: true, // Only update map after user stops interacting
+      updateWhenZooming: false, // Don't update during zoom animation
+      keepBuffer: 2, // Keep 2 screens worth of tiles in buffer for smoother panning
     }).setView([lat, lng], zoom);
 
-    // Create street view layer (HOT tiles with building outlines)
+    // Create street view layer with performance optimizations
     const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team',
+      attribution: '© OpenStreetMap contributors',
       maxZoom: 19,
       minZoom: 6,
+      keepBuffer: 2, // Keep extra tiles loaded for smoother experience
+      updateWhenIdle: true, // Only load tiles when idle
+      updateWhenZooming: false, // Don't load tiles during zoom
+      updateInterval: 150, // Throttle tile loading
     });
 
-    // Create satellite view layer
+    // Create satellite view layer with performance optimizations
     const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: '© Esri, Maxar, Earthstar Geographics',
+      attribution: '© Esri, Maxar',
       maxZoom: 19,
       minZoom: 6,
+      keepBuffer: 2,
+      updateWhenIdle: true,
+      updateWhenZooming: false,
+      updateInterval: 150,
     });
 
     // Start with street layer
@@ -123,35 +136,30 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
     mapRef.current = map;
     markerRef.current = marker;
 
-    // Ensure map tiles load correctly when map is ready
-    map.whenReady(() => {
-      setTimeout(() => {
+    // Debounced resize function to prevent performance issues
+    const debouncedResize = () => {
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+      resizeTimeoutRef.current = setTimeout(() => {
         if (map && map.getContainer()) {
-          map.invalidateSize();
+          map.invalidateSize({ pan: false }); // Don't pan, just resize
         }
-      }, 0);
-    });
+      }, 150); // Debounce by 150ms
+    };
 
-    // Set up ResizeObserver to handle container size changes
-    // This fixes the "gray tiles" issue when the map container is resized
-    const resizeObserver = new ResizeObserver(() => {
-      setTimeout(() => {
-        if (map && map.getContainer()) {
-          map.invalidateSize();
-        }
-      }, 0);
-    });
+    // Set up ResizeObserver with debouncing to handle container size changes
+    const resizeObserver = new ResizeObserver(debouncedResize);
 
     const mapContainer = map.getContainer();
     if (mapContainer) {
       resizeObserver.observe(mapContainer);
     }
 
-    // Force initial resize after mount to ensure tiles load correctly
-    // This fixes issues where the map initializes before container has proper dimensions
+    // Single initial resize after mount
     const initialResizeTimer = setTimeout(() => {
       if (map && map.getContainer()) {
-        map.invalidateSize();
+        map.invalidateSize({ pan: false });
       }
     }, 100);
 
@@ -160,8 +168,12 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
       if (initialResizeTimer) {
         clearTimeout(initialResizeTimer);
       }
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
       if (mapContainer) {
         resizeObserver.unobserve(mapContainer);
+        resizeObserver.disconnect();
       }
       if (mapRef.current) {
         mapRef.current.remove();
@@ -171,7 +183,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
     };
   }, []); // Only run once on mount
 
-  // Update marker position when lat/lng changes externally with smooth animation
+  // Update marker position when lat/lng changes externally with optimized animation
   useEffect(() => {
     if (markerRef.current && mapRef.current && !isDragging) {
       const newLatLng = L.latLng(lat, lng);
@@ -183,35 +195,30 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
       // Update marker position
       markerRef.current.setLatLng(newLatLng);
 
-      // Only use flyTo animation for significant changes (> 100 meters)
-      if (distance > 100) {
+      // Use faster, simpler animations to reduce lag
+      if (distance > 500) {
+        // For large distances, use flyTo with shorter duration
         mapRef.current.flyTo(newLatLng, Math.max(zoom, 15), {
-          duration: 1.0,
-          easeLinearity: 0.25
+          duration: 0.8, // Reduced from 1.0
+          easeLinearity: 0.4 // Faster ease
         });
+      } else if (distance > 100) {
+        // For medium distances, use simple panTo
+        mapRef.current.panTo(newLatLng, { duration: 0.5 });
       } else {
+        // For small distances, instant move
         mapRef.current.setView(newLatLng, mapRef.current.getZoom(), { animate: false });
       }
 
       markerRef.current.setPopupContent(`<b>Drag me to adjust location</b><br>${address}`);
 
-      // Force map resize after location change to ensure tiles render correctly
-      const resizeTimer = setTimeout(() => {
-        if (mapRef.current && mapRef.current.getContainer()) {
-          mapRef.current.invalidateSize();
-        }
-      }, 0);
-
-      const popupDelay = distance > 100 ? 1100 : 0;
+      // Open popup after animation (no resize needed)
+      const popupDelay = distance > 500 ? 900 : (distance > 100 ? 550 : 0);
       setTimeout(() => {
         if (markerRef.current) {
           markerRef.current.openPopup();
         }
       }, popupDelay);
-
-      return () => {
-        clearTimeout(resizeTimer);
-      };
     }
   }, [lat, lng, address, zoom, isDragging]);
 
@@ -298,19 +305,12 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
       onAddressChange(locationName);
     }
 
-    // Fly to the location with appropriate zoom
+    // Fly to the location with optimized animation
     if (mapRef.current) {
       mapRef.current.flyTo([newLat, newLng], 16, {
-        duration: 1.5,
-        easeLinearity: 0.25
+        duration: 1.0, // Reduced from 1.5
+        easeLinearity: 0.4 // Faster ease
       });
-
-      // Force resize after flyTo animation completes
-      setTimeout(() => {
-        if (mapRef.current && mapRef.current.getContainer()) {
-          mapRef.current.invalidateSize();
-        }
-      }, 1600); // Slightly after animation duration
     }
 
     setSearchQuery(result.display_name);

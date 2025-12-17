@@ -51,21 +51,33 @@ const MapEvents: React.FC = () => {
   const map = useMap();
 
   useEffect(() => {
-    const resizeObserver = new ResizeObserver(() => {
-      setTimeout(() => {
-        map.invalidateSize();
-      }, 0);
-    });
+    let resizeTimeout: NodeJS.Timeout | null = null;
 
+    // Debounced resize function to prevent performance issues
+    const debouncedResize = () => {
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
+      resizeTimeout = setTimeout(() => {
+        map.invalidateSize({ pan: false }); // Don't pan, just resize
+      }, 150); // Debounce by 150ms
+    };
+
+    const resizeObserver = new ResizeObserver(debouncedResize);
     const mapContainer = map.getContainer();
     resizeObserver.observe(mapContainer);
 
+    // Single initial resize
     const timer = setTimeout(() => {
-      map.invalidateSize();
+      map.invalidateSize({ pan: false });
     }, 100);
 
     return () => {
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
       resizeObserver.unobserve(mapContainer);
+      resizeObserver.disconnect();
       clearTimeout(timer);
     };
   }, [map]);
@@ -118,6 +130,10 @@ const AgenciesMap: React.FC<AgenciesMapProps> = ({ agencies, onAgencyClick }) =>
         zoomControl={true}
         maxBounds={BALKAN_BOUNDS}
         maxBoundsViscosity={0.8}
+        preferCanvas={true}
+        updateWhenIdle={true}
+        updateWhenZooming={false}
+        keepBuffer={2}
       >
         <MapEvents />
         <TileLayer
@@ -130,6 +146,10 @@ const AgenciesMap: React.FC<AgenciesMapProps> = ({ agencies, onAgencyClick }) =>
             ? "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             : "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           }
+          keepBuffer={2}
+          updateWhenIdle={true}
+          updateWhenZooming={false}
+          updateInterval={150}
         />
 
         {validAgencies.map(agency => (

@@ -145,6 +145,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
         zoomControl={false}
         maxBounds={BALKAN_BOUNDS}
         maxBoundsViscosity={1.0}
+        preferCanvas={true}
+        updateWhenIdle={true}
+        updateWhenZooming={false}
+        keepBuffer={2}
       >
         <FlyToController target={flyToTarget} onComplete={onFlyComplete} />
         <MapEvents onMove={onMapMove} mapBounds={mapBounds} searchMode={searchMode} />
@@ -160,6 +164,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
           key={mapType}
           attribution={TILE_LAYERS[mapType].attribution}
           url={TILE_LAYERS[mapType].url}
+          keepBuffer={2}
+          updateWhenIdle={true}
+          updateWhenZooming={false}
+          updateInterval={150}
         />
         <CadastreLayer enabled={showCadastre && mapType === 'satellite'} opacity={0.7} />
         <Markers properties={propertiesInView} onPopupClick={handlePopupClick} hoveredPropertyId={hoveredPropertyId} />
