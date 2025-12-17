@@ -67,7 +67,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({ lat, lng, address
     }).setView([lat, lng], zoom);
 
     // Create street view layer with performance optimizations
-    const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+    const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
       maxZoom: 19,
       minZoom: 6,
