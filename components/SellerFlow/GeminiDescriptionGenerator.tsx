@@ -315,9 +315,26 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [wantToPromote, setWantToPromote] = useState(false);
     const [pendingPropertyData, setPendingPropertyData] = useState<Property | null>(null);
-    const [selectedRole, setSelectedRole] = useState<UserRole>(
-        currentUser?.activeRole || currentUser?.role || UserRole.PRIVATE_SELLER
-    );
+
+    // Smart role selection: If user is buyer, default to private_seller (buyers can't create listings)
+    // If user has agent in availableRoles, prefer agent. Otherwise use private_seller.
+    const getInitialRole = (): UserRole => {
+        const currentRole = currentUser?.activeRole || currentUser?.role;
+
+        // If current role is buyer, choose a valid seller role
+        if (currentRole === 'buyer' || currentRole === UserRole.BUYER) {
+            // Prefer agent if available, otherwise private_seller
+            if (currentUser?.availableRoles?.includes('agent')) {
+                return UserRole.AGENT;
+            }
+            return UserRole.PRIVATE_SELLER;
+        }
+
+        // Use current role if it's already a seller role
+        return currentRole as UserRole || UserRole.PRIVATE_SELLER;
+    };
+
+    const [selectedRole, setSelectedRole] = useState<UserRole>(getInitialRole());
 
     // Upload Progress State
     const [uploadProgress, setUploadProgress] = useState<number>(0);
