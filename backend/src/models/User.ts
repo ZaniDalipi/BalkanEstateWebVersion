@@ -114,9 +114,9 @@ export interface IUser extends Document {
     activeListingsCount: number; // Total active listings (private + agent combined)
     privateSellerCount: number; // Listings posted as private seller
     agentCount: number; // Listings posted as agent
-    // Agent-specific benefits
+    // Pro subscription benefits (for all Pro users)
     promotionCoupons?: {
-      highlightCoupons: number; // 2 starter highlight coupons for agents
+      highlightCoupons: number; // 2 starter highlight coupons for all Pro users
       usedHighlightCoupons: number;
     };
   };
@@ -469,7 +469,7 @@ const UserSchema: Schema = new Schema(
       promotionCoupons: {
         highlightCoupons: {
           type: Number,
-          default: 0, // 2 coupons given to agents
+          default: 0, // 2 coupons given to all Pro users (set when subscription activates)
         },
         usedHighlightCoupons: {
           type: Number,

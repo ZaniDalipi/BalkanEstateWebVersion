@@ -119,7 +119,7 @@ export const createSubscription = async (req: Request, res: Response): Promise<v
       privateSellerCount: 0,
       agentCount: 0,
       promotionCoupons: {
-        highlightCoupons: isAgent ? (product.highlightCoupons || 2) : 0,
+        highlightCoupons: product.highlightCoupons || 2, // All Pro users get 2 coupons
         usedHighlightCoupons: 0,
       },
     };
@@ -608,7 +608,7 @@ export const activateTestProSubscription = async (req: Request, res: Response): 
       privateSellerCount: user.proSubscription?.privateSellerCount || 0,
       agentCount: user.proSubscription?.agentCount || 0,
       promotionCoupons: {
-        highlightCoupons: isAgent ? 2 : 0,
+        highlightCoupons: 2, // All Pro users get 2 coupons
         usedHighlightCoupons: user.proSubscription?.promotionCoupons?.usedHighlightCoupons || 0,
       },
     };
@@ -695,7 +695,7 @@ export const syncProSubscription = async (req: Request, res: Response): Promise<
         privateSellerCount: user.proSubscription?.privateSellerCount || 0,
         agentCount: user.proSubscription?.agentCount || 0,
         promotionCoupons: {
-          highlightCoupons: isAgent ? (product?.highlightCoupons || 2) : 0,
+          highlightCoupons: product?.highlightCoupons || 2, // All Pro users get 2 coupons
           usedHighlightCoupons: user.proSubscription?.promotionCoupons?.usedHighlightCoupons || 0,
         },
       };
