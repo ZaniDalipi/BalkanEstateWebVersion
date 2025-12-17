@@ -627,7 +627,7 @@ export const activateTestProSubscription = async (req: Request, res: Response): 
     console.log(`   Plan: ${plan}`);
     console.log(`   Expires: ${expirationDate.toISOString()}`);
     console.log(`   Listings: ${user.proSubscription.activeListingsCount}/15`);
-    console.log(`   Highlight Coupons: ${user.proSubscription.promotionCoupons.highlightCoupons}`);
+    console.log(`   Highlight Coupons: ${user.proSubscription.promotionCoupons?.highlightCoupons || 0}`);
 
     res.status(200).json({
       message: 'Test Pro subscription activated successfully',
