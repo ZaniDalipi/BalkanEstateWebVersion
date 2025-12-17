@@ -858,6 +858,8 @@ function transformToBackendProperty(frontendProp: Property): any {
     floorNumber: frontendProp.floorNumber,
     totalFloors: frontendProp.totalFloors,
     floorplanUrl: frontendProp.floorplanUrl,
+    // Dual-role system
+    createdAsRole: frontendProp.createdAsRole,
     // Advanced property features
     furnishing: frontendProp.furnishing,
     heatingType: frontendProp.heatingType,
