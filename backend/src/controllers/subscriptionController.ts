@@ -108,7 +108,6 @@ export const createSubscription = async (req: Request, res: Response): Promise<v
     user.subscriptionExpiresAt = expirationDate;
 
     // Initialize unified Pro subscription
-    const isAgent = user.availableRoles?.includes('agent') || user.role === 'agent';
     user.proSubscription = {
       isActive: true,
       plan: product.billingPeriod === 'monthly' ? 'pro_monthly' : 'pro_yearly',
@@ -594,9 +593,6 @@ export const activateTestProSubscription = async (req: Request, res: Response): 
     const expirationDate = new Date();
     expirationDate.setMonth(expirationDate.getMonth() + durationMonths);
 
-    // Determine if user is agent
-    const isAgent = user.availableRoles?.includes('agent') || user.role === 'agent';
-
     // Initialize/update Pro subscription
     user.proSubscription = {
       isActive: true,
@@ -681,8 +677,6 @@ export const syncProSubscription = async (req: Request, res: Response): Promise<
 
       // Get product details for benefits
       const product = await Product.findOne({ productId: activeSubscription.productId });
-
-      const isAgent = user.availableRoles?.includes('agent') || user.role === 'agent';
 
       // Update/initialize proSubscription based on active subscription
       user.proSubscription = {
