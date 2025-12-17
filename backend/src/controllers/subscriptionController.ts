@@ -648,3 +648,85 @@ export const activateTestProSubscription = async (req: Request, res: Response): 
     });
   }
 };
+
+/**
+ * @desc    Fix/sync user's proSubscription with active Subscription documents
+ * @route   POST /api/subscriptions/sync-pro
+ * @access  Private
+ */
+export const syncProSubscription = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = (req as any).user?._id;
+
+    if (!userId) {
+      res.status(401).json({ message: 'User not authenticated' });
+      return;
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Find any active subscription for this user
+    const activeSubscription = await Subscription.findOne({
+      userId,
+      status: 'active',
+      expirationDate: { $gt: new Date() }
+    }).sort({ expirationDate: -1 });
+
+    if (activeSubscription) {
+      console.log(`🔄 Syncing Pro subscription for user ${user.email}`);
+
+      // Get product details for benefits
+      const product = await Product.findOne({ productId: activeSubscription.productId });
+
+      const isAgent = user.availableRoles?.includes('agent') || user.role === 'agent';
+
+      // Update/initialize proSubscription based on active subscription
+      user.proSubscription = {
+        isActive: true, // 🔥 THIS IS THE FIX
+        plan: activeSubscription.productId.includes('yearly') ? 'pro_yearly' : 'pro_monthly',
+        expiresAt: activeSubscription.expirationDate,
+        startedAt: activeSubscription.startDate,
+        totalListingsLimit: product?.listingsLimit || 15,
+        activeListingsCount: user.proSubscription?.activeListingsCount || 0,
+        privateSellerCount: user.proSubscription?.privateSellerCount || 0,
+        agentCount: user.proSubscription?.agentCount || 0,
+        promotionCoupons: {
+          highlightCoupons: isAgent ? (product?.highlightCoupons || 2) : 0,
+          usedHighlightCoupons: user.proSubscription?.promotionCoupons?.usedHighlightCoupons || 0,
+        },
+      };
+
+      user.isSubscribed = true;
+      user.subscriptionPlan = activeSubscription.productId;
+      user.subscriptionExpiresAt = activeSubscription.expirationDate;
+
+      await user.save();
+
+      console.log(`✅ Pro subscription synced! isActive: ${user.proSubscription.isActive}`);
+
+      res.status(200).json({
+        message: 'Pro subscription synced successfully',
+        user: {
+          id: user._id,
+          email: user.email,
+          proSubscription: user.proSubscription,
+        },
+      });
+    } else {
+      res.status(404).json({
+        message: 'No active subscription found',
+        hint: 'Use /api/subscriptions/activate-test-pro to create a test subscription'
+      });
+    }
+  } catch (error: any) {
+    console.error('Error syncing Pro subscription:', error);
+    res.status(500).json({
+      message: 'Error syncing Pro subscription',
+      error: error.message,
+    });
+  }
+};
