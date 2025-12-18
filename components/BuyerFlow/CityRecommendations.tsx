@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { getFeaturedCities, CityMarketData } from '../../services/apiService';
 import { formatPrice } from '../../utils/currency';
-import { MapPinIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon, ChartBarIcon, CalendarIcon, HomeIcon, SparklesIcon } from '../../constants';
+import { MapPinIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon, ChartBarIcon, CalendarIcon, HomeIcon, SparklesIcon, FireIcon, TrendingUpIcon, StarIcon, BuildingOfficeIcon } from '../../constants';
 import { useAppContext } from '../../context/AppContext';
+import Footer from '../shared/Footer';
 
 const CityRecommendations: React.FC = () => {
   const [cities, setCities] = useState<CityMarketData[]>([]);
@@ -167,18 +168,59 @@ const CityRecommendations: React.FC = () => {
   }
 
   return (
-    <div className="p-4 sm:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <SparklesIcon className="w-8 h-8 text-primary" />
-            <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900">Explore Cities</h2>
+    <div className="min-h-screen bg-neutral-50">
+      <div className="p-4 sm:p-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header with Stats */}
+          <div className="mb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <SparklesIcon className="w-8 h-8 text-primary" />
+                  <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900">Explore Balkan Cities</h2>
+                </div>
+                <p className="text-neutral-600 text-sm sm:text-base">
+                  AI-powered market insights for {cities.length} major cities across 10 countries
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Stats Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white rounded-lg p-4 border border-neutral-200">
+                <div className="flex items-center gap-2 mb-1">
+                  <MapPinIcon className="w-4 h-4 text-primary" />
+                  <span className="text-xs text-neutral-500 font-medium">Total Cities</span>
+                </div>
+                <p className="text-2xl font-bold text-neutral-900">{cities.length}</p>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-neutral-200">
+                <div className="flex items-center gap-2 mb-1">
+                  <BuildingOfficeIcon className="w-4 h-4 text-green-600" />
+                  <span className="text-xs text-neutral-500 font-medium">Countries</span>
+                </div>
+                <p className="text-2xl font-bold text-neutral-900">{countries.length}</p>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-neutral-200">
+                <div className="flex items-center gap-2 mb-1">
+                  <ArrowTrendingUpIcon className="w-4 h-4 text-green-600" />
+                  <span className="text-xs text-neutral-500 font-medium">Avg. Growth</span>
+                </div>
+                <p className="text-2xl font-bold text-green-600">
+                  +{(cities.reduce((sum, c) => sum + c.priceGrowthYoY, 0) / cities.length).toFixed(1)}%
+                </p>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-neutral-200">
+                <div className="flex items-center gap-2 mb-1">
+                  <HomeIcon className="w-4 h-4 text-primary" />
+                  <span className="text-xs text-neutral-500 font-medium">Total Listings</span>
+                </div>
+                <p className="text-2xl font-bold text-neutral-900">
+                  {cities.reduce((sum, c) => sum + c.listingsCount, 0).toLocaleString()}
+                </p>
+              </div>
+            </div>
           </div>
-          <p className="text-neutral-600 text-sm sm:text-base">
-            Discover the best real estate markets across the Balkans with AI-powered market insights
-          </p>
-        </div>
 
         {/* Country Filter */}
         <div className="mb-6 flex flex-wrap gap-2">
@@ -235,6 +277,18 @@ const CityRecommendations: React.FC = () => {
                 </div>
               </div>
 
+              {/* Score Badges */}
+              <div className="flex gap-2 mb-4">
+                <div className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg text-xs font-semibold">
+                  <FireIcon className="w-4 h-4" />
+                  Demand: {city.demandScore}/100
+                </div>
+                <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-semibold">
+                  <StarIcon className="w-4 h-4" />
+                  Investment: {city.investmentScore}/100
+                </div>
+              </div>
+
               {/* Key Metrics */}
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between items-center">
@@ -263,16 +317,42 @@ const CityRecommendations: React.FC = () => {
                     {city.rentalYield}%
                   </span>
                 </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-neutral-600">Days on Market</span>
+                  <span className="text-base font-semibold text-neutral-700">
+                    {city.averageDaysOnMarket} days
+                  </span>
+                </div>
               </div>
+
+              {/* Top Neighborhoods */}
+              {city.topNeighborhoods && city.topNeighborhoods.length > 0 && (
+                <div className="border-t border-neutral-100 pt-3 mb-3">
+                  <h4 className="text-xs font-semibold text-neutral-500 uppercase mb-2 flex items-center gap-1">
+                    <BuildingOfficeIcon className="w-3.5 h-3.5" />
+                    Top Neighborhoods
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {city.topNeighborhoods.slice(0, 3).map((neighborhood, idx) => (
+                      <span key={idx} className="inline-block bg-primary/5 text-primary text-xs px-2 py-1 rounded-md font-medium">
+                        {neighborhood}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Highlights */}
               {city.highlights && city.highlights.length > 0 && (
-                <div className="border-t border-neutral-100 pt-4">
-                  <h4 className="text-xs font-semibold text-neutral-500 uppercase mb-2">Highlights</h4>
-                  <ul className="space-y-1">
-                    {city.highlights.slice(0, 2).map((highlight, idx) => (
-                      <li key={idx} className="text-sm text-neutral-700 flex items-start gap-2">
-                        <span className="text-primary mt-1">•</span>
+                <div className="border-t border-neutral-100 pt-3">
+                  <h4 className="text-xs font-semibold text-neutral-500 uppercase mb-2 flex items-center gap-1">
+                    <SparklesIcon className="w-3.5 h-3.5" />
+                    Market Insights
+                  </h4>
+                  <ul className="space-y-1.5">
+                    {city.highlights.slice(0, 3).map((highlight, idx) => (
+                      <li key={idx} className="text-xs text-neutral-700 flex items-start gap-2">
+                        <span className="text-primary mt-0.5 font-bold">•</span>
                         <span className="flex-1">{highlight}</span>
                       </li>
                     ))}
@@ -281,14 +361,14 @@ const CityRecommendations: React.FC = () => {
               )}
 
               {/* Stats Footer */}
-              <div className="border-t border-neutral-100 pt-4 mt-4 flex items-center justify-between text-xs text-neutral-500">
+              <div className="border-t border-neutral-100 pt-3 mt-3 flex items-center justify-between text-xs text-neutral-500">
                 <div className="flex items-center gap-1">
                   <HomeIcon className="w-4 h-4" />
                   <span>{city.listingsCount} listings</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <CalendarIcon className="w-4 h-4" />
-                  <span>{city.averageDaysOnMarket} days avg.</span>
+                  <span>{city.soldLastMonth} sold/mo</span>
                 </div>
               </div>
             </button>
@@ -297,18 +377,31 @@ const CityRecommendations: React.FC = () => {
 
         {/* Data Freshness Note */}
         {cities.length > 0 && (
-          <div className="mt-8 text-center">
-            <p className="text-xs text-neutral-500">
-              Market data is updated twice monthly using AI-powered analysis.
-              Last updated: {new Date(cities[0].lastUpdated).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </p>
+          <div className="mt-8 p-6 bg-white rounded-xl border border-neutral-200">
+            <div className="flex items-start gap-3">
+              <SparklesIcon className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-semibold text-neutral-900 mb-1">AI-Powered Market Intelligence</h4>
+                <p className="text-sm text-neutral-600 mb-2">
+                  Our market data is powered by Gemini AI and updated twice monthly (1st and 15th).
+                  We analyze real-time market trends, property prices, demand indicators, and local insights
+                  across {cities.length} major cities in the Balkans.
+                </p>
+                <p className="text-xs text-neutral-500">
+                  Last updated: {new Date(cities[0].lastUpdated).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })} • Data source: Gemini AI + Local Property Databases
+                </p>
+              </div>
+            </div>
           </div>
         )}
+        </div>
       </div>
+
+      <Footer />
     </div>
   );
 };
