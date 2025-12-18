@@ -1,8 +1,8 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import CityMarketData, { ICityMarketData } from '../models/CityMarketData';
 import Property from '../models/Property';
 
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || '' });
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY || '');
 
 interface CityDataFromGemini {
   city: string;
@@ -285,16 +285,10 @@ Guidelines:
 Return only the JSON array, no other text.`;
 
   try {
-    const result = await genAI.models.generateContent({
-      model: 'gemini-1.5-flash', // Use flash for cost efficiency
-      contents: prompt,
-    });
-
-    if (!result.text) {
-      throw new Error('No text returned from Gemini API');
-    }
-
-    const responseText = result.text;
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const responseText = response.text();
 
     // Extract JSON from response (remove markdown code blocks if present)
     const jsonMatch = responseText.match(/\[[\s\S]*\]/);
