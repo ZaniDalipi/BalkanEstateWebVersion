@@ -5,7 +5,7 @@ import {
   getCityMarketDataController,
   triggerMarketDataUpdateController,
 } from '../controllers/cityMarketDataController';
-import { protect } from '../middleware/authMiddleware';
+import { protect } from '../middleware/auth';
 
 const router = express.Router();
 
