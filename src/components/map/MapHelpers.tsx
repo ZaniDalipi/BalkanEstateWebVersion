@@ -109,7 +109,16 @@ export const MapEvents: React.FC<{
 
   useMapEvents({
     load: () => {
+      // Initial load - call onMove immediately to set up initial bounds
       onMove(map.getBounds(), map.getCenter());
+
+      // Force map to invalidate size and re-render layers after a short delay
+      // This ensures markers render properly on first load
+      setTimeout(() => {
+        map.invalidateSize();
+        // Trigger a moveend event to ensure everything updates
+        map.fire('moveend');
+      }, 150);
     },
     moveend: () => {
       onMove(map.getBounds(), map.getCenter());
