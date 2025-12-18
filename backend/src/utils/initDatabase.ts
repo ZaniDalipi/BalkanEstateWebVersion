@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import CityMarketData from '../models/CityMarketData';
+import { updateAllCityMarketData } from '../services/cityMarketDataService';
 
 export const initializeDatabase = async (): Promise<void> => {
   try {
@@ -35,6 +37,31 @@ export const initializeDatabase = async (): Promise<void> => {
       }
     } else {
       console.log('✅ User indexes are up to date');
+    }
+
+    // Initialize city market data if empty
+    try {
+      const cityCount = await CityMarketData.countDocuments();
+      if (cityCount === 0) {
+        console.log('🌱 No city market data found. Initializing database with Balkan cities...');
+        console.log('   This may take 1-2 minutes depending on API rate limits.');
+
+        // Run initial seed in background to avoid blocking server startup
+        setTimeout(async () => {
+          try {
+            await updateAllCityMarketData();
+            console.log('✅ City market data initialized successfully!');
+            console.log('   Data will be refreshed automatically on 1st and 15th of each month.');
+          } catch (error) {
+            console.error('❌ Failed to initialize city data:', error);
+            console.warn('   City data will be populated during next scheduled update.');
+          }
+        }, 5000); // 5 second delay to let server fully start first
+      } else {
+        console.log(`✅ City market data loaded (${cityCount} cities)`);
+      }
+    } catch (error) {
+      console.error('❌ Error checking city market data:', error);
     }
   } catch (error) {
     console.error('❌ Error initializing database:', error);
