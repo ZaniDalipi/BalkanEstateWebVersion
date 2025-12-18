@@ -14,6 +14,7 @@
     "@tanstack/react-query-devtools": "^5.91.1",
     "browser-image-compression": "^2.0.2",
     "framer-motion": "^12.23.25",
+    "generative-ai": "^0.1.4",
     "heroku": "^8.7.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.553.0",
