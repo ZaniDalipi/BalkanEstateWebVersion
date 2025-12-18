@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Property, PropertyStatus } from '../../types';
 import { formatPrice } from '../../utils/currency';
 import { useAppContext } from '../../context/AppContext';
@@ -143,7 +143,6 @@ const FilterPill: React.FC<{
 
 const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
     const { state, dispatch } = useAppContext();
-    const { isLoadingProperties } = state;
     const [showSoldConfirm, setShowSoldConfirm] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [propertyToMarkSold, setPropertyToMarkSold] = useState<string | null>(null);
@@ -151,10 +150,32 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
     const [statusFilter, setStatusFilter] = useState<PropertyStatus | 'all'>('all');
     const [showPromotionModal, setShowPromotionModal] = useState(false);
     const [propertyToPromote, setPropertyToPromote] = useState<Property | null>(null);
-    
-    const myProperties = useMemo(() => 
-        state.properties.filter(p => p.sellerId === sellerId)
-    , [state.properties, sellerId]);
+    const [myProperties, setMyProperties] = useState<Property[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Fetch role-specific listings from API
+    useEffect(() => {
+        const fetchMyListings = async () => {
+            setIsLoading(true);
+            try {
+                const activeRole = state.currentUser?.activeRole;
+                console.log(`🔄 Fetching listings for role: ${activeRole}`);
+
+                // Fetch listings filtered by the active role
+                const listings = await api.getMyListings(activeRole);
+                console.log(`✅ Fetched ${listings.length} listings for ${activeRole} role`);
+
+                setMyProperties(listings);
+            } catch (error) {
+                console.error('Failed to fetch listings:', error);
+                setMyProperties([]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchMyListings();
+    }, [state.currentUser?.activeRole]); // Re-fetch when activeRole changes
 
     const filteredAndSortedProperties = useMemo(() => {
         const filtered = statusFilter === 'all'
@@ -169,6 +190,11 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
 
     const handleRenew = (id: string) => {
         dispatch({ type: 'RENEW_PROPERTY', payload: id });
+
+        // Update local state with new lastRenewed timestamp
+        setMyProperties(prev => prev.map(p =>
+            p.id === id ? { ...p, lastRenewed: new Date() } : p
+        ));
     };
 
     const handleMarkAsSoldClick = (id: string) => {
@@ -181,6 +207,11 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
             try {
                 await api.markPropertyAsSold(propertyToMarkSold);
                 dispatch({ type: 'MARK_PROPERTY_SOLD', payload: propertyToMarkSold });
+
+                // Update local state
+                setMyProperties(prev => prev.map(p =>
+                    p.id === propertyToMarkSold ? { ...p, status: 'sold' as PropertyStatus } : p
+                ));
             } catch (error) {
                 console.error('Failed to mark property as sold:', error);
             }
@@ -199,6 +230,9 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
             try {
                 await api.deleteProperty(propertyToDelete);
                 dispatch({ type: 'DELETE_PROPERTY', payload: propertyToDelete });
+
+                // Remove from local state
+                setMyProperties(prev => prev.filter(p => p.id !== propertyToDelete));
             } catch (error) {
                 console.error('Failed to delete property:', error);
             }
@@ -215,11 +249,19 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
         }
     };
 
-    const handlePromotionSuccess = () => {
+    const handlePromotionSuccess = async () => {
         // Refresh properties to show updated promotion status
-        // The property will be updated by the API
         setShowPromotionModal(false);
         setPropertyToPromote(null);
+
+        // Re-fetch listings to get updated promotion status
+        try {
+            const activeRole = state.currentUser?.activeRole;
+            const listings = await api.getMyListings(activeRole);
+            setMyProperties(listings);
+        } catch (error) {
+            console.error('Failed to refresh listings:', error);
+        }
     };
 
     const filterOptions: { label: string, value: PropertyStatus | 'all' }[] = [
@@ -294,7 +336,7 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
                 ))}
             </div>
 
-            {isLoadingProperties ? (
+            {isLoading ? (
                 <div className="space-y-4">
                     <ListingCardSkeleton />
                     <ListingCardSkeleton />
