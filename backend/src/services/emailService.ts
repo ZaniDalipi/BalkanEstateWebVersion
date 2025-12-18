@@ -8,21 +8,39 @@ interface EmailConfig {
 }
 
 class EmailService {
-  private transporter: nodemailer.Transporter;
+  private transporter: nodemailer.Transporter | null;
+  private isConfigured: boolean;
 
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+    // Check if SMTP credentials are configured
+    this.isConfigured = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
+
+    if (this.isConfigured) {
+      this.transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.SMTP_PORT || '587'),
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+      console.log('✉️ Email service configured and ready');
+    } else {
+      this.transporter = null;
+      console.warn('⚠️ Email service not configured - SMTP credentials missing. Emails will be skipped in development mode.');
+    }
   }
 
   async sendEmail(config: EmailConfig): Promise<void> {
+    // Skip email sending if not configured (development mode)
+    if (!this.isConfigured || !this.transporter) {
+      console.log('📧 [DEV MODE] Email skipped (no SMTP configured):');
+      console.log(`   To: ${config.to}`);
+      console.log(`   Subject: ${config.subject}`);
+      return; // Don't throw error, just skip
+    }
+
     try {
       await this.transporter.sendMail({
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
@@ -31,9 +49,9 @@ class EmailService {
         html: config.html,
         text: config.text || '',
       });
-      console.log('Email sent to ' + config.to + ': ' + config.subject);
+      console.log('✅ Email sent to ' + config.to + ': ' + config.subject);
     } catch (error) {
-      console.error('Email sending failed:', error);
+      console.error('❌ Email sending failed:', error);
       throw error;
     }
   }
