@@ -191,7 +191,7 @@ const ProductSchema: Schema = new Schema(
     // Subscription Benefits
     listingsLimit: {
       type: Number,
-      default: 15, // Default to 15 for Pro subscriptions
+      default: 999999, // Default to unlimited for Pro subscriptions
     },
     highlightCoupons: {
       type: Number,

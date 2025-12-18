@@ -284,6 +284,51 @@ export const createProperty = async (
       return;
     }
 
+    // **AUTO-SYNC: Check if user has active subscription in database but proSubscription not synced**
+    const Subscription = (await import('../models/Subscription')).default;
+    const activeSubscription = await Subscription.findOne({
+      userId: user._id,
+      status: 'active',
+      expirationDate: { $gt: new Date() }
+    }).sort({ expirationDate: -1 });
+
+    // If user has active subscription but proSubscription not set, sync it now
+    if (activeSubscription && (!user.proSubscription || !user.proSubscription.isActive)) {
+      console.log(`🔄 Auto-syncing Pro subscription for user ${user.email}`);
+
+      const Product = (await import('../models/Product')).default;
+      const product = await Product.findOne({ productId: activeSubscription.productId });
+
+      user.proSubscription = {
+        isActive: true,
+        plan: activeSubscription.productId.includes('yearly') ? 'pro_yearly' : 'pro_monthly',
+        expiresAt: activeSubscription.expirationDate,
+        startedAt: activeSubscription.startDate,
+        totalListingsLimit: product?.listingsLimit || 999999, // Unlimited listings
+        activeListingsCount: user.proSubscription?.activeListingsCount || 0,
+        privateSellerCount: user.proSubscription?.privateSellerCount || 0,
+        agentCount: user.proSubscription?.agentCount || 0,
+        promotionCoupons: {
+          highlightCoupons: product?.highlightCoupons || 2,
+          usedHighlightCoupons: user.proSubscription?.promotionCoupons?.usedHighlightCoupons || 0,
+        },
+      };
+
+      user.isSubscribed = true;
+      user.subscriptionPlan = activeSubscription.productId;
+      user.subscriptionExpiresAt = activeSubscription.expirationDate;
+
+      await user.save();
+      console.log(`✅ Pro subscription auto-synced! User can now create unlimited listings.`);
+    }
+
+    // Check if Pro subscription is expired
+    if (user.proSubscription?.isActive && user.proSubscription.expiresAt && user.proSubscription.expiresAt < new Date()) {
+      user.proSubscription.isActive = false;
+      await user.save();
+      console.log(`⏰ Pro subscription expired for user ${user.email}`);
+    }
+
     // Determine which role is being used to create this listing
     const createdAsRole = req.body.createdAsRole || user.activeRole || user.role || 'private_seller';
 
@@ -306,37 +351,29 @@ export const createProperty = async (
         });
         return;
       }
-
-      // Check if Pro subscription is expired
-      if (user.proSubscription.expiresAt && user.proSubscription.expiresAt < new Date()) {
-        user.proSubscription.isActive = false;
-        await user.save();
-
-        res.status(403).json({
-          message: 'Your Pro subscription has expired. Please renew to continue posting as an agent.',
-          code: 'PRO_SUBSCRIPTION_EXPIRED',
-        });
-        return;
-      }
     }
 
     // Check listing limits based on subscription type
     let currentCount = 0;
     let limit = 0;
+    let hasProSubscription = user.proSubscription && user.proSubscription.isActive;
 
-    if (user.proSubscription && user.proSubscription.isActive) {
-      // Pro user - check unified counter (shared across both roles)
-      currentCount = user.proSubscription.activeListingsCount || 0;
-      limit = user.proSubscription.totalListingsLimit || 15;
+    if (hasProSubscription) {
+      // Pro user - UNLIMITED listings (or very high limit)
+      currentCount = user.proSubscription?.activeListingsCount || 0;
+      limit = user.proSubscription?.totalListingsLimit || 999999; // Effectively unlimited
 
-      if (currentCount >= limit) {
+      console.log(`✅ Pro User ${user.email}: Creating listing (${currentCount + 1}/${limit === 999999 ? 'unlimited' : limit})`);
+
+      // Only enforce limit if it's not effectively unlimited
+      if (limit < 999999 && currentCount >= limit) {
         res.status(403).json({
-          message: `You have reached your Pro limit of ${limit} active listings. The limit is shared between private seller and agent roles. Please delete some listings or upgrade.`,
+          message: `You have reached your Pro limit of ${limit} active listings. The limit is shared between private seller and agent roles.`,
           code: 'PRO_LISTING_LIMIT_REACHED',
           limit,
           current: currentCount,
-          privateSellerCount: user.proSubscription.privateSellerCount || 0,
-          agentCount: user.proSubscription.agentCount || 0,
+          privateSellerCount: user.proSubscription?.privateSellerCount || 0,
+          agentCount: user.proSubscription?.agentCount || 0,
         });
         return;
       }
@@ -350,13 +387,22 @@ export const createProperty = async (
         return;
       }
 
-      // Free private seller - use freeSubscription
-      currentCount = user.freeSubscription?.activeListingsCount || 0;
-      limit = user.freeSubscription?.listingsLimit || 3;
+      // Free private seller - use freeSubscription (3 listings max)
+      if (!user.freeSubscription) {
+        user.freeSubscription = {
+          activeListingsCount: 0,
+          listingsLimit: 3,
+        };
+      }
+
+      currentCount = user.freeSubscription.activeListingsCount || 0;
+      limit = user.freeSubscription.listingsLimit || 3;
+
+      console.log(`📊 Free User ${user.email}: Creating listing (${currentCount + 1}/${limit})`);
 
       if (currentCount >= limit) {
         res.status(403).json({
-          message: `You have reached your free limit of ${limit} active listings. Please subscribe to Pro to create more listings.`,
+          message: `You have reached your free limit of ${limit} active listings. Subscribe to Pro for unlimited listings!`,
           code: 'FREE_LISTING_LIMIT_REACHED',
           limit,
           current: currentCount,

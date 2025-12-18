@@ -107,13 +107,13 @@ export const createSubscription = async (req: Request, res: Response): Promise<v
     user.subscriptionPlan = product.productId;
     user.subscriptionExpiresAt = expirationDate;
 
-    // Initialize unified Pro subscription
+    // Initialize unified Pro subscription with UNLIMITED listings
     user.proSubscription = {
       isActive: true,
       plan: product.billingPeriod === 'monthly' ? 'pro_monthly' : 'pro_yearly',
       expiresAt: expirationDate,
       startedAt: startDate,
-      totalListingsLimit: product.listingsLimit || 15,
+      totalListingsLimit: product.listingsLimit || 999999, // Unlimited listings for Pro
       activeListingsCount: 0,
       privateSellerCount: 0,
       agentCount: 0,
@@ -593,13 +593,13 @@ export const activateTestProSubscription = async (req: Request, res: Response): 
     const expirationDate = new Date();
     expirationDate.setMonth(expirationDate.getMonth() + durationMonths);
 
-    // Initialize/update Pro subscription
+    // Initialize/update Pro subscription with UNLIMITED listings
     user.proSubscription = {
       isActive: true,
       plan: plan as 'pro_monthly' | 'pro_yearly',
       expiresAt: expirationDate,
       startedAt: startDate,
-      totalListingsLimit: 15,
+      totalListingsLimit: 999999, // Unlimited listings for Pro
       activeListingsCount: user.proSubscription?.activeListingsCount || 0,
       privateSellerCount: user.proSubscription?.privateSellerCount || 0,
       agentCount: user.proSubscription?.agentCount || 0,
@@ -678,13 +678,13 @@ export const syncProSubscription = async (req: Request, res: Response): Promise<
       // Get product details for benefits
       const product = await Product.findOne({ productId: activeSubscription.productId });
 
-      // Update/initialize proSubscription based on active subscription
+      // Update/initialize proSubscription based on active subscription with UNLIMITED listings
       user.proSubscription = {
         isActive: true, // 🔥 THIS IS THE FIX
         plan: activeSubscription.productId.includes('yearly') ? 'pro_yearly' : 'pro_monthly',
         expiresAt: activeSubscription.expirationDate,
         startedAt: activeSubscription.startDate,
-        totalListingsLimit: product?.listingsLimit || 15,
+        totalListingsLimit: product?.listingsLimit || 999999, // Unlimited listings for Pro
         activeListingsCount: user.proSubscription?.activeListingsCount || 0,
         privateSellerCount: user.proSubscription?.privateSellerCount || 0,
         agentCount: user.proSubscription?.agentCount || 0,
