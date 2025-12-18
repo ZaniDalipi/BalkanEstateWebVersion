@@ -124,7 +124,11 @@ const apiRequest = async <T>(endpoint: string, options: RequestOptions = {}, ret
 
     if (!response.ok) {
       const error = isJson ? await response.json() : { message: response.statusText };
-      throw new Error(error.message || 'An error occurred');
+      const err: any = new Error(error.message || 'An error occurred');
+      err.code = error.code || null; // Preserve backend error code
+      err.statusCode = response.status;
+      err.details = error; // Preserve full error object
+      throw err;
     }
 
     return isJson ? await response.json() : ({} as T);

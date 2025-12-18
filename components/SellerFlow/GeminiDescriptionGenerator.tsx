@@ -5,6 +5,7 @@ import { searchLocation } from '../../services/osmService';
 import { SparklesIcon, MapPinIcon, SpinnerIcon } from '../../constants';
 import { getCurrencySymbol } from '../../utils/currency';
 import { useAppContext } from '../../context/AppContext';
+import { useAlert } from '../../context/AlertContext';
 import MarketInsightsAnimation from './MarketInsightsAnimation';
 import NumberInputWithSteppers from '../shared/NumberInputWithSteppers';
 import MapLocationPicker from './MapLocationPicker';
@@ -304,6 +305,7 @@ const TriStateCheckbox: React.FC<{
 const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> = ({ propertyToEdit }) => {
     const { state, dispatch, updateUser, createListing, updateListing } = useAppContext();
     const { currentUser, properties, isPricingModalOpen, pendingProperty } = state;
+    const { showError, showWarning, showSuccess, showInfo } = useAlert();
     const [mode, setMode] = useState<Mode>('ai');
     const [step, setStep] = useState<Step>('init');
     const [error, setError] = useState<string | null>(null);
@@ -1001,11 +1003,106 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                     }, 3000);
                 }
             }
-        } catch (err) {
-            if (err instanceof Error) {
-                setError(err.message || "Failed to submit listing.");
+        } catch (err: any) {
+            const errorCode = err.code;
+            const errorMessage = err.message || "Failed to submit listing.";
+
+            // Handle specific backend error codes with professional dialogs
+            if (errorCode === 'FREE_LISTING_LIMIT_REACHED') {
+                showWarning(
+                    'Free Listing Limit Reached',
+                    'You have reached your free limit of 3 active listings. Subscribe to Pro for unlimited listings!',
+                    [
+                        {
+                            label: 'Subscribe to Pro',
+                            onClick: () => {
+                                dispatch({ type: 'TOGGLE_LISTING_LIMIT_WARNING', payload: true });
+                            },
+                            variant: 'primary',
+                        },
+                        {
+                            label: 'Cancel',
+                            onClick: () => {},
+                            variant: 'secondary',
+                        },
+                    ]
+                );
+            } else if (errorCode === 'PRO_LISTING_LIMIT_REACHED') {
+                showError(
+                    'Pro Listing Limit Reached',
+                    errorMessage,
+                    [
+                        {
+                            label: 'View My Listings',
+                            onClick: () => {
+                                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
+                            },
+                            variant: 'primary',
+                        },
+                        {
+                            label: 'Close',
+                            onClick: () => {},
+                            variant: 'secondary',
+                        },
+                    ]
+                );
+            } else if (errorCode === 'AGENT_PRO_REQUIRED') {
+                showWarning(
+                    'Pro Subscription Required',
+                    'Agents must have an active Pro subscription to post listings. Subscribe now to unlock unlimited listings!',
+                    [
+                        {
+                            label: 'Subscribe to Pro',
+                            onClick: () => {
+                                dispatch({ type: 'TOGGLE_LISTING_LIMIT_WARNING', payload: true });
+                            },
+                            variant: 'primary',
+                        },
+                        {
+                            label: 'Cancel',
+                            onClick: () => {},
+                            variant: 'secondary',
+                        },
+                    ]
+                );
+            } else if (errorCode === 'BUYER_CANNOT_CREATE_LISTING') {
+                showInfo(
+                    'Switch Role Required',
+                    'Buyers cannot create property listings. Please switch to Private Seller or Agent role to create listings.',
+                    [
+                        {
+                            label: 'Switch Role',
+                            onClick: () => {
+                                // User can switch roles in their account
+                                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'account' });
+                            },
+                            variant: 'primary',
+                        },
+                        {
+                            label: 'Close',
+                            onClick: () => {},
+                            variant: 'secondary',
+                        },
+                    ]
+                );
             } else {
-                setError("An unexpected error occurred while submitting.");
+                // Generic error handling
+                showError(
+                    'Failed to Submit Listing',
+                    errorMessage,
+                    [
+                        {
+                            label: 'Try Again',
+                            onClick: () => {},
+                            variant: 'primary',
+                        },
+                        {
+                            label: 'Close',
+                            onClick: () => {},
+                            variant: 'secondary',
+                        },
+                    ]
+                );
             }
         } finally {
             setIsSubmitting(false);

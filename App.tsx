@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AppProvider, useAppContext } from './context/AppContext';
+import { AlertProvider } from './context/AlertContext';
 import { QueryProvider } from './src/app/providers/QueryProvider';
 import { ErrorBoundary } from './src/app/components/ErrorBoundary';
 import { UserRole } from './types';
@@ -425,7 +426,9 @@ const App: React.FC = () => {
     <ErrorBoundary level="app">
       <QueryProvider>
         <AppProvider>
-          <AppWrapper />
+          <AlertProvider>
+            <AppWrapper />
+          </AlertProvider>
         </AppProvider>
       </QueryProvider>
     </ErrorBoundary>
