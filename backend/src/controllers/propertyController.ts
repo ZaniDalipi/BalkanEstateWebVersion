@@ -298,10 +298,17 @@ export const createProperty = async (
     }
 
     // Validate user has access to the role they're trying to use
-    if (user.availableRoles && !user.availableRoles.includes(createdAsRole)) {
+    // Allow if: user's primary role matches OR availableRoles includes it OR user is an agent (has agencyName/licenseNumber)
+    const hasRoleAccess =
+      user.role === createdAsRole ||
+      (user.availableRoles && user.availableRoles.includes(createdAsRole)) ||
+      (createdAsRole === 'agent' && (user.agencyName || user.licenseNumber));
+
+    if (!hasRoleAccess) {
       res.status(403).json({
-        message: `You do not have access to create listings as ${createdAsRole}`,
-        availableRoles: user.availableRoles
+        message: `You do not have access to create listings as ${createdAsRole}. Your current role is ${user.role}.`,
+        availableRoles: user.availableRoles || [user.role],
+        currentRole: user.role,
       });
       return;
     }
