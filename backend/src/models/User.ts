@@ -104,13 +104,13 @@ export interface IUser extends Document {
   activeListingsLimit: number; // Max active listings allowed
   paidListingsCount: number; // Count of paid extra listings
 
-  // Unified Pro Subscription (unlimited listings shared across both roles)
+  // Unified Pro Subscription (20 listings shared across both roles)
   proSubscription?: {
     isActive: boolean;
     plan: 'pro_monthly' | 'pro_yearly';
     expiresAt?: Date;
     startedAt?: Date;
-    totalListingsLimit: number; // Unlimited for Pro (999999)
+    totalListingsLimit: number; // 20 for Pro (shared between private seller and agent)
     activeListingsCount: number; // Total active listings (private + agent combined)
     privateSellerCount: number; // Listings posted as private seller
     agentCount: number; // Listings posted as agent
@@ -452,7 +452,7 @@ const UserSchema: Schema = new Schema(
       startedAt: Date,
       totalListingsLimit: {
         type: Number,
-        default: 999999, // Unlimited listings for Pro
+        default: 20, // 20 listings for Pro
       },
       activeListingsCount: {
         type: Number,

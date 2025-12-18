@@ -304,7 +304,7 @@ export const createProperty = async (
         plan: activeSubscription.productId.includes('yearly') ? 'pro_yearly' : 'pro_monthly',
         expiresAt: activeSubscription.expirationDate,
         startedAt: activeSubscription.startDate,
-        totalListingsLimit: product?.listingsLimit || 999999, // Unlimited listings
+        totalListingsLimit: product?.listingsLimit || 20, // 20 active listings
         activeListingsCount: user.proSubscription?.activeListingsCount || 0,
         privateSellerCount: user.proSubscription?.privateSellerCount || 0,
         agentCount: user.proSubscription?.agentCount || 0,
@@ -319,7 +319,7 @@ export const createProperty = async (
       user.subscriptionExpiresAt = activeSubscription.expirationDate;
 
       await user.save();
-      console.log(`✅ Pro subscription auto-synced! User can now create unlimited listings.`);
+      console.log(`✅ Pro subscription auto-synced! User now has 20 active listings.`);
     }
 
     // Check if Pro subscription is expired
@@ -359,16 +359,15 @@ export const createProperty = async (
     let hasProSubscription = user.proSubscription && user.proSubscription.isActive;
 
     if (hasProSubscription) {
-      // Pro user - UNLIMITED listings (or very high limit)
+      // Pro user - 20 active listings (shared between private seller and agent)
       currentCount = user.proSubscription?.activeListingsCount || 0;
-      limit = user.proSubscription?.totalListingsLimit || 999999; // Effectively unlimited
+      limit = user.proSubscription?.totalListingsLimit || 20;
 
-      console.log(`✅ Pro User ${user.email}: Creating listing (${currentCount + 1}/${limit === 999999 ? 'unlimited' : limit})`);
+      console.log(`✅ Pro User ${user.email}: Creating listing (${currentCount + 1}/${limit} total, ${user.proSubscription?.privateSellerCount || 0} private, ${user.proSubscription?.agentCount || 0} agent)`);
 
-      // Only enforce limit if it's not effectively unlimited
-      if (limit < 999999 && currentCount >= limit) {
+      if (currentCount >= limit) {
         res.status(403).json({
-          message: `You have reached your Pro limit of ${limit} active listings. The limit is shared between private seller and agent roles.`,
+          message: `You have reached your Pro limit of ${limit} active listings. The limit is shared between private seller and agent roles. Please delete some listings to create new ones.`,
           code: 'PRO_LISTING_LIMIT_REACHED',
           limit,
           current: currentCount,
@@ -402,7 +401,7 @@ export const createProperty = async (
 
       if (currentCount >= limit) {
         res.status(403).json({
-          message: `You have reached your free limit of ${limit} active listings. Subscribe to Pro for unlimited listings!`,
+          message: `You have reached your free limit of ${limit} active listings. Subscribe to Pro for 20 active listings!`,
           code: 'FREE_LISTING_LIMIT_REACHED',
           limit,
           current: currentCount,
