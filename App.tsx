@@ -5,6 +5,7 @@ import { ErrorBoundary } from './src/app/components/ErrorBoundary';
 import { UserRole } from './types';
 import Onboarding from './components/Onboarding';
 import { SearchPage } from './components/BuyerFlow/Search';
+import { CityRecommendations } from './components/BuyerFlow';
 import CreateListingPage from './components/SellerFlow/SellerDashboard';
 import AuthPage from './components/auth/AuthModal';
 import PricingPlans from './components/SellerFlow/PricingPlans';
@@ -85,6 +86,7 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
       const routeMap: { [key: string]: any } = {
         '/': 'search',
         '/search': 'search',
+        '/explore-cities': 'explore-cities',
         '/saved-searches': 'saved-searches',
         '/saved-properties': 'saved-properties',
         '/inbox': 'inbox',
@@ -217,6 +219,8 @@ const AppContent: React.FC<{ onToggleSidebar: () => void }> = ({ onToggleSidebar
   }
 
   switch (state.activeView) {
+    case 'explore-cities':
+      return <CityRecommendations />;
     case 'saved-searches':
       return <SavedSearchesPage />;
     case 'saved-properties':

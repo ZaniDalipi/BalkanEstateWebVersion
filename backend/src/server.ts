@@ -35,6 +35,7 @@ import salesHistoryRoutes from './routes/salesHistoryRoutes';
 import discountCodeRoutes from './routes/discountCodeRoutes';
 import agencyFeaturedSubscriptionRoutes from './routes/agencyFeaturedSubscriptionRoutes';
 import adminRoutes from './routes/adminRoutes';
+import cityMarketDataRoutes from './routes/cityMarketDataRoutes';
 
 // Import services
 import { initializeGooglePlayService } from './services/googlePlayService';
@@ -44,6 +45,7 @@ import { scheduleReconciliation } from './workers/reconciliationWorker';
 import { scheduleExpirationWorker } from './workers/subscriptionExpirationWorker';
 import { startPromotionRefreshWorker } from './workers/promotionRefreshWorker';
 import { startTrialManagementJob } from './jobs/trialManagementJob';
+import { startCityMarketDataUpdateJob } from './jobs/updateCityMarketData';
 
 // Create Express app
 const app: Application = express();
@@ -116,6 +118,10 @@ console.log('✅ Promotion refresh worker started');
 startTrialManagementJob();
 console.log('✅ Trial management job started');
 
+// Start city market data update job (biweekly updates on 1st and 15th)
+startCityMarketDataUpdateJob();
+console.log('✅ City market data update job started (biweekly)');
+
 // ============================================================================
 // MANUAL CORS MIDDLEWARE - Handle ALL CORS manually for maximum control
 // ============================================================================
@@ -185,6 +191,7 @@ app.use('/api/geocoding', geocodingRoutes);
 app.use('/api/neighborhood-insights', neighborhoodInsightsRoutes);
 app.use('/api/sales-history', salesHistoryRoutes);
 app.use('/api/discount-codes', discountCodeRoutes);
+app.use('/api/cities', cityMarketDataRoutes); // City market data and recommendations
 app.use('/api/admin', adminRoutes); // Admin panel routes (VPN + admin role required)
 
 // 404 handler

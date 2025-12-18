@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { AppView, UserRole } from '../../types';
-import { LogoIcon, AgentsIcon, SearchIcon, MagnifyingGlassPlusIcon, HeartIcon, EnvelopeIcon, UserCircleIcon, UsersIcon, ArrowLeftOnRectangleIcon, XMarkIcon, PencilIcon, StarIconSolid, BuildingOfficeIcon, ShieldCheckIcon } from '../../constants';
+import { LogoIcon, AgentsIcon, SearchIcon, MagnifyingGlassPlusIcon, HeartIcon, EnvelopeIcon, UserCircleIcon, UsersIcon, ArrowLeftOnRectangleIcon, XMarkIcon, PencilIcon, StarIconSolid, BuildingOfficeIcon, ShieldCheckIcon, SparklesIcon } from '../../constants';
 
 const NavItem: React.FC<{
   view: AppView;
@@ -93,6 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
     const baseNavItems = [
       { view: 'search' as AppView, label: 'Search', icon: <SearchIcon /> },
+      { view: 'explore-cities' as AppView, label: 'Explore Cities', icon: <SparklesIcon /> },
       { view: 'saved-searches' as AppView, label: 'Saved Searches', icon: <MagnifyingGlassPlusIcon /> },
       { view: 'saved-properties' as AppView, label: 'Saved Properties', icon: <HeartIcon /> },
       { view: 'agents' as AppView, label: 'Top Agents', icon: <AgentsIcon /> },

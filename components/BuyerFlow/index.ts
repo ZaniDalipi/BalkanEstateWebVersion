@@ -1,5 +1,6 @@
 // Search & Discovery
 export { SearchPage, PropertyList, AiSearch } from './Search';
+export { default as CityRecommendations } from './CityRecommendations';
 
 // Maps
 export { MapComponent, PropertyLocationMap } from './Maps';

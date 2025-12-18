@@ -1449,3 +1449,74 @@ export const checkExpiredSubscriptions = async (): Promise<any> => {
     requiresAuth: true,
   });
 };
+
+// ============================================================================
+// CITY MARKET DATA & RECOMMENDATIONS
+// ============================================================================
+
+export interface CityMarketData {
+  _id: string;
+  city: string;
+  country: string;
+  countryCode: string;
+  avgPricePerSqm: number;
+  medianPrice: number;
+  priceGrowthYoY: number;
+  priceGrowthMoM: number;
+  averageDaysOnMarket: number;
+  listingsCount: number;
+  soldLastMonth: number;
+  demandScore: number;
+  rentalYield: number;
+  investmentScore: number;
+  topNeighborhoods: string[];
+  marketTrend: 'rising' | 'stable' | 'declining';
+  highlights: string[];
+  lastUpdated: string;
+  dataSource: 'gemini' | 'manual' | 'calculated';
+  featured: boolean;
+  displayOrder: number;
+}
+
+/**
+ * Get featured city recommendations
+ */
+export const getFeaturedCities = async (limit: number = 12): Promise<CityMarketData[]> => {
+  const response = await apiRequest<{ cities: CityMarketData[] }>(`/cities/featured?limit=${limit}`, {
+    requiresAuth: false,
+  });
+  return response.cities;
+};
+
+/**
+ * Get cities by country
+ */
+export const getCitiesByCountry = async (country: string): Promise<CityMarketData[]> => {
+  const response = await apiRequest<{ cities: CityMarketData[] }>(`/cities/country/${encodeURIComponent(country)}`, {
+    requiresAuth: false,
+  });
+  return response.cities;
+};
+
+/**
+ * Get market data for a specific city
+ */
+export const getCityMarketData = async (city: string, country: string): Promise<CityMarketData> => {
+  const response = await apiRequest<{ data: CityMarketData }>(
+    `/cities/market-data/${encodeURIComponent(city)}/${encodeURIComponent(country)}`,
+    {
+      requiresAuth: false,
+    }
+  );
+  return response.data;
+};
+
+/**
+ * Manually trigger market data update (admin only)
+ */
+export const triggerMarketDataUpdate = async (): Promise<void> => {
+  await apiRequest('/cities/update-market-data', {
+    method: 'POST',
+    requiresAuth: true,
+  });
+};
