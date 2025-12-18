@@ -596,10 +596,27 @@ export const getMyListings = async (
       return;
     }
 
-    const properties = await Property.find({ sellerId: String((req.user as IUser)._id) })
+    const userId = String((req.user as IUser)._id);
+
+    // Get the role filter from query parameters (optional)
+    // If provided, only show listings created with that specific role
+    const roleFilter = req.query.role as string | undefined;
+
+    // Build query: always filter by sellerId, optionally filter by createdAsRole
+    const query: any = { sellerId: userId };
+
+    if (roleFilter && (roleFilter === 'agent' || roleFilter === 'private_seller')) {
+      query.createdAsRole = roleFilter;
+      console.log(`📋 Fetching listings for user ${userId} created as ${roleFilter}`);
+    } else {
+      console.log(`📋 Fetching all listings for user ${userId}`);
+    }
+
+    const properties = await Property.find(query)
       .populate('sellerId', 'name email phone avatarUrl role agencyName')
       .sort({ createdAt: -1 });
 
+    console.log(`✅ Found ${properties.length} listings`);
     res.json({ properties });
   } catch (error: any) {
     console.error('Get my listings error:', error);

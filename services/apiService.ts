@@ -467,8 +467,13 @@ export const markPropertyAsSold = async (propertyId: string): Promise<Property> 
   return transformBackendProperty(response.property);
 };
 
-export const getMyListings = async (): Promise<Property[]> => {
-  const response = await apiRequest<{ properties: any[] }>('/properties/my/listings', {
+export const getMyListings = async (role?: 'agent' | 'private_seller'): Promise<Property[]> => {
+  // Build URL with optional role filter
+  const url = role
+    ? `/properties/my/listings?role=${role}`
+    : '/properties/my/listings';
+
+  const response = await apiRequest<{ properties: any[] }>(url, {
     requiresAuth: true,
   });
 
