@@ -65,6 +65,11 @@ const CityRecommendations: React.FC = () => {
         petsAllowed: null,
         minFloorNumber: null,
         maxFloorNumber: null,
+        maxDistanceToCenter: null,
+        maxDistanceToSea: null,
+        maxDistanceToSchool: null,
+        maxDistanceToHospital: null,
+        amenities: [],
       },
       activeFilters: {
         country: city.countryCode,
@@ -96,6 +101,11 @@ const CityRecommendations: React.FC = () => {
         petsAllowed: null,
         minFloorNumber: null,
         maxFloorNumber: null,
+        maxDistanceToCenter: null,
+        maxDistanceToSea: null,
+        maxDistanceToSchool: null,
+        maxDistanceToHospital: null,
+        amenities: [],
       },
     });
     dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'search' });
