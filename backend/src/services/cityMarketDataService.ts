@@ -169,8 +169,8 @@ async function calculateMarketDataFromProperties(city: string, country: string):
       return null; // Not enough data
     }
 
-    const prices = properties.map(p => p.price / (p.area || 70)); // Price per sqm
-    const avgPricePerSqm = prices.reduce((a, b) => a + b, 0) / prices.length;
+    const prices = properties.map(p => p.price / (p.sqft || 70)); // Price per sqft, default 70 if missing
+    const avgPricePerSqm = (prices.reduce((a, b) => a + b, 0) / prices.length) * 10.764; // Convert sqft to sqm
 
     const activeDays = properties
       .filter(p => p.status === 'active' && p.createdAt)
