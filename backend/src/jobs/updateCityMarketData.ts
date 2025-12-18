@@ -1,4 +1,4 @@
-import cron from 'node-cron';
+import cron, { ScheduledTask } from 'node-cron';
 import { updateAllCityMarketData } from '../services/cityMarketDataService';
 
 /**
@@ -13,7 +13,7 @@ import { updateAllCityMarketData } from '../services/cityMarketDataService';
  * - * *: Every month, every day of the week
  */
 
-let updateJob: cron.ScheduledTask | null = null;
+let updateJob: ScheduledTask | null = null;
 
 export function startCityMarketDataUpdateJob(): void {
   // Prevent multiple instances
