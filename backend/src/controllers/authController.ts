@@ -388,6 +388,62 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // **AUTO-MIGRATION**: Initialize subscription object if it doesn't exist
+    if (!user.subscription) {
+      const Property = (await import('../models/Property')).default;
+
+      // Check if user has an active Pro subscription (legacy or new system)
+      let tier: 'free' | 'pro' | 'agency_owner' | 'agency_agent' | 'buyer' = 'free';
+      let listingsLimit = 3;
+      let promotionCoupons = { monthly: 0, available: 0, used: 0, rollover: 0, lastRefresh: new Date() };
+      let savedSearchesLimit = 1;
+
+      // Sync from proSubscription (legacy system)
+      if (user.proSubscription?.isActive) {
+        tier = 'pro';
+        listingsLimit = user.proSubscription.totalListingsLimit || 20;
+        if (user.proSubscription.promotionCoupons) {
+          promotionCoupons = {
+            monthly: user.proSubscription.promotionCoupons.monthly || 3,
+            available: user.proSubscription.promotionCoupons.available || 3,
+            used: user.proSubscription.promotionCoupons.used || 0,
+            rollover: 0,
+            lastRefresh: new Date(),
+          };
+        }
+        savedSearchesLimit = 10;
+        console.log(`🔄 [getMe] Migrating Pro subscription for ${user.email}: ${listingsLimit} listings, tier: ${tier}`);
+      }
+
+      // Count existing active properties to initialize counters correctly
+      const existingProperties = await Property.find({
+        sellerId: user._id,
+        status: { $in: ['active', 'pending', 'draft'] }
+      });
+
+      const activeListingsCount = existingProperties.length;
+      const privateSellerCount = existingProperties.filter((p: any) => p.createdAsRole === 'private_seller').length;
+      const agentCount = existingProperties.filter((p: any) => p.createdAsRole === 'agent').length;
+
+      console.log(`📊 [getMe] Found ${activeListingsCount} existing properties for ${user.email}: ${privateSellerCount} private, ${agentCount} agent`);
+
+      user.subscription = {
+        tier,
+        status: 'active',
+        listingsLimit,
+        activeListingsCount,
+        privateSellerCount,
+        agentCount,
+        promotionCoupons,
+        savedSearchesLimit,
+        totalPaid: 0,
+        startedAt: user.proSubscription?.startedAt || new Date(),
+        expiresAt: user.proSubscription?.expiresAt,
+      };
+      await user.save();
+      console.log(`✅ [getMe] Subscription initialized for ${user.email}: ${tier} tier with ${listingsLimit} listings (${activeListingsCount}/${listingsLimit} used)`);
+    }
+
     res.json({
       user: {
         id: String(user._id),
@@ -409,6 +465,7 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
         subscriptionExpiresAt: user.subscriptionExpiresAt,
         proSubscription: user.proSubscription,
         freeSubscription: user.freeSubscription,
+        subscription: user.subscription, // NEW: Return subscription object
       },
     });
   } catch (error: any) {

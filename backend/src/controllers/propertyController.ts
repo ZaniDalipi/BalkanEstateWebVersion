@@ -361,24 +361,56 @@ export const createProperty = async (
 
     // Initialize subscription object if doesn't exist (for existing users migration)
     if (!user.subscription) {
+      // Check if user has an active Pro subscription (legacy or new system)
+      let tier: 'free' | 'pro' | 'agency_owner' | 'agency_agent' | 'buyer' = 'free';
+      let listingsLimit = 3;
+      let promotionCoupons = { monthly: 0, available: 0, used: 0, rollover: 0, lastRefresh: new Date() };
+      let savedSearchesLimit = 1;
+
+      // Sync from proSubscription (legacy system)
+      if (user.proSubscription?.isActive) {
+        tier = 'pro';
+        listingsLimit = user.proSubscription.totalListingsLimit || 20;
+        if (user.proSubscription.promotionCoupons) {
+          promotionCoupons = {
+            monthly: user.proSubscription.promotionCoupons.monthly || 3,
+            available: user.proSubscription.promotionCoupons.available || 3,
+            used: user.proSubscription.promotionCoupons.used || 0,
+            rollover: 0,
+            lastRefresh: new Date(),
+          };
+        }
+        savedSearchesLimit = 10;
+        console.log(`🔄 Migrating Pro subscription: ${listingsLimit} listings, tier: ${tier}`);
+      }
+
+      // Count existing active properties to initialize counters correctly
+      const existingProperties = await Property.find({
+        sellerId: user._id,
+        status: { $in: ['active', 'pending', 'draft'] }
+      });
+
+      const activeListingsCount = existingProperties.length;
+      const privateSellerCount = existingProperties.filter(p => p.createdAsRole === 'private_seller').length;
+      const agentCount = existingProperties.filter(p => p.createdAsRole === 'agent').length;
+
+      console.log(`📊 Found ${activeListingsCount} existing properties: ${privateSellerCount} private, ${agentCount} agent`);
+
       user.subscription = {
-        tier: 'free',
+        tier,
         status: 'active',
-        listingsLimit: 3,
-        activeListingsCount: 0,
-        privateSellerCount: 0,
-        agentCount: 0,
-        promotionCoupons: {
-          monthly: 0,
-          available: 0,
-          used: 0,
-          rollover: 0,
-          lastRefresh: new Date(),
-        },
-        savedSearchesLimit: 1,
+        listingsLimit,
+        activeListingsCount,
+        privateSellerCount,
+        agentCount,
+        promotionCoupons,
+        savedSearchesLimit,
         totalPaid: 0,
+        startedAt: user.proSubscription?.startedAt || new Date(),
+        expiresAt: user.proSubscription?.expiresAt,
       };
       await user.save();
+      console.log(`✅ Subscription initialized for ${user.email}: ${tier} tier with ${listingsLimit} listings (${activeListingsCount}/${listingsLimit} used)`);
     }
 
     // Determine which role is being used to create this listing
@@ -634,22 +666,40 @@ export const deleteProperty = async (
       if (user) {
         // Auto-initialize subscription for existing users (migration-safe)
         if (!user.subscription) {
+          let tier: 'free' | 'pro' | 'agency_owner' | 'agency_agent' | 'buyer' = 'free';
+          let listingsLimit = 3;
+
+          // Sync from proSubscription if exists
+          if (user.proSubscription?.isActive) {
+            tier = 'pro';
+            listingsLimit = user.proSubscription.totalListingsLimit || 20;
+          }
+
+          // Count existing properties (excluding the one being deleted)
+          const existingProperties = await Property.find({
+            sellerId: user._id,
+            _id: { $ne: property._id },
+            status: { $in: ['active', 'pending', 'draft'] }
+          });
+
           user.subscription = {
-            tier: 'free',
+            tier,
             status: 'active',
-            listingsLimit: 3,
-            activeListingsCount: 0,
-            privateSellerCount: 0,
-            agentCount: 0,
+            listingsLimit,
+            activeListingsCount: existingProperties.length,
+            privateSellerCount: existingProperties.filter(p => p.createdAsRole === 'private_seller').length,
+            agentCount: existingProperties.filter(p => p.createdAsRole === 'agent').length,
             promotionCoupons: {
-              monthly: 0,
-              available: 0,
-              used: 0,
+              monthly: user.proSubscription?.promotionCoupons?.monthly || 0,
+              available: user.proSubscription?.promotionCoupons?.available || 0,
+              used: user.proSubscription?.promotionCoupons?.used || 0,
               rollover: 0,
               lastRefresh: new Date(),
             },
-            savedSearchesLimit: 1,
+            savedSearchesLimit: tier === 'pro' ? 10 : 1,
             totalPaid: 0,
+            startedAt: user.proSubscription?.startedAt || new Date(),
+            expiresAt: user.proSubscription?.expiresAt,
           };
         }
 
