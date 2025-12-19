@@ -118,6 +118,9 @@ export const createSubscription = async (req: Request, res: Response): Promise<v
       privateSellerCount: 0,
       agentCount: 0,
       promotionCoupons: {
+        monthly: product.promotionCoupons || 3,
+        available: product.promotionCoupons || 3,
+        used: 0,
         highlightCoupons: product.highlightCoupons || 2, // All Pro users get 2 coupons
         usedHighlightCoupons: 0,
       },
@@ -604,6 +607,9 @@ export const activateTestProSubscription = async (req: Request, res: Response): 
       privateSellerCount: user.proSubscription?.privateSellerCount || 0,
       agentCount: user.proSubscription?.agentCount || 0,
       promotionCoupons: {
+        monthly: 3,
+        available: user.proSubscription?.promotionCoupons?.available || 3,
+        used: user.proSubscription?.promotionCoupons?.used || 0,
         highlightCoupons: 2, // All Pro users get 2 coupons
         usedHighlightCoupons: user.proSubscription?.promotionCoupons?.usedHighlightCoupons || 0,
       },
@@ -622,8 +628,8 @@ export const activateTestProSubscription = async (req: Request, res: Response): 
     console.log(`✅ Test Pro subscription activated for user ${user.email}`);
     console.log(`   Plan: ${plan}`);
     console.log(`   Expires: ${expirationDate.toISOString()}`);
-    console.log(`   Listings: ${user.proSubscription.activeListingsCount}/15`);
-    console.log(`   Highlight Coupons: ${user.proSubscription.promotionCoupons?.highlightCoupons || 0}`);
+    console.log(`   Listings: ${user.proSubscription?.activeListingsCount || 0}/15`);
+    console.log(`   Highlight Coupons: ${user.proSubscription?.promotionCoupons?.highlightCoupons || 0}`);
 
     res.status(200).json({
       message: 'Test Pro subscription activated successfully',
@@ -689,6 +695,9 @@ export const syncProSubscription = async (req: Request, res: Response): Promise<
         privateSellerCount: user.proSubscription?.privateSellerCount || 0,
         agentCount: user.proSubscription?.agentCount || 0,
         promotionCoupons: {
+          monthly: product?.promotionCoupons || 3,
+          available: user.proSubscription?.promotionCoupons?.available || (product?.promotionCoupons || 3),
+          used: user.proSubscription?.promotionCoupons?.used || 0,
           highlightCoupons: product?.highlightCoupons || 2, // All Pro users get 2 coupons
           usedHighlightCoupons: user.proSubscription?.promotionCoupons?.usedHighlightCoupons || 0,
         },
@@ -700,7 +709,7 @@ export const syncProSubscription = async (req: Request, res: Response): Promise<
 
       await user.save();
 
-      console.log(`✅ Pro subscription synced! isActive: ${user.proSubscription.isActive}`);
+      console.log(`✅ Pro subscription synced! isActive: ${user.proSubscription?.isActive || false}`);
 
       res.status(200).json({
         message: 'Pro subscription synced successfully',

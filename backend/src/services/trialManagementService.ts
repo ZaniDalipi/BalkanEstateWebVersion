@@ -46,6 +46,9 @@ export const startAgentTrial = async (user: IUser): Promise<void> => {
     privateSellerCount: 0,
     agentCount: 0,
     promotionCoupons: {
+      monthly: 3,
+      available: 3,
+      used: 0,
       highlightCoupons: 2, // Trial agents get 2 highlight coupons
       usedHighlightCoupons: 0,
     },

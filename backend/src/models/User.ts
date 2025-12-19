@@ -173,6 +173,7 @@ export interface IUser extends Document {
     agentCount: number;
     totalListingsLimit: number;
     expiresAt?: Date;
+    startedAt?: Date;
     plan?: string; // Legacy field for old subscription system
     promotionCoupons?: {
       monthly: number;
