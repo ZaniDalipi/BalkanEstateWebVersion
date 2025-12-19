@@ -64,7 +64,7 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({ currentUser, selectedRole, 
 
             return {
                 plan: tier, // Use actual tier from database (free, pro, agency_owner, etc.)
-                limit: sub.listingsLimit || 3, // Database value (3 for free, 20 for pro)
+                limit: sub.listingsLimit || 3, // Database value (3 for free, 25 for pro)
                 used: sub.activeListingsCount || 0, // Total used (shared across roles)
                 roleCount, // Specific count for this role
                 isActive: sub.status === 'active',
@@ -291,7 +291,7 @@ const RoleCard: React.FC<RoleCardProps> = ({
 
                                 {isLimitReached ? (
                                     <p className="text-xs text-red-600 font-medium mt-1">
-                                        {subscription.isPro ? 'Shared limit reached across both roles.' : 'Listing limit reached. Upgrade to Pro for 20 listings!'}
+                                        {subscription.isPro ? 'Shared limit reached across both roles.' : 'Listing limit reached. Upgrade to Pro for 25 listings!'}
                                     </p>
                                 ) : remaining <= 2 ? (
                                     <p className="text-xs text-amber-600 font-medium mt-1">

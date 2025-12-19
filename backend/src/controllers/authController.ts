@@ -390,17 +390,39 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
 
     // **AUTO-MIGRATION & SYNC**: Initialize or sync subscription object
     const Property = (await import('../models/Property')).default;
+    const Subscription = (await import('../models/Subscription')).default;
 
     // Check if user has an active Pro subscription (legacy or new system)
     let tier: 'free' | 'pro' | 'agency_owner' | 'agency_agent' | 'buyer' = 'free';
     let listingsLimit = 3;
     let promotionCoupons = { monthly: 0, available: 0, used: 0, rollover: 0, lastRefresh: new Date() };
     let savedSearchesLimit = 1;
+    let subscriptionExpiresAt: Date | undefined;
 
-    // Sync from proSubscription (legacy system)
-    if (user.proSubscription?.isActive) {
+    // PRIORITY 1: Check Subscriptions collection for active subscription (coupon-based, Stripe, etc.)
+    const activeSubscription = await Subscription.findOne({
+      userId: user._id,
+      status: { $in: ['active', 'trial'] },
+      expirationDate: { $gt: new Date() },
+    });
+
+    if (activeSubscription) {
+      const productId = activeSubscription.productId;
+      // Check if it's a Pro subscription
+      if (productId?.includes('pro') || productId === 'pro_monthly' || productId === 'pro_yearly') {
+        tier = 'pro';
+        listingsLimit = 25;
+        promotionCoupons = { monthly: 3, available: 3, used: 0, rollover: 0, lastRefresh: new Date() };
+        savedSearchesLimit = 10;
+        subscriptionExpiresAt = activeSubscription.expirationDate;
+        console.log(`🎫 [getMe] Found active subscription in Subscriptions collection for ${user.email}: ${productId}, expires: ${subscriptionExpiresAt}`);
+      }
+    }
+
+    // PRIORITY 2: Sync from proSubscription (legacy system) - only if not already Pro from Subscriptions
+    if (tier === 'free' && user.proSubscription?.isActive) {
       tier = 'pro';
-      listingsLimit = user.proSubscription.totalListingsLimit || 20;
+      listingsLimit = user.proSubscription.totalListingsLimit || 25;
       if (user.proSubscription.promotionCoupons) {
         promotionCoupons = {
           monthly: user.proSubscription.promotionCoupons.monthly || 3,
@@ -411,6 +433,7 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
         };
       }
       savedSearchesLimit = 10;
+      subscriptionExpiresAt = user.proSubscription.expiresAt;
     }
 
     // **ALWAYS COUNT** existing active properties from database (single source of truth)
@@ -427,7 +450,7 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
 
     if (!user.subscription) {
       // Initialize new subscription
-      console.log(`🔄 [getMe] Migrating Pro subscription for ${user.email}: ${listingsLimit} listings, tier: ${tier}`);
+      console.log(`🔄 [getMe] Initializing subscription for ${user.email}: ${listingsLimit} listings, tier: ${tier}`);
       user.subscription = {
         tier,
         status: 'active',
@@ -439,7 +462,7 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
         savedSearchesLimit,
         totalPaid: 0,
         startDate: user.proSubscription?.startedAt || new Date(),
-        expiresAt: user.proSubscription?.expiresAt,
+        expiresAt: subscriptionExpiresAt || user.proSubscription?.expiresAt,
       };
       console.log(`✅ [getMe] Subscription initialized for ${user.email}: ${tier} tier with ${listingsLimit} listings (${activeListingsCount}/${listingsLimit} used)`);
     } else {
@@ -448,13 +471,21 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
       user.subscription.privateSellerCount = privateSellerCount;
       user.subscription.agentCount = agentCount;
 
-      // Ensure listingsLimit is correct for Pro users
-      if (user.subscription.tier === 'pro' && user.subscription.listingsLimit !== 20) {
-        user.subscription.listingsLimit = 20;
-        console.log(`🔧 [getMe] Fixed listingsLimit for ${user.email}: 3 -> 20`);
+      // CRITICAL: If user should be Pro (from Subscriptions collection) but is showing as Free, fix it
+      if (tier === 'pro' && user.subscription.tier !== 'pro') {
+        console.log(`🔧 [getMe] Upgrading ${user.email} from ${user.subscription.tier} to pro tier`);
+        user.subscription.tier = 'pro';
+        user.subscription.listingsLimit = 25;
+        user.subscription.expiresAt = subscriptionExpiresAt;
       }
 
-      console.log(`✅ [getMe] Subscription synced for ${user.email}: ${activeListingsCount}/${user.subscription.listingsLimit} listings used`);
+      // Ensure listingsLimit is correct for Pro users
+      if (user.subscription.tier === 'pro' && user.subscription.listingsLimit !== 25) {
+        console.log(`🔧 [getMe] Fixed listingsLimit for ${user.email}: ${user.subscription.listingsLimit} -> 25`);
+        user.subscription.listingsLimit = 25;
+      }
+
+      console.log(`✅ [getMe] Subscription synced for ${user.email}: ${user.subscription.tier} tier, ${activeListingsCount}/${user.subscription.listingsLimit} listings used`);
     }
 
     await user.save();

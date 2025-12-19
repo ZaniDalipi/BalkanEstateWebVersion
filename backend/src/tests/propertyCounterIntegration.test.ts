@@ -43,7 +43,7 @@ describe('Property Counter Integration Tests', () => {
       subscription: {
         tier: 'pro',
         status: 'active',
-        listingsLimit: 20,
+        listingsLimit: 25,
         activeListingsCount: 0,
         privateSellerCount: 0,
         agentCount: 0,
@@ -344,7 +344,7 @@ describe('Property Counter Integration Tests', () => {
       // Check subscription was initialized
       expect(response.body.user.subscription).toBeDefined();
       expect(response.body.user.subscription.tier).toBe('pro');
-      expect(response.body.user.subscription.listingsLimit).toBe(20);
+      expect(response.body.user.subscription.listingsLimit).toBe(25);
       expect(response.body.user.subscription.activeListingsCount).toBe(2);
       expect(response.body.user.subscription.privateSellerCount).toBe(2);
     });

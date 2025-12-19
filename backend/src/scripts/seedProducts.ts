@@ -52,7 +52,7 @@ const PRODUCTS = [
     billingPeriod: 'monthly' as const,
     durationDays: 30,
     features: [
-      '20 active listings (6.6x more than Free!)',
+      '25 active listings (8x more than Free!)',
       '3 promotion coupons per month (€90 value)',
       'Advanced analytics & insights',
       'Lead management dashboard',
@@ -76,7 +76,7 @@ const PRODUCTS = [
     isVisible: true,
     hasFreeTrial: false,
     gracePeriodDays: 3,
-    listingsLimit: 20,
+    listingsLimit: 25,
     promotionCoupons: 3,
     agentCoupons: 0,
     savedSearchesLimit: 10,
@@ -92,7 +92,7 @@ const PRODUCTS = [
     billingPeriod: 'yearly' as const,
     durationDays: 365,
     features: [
-      '20 active listings year-round',
+      '25 active listings year-round',
       '3 promotion coupons per month (rollover up to 6)',
       'All Pro Monthly features',
       'Save €24/year vs monthly',
@@ -115,7 +115,7 @@ const PRODUCTS = [
     isVisible: true,
     hasFreeTrial: false,
     gracePeriodDays: 3,
-    listingsLimit: 20,
+    listingsLimit: 25,
     promotionCoupons: 3,
     agentCoupons: 0,
     savedSearchesLimit: 10,
@@ -232,8 +232,8 @@ async function seedProducts() {
     console.log(`📊 Total products: ${PRODUCTS.length}`);
     console.log('\n💰 Pricing Summary:');
     console.log('   Free: €0 (3 listings)');
-    console.log('   Pro Monthly: €12 (20 listings, 3 promo coupons)');
-    console.log('   Pro Yearly: €120 (20 listings, 3 promo coupons, save €24)');
+    console.log('   Pro Monthly: €12 (25 listings, 3 promo coupons)');
+    console.log('   Pro Yearly: €120 (25 listings, 3 promo coupons, save €24)');
     console.log('   Agency: €1000/year (5 agent coupons, 15 promo coupons)');
     console.log('   Buyer Pro: €3/month (unlimited searches & alerts)');
 

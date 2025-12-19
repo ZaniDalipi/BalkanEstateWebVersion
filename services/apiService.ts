@@ -809,7 +809,7 @@ function transformBackendProperty(backendProp: any): Property {
     lat: backendProp.lat,
     lng: backendProp.lng,
     seller: {
-      type: seller.role === 'agent' ? 'agent' : 'private',
+      type: backendProp.createdAsRole === 'agent' ? 'agent' : 'private', // Use createdAsRole, not seller.role
       name: seller.name,
       phone: seller.phone,
       avatarUrl: seller.avatarUrl,
@@ -826,6 +826,8 @@ function transformBackendProperty(backendProp: any): Property {
     views: backendProp.views || 0,
     saves: backendProp.saves || 0,
     inquiries: backendProp.inquiries || 0,
+    // Dual-role system - this is the key field!
+    createdAsRole: backendProp.createdAsRole,
     // Advanced property features
     furnishing: backendProp.furnishing,
     heatingType: backendProp.heatingType,

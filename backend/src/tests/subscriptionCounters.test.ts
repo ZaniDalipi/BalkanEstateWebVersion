@@ -75,7 +75,7 @@ describe('Subscription Counters', () => {
       // Verify initialization
       expect(user.subscription).toBeDefined();
       expect(user.subscription?.tier).toBe('pro');
-      expect(user.subscription?.listingsLimit).toBe(20);
+      expect(user.subscription?.listingsLimit).toBe(25);
       expect(user.subscription?.activeListingsCount).toBe(0);
     });
 
@@ -168,7 +168,7 @@ describe('Subscription Counters', () => {
       user.subscription = {
         tier: 'pro',
         status: 'active',
-        listingsLimit: 20,
+        listingsLimit: 25,
         activeListingsCount,
         privateSellerCount,
         agentCount,
@@ -200,7 +200,7 @@ describe('Subscription Counters', () => {
         subscription: {
           tier: 'pro',
           status: 'active',
-          listingsLimit: 20,
+          listingsLimit: 25,
           activeListingsCount: 0,
           privateSellerCount: 0,
           agentCount: 0,
@@ -235,7 +235,7 @@ describe('Subscription Counters', () => {
         subscription: {
           tier: 'pro',
           status: 'active',
-          listingsLimit: 20,
+          listingsLimit: 25,
           activeListingsCount: 0,
           privateSellerCount: 0,
           agentCount: 0,
@@ -305,7 +305,7 @@ describe('Subscription Counters', () => {
         subscription: {
           tier: 'pro',
           status: 'active',
-          listingsLimit: 20,
+          listingsLimit: 25,
           activeListingsCount: 2,
           privateSellerCount: 1,
           agentCount: 1,
@@ -384,7 +384,7 @@ describe('Subscription Counters', () => {
         subscription: {
           tier: 'pro',
           status: 'active',
-          listingsLimit: 20,
+          listingsLimit: 25,
           activeListingsCount: 0, // Wrong count
           privateSellerCount: 0,
           agentCount: 0,
@@ -462,7 +462,7 @@ describe('Subscription Counters', () => {
         subscription: {
           tier: 'pro',
           status: 'active',
-          listingsLimit: 20,
+          listingsLimit: 25,
           activeListingsCount: 0,
           privateSellerCount: 0,
           agentCount: 0,

@@ -338,7 +338,7 @@ export const createProperty = async (
         plan: activeSubscription.productId.includes('yearly') ? 'pro_yearly' : 'pro_monthly',
         expiresAt: activeSubscription.expirationDate,
         startedAt: activeSubscription.startDate,
-        totalListingsLimit: product?.listingsLimit || 20, // 20 active listings
+        totalListingsLimit: product?.listingsLimit || 25, // 25 active listings
         activeListingsCount: user.proSubscription?.activeListingsCount || 0,
         privateSellerCount: user.proSubscription?.privateSellerCount || 0,
         agentCount: user.proSubscription?.agentCount || 0,
@@ -356,7 +356,7 @@ export const createProperty = async (
       user.subscriptionExpiresAt = activeSubscription.expirationDate;
 
       await user.save();
-      console.log(`✅ Pro subscription auto-synced! User now has 20 active listings.`);
+      console.log(`✅ Pro subscription auto-synced! User now has 25 active listings.`);
     }
 
     // Initialize subscription object if doesn't exist (for existing users migration)
@@ -370,7 +370,7 @@ export const createProperty = async (
       // Sync from proSubscription (legacy system)
       if (user.proSubscription?.isActive) {
         tier = 'pro';
-        listingsLimit = user.proSubscription.totalListingsLimit || 20;
+        listingsLimit = user.proSubscription.totalListingsLimit || 25;
         if (user.proSubscription.promotionCoupons) {
           promotionCoupons = {
             monthly: user.proSubscription.promotionCoupons.monthly || 3,
@@ -414,7 +414,32 @@ export const createProperty = async (
     }
 
     // Determine which role is being used to create this listing
-    const createdAsRole = req.body.createdAsRole || user.activeRole || user.role || 'private_seller';
+    // PRIORITY: Use the role explicitly selected by user in the form, NOT the profile default
+    const validRoles = ['private_seller', 'agent'];
+    let createdAsRole = 'private_seller'; // Default fallback
+
+    // Log incoming value for debugging
+    console.log(`📥 [createProperty] Received createdAsRole from request: "${req.body.createdAsRole}" (type: ${typeof req.body.createdAsRole})`);
+
+    if (req.body.createdAsRole && validRoles.includes(req.body.createdAsRole)) {
+      // Use the explicitly selected role from the form
+      createdAsRole = req.body.createdAsRole;
+      console.log(`✅ [createProperty] Using form-selected role: ${createdAsRole}`);
+    } else if (user.activeRole && validRoles.includes(user.activeRole)) {
+      // Fallback to user's active role if form value is invalid
+      createdAsRole = user.activeRole;
+      console.log(`⚠️ [createProperty] Form role invalid/missing, using activeRole: ${createdAsRole}`);
+    } else if (user.role && validRoles.includes(user.role)) {
+      // Last fallback to user's primary role
+      createdAsRole = user.role;
+      console.log(`⚠️ [createProperty] Using primary role: ${createdAsRole}`);
+    }
+
+    // Update user's activeRole to match what they selected (for future consistency)
+    if (user.activeRole !== createdAsRole && validRoles.includes(createdAsRole)) {
+      console.log(`🔄 [createProperty] Updating user activeRole: ${user.activeRole} -> ${createdAsRole}`);
+      user.activeRole = createdAsRole as 'private_seller' | 'agent';
+    }
 
     // **CRITICAL: Buyers cannot create listings**
     if (createdAsRole === 'buyer') {
@@ -435,7 +460,7 @@ export const createProperty = async (
 
     if (currentCount >= limit) {
       res.status(403).json({
-        message: `You have reached your ${tier} tier limit of ${limit} active listings. ${tier === 'free' ? 'Upgrade to Pro for 20 active listings!' : 'Please delete some listings to create new ones.'}`,
+        message: `You have reached your ${tier} tier limit of ${limit} active listings. ${tier === 'free' ? 'Upgrade to Pro for 25 active listings!' : 'Please delete some listings to create new ones.'}`,
         code: 'LISTING_LIMIT_REACHED',
         tier,
         limit,
@@ -672,7 +697,7 @@ export const deleteProperty = async (
           // Sync from proSubscription if exists
           if (user.proSubscription?.isActive) {
             tier = 'pro';
-            listingsLimit = user.proSubscription.totalListingsLimit || 20;
+            listingsLimit = user.proSubscription.totalListingsLimit || 25;
           }
 
           // Count existing properties (excluding the one being deleted)

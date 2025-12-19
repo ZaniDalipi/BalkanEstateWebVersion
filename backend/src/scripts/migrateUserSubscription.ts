@@ -37,7 +37,7 @@ async function migrateUserSubscription(userEmail?: string) {
       // Sync from proSubscription (legacy system)
       if (user.proSubscription?.isActive) {
         tier = 'pro';
-        listingsLimit = user.proSubscription.totalListingsLimit || 20;
+        listingsLimit = user.proSubscription.totalListingsLimit || 25;
         if (user.proSubscription.promotionCoupons) {
           promotionCoupons = {
             monthly: user.proSubscription.promotionCoupons.monthly || 3,

@@ -42,7 +42,7 @@ const syncAllSubscriptionCounters = async () => {
 
         if (user.proSubscription?.isActive) {
           tier = 'pro';
-          listingsLimit = user.proSubscription.totalListingsLimit || 20;
+          listingsLimit = user.proSubscription.totalListingsLimit || 25;
         }
 
         // Count existing properties for this user
@@ -90,9 +90,9 @@ const syncAllSubscriptionCounters = async () => {
           user.subscription.agentCount = agentCount;
 
           // Ensure listingsLimit is correct
-          if (user.subscription.tier === 'pro' && user.subscription.listingsLimit !== 20) {
-            user.subscription.listingsLimit = 20;
-            console.log(`   🔧 Fixed listingsLimit: 3 -> 20`);
+          if (user.subscription.tier === 'pro' && user.subscription.listingsLimit !== 25) {
+            user.subscription.listingsLimit = 25;
+            console.log(`   🔧 Fixed listingsLimit: ${user.subscription.listingsLimit} -> 25`);
           }
 
           console.log(`   ✅ Updated subscription counters`);

@@ -1522,7 +1522,7 @@ export const redeemAgentCoupon = async (
     // Upgrade user to agency_agent tier with Pro benefits
     user.subscription.tier = 'agency_agent';
     user.subscription.status = 'active';
-    user.subscription.listingsLimit = 20;
+    user.subscription.listingsLimit = 25;
     if (user.subscription.promotionCoupons) {
       user.subscription.promotionCoupons.monthly = 0; // Agency agents share agency pool
     }

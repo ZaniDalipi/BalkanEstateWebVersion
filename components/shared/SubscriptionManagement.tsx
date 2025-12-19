@@ -95,13 +95,13 @@ const PERIOD_TO_MONTHS: Record<string, number> = {
 // NOTE: These match the new product seeder values
 const LISTING_LIMITS: Record<string, number> = {
   free: 3,
-  seller_pro_monthly: 20,  // Updated from 15 to 20
-  seller_pro_yearly: 20,   // Updated from 15 to 20
+  seller_pro_monthly: 25,  // Updated from 20 to 25
+  seller_pro_yearly: 25,   // Updated from 20 to 25
   seller_enterprise_yearly: 100,
   // New tiers (from new monetization system)
   free_tier: 3,
-  pro_monthly: 20,
-  pro_yearly: 20,
+  pro_monthly: 25,
+  pro_yearly: 25,
   agency_yearly: 0,  // Agency owners don't get listings, they distribute coupons
   buyer_monthly: 0,  // Buyers don't create listings
 };
@@ -527,7 +527,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
             </div>
 
             <div className="grid sm:grid-cols-2 gap-3 max-w-lg mx-auto pt-4">
-              {['Priority Support', 'Advanced Analytics', '20+ Listings', 'Premium Placement'].map((benefit, idx) => (
+              {['Priority Support', 'Advanced Analytics', '25 Listings', 'Premium Placement'].map((benefit, idx) => (
                 <div key={idx} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-neutral-200">
                   <CheckCircleIcon className="w-5 h-5 text-primary flex-shrink-0" />
                   <span className="text-sm text-neutral-700">{benefit}</span>
