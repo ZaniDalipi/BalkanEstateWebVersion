@@ -1009,7 +1009,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             if (errorCode === 'FREE_LISTING_LIMIT_REACHED') {
                 showWarning(
                     'Free Listing Limit Reached',
-                    'You have reached your free limit of 3 active listings. Subscribe to Pro for 20 active listings!',
+                    'You have reached your free limit of 3 active listings. Subscribe to Pro for 25 active listings!',
                     [
                         {
                             label: 'Subscribe to Pro',
@@ -1047,7 +1047,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             } else if (errorCode === 'AGENT_PRO_REQUIRED') {
                 showWarning(
                     'Pro Subscription Required',
-                    'Agents must have an active Pro subscription to post listings. Subscribe now to get 20 active listings!',
+                    'Agents must have an active Pro subscription to post listings. Subscribe now to get 25 active listings!',
                     [
                         {
                             label: 'Subscribe to Pro',

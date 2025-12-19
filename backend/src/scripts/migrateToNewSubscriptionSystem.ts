@@ -88,7 +88,7 @@ async function migrateToNewSubscriptionSystem() {
         // Check if user has active Pro subscription
         if (user.proSubscription && user.proSubscription.isActive) {
           tier = 'pro';
-          listingsLimit = 20;
+          listingsLimit = 25;
           promotionCouponsMonthly = 3;
           activeListingsCount = user.proSubscription.activeListingsCount || 0;
           privateSellerCount = user.proSubscription.privateSellerCount || 0;
@@ -111,7 +111,7 @@ async function migrateToNewSubscriptionSystem() {
             const agentAgency = await Agency.findById(user.agencyId);
             if (agentAgency) {
               tier = 'agency_agent';
-              listingsLimit = 20; // Agents get Pro benefits
+              listingsLimit = 25; // Agents get Pro benefits
               promotionCouponsMonthly = 0; // Share agency pool
               console.log(`   → Agency agent detected in: ${agentAgency.name}`);
             }

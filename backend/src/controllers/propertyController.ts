@@ -338,7 +338,7 @@ export const createProperty = async (
         plan: activeSubscription.productId.includes('yearly') ? 'pro_yearly' : 'pro_monthly',
         expiresAt: activeSubscription.expirationDate,
         startedAt: activeSubscription.startDate,
-        totalListingsLimit: product?.listingsLimit || 20, // 20 active listings
+        totalListingsLimit: product?.listingsLimit || 25, // 25 active listings
         activeListingsCount: user.proSubscription?.activeListingsCount || 0,
         privateSellerCount: user.proSubscription?.privateSellerCount || 0,
         agentCount: user.proSubscription?.agentCount || 0,
@@ -356,7 +356,7 @@ export const createProperty = async (
       user.subscriptionExpiresAt = activeSubscription.expirationDate;
 
       await user.save();
-      console.log(`✅ Pro subscription auto-synced! User now has 20 active listings.`);
+      console.log(`✅ Pro subscription auto-synced! User now has 25 active listings.`);
     }
 
     // Initialize subscription object if doesn't exist (for existing users migration)
@@ -370,7 +370,7 @@ export const createProperty = async (
       // Sync from proSubscription (legacy system)
       if (user.proSubscription?.isActive) {
         tier = 'pro';
-        listingsLimit = user.proSubscription.totalListingsLimit || 20;
+        listingsLimit = user.proSubscription.totalListingsLimit || 25;
         if (user.proSubscription.promotionCoupons) {
           promotionCoupons = {
             monthly: user.proSubscription.promotionCoupons.monthly || 3,
@@ -435,7 +435,7 @@ export const createProperty = async (
 
     if (currentCount >= limit) {
       res.status(403).json({
-        message: `You have reached your ${tier} tier limit of ${limit} active listings. ${tier === 'free' ? 'Upgrade to Pro for 20 active listings!' : 'Please delete some listings to create new ones.'}`,
+        message: `You have reached your ${tier} tier limit of ${limit} active listings. ${tier === 'free' ? 'Upgrade to Pro for 25 active listings!' : 'Please delete some listings to create new ones.'}`,
         code: 'LISTING_LIMIT_REACHED',
         tier,
         limit,
@@ -672,7 +672,7 @@ export const deleteProperty = async (
           // Sync from proSubscription if exists
           if (user.proSubscription?.isActive) {
             tier = 'pro';
-            listingsLimit = user.proSubscription.totalListingsLimit || 20;
+            listingsLimit = user.proSubscription.totalListingsLimit || 25;
           }
 
           // Count existing properties (excluding the one being deleted)

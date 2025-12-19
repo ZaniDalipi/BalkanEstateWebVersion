@@ -400,7 +400,7 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
     // Sync from proSubscription (legacy system)
     if (user.proSubscription?.isActive) {
       tier = 'pro';
-      listingsLimit = user.proSubscription.totalListingsLimit || 20;
+      listingsLimit = user.proSubscription.totalListingsLimit || 25;
       if (user.proSubscription.promotionCoupons) {
         promotionCoupons = {
           monthly: user.proSubscription.promotionCoupons.monthly || 3,
@@ -449,9 +449,9 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
       user.subscription.agentCount = agentCount;
 
       // Ensure listingsLimit is correct for Pro users
-      if (user.subscription.tier === 'pro' && user.subscription.listingsLimit !== 20) {
-        user.subscription.listingsLimit = 20;
-        console.log(`🔧 [getMe] Fixed listingsLimit for ${user.email}: 3 -> 20`);
+      if (user.subscription.tier === 'pro' && user.subscription.listingsLimit !== 25) {
+        user.subscription.listingsLimit = 25;
+        console.log(`🔧 [getMe] Fixed listingsLimit for ${user.email}: ${user.subscription.listingsLimit} -> 25`);
       }
 
       console.log(`✅ [getMe] Subscription synced for ${user.email}: ${activeListingsCount}/${user.subscription.listingsLimit} listings used`);
