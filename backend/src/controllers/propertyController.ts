@@ -414,7 +414,32 @@ export const createProperty = async (
     }
 
     // Determine which role is being used to create this listing
-    const createdAsRole = req.body.createdAsRole || user.activeRole || user.role || 'private_seller';
+    // PRIORITY: Use the role explicitly selected by user in the form, NOT the profile default
+    const validRoles = ['private_seller', 'agent'];
+    let createdAsRole = 'private_seller'; // Default fallback
+
+    // Log incoming value for debugging
+    console.log(`📥 [createProperty] Received createdAsRole from request: "${req.body.createdAsRole}" (type: ${typeof req.body.createdAsRole})`);
+
+    if (req.body.createdAsRole && validRoles.includes(req.body.createdAsRole)) {
+      // Use the explicitly selected role from the form
+      createdAsRole = req.body.createdAsRole;
+      console.log(`✅ [createProperty] Using form-selected role: ${createdAsRole}`);
+    } else if (user.activeRole && validRoles.includes(user.activeRole)) {
+      // Fallback to user's active role if form value is invalid
+      createdAsRole = user.activeRole;
+      console.log(`⚠️ [createProperty] Form role invalid/missing, using activeRole: ${createdAsRole}`);
+    } else if (user.role && validRoles.includes(user.role)) {
+      // Last fallback to user's primary role
+      createdAsRole = user.role;
+      console.log(`⚠️ [createProperty] Using primary role: ${createdAsRole}`);
+    }
+
+    // Update user's activeRole to match what they selected (for future consistency)
+    if (user.activeRole !== createdAsRole && validRoles.includes(createdAsRole)) {
+      console.log(`🔄 [createProperty] Updating user activeRole: ${user.activeRole} -> ${createdAsRole}`);
+      user.activeRole = createdAsRole;
+    }
 
     // **CRITICAL: Buyers cannot create listings**
     if (createdAsRole === 'buyer') {
