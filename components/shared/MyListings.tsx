@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Property, PropertyStatus } from '../../types';
+import { Property, PropertyStatus, UserRole } from '../../types';
 import { formatPrice } from '../../utils/currency';
 import { useAppContext } from '../../context/AppContext';
 import { EyeIcon, HeartIcon, InboxIcon, PencilIcon, SparklesIcon, CheckCircleIcon, ClockIcon, ArrowPathIcon, BuildingOfficeIcon, TrashIcon } from '../../constants';
@@ -7,6 +7,37 @@ import Modal from './Modal';
 import ListingCardSkeleton from './ListingCardSkeleton';
 import * as api from '../../services/apiService';
 import PromotionModal from '../promotions/PromotionModal';
+
+// Role badge component to show which role created the listing
+const RoleBadge: React.FC<{ role?: UserRole | string }> = ({ role }) => {
+    if (!role) return null;
+
+    const isAgent = role === 'agent' || role === UserRole.AGENT;
+
+    return (
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
+            isAgent
+                ? 'bg-blue-100 text-blue-700'
+                : 'bg-purple-100 text-purple-700'
+        }`}>
+            {isAgent ? (
+                <>
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clipRule="evenodd"/>
+                    </svg>
+                    Agent
+                </>
+            ) : (
+                <>
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                    </svg>
+                    Private Seller
+                </>
+            )}
+        </span>
+    );
+};
 
 const StatusBadge: React.FC<{ status: PropertyStatus }> = ({ status }) => {
     const statusStyles: Record<PropertyStatus, { bg: string, text: string, icon?: React.ReactNode }> = {
@@ -60,7 +91,10 @@ const ListingCard: React.FC<{
         <div className="flex-grow flex flex-col">
             <div className="flex justify-between items-start">
                 <div onClick={handleCardClick} className="cursor-pointer">
-                    <StatusBadge status={property.status} />
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <StatusBadge status={property.status} />
+                        <RoleBadge role={property.createdAsRole} />
+                    </div>
                     {property.title && (
                         <p className="font-bold text-lg sm:text-xl text-neutral-900 mt-1 line-clamp-1">{property.title}</p>
                     )}
@@ -76,7 +110,7 @@ const ListingCard: React.FC<{
                     </button>
                 </div>
             </div>
-            
+
             <div className="flex-grow"></div>
 
             <div className="flex items-center flex-wrap gap-x-4 gap-y-2 text-sm text-neutral-500 mt-3 pt-3 border-t">
@@ -92,7 +126,7 @@ const ListingCard: React.FC<{
                     </div>
                 )}
             </div>
-            
+
              <div className="flex flex-col sm:flex-row items-center gap-2 mt-4">
                 <button
                     onClick={(e) => { e.stopPropagation(); onPromote(property.id); }}
@@ -127,7 +161,8 @@ const FilterPill: React.FC<{
     label: string;
     isActive: boolean;
     onClick: () => void;
-}> = ({ label, isActive, onClick }) => (
+    count?: number;
+}> = ({ label, isActive, onClick, count }) => (
     <button
         onClick={onClick}
         className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex-grow text-center capitalize ${
@@ -136,7 +171,7 @@ const FilterPill: React.FC<{
                 : 'text-neutral-600 hover:bg-neutral-200'
         }`}
     >
-        {label}
+        {label} {count !== undefined && <span className="text-xs opacity-70">({count})</span>}
     </button>
 );
 
@@ -148,22 +183,22 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
     const [propertyToMarkSold, setPropertyToMarkSold] = useState<string | null>(null);
     const [propertyToDelete, setPropertyToDelete] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<PropertyStatus | 'all'>('all');
+    const [roleFilter, setRoleFilter] = useState<'all' | 'private_seller' | 'agent'>('all');
     const [showPromotionModal, setShowPromotionModal] = useState(false);
     const [propertyToPromote, setPropertyToPromote] = useState<Property | null>(null);
     const [myProperties, setMyProperties] = useState<Property[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Fetch role-specific listings from API
+    // Fetch ALL listings (no role filter) - we filter on the frontend for better UX
     useEffect(() => {
         const fetchMyListings = async () => {
             setIsLoading(true);
             try {
-                const activeRole = state.currentUser?.activeRole;
-                console.log(`🔄 Fetching listings for role: ${activeRole}`);
+                console.log(`🔄 Fetching ALL listings for user`);
 
-                // Fetch listings filtered by the active role
-                const listings = await api.getMyListings(activeRole);
-                console.log(`✅ Fetched ${listings.length} listings for ${activeRole} role`);
+                // Fetch ALL listings without role filter
+                const listings = await api.getMyListings();
+                console.log(`✅ Fetched ${listings.length} total listings`);
 
                 setMyProperties(listings);
             } catch (error) {
@@ -175,18 +210,49 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
         };
 
         fetchMyListings();
-    }, [state.currentUser?.activeRole]); // Re-fetch when activeRole changes
+    }, []); // Fetch once on mount
+
+    // Calculate counts for each role
+    const roleCounts = useMemo(() => {
+        const privateSellerCount = myProperties.filter(p =>
+            p.createdAsRole === 'private_seller' || p.createdAsRole === UserRole.PRIVATE_SELLER
+        ).length;
+        const agentCount = myProperties.filter(p =>
+            p.createdAsRole === 'agent' || p.createdAsRole === UserRole.AGENT
+        ).length;
+        return {
+            all: myProperties.length,
+            private_seller: privateSellerCount,
+            agent: agentCount,
+        };
+    }, [myProperties]);
 
     const filteredAndSortedProperties = useMemo(() => {
-        const filtered = statusFilter === 'all'
-            ? myProperties
-            : myProperties.filter(p => p.status === statusFilter);
-        
+        let filtered = myProperties;
+
+        // Apply role filter
+        if (roleFilter !== 'all') {
+            filtered = filtered.filter(p => {
+                if (roleFilter === 'private_seller') {
+                    return p.createdAsRole === 'private_seller' || p.createdAsRole === UserRole.PRIVATE_SELLER;
+                }
+                if (roleFilter === 'agent') {
+                    return p.createdAsRole === 'agent' || p.createdAsRole === UserRole.AGENT;
+                }
+                return true;
+            });
+        }
+
+        // Apply status filter
+        if (statusFilter !== 'all') {
+            filtered = filtered.filter(p => p.status === statusFilter);
+        }
+
         return [...filtered].sort((a, b) => {
             const statusOrder = { active: 1, pending: 2, draft: 3, sold: 4 };
             return statusOrder[a.status] - statusOrder[b.status];
         });
-    }, [myProperties, statusFilter]);
+    }, [myProperties, statusFilter, roleFilter]);
 
     const handleRenew = (id: string) => {
         dispatch({ type: 'RENEW_PROPERTY', payload: id });
@@ -269,21 +335,23 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
 
         // Re-fetch listings to get updated promotion status
         try {
-            const activeRole = state.currentUser?.activeRole;
-            const listings = await api.getMyListings(activeRole);
+            const listings = await api.getMyListings();
             setMyProperties(listings);
         } catch (error) {
             console.error('Failed to refresh listings:', error);
         }
     };
 
-    const filterOptions: { label: string, value: PropertyStatus | 'all' }[] = [
+    const statusFilterOptions: { label: string, value: PropertyStatus | 'all' }[] = [
         { label: 'All', value: 'all' },
         { label: 'Active', value: 'active' },
         { label: 'Pending', value: 'pending' },
         { label: 'Sold', value: 'sold' },
         { label: 'Draft', value: 'draft' },
     ];
+
+    // Only show role filter if user has listings in both roles
+    const showRoleFilter = roleCounts.private_seller > 0 && roleCounts.agent > 0;
 
     return (
         <div className="space-y-6">
@@ -326,7 +394,7 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
 
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                 <h3 className="text-xl sm:text-2xl font-bold text-neutral-800">My Listings ({myProperties.length})</h3>
-                <button 
+                <button
                   onClick={() => {
                       dispatch({ type: 'SET_PROPERTY_TO_EDIT', payload: null });
                       dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'create-listing' });
@@ -338,8 +406,54 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
                 </button>
             </div>
 
+            {/* Role Filter - Only show if user has listings in both roles */}
+            {showRoleFilter && (
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-xl border border-blue-100">
+                    <p className="text-sm text-neutral-600 mb-3 font-medium">Filter by posting role:</p>
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            onClick={() => setRoleFilter('all')}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                                roleFilter === 'all'
+                                    ? 'bg-white text-neutral-800 shadow-md'
+                                    : 'bg-white/50 text-neutral-600 hover:bg-white/80'
+                            }`}
+                        >
+                            All Listings ({roleCounts.all})
+                        </button>
+                        <button
+                            onClick={() => setRoleFilter('private_seller')}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+                                roleFilter === 'private_seller'
+                                    ? 'bg-purple-600 text-white shadow-md'
+                                    : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                            }`}
+                        >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                            </svg>
+                            Private Seller ({roleCounts.private_seller})
+                        </button>
+                        <button
+                            onClick={() => setRoleFilter('agent')}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+                                roleFilter === 'agent'
+                                    ? 'bg-blue-600 text-white shadow-md'
+                                    : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                            }`}
+                        >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clipRule="evenodd"/>
+                            </svg>
+                            Agent ({roleCounts.agent})
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Status Filter */}
             <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full border border-neutral-200 self-start max-w-full sm:max-w-lg overflow-x-auto">
-                {filterOptions.map(option => (
+                {statusFilterOptions.map(option => (
                     <FilterPill
                         key={option.value}
                         label={option.label}
@@ -373,7 +487,11 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
                     {myProperties.length > 0 ? (
                          <>
                             <h4 className="text-xl font-semibold text-neutral-700">No Listings Found</h4>
-                            <p className="text-neutral-500 mt-2">No properties match the "{statusFilter}" filter. Try selecting "All".</p>
+                            <p className="text-neutral-500 mt-2">
+                                No properties match the current filters.
+                                {roleFilter !== 'all' && ` Try selecting "All Listings".`}
+                                {statusFilter !== 'all' && ` Try selecting "All" status.`}
+                            </p>
                         </>
                     ) : (
                         <>
