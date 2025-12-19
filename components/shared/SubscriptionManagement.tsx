@@ -76,8 +76,8 @@ const FREE_PLAN: Plan = {
   price: 0,
   period: 'forever',
   periodMonths: 0,
-  features: ['3 active listings', 'Basic analytics', 'Email support'],
-  listingLimit: 3,
+  features: ['3 active listings', 'Basic analytics', 'Email support', 'Mobile app access'],
+  listingLimit: 3,  // Correct limit for free tier
   color: 'from-gray-400 to-gray-500',
   tier: 0,
 };
@@ -91,12 +91,19 @@ const PERIOD_TO_MONTHS: Record<string, number> = {
   one_time: 0,
 };
 
-// Map product IDs to listing limits
+// Map product IDs to listing limits (NEW MONETIZATION SYSTEM)
+// NOTE: These match the new product seeder values
 const LISTING_LIMITS: Record<string, number> = {
   free: 3,
-  seller_pro_monthly: 15,
-  seller_pro_yearly: 15,
+  seller_pro_monthly: 20,  // Updated from 15 to 20
+  seller_pro_yearly: 20,   // Updated from 15 to 20
   seller_enterprise_yearly: 100,
+  // New tiers (from new monetization system)
+  free_tier: 3,
+  pro_monthly: 20,
+  pro_yearly: 20,
+  agency_yearly: 0,  // Agency owners don't get listings, they distribute coupons
+  buyer_monthly: 0,  // Buyers don't create listings
 };
 
 // Map product IDs to gradient colors
@@ -485,7 +492,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
             </div>
 
             <div className="grid sm:grid-cols-2 gap-3 max-w-lg mx-auto pt-4">
-              {['Priority Support', 'Advanced Analytics', '15+ Listings', 'Premium Placement'].map((benefit, idx) => (
+              {['Priority Support', 'Advanced Analytics', '20+ Listings', 'Premium Placement'].map((benefit, idx) => (
                 <div key={idx} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-neutral-200">
                   <CheckCircleIcon className="w-5 h-5 text-primary flex-shrink-0" />
                   <span className="text-sm text-neutral-700">{benefit}</span>
