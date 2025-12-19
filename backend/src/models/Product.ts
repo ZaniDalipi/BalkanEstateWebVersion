@@ -3,12 +3,14 @@ import mongoose, { Document, Schema } from 'mongoose';
 export type ProductType = 'subscription' | 'consumable' | 'non_consumable';
 export type BillingPeriod = 'monthly' | 'yearly' | 'weekly' | 'quarterly' | 'one_time';
 export type TargetRole = 'buyer' | 'seller' | 'agent' | 'all';
+export type SubscriptionTier = 'free' | 'pro' | 'agency' | 'buyer';
 
 export interface IProduct extends Document {
   productId: string;
   name: string;
   description?: string;
   type: ProductType;
+  tier?: SubscriptionTier; // Which tier this product represents
 
   // Pricing
   price: number;
@@ -53,9 +55,16 @@ export interface IProduct extends Document {
   // Limits
   maxActiveSubscriptions?: number;
 
-  // Subscription Benefits
-  listingsLimit?: number; // Number of active listings (e.g., 15 for Pro)
-  highlightCoupons?: number; // Number of highlight promotion coupons (e.g., 2 for all Pro users)
+  // Seller/Agent Subscription Benefits
+  listingsLimit?: number; // Number of active listings (3 free, 20 pro, 20 per agency agent)
+  promotionCoupons?: number; // Monthly promotion coupons (0 free, 3 pro, 15 agency)
+  highlightCoupons?: number; // Legacy - kept for backwards compatibility
+
+  // Agency-specific Benefits
+  agentCoupons?: number; // Number of agent coupons (5 for agency tier)
+
+  // Buyer-specific Benefits
+  savedSearchesLimit?: number; // Saved searches limit (1 free, 10 pro, -1 unlimited for buyer)
 
   createdAt: Date;
   updatedAt: Date;
@@ -81,6 +90,11 @@ const ProductSchema: Schema = new Schema(
       enum: ['subscription', 'consumable', 'non_consumable'],
       required: true,
       default: 'subscription',
+    },
+    tier: {
+      type: String,
+      enum: ['free', 'pro', 'agency', 'buyer'],
+      index: true,
     },
 
     // Pricing
@@ -188,14 +202,30 @@ const ProductSchema: Schema = new Schema(
       type: Number,
     },
 
-    // Subscription Benefits
+    // Seller/Agent Subscription Benefits
     listingsLimit: {
       type: Number,
-      default: 20, // 20 active listings for Pro subscriptions (shared between roles)
+      default: 3, // 3 for free, 20 for pro/agency
+    },
+    promotionCoupons: {
+      type: Number,
+      default: 0, // 0 for free, 3 for pro, 15 for agency
     },
     highlightCoupons: {
       type: Number,
-      default: 2, // Default to 2 for all Pro plans (both agents and private sellers)
+      default: 0, // Legacy - kept for backwards compatibility
+    },
+
+    // Agency-specific Benefits
+    agentCoupons: {
+      type: Number,
+      default: 0, // 5 for agency tier
+    },
+
+    // Buyer-specific Benefits
+    savedSearchesLimit: {
+      type: Number,
+      default: 1, // 1 for free, 10 for pro, -1 (unlimited) for buyer tier
     },
   },
   {

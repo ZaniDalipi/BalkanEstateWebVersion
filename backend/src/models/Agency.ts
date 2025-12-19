@@ -1,13 +1,24 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+export interface IAgencyCoupon {
+  code: string;
+  generatedAt: Date;
+  expiresAt: Date;
+  usedBy?: mongoose.Types.ObjectId;
+  usedAt?: Date;
+  status: 'available' | 'used' | 'expired';
+}
+
 export interface IAgency extends Document {
-  ownerId: mongoose.Types.ObjectId; // User who owns the agency (enterprise tier)
+  ownerId: mongoose.Types.ObjectId; // User who owns the agency
   name: string;
   slug: string; // URL-friendly identifier: "{country}/{name}"
   invitationCode: string; // Unique code for agents to join: format "AGY-{agencyId}-{randomString}"
   description?: string;
   logo?: string;
+  logoPublicId?: string; // Cloudinary ID for cleanup
   coverImage?: string;
+  coverImagePublicId?: string;
   coverGradient?: string; // Tailwind gradient classes for banner background
   email: string;
   phone: string;
@@ -18,39 +29,89 @@ export interface IAgency extends Document {
   lat?: number; // Latitude for map display
   lng?: number; // Longitude for map display
   website?: string;
+
   // Agency info
   specialties?: string[];
   certifications?: string[];
   languages?: string[]; // Languages spoken by agency staff
+
   // Social media links
   facebookUrl?: string;
   instagramUrl?: string;
   linkedinUrl?: string;
   twitterUrl?: string;
+
+  // Enhanced Subscription (€1000/year)
+  subscription: {
+    status: 'active' | 'trial' | 'expired' | 'canceled';
+    startDate: Date;
+    expiresAt: Date;
+    amount: number; // €1000
+    currency: string; // EUR
+    stripeCustomerId?: string;
+    stripeSubscriptionId?: string;
+    autoRenew: boolean;
+    trialEndsAt?: Date;
+  };
+
+  // Agent Coupon System (5 yearly Pro subscriptions)
+  agentCoupons: IAgencyCoupon[];
+
+  // Promotion Coupons (agency-wide pool, 15/month)
+  promotionCoupons: {
+    monthly: number; // 15
+    available: number;
+    used: number;
+    lastRefresh: Date;
+  };
+
   // Agency stats
-  totalProperties: number;
-  totalAgents: number;
+  stats: {
+    totalListings: number; // All listings from all agents
+    activeListings: number;
+    soldListings: number;
+    totalAgents: number; // Current active agents
+    totalRevenue: number; // Total sales value
+    avgDaysToSell: number;
+  };
+
+  totalProperties: number; // Legacy - kept for backwards compatibility
+  totalAgents: number; // Legacy
   yearsInBusiness?: number;
+
   // Agency agents (references to User model with role 'agent')
   agents: mongoose.Types.ObjectId[];
-  // Detailed agent tracking with join order
+
+  // Detailed agent tracking with join order and coupon used
   agentDetails?: Array<{
     userId: mongoose.Types.ObjectId;
     joinedAt: Date;
     leftAt?: Date;
     isActive: boolean;
+    couponCode?: string; // Which coupon they used to join
   }>;
+
   // Agency admins (users who can manage the agency)
   admins?: mongoose.Types.ObjectId[];
-  // Agency subscription info
+
+  // Legacy subscription fields (kept for backwards compatibility)
   subscriptionPlan?: string;
   subscriptionStatus?: string;
   subscriptionExpiresAt?: Date;
+
   // Featured/advertising settings
   isFeatured: boolean;
   featuredStartDate?: Date;
   featuredEndDate?: Date;
   adRotationOrder?: number; // For rotating ads monthly
+
+  // Settings
+  settings?: {
+    allowAgentInvites: boolean;
+    requireApproval: boolean;
+    publicProfile: boolean;
+  };
+
   // Business hours
   businessHours?: {
     monday?: string;
@@ -61,8 +122,15 @@ export interface IAgency extends Document {
     saturday?: string;
     sunday?: string;
   };
+
   createdAt: Date;
   updatedAt: Date;
+
+  // Methods
+  generateCouponCode(): string;
+  isSubscriptionActive(): boolean;
+  refreshPromotionCoupons(): void;
+  canGenerateMoreCoupons(): boolean;
 }
 
 const AgencySchema: Schema = new Schema(
@@ -102,7 +170,13 @@ const AgencySchema: Schema = new Schema(
     logo: {
       type: String,
     },
+    logoPublicId: {
+      type: String,
+    },
     coverImage: {
+      type: String,
+    },
+    coverImagePublicId: {
       type: String,
     },
     coverGradient: {
@@ -221,11 +295,141 @@ const AgencySchema: Schema = new Schema(
         type: Boolean,
         default: true,
       },
+      couponCode: {
+        type: String, // Which coupon code was used to join
+      },
     }],
     admins: [{
       type: Schema.Types.ObjectId,
       ref: 'User',
     }],
+
+    // Enhanced Subscription System (€1000/year)
+    subscription: {
+      status: {
+        type: String,
+        enum: ['active', 'trial', 'expired', 'canceled'],
+        default: 'trial',
+        index: true,
+      },
+      startDate: {
+        type: Date,
+        default: Date.now,
+      },
+      expiresAt: {
+        type: Date,
+        required: true,
+      },
+      amount: {
+        type: Number,
+        default: 1000,
+      },
+      currency: {
+        type: String,
+        default: 'EUR',
+      },
+      stripeCustomerId: String,
+      stripeSubscriptionId: String,
+      autoRenew: {
+        type: Boolean,
+        default: true,
+      },
+      trialEndsAt: Date,
+    },
+
+    // Agent Coupon System (5 codes for yearly Pro subscriptions)
+    agentCoupons: [{
+      code: {
+        type: String,
+        required: true,
+        unique: true,
+        sparse: true,
+      },
+      generatedAt: {
+        type: Date,
+        default: Date.now,
+      },
+      expiresAt: {
+        type: Date,
+        required: true,
+      },
+      usedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      usedAt: Date,
+      status: {
+        type: String,
+        enum: ['available', 'used', 'expired'],
+        default: 'available',
+      },
+    }],
+
+    // Promotion Coupons (agency-wide pool)
+    promotionCoupons: {
+      monthly: {
+        type: Number,
+        default: 15,
+      },
+      available: {
+        type: Number,
+        default: 15,
+      },
+      used: {
+        type: Number,
+        default: 0,
+      },
+      lastRefresh: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+
+    // Enhanced Stats
+    stats: {
+      totalListings: {
+        type: Number,
+        default: 0,
+      },
+      activeListings: {
+        type: Number,
+        default: 0,
+      },
+      soldListings: {
+        type: Number,
+        default: 0,
+      },
+      totalAgents: {
+        type: Number,
+        default: 0,
+      },
+      totalRevenue: {
+        type: Number,
+        default: 0,
+      },
+      avgDaysToSell: {
+        type: Number,
+        default: 0,
+      },
+    },
+
+    // Settings
+    settings: {
+      allowAgentInvites: {
+        type: Boolean,
+        default: false,
+      },
+      requireApproval: {
+        type: Boolean,
+        default: true,
+      },
+      publicProfile: {
+        type: Boolean,
+        default: true,
+      },
+    },
+
+    // Legacy subscription fields (kept for backwards compatibility)
     subscriptionPlan: {
       type: String,
       default: 'free',
@@ -307,5 +511,46 @@ AgencySchema.pre<IAgency>('save', async function (next) {
   }
   next();
 });
+
+// Method to generate unique coupon codes for agents
+AgencySchema.methods.generateCouponCode = function (): string {
+  const prefix = 'AGENCY';
+  const agencyCode = this.name.replace(/[^A-Z0-9]/gi, '').substring(0, 4).toUpperCase();
+  const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+  return `${prefix}-${agencyCode}-${random}`;
+};
+
+// Method to check if agency subscription is active
+AgencySchema.methods.isSubscriptionActive = function (): boolean {
+  return (
+    this.subscription.status === 'active' &&
+    this.subscription.expiresAt > new Date()
+  );
+};
+
+// Method to refresh monthly promotion coupons (called by cron job)
+AgencySchema.methods.refreshPromotionCoupons = function (): void {
+  const now = new Date();
+  const lastRefresh = new Date(this.promotionCoupons.lastRefresh);
+
+  // Check if a month has passed
+  const monthsDiff = (now.getFullYear() - lastRefresh.getFullYear()) * 12 +
+                     (now.getMonth() - lastRefresh.getMonth());
+
+  if (monthsDiff >= 1) {
+    // Agencies don't rollover - reset to monthly amount
+    this.promotionCoupons.available = this.promotionCoupons.monthly;
+    this.promotionCoupons.used = 0;
+    this.promotionCoupons.lastRefresh = now;
+  }
+};
+
+// Method to check if agency can generate more agent coupons
+AgencySchema.methods.canGenerateMoreCoupons = function (): boolean {
+  const availableCoupons = this.agentCoupons.filter(
+    (coupon: IAgencyCoupon) => coupon.status === 'available'
+  ).length;
+  return availableCoupons < 5; // Max 5 coupons at a time
+};
 
 export default mongoose.model<IAgency>('Agency', AgencySchema);
