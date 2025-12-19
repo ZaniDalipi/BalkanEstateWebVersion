@@ -172,3 +172,118 @@ export const syncStats = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+/**
+ * Sync all users' subscription counters from database
+ * This endpoint recounts all properties for all users and updates their subscription counters
+ * Making the database the single source of truth
+ */
+export const syncAllSubscriptionCounters = async (req: Request, res: Response): Promise<void> => {
+  try {
+    console.log('\n📊 Starting subscription counter sync for all users...\n');
+
+    // Get all users
+    const users = await User.find({});
+    console.log(`Found ${users.length} users to sync`);
+
+    let syncedCount = 0;
+    let errorCount = 0;
+    const results: any[] = [];
+
+    for (const user of users) {
+      try {
+        // Determine tier and limit from proSubscription or default to free
+        let tier: 'free' | 'pro' | 'agency_owner' | 'agency_agent' | 'buyer' = 'free';
+        let listingsLimit = 3;
+
+        if (user.proSubscription?.isActive) {
+          tier = 'pro';
+          listingsLimit = user.proSubscription.totalListingsLimit || 20;
+        }
+
+        // Count existing properties for this user
+        const existingProperties = await Property.find({
+          sellerId: user._id,
+          status: { $in: ['active', 'pending', 'draft'] }
+        });
+
+        const activeListingsCount = existingProperties.length;
+        const privateSellerCount = existingProperties.filter((p: any) => p.createdAsRole === 'private_seller').length;
+        const agentCount = existingProperties.filter((p: any) => p.createdAsRole === 'agent').length;
+
+        // Initialize or update subscription object
+        if (!user.subscription) {
+          // Initialize new subscription
+          const legacyCoupons = user.proSubscription?.promotionCoupons;
+          const promotionCoupons = {
+            monthly: tier === 'pro' ? 3 : 0,
+            available: legacyCoupons?.highlightCoupons ?? (tier === 'pro' ? 3 : 0),
+            used: legacyCoupons?.usedHighlightCoupons ?? 0,
+            rollover: 0,
+            lastRefresh: new Date(),
+          };
+
+          user.subscription = {
+            tier,
+            status: 'active',
+            listingsLimit,
+            activeListingsCount,
+            privateSellerCount,
+            agentCount,
+            promotionCoupons,
+            savedSearchesLimit: tier === 'pro' ? 10 : 3,
+            totalPaid: 0,
+            startDate: user.proSubscription?.startedAt || new Date(),
+            expiresAt: user.proSubscription?.expiresAt,
+          };
+        } else {
+          // Update existing subscription counters
+          user.subscription.activeListingsCount = activeListingsCount;
+          user.subscription.privateSellerCount = privateSellerCount;
+          user.subscription.agentCount = agentCount;
+
+          // Ensure listingsLimit is correct
+          if (user.subscription.tier === 'pro' && user.subscription.listingsLimit !== 20) {
+            user.subscription.listingsLimit = 20;
+          }
+        }
+
+        await user.save();
+
+        results.push({
+          email: user.email,
+          tier,
+          listingsLimit,
+          activeListingsCount,
+          privateSellerCount,
+          agentCount,
+          status: 'synced'
+        });
+
+        syncedCount++;
+        console.log(`✅ Synced ${user.email}: ${activeListingsCount}/${listingsLimit} listings`);
+      } catch (error) {
+        console.error(`❌ Error syncing ${user.email}:`, error);
+        errorCount++;
+        results.push({
+          email: user.email,
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    }
+
+    console.log(`\n📊 Sync complete: ${syncedCount} synced, ${errorCount} errors\n`);
+
+    res.json({
+      message: 'Subscription counters synced successfully',
+      totalUsers: users.length,
+      syncedCount,
+      errorCount,
+      results
+    });
+  } catch (error) {
+    console.error('Error syncing all subscription counters:', error);
+    res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+};

@@ -22,7 +22,7 @@ import {
   setActiveRole,
   addRole,
 } from '../controllers/authController';
-import { getUserStats, getAllAgents, syncStats } from '../controllers/userController';
+import { getUserStats, getAllAgents, syncStats, syncAllSubscriptionCounters } from '../controllers/userController';
 import { protect } from '../middleware/auth';
 import passport, { oauthStrategies } from '../config/passport';
 import {
@@ -61,6 +61,7 @@ router.post('/set-public-key', protect, setPublicKey);
 router.post('/switch-role', protect, switchRole);
 router.get('/my-stats', protect, getUserStats);
 router.post('/sync-stats', protect, syncStats);
+router.post('/sync-all-subscriptions', protect, syncAllSubscriptionCounters);
 router.get('/agents', getAllAgents);
 router.post('/upload-avatar', protect, upload.single('avatar'), uploadAvatar);
 
