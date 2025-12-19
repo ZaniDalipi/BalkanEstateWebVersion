@@ -1,11 +1,9 @@
 import express from 'express';
 import multer from 'multer';
 import {
-  submitLicense,
-  getLicenseStatus,
-  verifyLicense,
-  getPendingLicenses,
-  getAllLicenses,
+  uploadLicense,
+  getLicense,
+  deleteLicense,
 } from '../controllers/licenseController';
 import { protect } from '../middleware/auth';
 
@@ -30,13 +28,9 @@ const upload = multer({
   },
 });
 
-// Protected routes - User endpoints
-router.post('/submit', protect, upload.single('document'), submitLicense);
-router.get('/status', protect, getLicenseStatus);
-
-// Protected routes - Admin only endpoints
-router.get('/pending', protect, getPendingLicenses);
-router.get('/all', protect, getAllLicenses);
-router.put('/verify/:userId', protect, verifyLicense);
+// License routes - Optional upload, no verification needed
+router.post('/upload', protect, upload.single('document'), uploadLicense);
+router.get('/', protect, getLicense);
+router.delete('/', protect, deleteLicense);
 
 export default router;

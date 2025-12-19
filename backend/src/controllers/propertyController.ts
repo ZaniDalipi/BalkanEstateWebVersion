@@ -394,18 +394,6 @@ export const createProperty = async (
       return;
     }
 
-    // **IMPORTANT: Agents must have verified license**
-    if (createdAsRole === 'agent') {
-      if (!user.agentLicense || user.agentLicense.status !== 'verified') {
-        res.status(403).json({
-          message: 'Agents must have a verified license to post listings. Please upload and verify your license first.',
-          code: 'AGENT_LICENSE_REQUIRED',
-          licenseStatus: user.agentLicense?.status || 'not_submitted',
-        });
-        return;
-      }
-    }
-
     // Check listing limits based on subscription tier
     const currentCount = user.subscription.activeListingsCount || 0;
     const limit = user.subscription.listingsLimit || 3;

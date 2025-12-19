@@ -81,32 +81,16 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({ currentUser, selectedRole, 
         }
 
         if (role === UserRole.AGENT) {
-            // Agents can post with free tier (3 listings) if they have a verified license
-            // Check if user has verified agent license
-            const hasVerifiedLicense = (currentUser as any).agentLicense?.status === 'verified';
-
-            if (hasVerifiedLicense) {
-                // Agent with verified license can use free tier
-                const freeSub = currentUser.freeSubscription;
-                return {
-                    plan: 'free',
-                    limit: freeSub?.listingsLimit || 3,
-                    used: freeSub?.activeListingsCount || 0,
-                    roleCount: freeSub?.activeListingsCount || 0,
-                    isActive: true,
-                    isPro: false,
-                };
-            } else {
-                // Agent without verified license needs to verify first
-                return {
-                    plan: 'license_required',
-                    limit: 0,
-                    used: 0,
-                    roleCount: 0,
-                    isActive: false,
-                    isPro: false,
-                };
-            }
+            // Agents can post with free tier (3 listings) - no license verification required
+            const freeSub = currentUser.freeSubscription;
+            return {
+                plan: 'free',
+                limit: freeSub?.listingsLimit || 3,
+                used: freeSub?.activeListingsCount || 0,
+                roleCount: freeSub?.activeListingsCount || 0,
+                isActive: true,
+                isPro: false,
+            };
         }
 
         return null;
@@ -123,8 +107,6 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({ currentUser, selectedRole, 
                 return <span className="text-xs font-semibold px-2 py-0.5 bg-neutral-200 text-neutral-700 rounded">Free</span>;
             case 'none':
                 return <span className="text-xs font-semibold px-2 py-0.5 bg-red-100 text-red-700 rounded">Pro Required</span>;
-            case 'license_required':
-                return <span className="text-xs font-semibold px-2 py-0.5 bg-orange-100 text-orange-700 rounded">License Required</span>;
             default:
                 return null;
         }
@@ -236,29 +218,7 @@ const RoleCard: React.FC<RoleCardProps> = ({
                     )}
 
                     {subscription ? (
-                        subscription.plan === 'license_required' ? (
-                            <div className="space-y-2">
-                                <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                                    <p className="text-xs text-orange-700 font-medium mb-1">
-                                        Agent License Verification Required
-                                    </p>
-                                    <p className="text-xs text-orange-600">
-                                        To post listings as an agent, you need to submit and verify your agent license first. Once verified, you can post up to 3 free listings!
-                                    </p>
-                                </div>
-                                <button
-                                    type="button"
-                                    className="w-full px-3 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-all"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        // TODO: Open license submission modal
-                                        window.location.href = '/profile?tab=license';
-                                    }}
-                                >
-                                    Verify License
-                                </button>
-                            </div>
-                        ) : subscription.plan === 'none' ? (
+                        subscription.plan === 'none' ? (
                             <div className="space-y-2">
                                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                                     <p className="text-xs text-red-700 font-medium mb-1">
