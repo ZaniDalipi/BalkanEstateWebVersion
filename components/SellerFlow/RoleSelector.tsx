@@ -14,6 +14,12 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({ currentUser, selectedRole, 
     console.log('🔍 RoleSelector Debug:', {
         userId: currentUser.id,
         email: currentUser.email,
+        // NEW subscription system
+        hasNewSubscription: !!currentUser.subscription,
+        newTier: currentUser.subscription?.tier,
+        newLimit: currentUser.subscription?.listingsLimit,
+        newUsed: currentUser.subscription?.activeListingsCount,
+        // LEGACY subscription system
         hasProSubscription: !!currentUser.proSubscription,
         proIsActive: currentUser.proSubscription?.isActive,
         proLimit: currentUser.proSubscription?.totalListingsLimit,
@@ -49,16 +55,35 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({ currentUser, selectedRole, 
     };
 
     const getRoleSubscription = (role: UserRole) => {
-        // Check if user has Pro subscription (shared across both roles)
+        // PRIORITY 1: Check NEW subscription system (single source of truth from database)
+        if (currentUser.subscription) {
+            const sub = currentUser.subscription;
+            const tier = sub.tier || 'free';
+            const isPro = ['pro', 'agency_owner', 'agency_agent'].includes(tier);
+            const roleCount = role === UserRole.AGENT ? (sub.agentCount || 0) : (sub.privateSellerCount || 0);
+
+            return {
+                plan: tier, // Use actual tier from database (free, pro, agency_owner, etc.)
+                limit: sub.listingsLimit || 3, // Database value (3 for free, 20 for pro)
+                used: sub.activeListingsCount || 0, // Total used (shared across roles)
+                roleCount, // Specific count for this role
+                isActive: sub.status === 'active',
+                isPro,
+                highlightCoupons: sub.promotionCoupons?.available || 0,
+                usedCoupons: sub.promotionCoupons?.used || 0,
+            };
+        }
+
+        // PRIORITY 2: Fall back to LEGACY Pro subscription
         if (currentUser.proSubscription && currentUser.proSubscription.isActive) {
             const sub = currentUser.proSubscription;
             const roleCount = role === UserRole.AGENT ? (sub.agentCount || 0) : (sub.privateSellerCount || 0);
 
             return {
                 plan: sub.plan,
-                limit: sub.totalListingsLimit || 20, // Updated from 15 to 20
-                used: sub.activeListingsCount || 0, // Total used (shared)
-                roleCount, // Specific count for this role
+                limit: sub.totalListingsLimit || 20,
+                used: sub.activeListingsCount || 0,
+                roleCount,
                 isActive: true,
                 isPro: true,
                 highlightCoupons: sub.promotionCoupons?.highlightCoupons || 0,
@@ -66,43 +91,32 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({ currentUser, selectedRole, 
             };
         }
 
-        // No Pro subscription
-        if (role === UserRole.PRIVATE_SELLER) {
-            // Free private seller
-            const freeSub = currentUser.freeSubscription;
-            return {
-                plan: 'free',
-                limit: freeSub?.listingsLimit || 3,
-                used: freeSub?.activeListingsCount || 0,
-                roleCount: freeSub?.activeListingsCount || 0,
-                isActive: true,
-                isPro: false,
-            };
-        }
-
-        if (role === UserRole.AGENT) {
-            // Agents can post with free tier (3 listings) - no license verification required
-            const freeSub = currentUser.freeSubscription;
-            return {
-                plan: 'free',
-                limit: freeSub?.listingsLimit || 3,
-                used: freeSub?.activeListingsCount || 0,
-                roleCount: freeSub?.activeListingsCount || 0,
-                isActive: true,
-                isPro: false,
-            };
-        }
-
-        return null;
+        // PRIORITY 3: Fall back to LEGACY free subscription
+        const freeSub = currentUser.freeSubscription;
+        return {
+            plan: 'free',
+            limit: freeSub?.listingsLimit || 3,
+            used: freeSub?.activeListingsCount || 0,
+            roleCount: freeSub?.activeListingsCount || 0,
+            isActive: true,
+            isPro: false,
+        };
     };
 
     const getPlanBadge = (plan: string) => {
         switch (plan) {
             case 'trial':
                 return <span className="text-xs font-semibold px-2 py-0.5 bg-blue-100 text-blue-700 rounded">Trial</span>;
+            case 'pro':
             case 'pro_monthly':
             case 'pro_yearly':
                 return <span className="text-xs font-semibold px-2 py-0.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded">Pro</span>;
+            case 'agency_owner':
+                return <span className="text-xs font-semibold px-2 py-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded">Agency Owner</span>;
+            case 'agency_agent':
+                return <span className="text-xs font-semibold px-2 py-0.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded">Agency Agent</span>;
+            case 'buyer':
+                return <span className="text-xs font-semibold px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded">Buyer</span>;
             case 'free':
                 return <span className="text-xs font-semibold px-2 py-0.5 bg-neutral-200 text-neutral-700 rounded">Free</span>;
             case 'none':

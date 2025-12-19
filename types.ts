@@ -105,6 +105,26 @@ export interface User {
         activeListingsCount: number; // 3 free listings for private sellers
         listingsLimit: number; // Always 3
     };
+    // NEW: Unified subscription object (single source of truth)
+    subscription?: {
+        tier: 'free' | 'pro' | 'agency_owner' | 'agency_agent' | 'buyer';
+        status: 'active' | 'canceled' | 'expired' | 'trial';
+        listingsLimit: number; // 3 for free, 20 for pro/agency
+        activeListingsCount: number;
+        privateSellerCount: number;
+        agentCount: number;
+        promotionCoupons?: {
+            monthly: number;
+            available: number;
+            used: number;
+            rollover?: number;
+            lastRefresh?: Date | string;
+        };
+        savedSearchesLimit?: number;
+        totalPaid?: number;
+        expiresAt?: Date | string;
+        startedAt?: Date | string;
+    };
 }
 
 export interface Agent extends User {
