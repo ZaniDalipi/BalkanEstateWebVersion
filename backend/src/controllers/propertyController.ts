@@ -438,7 +438,7 @@ export const createProperty = async (
     // Update user's activeRole to match what they selected (for future consistency)
     if (user.activeRole !== createdAsRole && validRoles.includes(createdAsRole)) {
       console.log(`🔄 [createProperty] Updating user activeRole: ${user.activeRole} -> ${createdAsRole}`);
-      user.activeRole = createdAsRole;
+      user.activeRole = createdAsRole as 'private_seller' | 'agent';
     }
 
     // **CRITICAL: Buyers cannot create listings**
