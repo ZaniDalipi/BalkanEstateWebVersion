@@ -515,11 +515,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const createListing = useCallback(async (property: Property) => {
-      const newProperty = await api.createListing(property);
-      // For simplicity, we can refetch all properties or just add the new one
-      dispatch({ type: 'ADD_PROPERTY', payload: newProperty });
-      return newProperty;
-  }, []);
+      const result = await api.createListing(property);
+      // Add the new property to the list
+      dispatch({ type: 'ADD_PROPERTY', payload: result.property });
+
+      // Update user's subscription counts if returned from backend
+      if (result.updatedSubscription) {
+        dispatch({
+          type: 'UPDATE_USER',
+          payload: {
+            subscription: {
+              ...state.currentUser?.subscription,
+              ...result.updatedSubscription,
+            } as any
+          }
+        });
+      }
+
+      return result.property;
+  }, [state.currentUser]);
 
   const updateListing = useCallback(async (property: Property) => {
       const updatedProperty = await api.updateListing(property);

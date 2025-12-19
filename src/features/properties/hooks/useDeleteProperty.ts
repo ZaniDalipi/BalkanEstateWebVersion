@@ -3,6 +3,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { propertyKeys } from '../api/propertyKeys';
+import { authKeys } from '../../auth/api/authKeys';
 import * as api from '../../../services/apiService';
 
 /**
@@ -28,8 +29,8 @@ export function useDeleteProperty() {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: async (propertyId: string): Promise<void> => {
-      await api.deleteProperty(propertyId);
+    mutationFn: async (propertyId: string) => {
+      return await api.deleteProperty(propertyId);
     },
     onMutate: async (propertyId) => {
       // Cancel outgoing refetches
@@ -69,7 +70,7 @@ export function useDeleteProperty() {
       }
       console.error('Delete property error:', err);
     },
-    onSuccess: (_, propertyId) => {
+    onSuccess: (result, propertyId) => {
       // Remove from cache
       queryClient.removeQueries({ queryKey: propertyKeys.detail(propertyId) });
 
@@ -77,6 +78,11 @@ export function useDeleteProperty() {
       queryClient.invalidateQueries({ queryKey: propertyKeys.lists() });
       queryClient.invalidateQueries({ queryKey: propertyKeys.myListings() });
       queryClient.invalidateQueries({ queryKey: propertyKeys.favorites() });
+
+      // Invalidate user data to refresh subscription counts
+      if (result?.updatedSubscription) {
+        queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
+      }
     },
   });
 

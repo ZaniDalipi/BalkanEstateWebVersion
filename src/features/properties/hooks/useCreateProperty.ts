@@ -3,6 +3,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { propertyKeys } from '../api/propertyKeys';
+import { authKeys } from '../../auth/api/authKeys';
 import * as api from '../../../services/apiService';
 import { Property } from '../../../types';
 
@@ -32,16 +33,21 @@ export function useCreateProperty() {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: async (propertyData: Property): Promise<Property> => {
+    mutationFn: async (propertyData: Property) => {
       return await api.createListing(propertyData);
     },
-    onSuccess: (newProperty) => {
+    onSuccess: (result) => {
       // Invalidate and refetch property lists
       queryClient.invalidateQueries({ queryKey: propertyKeys.lists() });
       queryClient.invalidateQueries({ queryKey: propertyKeys.myListings() });
 
       // Add to cache immediately for instant access
-      queryClient.setQueryData(propertyKeys.detail(newProperty.id), newProperty);
+      queryClient.setQueryData(propertyKeys.detail(result.property.id), result.property);
+
+      // Invalidate user data to refresh subscription counts
+      if (result.updatedSubscription) {
+        queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
+      }
     },
     onError: (error: any) => {
       console.error('Create property error:', error);

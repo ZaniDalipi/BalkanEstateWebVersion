@@ -228,8 +228,21 @@ const MyListings: React.FC<{ sellerId: string }> = ({ sellerId }) => {
     const confirmDelete = async () => {
         if (propertyToDelete) {
             try {
-                await api.deleteProperty(propertyToDelete);
+                const result = await api.deleteProperty(propertyToDelete);
                 dispatch({ type: 'DELETE_PROPERTY', payload: propertyToDelete });
+
+                // Update user's subscription counts if returned from backend
+                if (result.updatedSubscription) {
+                    dispatch({
+                        type: 'UPDATE_USER',
+                        payload: {
+                            subscription: {
+                                ...state.currentUser?.subscription,
+                                ...result.updatedSubscription,
+                            } as any
+                        }
+                    });
+                }
 
                 // Remove from local state
                 setMyProperties(prev => prev.filter(p => p.id !== propertyToDelete));

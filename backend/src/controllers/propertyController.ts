@@ -480,7 +480,17 @@ export const createProperty = async (
     // Populate seller info
     await property.populate('sellerId', 'name email phone avatarUrl role agencyName');
 
-    res.status(201).json({ property });
+    // Return updated subscription info so frontend can update UI immediately
+    res.status(201).json({
+      property,
+      updatedSubscription: {
+        activeListingsCount: user.subscription.activeListingsCount,
+        privateSellerCount: user.subscription.privateSellerCount,
+        agentCount: user.subscription.agentCount,
+        listingsLimit: user.subscription.listingsLimit,
+        tier: user.subscription.tier,
+      },
+    });
   } catch (error: any) {
     console.error('Create property error:', error);
     res.status(500).json({ message: 'Error creating property', error: error.message });
@@ -680,7 +690,20 @@ export const deleteProperty = async (
 
     await property.deleteOne();
 
-    res.json({ message: 'Property deleted successfully' });
+    // Get updated subscription info to return to frontend
+    const updatedUser = await User.findById(String(currentUser._id));
+    const updatedSubscription = updatedUser?.subscription ? {
+      activeListingsCount: updatedUser.subscription.activeListingsCount,
+      privateSellerCount: updatedUser.subscription.privateSellerCount,
+      agentCount: updatedUser.subscription.agentCount,
+      listingsLimit: updatedUser.subscription.listingsLimit,
+      tier: updatedUser.subscription.tier,
+    } : null;
+
+    res.json({
+      message: 'Property deleted successfully',
+      updatedSubscription,
+    });
   } catch (error: any) {
     console.error('Delete property error:', error);
     res.status(500).json({ message: 'Error deleting property', error: error.message });

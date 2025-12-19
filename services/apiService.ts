@@ -431,16 +431,19 @@ export const getProperty = async (id: string): Promise<Property> => {
   return transformBackendProperty(response.property);
 };
 
-export const createListing = async (propertyData: Property): Promise<Property> => {
+export const createListing = async (propertyData: Property): Promise<{ property: Property; updatedSubscription?: any }> => {
   const backendPropertyData = transformToBackendProperty(propertyData);
 
-  const response = await apiRequest<{ property: any }>('/properties', {
+  const response = await apiRequest<{ property: any; updatedSubscription?: any }>('/properties', {
     method: 'POST',
     body: backendPropertyData,
     requiresAuth: true,
   });
 
-  return transformBackendProperty(response.property);
+  return {
+    property: transformBackendProperty(response.property),
+    updatedSubscription: response.updatedSubscription,
+  };
 };
 
 export const updateListing = async (propertyData: Property): Promise<Property> => {
@@ -455,11 +458,15 @@ export const updateListing = async (propertyData: Property): Promise<Property> =
   return transformBackendProperty(response.property);
 };
 
-export const deleteProperty = async (propertyId: string): Promise<void> => {
-  await apiRequest(`/properties/${propertyId}`, {
+export const deleteProperty = async (propertyId: string): Promise<{ updatedSubscription?: any }> => {
+  const response = await apiRequest<{ message: string; updatedSubscription?: any }>(`/properties/${propertyId}`, {
     method: 'DELETE',
     requiresAuth: true,
   });
+
+  return {
+    updatedSubscription: response.updatedSubscription,
+  };
 };
 
 export const markPropertyAsSold = async (propertyId: string): Promise<Property> => {
