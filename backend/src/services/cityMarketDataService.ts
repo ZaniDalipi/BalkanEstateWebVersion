@@ -1,6 +1,10 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import CityMarketData, { ICityMarketData } from '../models/CityMarketData';
 import Property from '../models/Property';
+import { FlattenMaps } from 'mongoose';
+
+// Type for lean documents (plain objects without Mongoose methods)
+export type CityMarketDataLean = FlattenMaps<ICityMarketData> & { _id: string };
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY || '');
 
@@ -474,12 +478,12 @@ export async function updateAllCityMarketData(): Promise<void> {
 /**
  * Get featured city recommendations with live listing counts
  */
-export async function getFeaturedCities(limit: number = 12): Promise<ICityMarketData[]> {
+export async function getFeaturedCities(limit: number = 12): Promise<CityMarketDataLean[]> {
   try {
     const cities = await CityMarketData.find({ featured: true })
       .sort({ displayOrder: 1 })
       .limit(limit)
-      .lean();
+      .lean<CityMarketDataLean[]>();
 
     // Enrich each city with live listing counts from the Property collection
     const enrichedCities = await Promise.all(
@@ -489,7 +493,7 @@ export async function getFeaturedCities(limit: number = 12): Promise<ICityMarket
           ...city,
           listingsCount: liveCounts.listingsCount,
           soldLastMonth: liveCounts.soldLastMonth,
-        } as ICityMarketData;
+        };
       })
     );
 
@@ -503,11 +507,11 @@ export async function getFeaturedCities(limit: number = 12): Promise<ICityMarket
 /**
  * Get city recommendations by country with live listing counts
  */
-export async function getCitiesByCountry(country: string): Promise<ICityMarketData[]> {
+export async function getCitiesByCountry(country: string): Promise<CityMarketDataLean[]> {
   try {
     const cities = await CityMarketData.find({ country })
       .sort({ demandScore: -1, avgPricePerSqm: 1 })
-      .lean();
+      .lean<CityMarketDataLean[]>();
 
     // Enrich each city with live listing counts from the Property collection
     const enrichedCities = await Promise.all(
@@ -517,7 +521,7 @@ export async function getCitiesByCountry(country: string): Promise<ICityMarketDa
           ...city,
           listingsCount: liveCounts.listingsCount,
           soldLastMonth: liveCounts.soldLastMonth,
-        } as ICityMarketData;
+        };
       })
     );
 
@@ -531,9 +535,9 @@ export async function getCitiesByCountry(country: string): Promise<ICityMarketDa
 /**
  * Get market data for a specific city with live listing counts
  */
-export async function getCityMarketData(city: string, country: string): Promise<ICityMarketData | null> {
+export async function getCityMarketData(city: string, country: string): Promise<CityMarketDataLean | null> {
   try {
-    const data = await CityMarketData.findOne({ city, country }).lean();
+    const data = await CityMarketData.findOne({ city, country }).lean<CityMarketDataLean>();
 
     if (!data) {
       return null;
@@ -545,7 +549,7 @@ export async function getCityMarketData(city: string, country: string): Promise<
       ...data,
       listingsCount: liveCounts.listingsCount,
       soldLastMonth: liveCounts.soldLastMonth,
-    } as ICityMarketData;
+    };
   } catch (error) {
     console.error(`Error fetching market data for ${city}:`, error);
     return null;
