@@ -437,7 +437,7 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
         promotionCoupons,
         savedSearchesLimit,
         totalPaid: 0,
-        startedAt: user.proSubscription?.startedAt || new Date(),
+        startDate: user.proSubscription?.startedAt || new Date(),
         expiresAt: user.proSubscription?.expiresAt,
       };
       await user.save();

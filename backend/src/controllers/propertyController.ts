@@ -406,7 +406,7 @@ export const createProperty = async (
         promotionCoupons,
         savedSearchesLimit,
         totalPaid: 0,
-        startedAt: user.proSubscription?.startedAt || new Date(),
+        startDate: user.proSubscription?.startedAt || new Date(),
         expiresAt: user.proSubscription?.expiresAt,
       };
       await user.save();
@@ -698,7 +698,7 @@ export const deleteProperty = async (
             },
             savedSearchesLimit: tier === 'pro' ? 10 : 1,
             totalPaid: 0,
-            startedAt: user.proSubscription?.startedAt || new Date(),
+            startDate: user.proSubscription?.startedAt || new Date(),
             expiresAt: user.proSubscription?.expiresAt,
           };
         }
