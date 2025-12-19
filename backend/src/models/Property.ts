@@ -30,6 +30,8 @@ export interface IProperty extends Document {
   specialFeatures: string[];
   materials: string[];
   tourUrl?: string;
+  virtualTour360Url?: string; // URL for 360 virtual tour (e.g., Matterport, Kuula, etc.)
+  hasVirtualTour360: boolean; // Flag indicating if 360 virtual tour is available
   imageUrl: string;
   imagePublicId?: string; // Cloudinary public_id for main image
   images: IPropertyImage[];
@@ -187,6 +189,14 @@ const PropertySchema: Schema = new Schema(
     },
     tourUrl: {
       type: String,
+    },
+    virtualTour360Url: {
+      type: String,
+    },
+    hasVirtualTour360: {
+      type: Boolean,
+      default: false,
+      index: true,
     },
     imageUrl: {
       type: String,

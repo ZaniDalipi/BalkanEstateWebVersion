@@ -30,6 +30,8 @@ export class PropertyMapper {
       propertyType: dto.propertyType,
       soldAt: dto.soldAt,
       tourUrl: dto.tourUrl,
+      virtualTour360Url: dto.virtualTour360Url,
+      hasVirtualTour360: dto.hasVirtualTour360,
       images: dto.images,
       floorNumber: dto.floorNumber,
       totalFloors: dto.totalFloors,

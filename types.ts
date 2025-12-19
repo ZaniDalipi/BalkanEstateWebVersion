@@ -256,6 +256,8 @@ export interface Property {
     materials: string[];
     amenities: string[];
     tourUrl?: string;
+    virtualTour360Url?: string; // URL for 360 virtual tour
+    hasVirtualTour360?: boolean; // Flag indicating if 360 virtual tour is available
     imageUrl: string;
     images?: PropertyImage[];
     lat: number;
