@@ -126,6 +126,26 @@ export const syncStats = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // **SYNC SUBSCRIPTION COUNTERS**: Recount all properties and update subscription
+    if (user.subscription) {
+      const existingProperties = await Property.find({
+        sellerId: user._id,
+        status: { $in: ['active', 'pending', 'draft'] }
+      });
+
+      const activeListingsCount = existingProperties.length;
+      const privateSellerCount = existingProperties.filter((p: any) => p.createdAsRole === 'private_seller').length;
+      const agentCount = existingProperties.filter((p: any) => p.createdAsRole === 'agent').length;
+
+      user.subscription.activeListingsCount = activeListingsCount;
+      user.subscription.privateSellerCount = privateSellerCount;
+      user.subscription.agentCount = agentCount;
+
+      await user.save();
+
+      console.log(`📊 [syncStats] Updated subscription counters for ${user.email}: ${activeListingsCount} total (${privateSellerCount} private, ${agentCount} agent)`);
+    }
+
     // Get current active listings count
     const activeListings = await Property.countDocuments({
       sellerId: userId,

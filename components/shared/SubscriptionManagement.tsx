@@ -380,10 +380,45 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
     setShowUpgradeModal(false);
   };
 
-  // Manual refresh button
-  const handleRefresh = () => {
+  // Manual refresh button - syncs subscription counters
+  const handleRefresh = async () => {
     setLoading(true);
-    setRefreshKey(prev => prev + 1);
+    try {
+      // Call backend sync endpoint to recount properties
+      const token = localStorage.getItem('balkan_estate_token');
+      const syncResponse = await fetch(`${API_URL}/auth/sync-stats`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (syncResponse.ok) {
+        console.log('✅ Subscription counters synced successfully');
+      }
+
+      // Re-fetch current user to get updated subscription data
+      const meResponse = await fetch(`${API_URL}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (meResponse.ok) {
+        const data = await meResponse.json();
+        // Update user in context
+        dispatch({ type: 'UPDATE_USER', payload: data.user });
+      }
+
+      // Trigger re-fetch of subscription data
+      setRefreshKey(prev => prev + 1);
+      fetchSubscription();
+    } catch (error) {
+      console.error('Error syncing subscription:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Cancel subscription
@@ -653,13 +688,13 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
             <div>
               <p className="font-semibold text-neutral-800">Listing Limit</p>
               <p className="text-sm text-neutral-500">
-                {user.listingsCount || 0} of {subscriptionDetails.currentPlan.listingLimit} listings used
+                {user.subscription?.activeListingsCount || user.listingsCount || 0} of {subscriptionDetails.currentPlan.listingLimit} listings used
               </p>
             </div>
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold text-neutral-800">
-              {subscriptionDetails.currentPlan.listingLimit - (user.listingsCount || 0)}
+              {subscriptionDetails.currentPlan.listingLimit - (user.subscription?.activeListingsCount || user.listingsCount || 0)}
             </p>
             <p className="text-xs text-neutral-500">remaining</p>
           </div>
@@ -667,7 +702,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
         <div className="mt-3 w-full bg-neutral-100 rounded-full h-2 overflow-hidden">
           <div
             className="bg-blue-500 h-full rounded-full transition-all duration-500"
-            style={{ width: `${Math.min(100, ((user.listingsCount || 0) / subscriptionDetails.currentPlan.listingLimit) * 100)}%` }}
+            style={{ width: `${Math.min(100, ((user.subscription?.activeListingsCount || user.listingsCount || 0) / subscriptionDetails.currentPlan.listingLimit) * 100)}%` }}
           />
         </div>
       </div>
