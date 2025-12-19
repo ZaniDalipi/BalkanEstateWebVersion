@@ -147,10 +147,12 @@ export interface IUser extends Document {
     country: string;
     expiryDate?: Date;
     documentUrl?: string; // S3/Cloudinary URL to uploaded license
+    documentPublicId?: string; // Cloudinary public ID for cleanup
     isVerified: boolean;
     verifiedAt?: Date;
     verifiedBy?: mongoose.Types.ObjectId; // Admin who verified
     rejectionReason?: string;
+    submittedAt?: Date; // When license was first submitted
     status: 'pending' | 'verified' | 'rejected' | 'expired';
   };
 
@@ -161,6 +163,29 @@ export interface IUser extends Document {
     joinedAt?: Date;
     couponCode?: string; // If joined via coupon
     leftAt?: Date;
+  };
+
+  // Legacy Subscription Fields (kept for backwards compatibility - use subscription instead)
+  proSubscription?: {
+    isActive: boolean;
+    activeListingsCount: number;
+    privateSellerCount: number;
+    agentCount: number;
+    totalListingsLimit: number;
+    expiresAt?: Date;
+    plan?: string; // Legacy field for old subscription system
+    promotionCoupons?: {
+      monthly: number;
+      available: number;
+      used: number;
+      highlightCoupons?: number; // Legacy field
+      usedHighlightCoupons?: number; // Legacy field
+    };
+  };
+
+  freeSubscription?: {
+    activeListingsCount: number;
+    listingsLimit?: number; // Legacy field
   };
 
   // Neighborhood Insights Usage Tracking
@@ -561,6 +586,7 @@ const UserSchema: Schema = new Schema(
       country: String,
       expiryDate: Date,
       documentUrl: String,
+      documentPublicId: String,
       isVerified: {
         type: Boolean,
         default: false,
@@ -571,6 +597,7 @@ const UserSchema: Schema = new Schema(
         ref: 'User',
       },
       rejectionReason: String,
+      submittedAt: Date,
       status: {
         type: String,
         enum: ['pending', 'verified', 'rejected', 'expired'],

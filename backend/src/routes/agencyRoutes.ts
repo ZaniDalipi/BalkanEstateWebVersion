@@ -16,6 +16,11 @@ import {
   addAgencyAdmin,
   removeAgencyAdmin,
   leaveAgency,
+  generateAgentCoupons,
+  redeemAgentCoupon,
+  getAgencyCoupons,
+  usePromotionCoupon,
+  getAgencyAgents,
 } from '../controllers/agencyController';
 import { protect } from '../middleware/auth';
 
@@ -60,5 +65,12 @@ router.delete('/:id/admins/:userId', protect, removeAgencyAdmin);
 // Image upload routes
 router.post('/:id/upload-logo', protect, upload.single('logo'), uploadAgencyLogo);
 router.post('/:id/upload-cover', protect, upload.single('cover'), uploadAgencyCover);
+
+// Coupon management routes (new monetization system)
+router.post('/:id/coupons/generate', protect, generateAgentCoupons); // Generate agent coupons (owner only)
+router.post('/coupons/redeem', protect, redeemAgentCoupon); // Redeem agent coupon (any user)
+router.get('/:id/coupons', protect, getAgencyCoupons); // Get coupon status (owner + agents)
+router.post('/:id/coupons/use-promotion', protect, usePromotionCoupon); // Use promotion coupon (owner + agents)
+router.get('/:id/agents', protect, getAgencyAgents); // Get agent list with details (owner only)
 
 export default router;

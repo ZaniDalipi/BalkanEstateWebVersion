@@ -1323,3 +1323,525 @@ export const leaveAgency = async (
     res.status(500).json({ message: 'Error leaving agency', error: error.message });
   }
 };
+
+// @desc    Generate agent coupon codes (5 yearly Pro subscriptions)
+// @route   POST /api/agencies/:id/coupons/generate
+// @access  Private (Agency owner only)
+export const generateAgentCoupons = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const currentUser = req.user as IUser;
+    const { id } = req.params;
+
+    const agency = await Agency.findById(id);
+    if (!agency) {
+      res.status(404).json({ message: 'Agency not found' });
+      return;
+    }
+
+    // Check if user is the agency owner
+    if (String(agency.ownerId) !== String(currentUser._id)) {
+      res.status(403).json({
+        message: 'Only agency owner can generate coupon codes',
+        code: 'OWNER_ONLY'
+      });
+      return;
+    }
+
+    // Check if agency subscription is active
+    if (!agency.isSubscriptionActive()) {
+      res.status(403).json({
+        message: 'Agency subscription must be active to generate coupons',
+        code: 'SUBSCRIPTION_INACTIVE',
+        subscriptionStatus: agency.subscription.status,
+        expiresAt: agency.subscription.expiresAt,
+      });
+      return;
+    }
+
+    // Check if agency can generate more coupons
+    if (!agency.canGenerateMoreCoupons()) {
+      res.status(400).json({
+        message: 'Maximum of 5 agent coupons can be active at once. Revoke or wait for coupons to be used.',
+        code: 'MAX_COUPONS_REACHED',
+        currentCoupons: agency.agentCoupons.filter(c => c.status === 'available').length,
+      });
+      return;
+    }
+
+    // Generate coupon codes (up to 5 total)
+    const availableCoupons = agency.agentCoupons.filter(c => c.status === 'available').length;
+    const couponsToGenerate = 5 - availableCoupons;
+
+    const newCoupons = [];
+    for (let i = 0; i < couponsToGenerate; i++) {
+      const code = agency.generateCouponCode();
+      const expiresAt = new Date();
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1); // Valid for 1 year
+
+      agency.agentCoupons.push({
+        code,
+        generatedAt: new Date(),
+        expiresAt,
+        status: 'available',
+      } as any);
+
+      newCoupons.push({ code, expiresAt });
+    }
+
+    await agency.save();
+
+    console.log(`✅ Generated ${couponsToGenerate} agent coupons for agency ${agency.name}`);
+
+    res.status(200).json({
+      message: `Successfully generated ${couponsToGenerate} agent coupon codes`,
+      coupons: newCoupons,
+      totalAvailable: agency.agentCoupons.filter(c => c.status === 'available').length,
+    });
+  } catch (error: any) {
+    console.error('Generate agent coupons error:', error);
+    res.status(500).json({
+      message: 'Error generating coupons',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Redeem agent coupon code (get yearly Pro subscription)
+// @route   POST /api/agencies/coupons/redeem
+// @access  Private
+export const redeemAgentCoupon = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const currentUser = req.user as IUser;
+    const { couponCode } = req.body;
+
+    if (!couponCode) {
+      res.status(400).json({
+        message: 'Coupon code is required',
+        code: 'MISSING_COUPON_CODE'
+      });
+      return;
+    }
+
+    // Find agency with this coupon code
+    const agency = await Agency.findOne({
+      'agentCoupons.code': couponCode,
+    });
+
+    if (!agency) {
+      res.status(404).json({
+        message: 'Invalid coupon code',
+        code: 'INVALID_COUPON'
+      });
+      return;
+    }
+
+    // Find the specific coupon
+    const coupon = agency.agentCoupons.find(c => c.code === couponCode);
+    if (!coupon) {
+      res.status(404).json({
+        message: 'Coupon not found',
+        code: 'COUPON_NOT_FOUND'
+      });
+      return;
+    }
+
+    // Check coupon status
+    if (coupon.status === 'used') {
+      res.status(400).json({
+        message: 'This coupon has already been used',
+        code: 'COUPON_ALREADY_USED',
+        usedBy: coupon.usedBy,
+        usedAt: coupon.usedAt,
+      });
+      return;
+    }
+
+    if (coupon.status === 'expired' || new Date(coupon.expiresAt) < new Date()) {
+      coupon.status = 'expired';
+      await agency.save();
+      res.status(400).json({
+        message: 'This coupon has expired',
+        code: 'COUPON_EXPIRED',
+        expiresAt: coupon.expiresAt,
+      });
+      return;
+    }
+
+    // Check if agency subscription is still active
+    if (!agency.isSubscriptionActive()) {
+      res.status(403).json({
+        message: 'Agency subscription is no longer active. Coupons cannot be redeemed.',
+        code: 'AGENCY_SUBSCRIPTION_INACTIVE'
+      });
+      return;
+    }
+
+    const user = await User.findById(currentUser._id);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Initialize subscription if doesn't exist
+    if (!user.subscription) {
+      user.subscription = {
+        tier: 'free',
+        status: 'active',
+        listingsLimit: 3,
+        activeListingsCount: 0,
+        privateSellerCount: 0,
+        agentCount: 0,
+        promotionCoupons: {
+          monthly: 0,
+          available: 0,
+          used: 0,
+          rollover: 0,
+          lastRefresh: new Date(),
+        },
+        savedSearchesLimit: 1,
+        totalPaid: 0,
+      };
+    }
+
+    // Upgrade user to agency_agent tier with Pro benefits
+    user.subscription.tier = 'agency_agent';
+    user.subscription.status = 'active';
+    user.subscription.listingsLimit = 20;
+    if (user.subscription.promotionCoupons) {
+      user.subscription.promotionCoupons.monthly = 0; // Agency agents share agency pool
+    }
+    user.subscription.expiresAt = new Date(coupon.expiresAt); // 1 year from coupon generation
+
+    // Associate user with agency
+    if (!user.agency) {
+      user.agency = {
+        role: 'none',
+      };
+    }
+    user.agency.agencyId = agency._id as any;
+    user.agency.role = 'agent';
+    user.agency.joinedAt = new Date();
+    user.agency.couponCode = couponCode;
+
+    await user.save();
+
+    // Mark coupon as used
+    coupon.status = 'used';
+    coupon.usedBy = user._id as any;
+    coupon.usedAt = new Date();
+
+    // Add user to agency's agents array if not already there
+    if (!agency.agents.some(id => String(id) === String(user._id))) {
+      agency.agents.push(user._id as any);
+    }
+
+    // Add to agentDetails for tracking
+    if (!agency.agentDetails) {
+      agency.agentDetails = [];
+    }
+    const existingAgentDetail = agency.agentDetails.find(
+      ad => String(ad.userId) === String(user._id)
+    );
+    if (!existingAgentDetail) {
+      agency.agentDetails.push({
+        userId: user._id,
+        joinedAt: new Date(),
+        isActive: true,
+        couponCode,
+      } as any);
+    } else {
+      existingAgentDetail.isActive = true;
+      existingAgentDetail.couponCode = couponCode;
+      existingAgentDetail.leftAt = undefined;
+    }
+
+    // Update stats
+    agency.stats.totalAgents = agency.agents.length;
+    agency.totalAgents = agency.agents.length;
+
+    await agency.save();
+
+    console.log(`✅ User ${user.email} redeemed agent coupon for agency ${agency.name}`);
+
+    res.status(200).json({
+      message: `Successfully joined ${agency.name} with yearly Pro subscription!`,
+      subscription: {
+        tier: user.subscription.tier,
+        status: user.subscription.status,
+        listingsLimit: user.subscription.listingsLimit,
+        expiresAt: user.subscription.expiresAt,
+      },
+      agency: {
+        id: agency._id,
+        name: agency.name,
+        role: user.agency.role,
+      },
+    });
+  } catch (error: any) {
+    console.error('Redeem agent coupon error:', error);
+    res.status(500).json({
+      message: 'Error redeeming coupon',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get agency coupon status (agent coupons + promotion coupons)
+// @route   GET /api/agencies/:id/coupons
+// @access  Private (Agency owner and agents)
+export const getAgencyCoupons = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const currentUser = req.user as IUser;
+    const { id } = req.params;
+
+    const agency = await Agency.findById(id);
+    if (!agency) {
+      res.status(404).json({ message: 'Agency not found' });
+      return;
+    }
+
+    // Check if user is owner or agent of this agency
+    const isOwner = String(agency.ownerId) === String(currentUser._id);
+    const isAgent = agency.agents.some(id => String(id) === String(currentUser._id));
+
+    if (!isOwner && !isAgent) {
+      res.status(403).json({
+        message: 'Access denied. Only agency owner and agents can view coupons.',
+        code: 'ACCESS_DENIED'
+      });
+      return;
+    }
+
+    // Refresh promotion coupons if needed
+    agency.refreshPromotionCoupons();
+    await agency.save();
+
+    // Get agent coupons (only show to owner)
+    const agentCoupons = isOwner ? agency.agentCoupons.map(c => ({
+      code: c.code,
+      status: c.status,
+      generatedAt: c.generatedAt,
+      expiresAt: c.expiresAt,
+      usedBy: c.usedBy,
+      usedAt: c.usedAt,
+    })) : null;
+
+    res.status(200).json({
+      subscription: {
+        status: agency.subscription.status,
+        expiresAt: agency.subscription.expiresAt,
+        isActive: agency.isSubscriptionActive(),
+      },
+      agentCoupons: agentCoupons ? {
+        coupons: agentCoupons,
+        available: agentCoupons.filter(c => c.status === 'available').length,
+        used: agentCoupons.filter(c => c.status === 'used').length,
+        expired: agentCoupons.filter(c => c.status === 'expired').length,
+        canGenerateMore: agency.canGenerateMoreCoupons(),
+      } : null,
+      promotionCoupons: {
+        monthly: agency.promotionCoupons.monthly,
+        available: agency.promotionCoupons.available,
+        used: agency.promotionCoupons.used,
+        lastRefresh: agency.promotionCoupons.lastRefresh,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get agency coupons error:', error);
+    res.status(500).json({
+      message: 'Error fetching coupons',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Use promotion coupon (agency-wide pool)
+// @route   POST /api/agencies/:id/coupons/use-promotion
+// @access  Private (Agency owner and agents)
+export const usePromotionCoupon = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const currentUser = req.user as IUser;
+    const { id } = req.params;
+    const { propertyId } = req.body;
+
+    if (!propertyId) {
+      res.status(400).json({
+        message: 'Property ID is required',
+        code: 'MISSING_PROPERTY_ID'
+      });
+      return;
+    }
+
+    const agency = await Agency.findById(id);
+    if (!agency) {
+      res.status(404).json({ message: 'Agency not found' });
+      return;
+    }
+
+    // Check if user is owner or agent of this agency
+    const isOwner = String(agency.ownerId) === String(currentUser._id);
+    const isAgent = agency.agents.some(id => String(id) === String(currentUser._id));
+
+    if (!isOwner && !isAgent) {
+      res.status(403).json({
+        message: 'Only agency owner and agents can use promotion coupons',
+        code: 'ACCESS_DENIED'
+      });
+      return;
+    }
+
+    // Check if agency subscription is active
+    if (!agency.isSubscriptionActive()) {
+      res.status(403).json({
+        message: 'Agency subscription must be active to use promotion coupons',
+        code: 'SUBSCRIPTION_INACTIVE'
+      });
+      return;
+    }
+
+    // Refresh promotion coupons if needed
+    agency.refreshPromotionCoupons();
+
+    // Check if coupons are available
+    if (agency.promotionCoupons.available <= 0) {
+      res.status(400).json({
+        message: 'No promotion coupons available. Pool refreshes monthly.',
+        code: 'NO_COUPONS_AVAILABLE',
+        available: agency.promotionCoupons.available,
+        monthly: agency.promotionCoupons.monthly,
+        lastRefresh: agency.promotionCoupons.lastRefresh,
+      });
+      return;
+    }
+
+    // Decrement available coupons
+    agency.promotionCoupons.available -= 1;
+    agency.promotionCoupons.used += 1;
+    await agency.save();
+
+    console.log(`✅ Agency ${agency.name} used promotion coupon for property ${propertyId} (${agency.promotionCoupons.available}/${agency.promotionCoupons.monthly} remaining)`);
+
+    res.status(200).json({
+      message: 'Promotion coupon applied successfully',
+      propertyId,
+      promotionCoupons: {
+        available: agency.promotionCoupons.available,
+        used: agency.promotionCoupons.used,
+        monthly: agency.promotionCoupons.monthly,
+      },
+    });
+  } catch (error: any) {
+    console.error('Use promotion coupon error:', error);
+    res.status(500).json({
+      message: 'Error using promotion coupon',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get agency agents with subscription details
+// @route   GET /api/agencies/:id/agents
+// @access  Private (Agency owner)
+export const getAgencyAgents = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const currentUser = req.user as IUser;
+    const { id } = req.params;
+
+    const agency = await Agency.findById(id).populate('agents', 'name email phone avatarUrl subscription agency agentLicense');
+    if (!agency) {
+      res.status(404).json({ message: 'Agency not found' });
+      return;
+    }
+
+    // Check if user is the agency owner
+    if (String(agency.ownerId) !== String(currentUser._id)) {
+      res.status(403).json({
+        message: 'Only agency owner can view agent details',
+        code: 'OWNER_ONLY'
+      });
+      return;
+    }
+
+    // Map agents with details
+    const agentsData = (agency.agents as any[]).map(agent => {
+      const agentDetail = agency.agentDetails?.find(
+        ad => String(ad.userId) === String(agent._id)
+      );
+
+      return {
+        id: agent._id,
+        name: agent.name,
+        email: agent.email,
+        phone: agent.phone,
+        avatarUrl: agent.avatarUrl,
+        subscription: {
+          tier: agent.subscription?.tier,
+          status: agent.subscription?.status,
+          listingsLimit: agent.subscription?.listingsLimit,
+          activeListingsCount: agent.subscription?.activeListingsCount,
+          expiresAt: agent.subscription?.expiresAt,
+        },
+        license: agent.agentLicense ? {
+          number: agent.agentLicense.number,
+          country: agent.agentLicense.country,
+          status: agent.agentLicense.status,
+          isVerified: agent.agentLicense.isVerified,
+        } : null,
+        joinedAt: agentDetail?.joinedAt,
+        couponCode: agentDetail?.couponCode,
+        isActive: agentDetail?.isActive ?? true,
+      };
+    });
+
+    res.status(200).json({
+      count: agentsData.length,
+      agents: agentsData,
+    });
+  } catch (error: any) {
+    console.error('Get agency agents error:', error);
+    res.status(500).json({
+      message: 'Error fetching agents',
+      error: error.message
+    });
+  }
+};

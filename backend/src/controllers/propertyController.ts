@@ -356,11 +356,26 @@ export const createProperty = async (
       console.log(`✅ Pro subscription auto-synced! User now has 20 active listings.`);
     }
 
-    // Check if Pro subscription is expired
-    if (user.proSubscription?.isActive && user.proSubscription.expiresAt && user.proSubscription.expiresAt < new Date()) {
-      user.proSubscription.isActive = false;
+    // Initialize subscription object if doesn't exist (for existing users migration)
+    if (!user.subscription) {
+      user.subscription = {
+        tier: 'free',
+        status: 'active',
+        listingsLimit: 3,
+        activeListingsCount: 0,
+        privateSellerCount: 0,
+        agentCount: 0,
+        promotionCoupons: {
+          monthly: 0,
+          available: 0,
+          used: 0,
+          rollover: 0,
+          lastRefresh: new Date(),
+        },
+        savedSearchesLimit: 1,
+        totalPaid: 0,
+      };
       await user.save();
-      console.log(`⏰ Pro subscription expired for user ${user.email}`);
     }
 
     // Determine which role is being used to create this listing
@@ -376,72 +391,37 @@ export const createProperty = async (
       return;
     }
 
-    // **CRITICAL: Agents MUST have Pro subscription to post**
+    // **IMPORTANT: Agents must have verified license**
     if (createdAsRole === 'agent') {
-      if (!user.proSubscription || !user.proSubscription.isActive) {
+      if (!user.agentLicense || user.agentLicense.status !== 'verified') {
         res.status(403).json({
-          message: 'Agents must have an active Pro subscription to post listings. Please subscribe to continue.',
-          code: 'AGENT_PRO_REQUIRED',
+          message: 'Agents must have a verified license to post listings. Please upload and verify your license first.',
+          code: 'AGENT_LICENSE_REQUIRED',
+          licenseStatus: user.agentLicense?.status || 'not_submitted',
         });
         return;
       }
     }
 
-    // Check listing limits based on subscription type
-    let currentCount = 0;
-    let limit = 0;
-    let hasProSubscription = user.proSubscription && user.proSubscription.isActive;
+    // Check listing limits based on subscription tier
+    const currentCount = user.subscription.activeListingsCount || 0;
+    const limit = user.subscription.listingsLimit || 3;
+    const tier = user.subscription.tier || 'free';
 
-    if (hasProSubscription) {
-      // Pro user - 20 active listings (shared between private seller and agent)
-      currentCount = user.proSubscription?.activeListingsCount || 0;
-      limit = user.proSubscription?.totalListingsLimit || 20;
+    console.log(`📊 ${tier.toUpperCase()} User ${user.email}: Creating listing as ${createdAsRole} (${currentCount + 1}/${limit} total, ${user.subscription.privateSellerCount || 0} private, ${user.subscription.agentCount || 0} agent)`);
 
-      console.log(`✅ Pro User ${user.email}: Creating listing (${currentCount + 1}/${limit} total, ${user.proSubscription?.privateSellerCount || 0} private, ${user.proSubscription?.agentCount || 0} agent)`);
-
-      if (currentCount >= limit) {
-        res.status(403).json({
-          message: `You have reached your Pro limit of ${limit} active listings. The limit is shared between private seller and agent roles. Please delete some listings to create new ones.`,
-          code: 'PRO_LISTING_LIMIT_REACHED',
-          limit,
-          current: currentCount,
-          privateSellerCount: user.proSubscription?.privateSellerCount || 0,
-          agentCount: user.proSubscription?.agentCount || 0,
-        });
-        return;
-      }
-    } else {
-      // Free user - only private sellers can post
-      if (createdAsRole === 'agent') {
-        res.status(403).json({
-          message: 'Free users cannot post as agents. Please subscribe to Pro to use agent features.',
-          code: 'FREE_AGENT_NOT_ALLOWED',
-        });
-        return;
-      }
-
-      // Free private seller - use freeSubscription (3 listings max)
-      if (!user.freeSubscription) {
-        user.freeSubscription = {
-          activeListingsCount: 0,
-          listingsLimit: 3,
-        };
-      }
-
-      currentCount = user.freeSubscription.activeListingsCount || 0;
-      limit = user.freeSubscription.listingsLimit || 3;
-
-      console.log(`📊 Free User ${user.email}: Creating listing (${currentCount + 1}/${limit})`);
-
-      if (currentCount >= limit) {
-        res.status(403).json({
-          message: `You have reached your free limit of ${limit} active listings. Subscribe to Pro for 20 active listings!`,
-          code: 'FREE_LISTING_LIMIT_REACHED',
-          limit,
-          current: currentCount,
-        });
-        return;
-      }
+    if (currentCount >= limit) {
+      res.status(403).json({
+        message: `You have reached your ${tier} tier limit of ${limit} active listings. ${tier === 'free' ? 'Upgrade to Pro for 20 active listings!' : 'Please delete some listings to create new ones.'}`,
+        code: 'LISTING_LIMIT_REACHED',
+        tier,
+        limit,
+        current: currentCount,
+        privateSellerCount: user.subscription.privateSellerCount || 0,
+        agentCount: user.subscription.agentCount || 0,
+        upgradeAvailable: tier === 'free',
+      });
+      return;
     }
 
     // Geocode the property address automatically
@@ -476,31 +456,18 @@ export const createProperty = async (
 
     const property = await Property.create(propertyData);
 
-    // Update unified listing counters
-    if (user.proSubscription && user.proSubscription.isActive) {
-      // Pro user - update unified counter and role-specific counter
-      user.proSubscription.activeListingsCount = (user.proSubscription.activeListingsCount || 0) + 1;
+    // Update subscription counters
+    user.subscription.activeListingsCount = (user.subscription.activeListingsCount || 0) + 1;
 
-      if (createdAsRole === 'private_seller') {
-        user.proSubscription.privateSellerCount = (user.proSubscription.privateSellerCount || 0) + 1;
-        console.log(`📊 Pro User: Total ${user.proSubscription.activeListingsCount}/15 listings (${user.proSubscription.privateSellerCount} as private seller, ${user.proSubscription.agentCount || 0} as agent)`);
-      } else if (createdAsRole === 'agent') {
-        user.proSubscription.agentCount = (user.proSubscription.agentCount || 0) + 1;
-        console.log(`📊 Pro User: Total ${user.proSubscription.activeListingsCount}/15 listings (${user.proSubscription.privateSellerCount || 0} as private seller, ${user.proSubscription.agentCount} as agent)`);
-      }
-    } else {
-      // Free user (private seller only)
-      if (!user.freeSubscription) {
-        user.freeSubscription = {
-          activeListingsCount: 0,
-          listingsLimit: 3,
-        };
-      }
-      user.freeSubscription.activeListingsCount = (user.freeSubscription.activeListingsCount || 0) + 1;
-      console.log(`📊 Free User: ${user.freeSubscription.activeListingsCount}/3 listings`);
+    if (createdAsRole === 'private_seller') {
+      user.subscription.privateSellerCount = (user.subscription.privateSellerCount || 0) + 1;
+      console.log(`📊 Updated counters: ${user.subscription.activeListingsCount}/${limit} total (${user.subscription.privateSellerCount} private, ${user.subscription.agentCount || 0} agent)`);
+    } else if (createdAsRole === 'agent') {
+      user.subscription.agentCount = (user.subscription.agentCount || 0) + 1;
+      console.log(`📊 Updated counters: ${user.subscription.activeListingsCount}/${limit} total (${user.subscription.privateSellerCount || 0} private, ${user.subscription.agentCount} agent)`);
     }
 
-    // Update user listing counts
+    // Update user listing counts (legacy fields)
     user.listingsCount += 1;
     user.totalListingsCreated += 1;
     await user.save();
@@ -664,25 +631,47 @@ export const deleteProperty = async (
     if (property.status === 'active' || property.status === 'pending' || property.status === 'draft') {
       const user = await User.findById(String(currentUser._id));
       if (user) {
+        // Auto-initialize subscription for existing users (migration-safe)
+        if (!user.subscription) {
+          user.subscription = {
+            tier: 'free',
+            status: 'active',
+            listingsLimit: 3,
+            activeListingsCount: 0,
+            privateSellerCount: 0,
+            agentCount: 0,
+            promotionCoupons: {
+              monthly: 0,
+              available: 0,
+              used: 0,
+              rollover: 0,
+              lastRefresh: new Date(),
+            },
+            savedSearchesLimit: 1,
+            totalPaid: 0,
+          };
+        }
+
         // Decrement legacy listingsCount (for backwards compatibility)
         if (user.listingsCount > 0) {
           user.listingsCount -= 1;
         }
 
-        // Decrement Pro subscription unified counters based on the property's role
-        if (user.proSubscription && user.proSubscription.isActive) {
-          if (user.proSubscription.activeListingsCount > 0) {
-            user.proSubscription.activeListingsCount -= 1;
-          }
+        // Decrement unified subscription counters based on the property's role
+        if (user.subscription.activeListingsCount > 0) {
+          user.subscription.activeListingsCount -= 1;
+        }
 
-          // Decrement role-specific counter based on how the property was created
-          if (property.createdAsRole === 'private_seller' && user.proSubscription.privateSellerCount > 0) {
-            user.proSubscription.privateSellerCount -= 1;
-            console.log(`📊 Deleted private seller listing. Remaining: ${user.proSubscription.activeListingsCount}/20 total (${user.proSubscription.privateSellerCount} private, ${user.proSubscription.agentCount || 0} agent)`);
-          } else if (property.createdAsRole === 'agent' && user.proSubscription.agentCount && user.proSubscription.agentCount > 0) {
-            user.proSubscription.agentCount -= 1;
-            console.log(`📊 Deleted agent listing. Remaining: ${user.proSubscription.activeListingsCount}/20 total (${user.proSubscription.privateSellerCount || 0} private, ${user.proSubscription.agentCount} agent)`);
-          }
+        // Decrement role-specific counter based on how the property was created
+        const tier = user.subscription.tier || 'free';
+        const limit = user.subscription.listingsLimit || 3;
+
+        if (property.createdAsRole === 'private_seller' && (user.subscription.privateSellerCount || 0) > 0) {
+          user.subscription.privateSellerCount = (user.subscription.privateSellerCount || 0) - 1;
+          console.log(`📊 ${tier.toUpperCase()} User: Deleted private seller listing. Remaining: ${user.subscription.activeListingsCount}/${limit} total (${user.subscription.privateSellerCount} private, ${user.subscription.agentCount || 0} agent)`);
+        } else if (property.createdAsRole === 'agent' && (user.subscription.agentCount || 0) > 0) {
+          user.subscription.agentCount = (user.subscription.agentCount || 0) - 1;
+          console.log(`📊 ${tier.toUpperCase()} User: Deleted agent listing. Remaining: ${user.subscription.activeListingsCount}/${limit} total (${user.subscription.privateSellerCount || 0} private, ${user.subscription.agentCount} agent)`);
         }
 
         await user.save();

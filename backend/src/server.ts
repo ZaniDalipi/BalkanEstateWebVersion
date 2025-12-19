@@ -36,6 +36,7 @@ import discountCodeRoutes from './routes/discountCodeRoutes';
 import agencyFeaturedSubscriptionRoutes from './routes/agencyFeaturedSubscriptionRoutes';
 import adminRoutes from './routes/adminRoutes';
 import cityMarketDataRoutes from './routes/cityMarketDataRoutes';
+import licenseRoutes from './routes/licenseRoutes';
 
 // Import services
 import { initializeGooglePlayService } from './services/googlePlayService';
@@ -193,6 +194,7 @@ app.use('/api/sales-history', salesHistoryRoutes);
 app.use('/api/discount-codes', discountCodeRoutes);
 app.use('/api/cities', cityMarketDataRoutes); // City market data and recommendations
 app.use('/api/admin', adminRoutes); // Admin panel routes (VPN + admin role required)
+app.use('/api/license', licenseRoutes); // Agent license verification
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

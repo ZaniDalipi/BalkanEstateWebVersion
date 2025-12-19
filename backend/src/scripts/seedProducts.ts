@@ -6,114 +6,208 @@ dotenv.config();
 
 const PRODUCTS = [
   // ============================================================================
-  // BUYER PLANS
+  // FREE TIER (baseline for both sellers and agents with verified license)
   // ============================================================================
   {
-    productId: 'buyer_pro_monthly',
-    name: 'Buyer Pro',
-    description: 'Never miss a new listing! Get notified the moment a property matching your criteria hits the market.',
+    productId: 'free_tier',
+    name: 'Free',
+    description: 'Get started with basic listing features. Perfect for occasional sellers or agents testing the platform.',
     type: 'subscription' as const,
-    price: 1.50,
+    tier: 'free' as const,
+    price: 0,
     currency: 'EUR',
     billingPeriod: 'monthly' as const,
+    durationDays: 30,
     features: [
-      'Instant email & SMS notifications',
-      'Save unlimited searches',
-      'Early access to new listings',
-      'Advanced market insights',
+      '3 active listings',
+      'Basic property details',
+      'Photo gallery (up to 10 images)',
+      'Contact form',
+      'Search visibility',
     ],
-    targetRole: 'buyer' as const,
+    targetRole: 'seller' as const,
     displayOrder: 1,
     highlighted: false,
     isActive: true,
     isVisible: true,
     hasFreeTrial: false,
-    gracePeriodDays: 3,
+    gracePeriodDays: 0,
+    listingsLimit: 3,
+    promotionCoupons: 0,
+    agentCoupons: 0,
+    savedSearchesLimit: 1,
   },
 
   // ============================================================================
-  // SELLER PLANS
+  // PRO TIER - For individual sellers/agents
   // ============================================================================
   {
-    productId: 'seller_pro_monthly',
+    productId: 'pro_monthly',
     name: 'Pro Monthly',
-    description: 'Great for starting out with professional selling tools.',
+    description: 'Professional selling tools with monthly flexibility. Great for active sellers.',
     type: 'subscription' as const,
-    price: 25,
+    tier: 'pro' as const,
+    price: 12,
     currency: 'EUR',
     billingPeriod: 'monthly' as const,
+    durationDays: 30,
     features: [
-      'Up to 3 active ads',
-      'Standard placement',
-      'Basic analytics',
-      'Email support',
-      'Mobile app access',
+      '20 active listings (6.6x more than Free!)',
+      '3 promotion coupons per month (€90 value)',
+      'Advanced analytics & insights',
+      'Lead management dashboard',
+      'Priority listing placement',
+      'Featured badge on listings',
+      'Email & SMS notifications',
+      'Priority support',
+      'No watermarks on images',
     ],
     targetRole: 'seller' as const,
     displayOrder: 2,
-    highlighted: false,
-    isActive: true,
-    isVisible: true,
-    hasFreeTrial: false,
-    gracePeriodDays: 3,
-  },
-  {
-    productId: 'seller_pro_yearly',
-    name: 'Pro Yearly',
-    description: 'Best value for serious sellers - save with annual billing.',
-    type: 'subscription' as const,
-    price: 200,
-    currency: 'EUR',
-    billingPeriod: 'yearly' as const,
-    features: [
-      'Up to 10 active property ads',
-      'Premium listing placement',
-      'Advanced analytics dashboard',
-      'Lead management system',
-      'Professional photography tips',
-      'Priority customer support',
-    ],
-    targetRole: 'seller' as const,
-    displayOrder: 1,
-    badge: 'MOST POPULAR',
-    badgeColor: 'red',
+    badge: 'BEST VALUE',
+    badgeColor: 'green',
     highlighted: true,
     cardStyle: {
-      backgroundColor: 'from-green-50 to-cyan-50',
-      borderColor: 'border-green-400',
+      backgroundColor: 'from-green-50 to-emerald-50',
+      borderColor: 'border-green-500',
+      textColor: 'text-gray-900',
     },
     isActive: true,
     isVisible: true,
     hasFreeTrial: false,
     gracePeriodDays: 3,
+    listingsLimit: 20,
+    promotionCoupons: 3,
+    agentCoupons: 0,
+    savedSearchesLimit: 10,
   },
   {
-    productId: 'seller_enterprise_yearly',
-    name: 'Enterprise',
-    description: 'For agencies and professional sellers with unlimited needs.',
+    productId: 'pro_yearly',
+    name: 'Pro Yearly',
+    description: 'Best deal for committed sellers - save €24/year (2 months free!)',
     type: 'subscription' as const,
-    price: 1000,
+    tier: 'pro' as const,
+    price: 120,
     currency: 'EUR',
     billingPeriod: 'yearly' as const,
+    durationDays: 365,
     features: [
-      'Unlimited Property Listings',
-      '3 Priority Ads per month',
-      'Dedicated Account Manager',
-      'API access for integrations',
-      'Custom branding options',
-      'Advanced reporting',
+      '20 active listings year-round',
+      '3 promotion coupons per month (rollover up to 6)',
+      'All Pro Monthly features',
+      'Save €24/year vs monthly',
+      'Annual billing convenience',
+      'Advanced analytics & insights',
+      'Lead management dashboard',
+      'Priority listing placement',
+      'Priority support',
     ],
     targetRole: 'seller' as const,
     displayOrder: 3,
+    badge: 'SAVE 17%',
+    badgeColor: 'amber',
     highlighted: false,
     cardStyle: {
-      backgroundColor: 'bg-neutral-800',
+      backgroundColor: 'from-amber-50 to-yellow-50',
+      borderColor: 'border-amber-500',
+    },
+    isActive: true,
+    isVisible: true,
+    hasFreeTrial: false,
+    gracePeriodDays: 3,
+    listingsLimit: 20,
+    promotionCoupons: 3,
+    agentCoupons: 0,
+    savedSearchesLimit: 10,
+  },
+
+  // ============================================================================
+  // AGENCY TIER - For real estate agencies (€1000/year)
+  // ============================================================================
+  {
+    productId: 'agency_yearly',
+    name: 'Agency',
+    description: 'Complete agency solution - equip your team with Pro subscriptions and shared promotion pool.',
+    type: 'subscription' as const,
+    tier: 'agency' as const,
+    price: 1000,
+    currency: 'EUR',
+    billingPeriod: 'yearly' as const,
+    durationDays: 365,
+    features: [
+      '5 yearly Pro agent coupons (€600 value)',
+      '100 total listings (5 agents × 20 each)',
+      '15 promotion coupons per month (agency-wide pool)',
+      'Agency branding page with logo & cover',
+      'Team dashboard & analytics',
+      'Agent performance tracking',
+      'Dedicated account manager',
+      'White-label options',
+      'Save €217/month vs 5 individual Pro accounts',
+    ],
+    targetRole: 'agent' as const,
+    displayOrder: 4,
+    badge: 'BEST FOR TEAMS',
+    badgeColor: 'red',
+    highlighted: true,
+    cardStyle: {
+      backgroundColor: 'from-slate-900 to-gray-800',
+      borderColor: 'border-amber-400',
       textColor: 'text-white',
     },
     isActive: true,
     isVisible: true,
     hasFreeTrial: false,
     gracePeriodDays: 7,
+    listingsLimit: 0, // Agency owners don't get listings - they distribute coupons
+    promotionCoupons: 15,
+    agentCoupons: 5,
+    savedSearchesLimit: 0,
+  },
+
+  // ============================================================================
+  // BUYER TIER - For property buyers (€3/month)
+  // ============================================================================
+  {
+    productId: 'buyer_monthly',
+    name: 'Buyer Pro',
+    description: 'Never miss your dream property - get instant alerts and market insights.',
+    type: 'subscription' as const,
+    tier: 'buyer' as const,
+    price: 3,
+    currency: 'EUR',
+    billingPeriod: 'monthly' as const,
+    durationDays: 30,
+    features: [
+      'Unlimited saved searches',
+      'Instant email & SMS alerts',
+      'Priority viewing access',
+      'Price drop notifications',
+      'New listing alerts (before public)',
+      'Market insights & trends',
+      'Investment calculator',
+      'Mortgage pre-qualification',
+      'Ad-free browsing',
+      'Compare up to 10 properties',
+    ],
+    targetRole: 'buyer' as const,
+    displayOrder: 5,
+    badge: 'MOST POPULAR',
+    badgeColor: 'blue',
+    highlighted: false,
+    cardStyle: {
+      backgroundColor: 'from-blue-50 to-indigo-50',
+      borderColor: 'border-blue-500',
+    },
+    isActive: true,
+    isVisible: true,
+    hasFreeTrial: true,
+    trialPeriodDays: 7,
+    gracePeriodDays: 3,
+    listingsLimit: 0, // Buyers don't create listings
+    promotionCoupons: 0,
+    agentCoupons: 0,
+    savedSearchesLimit: -1, // -1 = unlimited
   },
 ];
 
@@ -124,29 +218,31 @@ async function seedProducts() {
     await mongoose.connect(mongoUri);
     console.log('✅ Connected to MongoDB');
 
-    // Clear existing products (optional - comment out if you want to keep existing)
-    // await Product.deleteMany({});
-    // console.log('🗑️  Cleared existing products');
-
-    // Insert products
+    // Insert/update products
     for (const productData of PRODUCTS) {
       await Product.findOneAndUpdate(
         { productId: productData.productId },
         productData,
         { upsert: true, new: true }
       );
-      console.log(`✅ Seeded product: ${productData.name} (${productData.productId})`);
+      console.log(`✅ Seeded product: ${productData.name} (${productData.productId}) - €${productData.price}/${productData.billingPeriod}`);
     }
 
     console.log('\n🎉 Successfully seeded all products!');
     console.log(`📊 Total products: ${PRODUCTS.length}`);
+    console.log('\n💰 Pricing Summary:');
+    console.log('   Free: €0 (3 listings)');
+    console.log('   Pro Monthly: €12 (20 listings, 3 promo coupons)');
+    console.log('   Pro Yearly: €120 (20 listings, 3 promo coupons, save €24)');
+    console.log('   Agency: €1000/year (5 agent coupons, 15 promo coupons)');
+    console.log('   Buyer Pro: €3/month (unlimited searches & alerts)');
 
   } catch (error) {
     console.error('❌ Error seeding products:', error);
     process.exit(1);
   } finally {
     await mongoose.disconnect();
-    console.log('👋 Disconnected from MongoDB');
+    console.log('\n👋 Disconnected from MongoDB');
   }
 }
 
