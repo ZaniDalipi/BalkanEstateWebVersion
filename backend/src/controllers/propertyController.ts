@@ -12,6 +12,40 @@ import {
   deleteFolder,
 } from '../services/cloudinaryService';
 
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * PROPERTY ROLE SYSTEM - IMPORTANT BUSINESS LOGIC
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Properties are created with a LOCKED role that determines their classification:
+ *
+ * 1. PRIVATE SELLER (createdAsRole: 'private_seller')
+ *    - Non-licensed individual selling their own property
+ *    - Free users can only create as private seller (3 listings max)
+ *    - Pro users can create as private seller (20 listings total shared with agent)
+ *    - Once created as private seller, ALWAYS stays private seller
+ *
+ * 2. AGENT (createdAsRole: 'agent')
+ *    - Licensed real estate professional
+ *    - Can be independent or part of an agency
+ *    - REQUIRES Pro subscription to post listings
+ *    - Once created as agent, ALWAYS stays agent
+ *    - Tracks agency name and license number at creation time
+ *
+ * IMMUTABILITY RULES:
+ * - The 'createdAsRole' field is SET ONCE at creation and NEVER changes
+ * - Properties posted as private seller stay as private seller forever
+ * - Properties posted as agent stay as agent forever
+ * - This ensures proper analytics, role separation, and subscription enforcement
+ *
+ * SUBSCRIPTION LIMITS:
+ * - Free users: 3 active listings (private seller only)
+ * - Pro users: 20 active listings total (can be split between roles however they want)
+ * - Role-specific counters track: privateSellerCount + agentCount = totalListingsCount
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
 // @desc    Get all properties with filters
 // @route   GET /api/properties
 // @access  Public
@@ -521,8 +555,33 @@ export const updateProperty = async (
       return;
     }
 
-    // Update property
-    Object.assign(property, req.body);
+    // IMPORTANT: Protect immutable fields from being changed after creation
+    // These fields are set once at creation and should NEVER change:
+    // - createdAsRole: Determines if this was posted as private_seller or agent
+    // - sellerId: The owner of the listing
+    // - createdByName, createdByEmail: Creator identification
+    // - createdByAgencyName, createdByLicenseNumber: Agent credentials
+    const immutableFields = [
+      'createdAsRole',
+      'sellerId',
+      'createdByName',
+      'createdByEmail',
+      'createdByAgencyName',
+      'createdByLicenseNumber',
+    ];
+
+    // Remove immutable fields from update body to prevent tampering
+    const updateData = { ...req.body };
+    immutableFields.forEach(field => delete updateData[field]);
+
+    // Log if someone tried to change immutable fields
+    const attemptedImmutableChanges = immutableFields.filter(field => req.body[field] !== undefined);
+    if (attemptedImmutableChanges.length > 0) {
+      console.warn(`⚠️ Blocked attempt to change immutable fields: ${attemptedImmutableChanges.join(', ')}`);
+    }
+
+    // Update property with only mutable fields
+    Object.assign(property, updateData);
     await property.save();
 
     // Populate seller info
@@ -604,11 +663,31 @@ export const deleteProperty = async (
     // Decrement listing count if property is active or pending
     if (property.status === 'active' || property.status === 'pending' || property.status === 'draft') {
       const user = await User.findById(String(currentUser._id));
-      if (user && user.listingsCount > 0) {
-        user.listingsCount -= 1;
+      if (user) {
+        // Decrement legacy listingsCount (for backwards compatibility)
+        if (user.listingsCount > 0) {
+          user.listingsCount -= 1;
+        }
+
+        // Decrement Pro subscription unified counters based on the property's role
+        if (user.proSubscription && user.proSubscription.isActive) {
+          if (user.proSubscription.activeListingsCount > 0) {
+            user.proSubscription.activeListingsCount -= 1;
+          }
+
+          // Decrement role-specific counter based on how the property was created
+          if (property.createdAsRole === 'private_seller' && user.proSubscription.privateSellerCount > 0) {
+            user.proSubscription.privateSellerCount -= 1;
+            console.log(`📊 Deleted private seller listing. Remaining: ${user.proSubscription.activeListingsCount}/20 total (${user.proSubscription.privateSellerCount} private, ${user.proSubscription.agentCount || 0} agent)`);
+          } else if (property.createdAsRole === 'agent' && user.proSubscription.agentCount && user.proSubscription.agentCount > 0) {
+            user.proSubscription.agentCount -= 1;
+            console.log(`📊 Deleted agent listing. Remaining: ${user.proSubscription.activeListingsCount}/20 total (${user.proSubscription.privateSellerCount || 0} private, ${user.proSubscription.agentCount} agent)`);
+          }
+        }
+
         await user.save();
 
-        // Update agent activeListings count if user is an agent
+        // Update agent activeListings count if user is an agent (legacy Agent collection)
         if (user.role === 'agent') {
           const agent = await Agent.findOne({ userId: user._id });
           if (agent && agent.activeListings > 0) {
