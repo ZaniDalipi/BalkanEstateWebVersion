@@ -110,7 +110,6 @@ const LANGUAGES = [
     'Romanian'
 ];
 const ALL_VALID_TAGS: PropertyImageTag[] = ['exterior', 'living_room', 'kitchen', 'bedroom', 'bathroom', 'other'];
-const FREE_LISTING_LIMIT = 3;
 
 
 // --- Helper Icons ---
@@ -308,7 +307,6 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const { showError, showWarning, showSuccess, showInfo } = useAlert();
     const [mode, setMode] = useState<Mode>('ai');
     const [step, setStep] = useState<Step>('init');
-    const [error, setError] = useState<string | null>(null);
     const [images, setImages] = useState<ImageData[]>([]);
     const [floorplanImage, setFloorplanImage] = useState<ImageData>({ file: null, previewUrl: '' });
     const [listingData, setListingData] = useState<ListingData>(initialListingData);
@@ -356,13 +354,13 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const wasModalOpen = useRef(isPricingModalOpen);
     useEffect(() => {
         if (wasModalOpen.current && !isPricingModalOpen && pendingProperty) {
-            if (!currentUser?.isSubscribed) {
-                setError(`You've reached your free listing limit of ${FREE_LISTING_LIMIT}. Please subscribe to publish more properties.`);
-            }
+            const listingsLimit = currentUser?.subscription?.listingsLimit || 3;
+            const tierName = currentUser?.subscription?.tier === 'pro' ? 'Pro' : 'Free';
+            showError('Listing Limit Reached', `You've reached your ${tierName} listing limit of ${listingsLimit}. ${tierName === 'Free' ? 'Please subscribe to publish more properties.' : ''}`);
             dispatch({ type: 'SET_PENDING_PROPERTY', payload: null });
         }
         wasModalOpen.current = isPricingModalOpen;
-    }, [isPricingModalOpen, pendingProperty, currentUser?.isSubscribed, dispatch]);
+    }, [isPricingModalOpen, pendingProperty, currentUser?.subscription, dispatch, showError]);
 
     // Populate form if editing
     useEffect(() => {
@@ -526,7 +524,6 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
 
         // Compress images on the client side for faster uploads
         setIsCompressing(true);
-        setError(null);
 
         try {
             const compressionOptions = {
@@ -581,7 +578,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             console.log(`🎉 Successfully processed ${compressedImages.length} images`);
         } catch (error) {
             console.error('Image compression error:', error);
-            setError('Failed to process images. Please try again.');
+            showError('Image Processing Failed', 'Failed to process images. Please try again.');
         } finally {
             setIsCompressing(false);
             // Reset input so the same files can be selected again if needed
@@ -678,10 +675,9 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
 
     const handleGenerate = async () => {
         if (images.length === 0) {
-            setError('Please upload at least one image.');
+            showError('Images Required', 'Please upload at least one image.');
             return;
         }
-        setError(null);
         setStep('loading');
         try {
             const imageFiles = images.map(img => img.file).filter((f): f is File => f !== null);
@@ -690,7 +686,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                     setStep('form');
                     return;
                 }
-                setError("No new images were uploaded to analyze. Please add new image files.");
+                showError('No New Images', 'No new images were uploaded to analyze. Please add new image files.');
                 setStep('init');
                 return;
             }
@@ -724,9 +720,9 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
         } catch (e) {
             console.error('⚠️ AI description generation failed:', e);
             if (e instanceof Error) {
-                setError(`AI generation failed: ${e.message}. You can continue with manual entry instead.`);
+                showWarning('AI Generation Failed', `${e.message}. You can continue with manual entry instead.`);
             } else {
-                setError('AI generation is temporarily unavailable. You can continue with manual entry instead.');
+                showWarning('AI Temporarily Unavailable', 'AI generation is temporarily unavailable. You can continue with manual entry instead.');
             }
             // Allow user to continue with manual entry by going back to init
             setStep('init');
@@ -767,33 +763,32 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!currentUser) {
-            setError("You must be logged in to create a listing.");
+            showError('Authentication Required', "You must be logged in to create a listing.");
             dispatch({ type: 'TOGGLE_AUTH_MODAL', payload: { isOpen: true, view: 'signup' } });
             return;
         }
         setIsSubmitting(true);
-        setError(null);
 
         // Validation
         if (!selectedCountry || !selectedCity) {
-            setError("Please select both country and city.");
+            showError('Location Required', "Please select both country and city.");
             setIsSubmitting(false);
             return;
         }
 
         if (listingData.lat === 0 || listingData.lng === 0) {
-            setError("Please select a valid city to set the location.");
+            showError('Location Required', "Please select a valid city to set the location.");
             setIsSubmitting(false);
             return;
         }
 
         if (listingData.propertyType === 'apartment' && (!listingData.floorNumber || listingData.floorNumber < 1)) {
-            setError("For apartments, please enter a valid floor number (1 or greater).");
+            showError('Invalid Floor Number', "For apartments, please enter a valid floor number (1 or greater).");
             setIsSubmitting(false);
             return;
         }
         if ((listingData.propertyType === 'house' || listingData.propertyType === 'villa') && (!listingData.totalFloors || listingData.totalFloors < 1)) {
-            setError("For houses and villas, please enter the total number of floors (1 or greater).");
+            showError('Invalid Floor Count', "For houses and villas, please enter the total number of floors (1 or greater).");
             setIsSubmitting(false);
             return;
         }
@@ -852,7 +847,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                     });
                 } catch (uploadError: any) {
                     console.error('❌ Failed to upload images to Cloudinary:', uploadError);
-                    setError(`Failed to upload images: ${uploadError.message || 'Unknown error'}. Please try again.`);
+                    showError('Upload Failed', `Failed to upload images: ${uploadError.message || 'Unknown error'}. Please try again.`);
                     setIsSubmitting(false);
                     return;
                 }
@@ -968,9 +963,12 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 distanceToHospital: distances.distanceToHospital,
             };
 
-            if (!propertyToEdit && !currentUser.isSubscribed) {
+            // Check if user has reached their listing limit (from database subscription)
+            if (!propertyToEdit) {
                 const userListings = properties.filter(p => p.sellerId === currentUser.id);
-                if (userListings.length >= FREE_LISTING_LIMIT) {
+                const listingsLimit = currentUser.subscription?.listingsLimit || 3; // Default to 3 if not set
+
+                if (userListings.length >= listingsLimit) {
                     dispatch({ type: 'SET_PENDING_PROPERTY', payload: newProperty });
                     dispatch({ type: 'TOGGLE_LISTING_LIMIT_WARNING', payload: true });
                     setIsSubmitting(false);
@@ -1151,7 +1149,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             }, 3000);
         } catch (err) {
             console.error('Error creating listing with promotion:', err);
-            setError('Failed to create listing. Please try again.');
+            showError('Failed to Create Listing', 'Failed to create listing. Please try again.');
             setStep('form');
         } finally {
             setIsSubmitting(false);
@@ -1177,7 +1175,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
             }, 3000);
         } catch (err) {
             console.error('Error creating listing:', err);
-            setError('Failed to create listing. Please try again.');
+            showError('Failed to Create Listing', 'Failed to create listing. Please try again.');
             setStep('form');
         } finally {
             setIsSubmitting(false);
@@ -1239,8 +1237,6 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                     onRoleSelect={setSelectedRole}
                 />
             )}
-
-            {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">{error}</div>}
 
             {mode === 'ai' && step === 'init' && (
                 <div className="animate-fade-in">
