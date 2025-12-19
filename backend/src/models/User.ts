@@ -104,27 +104,63 @@ export interface IUser extends Document {
   activeListingsLimit: number; // Max active listings allowed
   paidListingsCount: number; // Count of paid extra listings
 
-  // Unified Pro Subscription (20 listings shared across both roles)
-  proSubscription?: {
-    isActive: boolean;
-    plan: 'pro_monthly' | 'pro_yearly';
+  // Enhanced Subscription System
+  subscription: {
+    // Core subscription info
+    tier: 'free' | 'pro' | 'agency_owner' | 'agency_agent' | 'buyer';
+    status: 'active' | 'canceled' | 'expired' | 'trial';
+    startDate?: Date;
     expiresAt?: Date;
-    startedAt?: Date;
-    totalListingsLimit: number; // 20 for Pro (shared between private seller and agent)
-    activeListingsCount: number; // Total active listings (private + agent combined)
-    privateSellerCount: number; // Listings posted as private seller
-    agentCount: number; // Listings posted as agent
-    // Pro subscription benefits (for all Pro users)
+    stripeCustomerId?: string;
+    stripeSubscriptionId?: string;
+
+    // Listing limits (for sellers: free/pro/agency)
+    listingsLimit: number; // 3 for free, 20 for pro/agency agents
+    activeListingsCount: number; // Current active listings
+    privateSellerCount: number; // Posted as private seller
+    agentCount: number; // Posted as agent
+
+    // Promotion Coupons (for Pro and Agency users)
     promotionCoupons?: {
-      highlightCoupons: number; // 2 starter highlight coupons for all Pro users
-      usedHighlightCoupons: number;
+      monthly: number; // 3 for Pro, 15 for Agency (agency-wide)
+      available: number; // Current available
+      used: number; // Used this period
+      rollover: number; // Rolled over from last month (max 6 for Pro)
+      lastRefresh: Date; // Last monthly refresh
+    };
+
+    // Buyer-specific features
+    savedSearchesLimit?: number; // 1 free, 10 pro, unlimited buyer
+
+    // Value tracking
+    totalPaid: number; // Lifetime value
+    lastPayment?: {
+      amount: number;
+      date: Date;
+      method: 'stripe' | 'agency_coupon';
     };
   };
 
-  // Free tier tracking (for non-Pro users)
-  freeSubscription?: {
-    activeListingsCount: number; // 3 free listings for private sellers
-    listingsLimit: number; // Always 3
+  // Agent License Verification (for agents only)
+  agentLicense?: {
+    number: string;
+    country: string;
+    expiryDate?: Date;
+    documentUrl?: string; // S3/Cloudinary URL to uploaded license
+    isVerified: boolean;
+    verifiedAt?: Date;
+    verifiedBy?: mongoose.Types.ObjectId; // Admin who verified
+    rejectionReason?: string;
+    status: 'pending' | 'verified' | 'rejected' | 'expired';
+  };
+
+  // Agency Association (for agency owners and agents)
+  agency?: {
+    agencyId?: mongoose.Types.ObjectId;
+    role: 'owner' | 'agent' | 'none';
+    joinedAt?: Date;
+    couponCode?: string; // If joined via coupon
+    leftAt?: Date;
   };
 
   // Neighborhood Insights Usage Tracking
@@ -438,55 +474,124 @@ const UserSchema: Schema = new Schema(
       type: Number,
       default: 0,
     },
-    // Unified Pro Subscription (15 listings shared across both roles)
-    proSubscription: {
-      isActive: {
-        type: Boolean,
-        default: false,
-      },
-      plan: {
+    // Enhanced Subscription System
+    subscription: {
+      tier: {
         type: String,
-        enum: ['pro_monthly', 'pro_yearly'],
+        enum: ['free', 'pro', 'agency_owner', 'agency_agent', 'buyer'],
+        default: 'free',
+        index: true,
       },
+      status: {
+        type: String,
+        enum: ['active', 'canceled', 'expired', 'trial'],
+        default: 'active',
+      },
+      startDate: Date,
       expiresAt: Date,
-      startedAt: Date,
-      totalListingsLimit: {
+      stripeCustomerId: String,
+      stripeSubscriptionId: String,
+
+      // Listing limits
+      listingsLimit: {
         type: Number,
-        default: 20, // 20 listings for Pro
+        default: 3, // Free tier default
       },
-      activeListingsCount: {
-        type: Number,
-        default: 0, // Total count (private + agent)
-      },
-      privateSellerCount: {
-        type: Number,
-        default: 0, // Listings posted as private seller
-      },
-      agentCount: {
-        type: Number,
-        default: 0, // Listings posted as agent
-      },
-      promotionCoupons: {
-        highlightCoupons: {
-          type: Number,
-          default: 0, // 2 coupons given to all Pro users (set when subscription activates)
-        },
-        usedHighlightCoupons: {
-          type: Number,
-          default: 0,
-        },
-      },
-    },
-    // Free tier tracking (3 listings for non-Pro private sellers)
-    freeSubscription: {
       activeListingsCount: {
         type: Number,
         default: 0,
       },
-      listingsLimit: {
+      privateSellerCount: {
         type: Number,
-        default: 3, // Always 3 for free tier
+        default: 0,
       },
+      agentCount: {
+        type: Number,
+        default: 0,
+      },
+
+      // Promotion coupons
+      promotionCoupons: {
+        monthly: {
+          type: Number,
+          default: 0, // 0 for free, 3 for pro, 15 for agency
+        },
+        available: {
+          type: Number,
+          default: 0,
+        },
+        used: {
+          type: Number,
+          default: 0,
+        },
+        rollover: {
+          type: Number,
+          default: 0, // Max 6 for Pro individual users
+        },
+        lastRefresh: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+
+      // Buyer features
+      savedSearchesLimit: {
+        type: Number,
+        default: 1, // 1 for free, 10 for pro, unlimited (-1) for buyer
+      },
+
+      // Value tracking
+      totalPaid: {
+        type: Number,
+        default: 0,
+      },
+      lastPayment: {
+        amount: Number,
+        date: Date,
+        method: {
+          type: String,
+          enum: ['stripe', 'agency_coupon'],
+        },
+      },
+    },
+
+    // Agent License Verification
+    agentLicense: {
+      number: String,
+      country: String,
+      expiryDate: Date,
+      documentUrl: String,
+      isVerified: {
+        type: Boolean,
+        default: false,
+      },
+      verifiedAt: Date,
+      verifiedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      rejectionReason: String,
+      status: {
+        type: String,
+        enum: ['pending', 'verified', 'rejected', 'expired'],
+        default: 'pending',
+      },
+    },
+
+    // Agency Association
+    agency: {
+      agencyId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Agency',
+      },
+      role: {
+        type: String,
+        enum: ['owner', 'agent', 'none'],
+        default: 'none',
+      },
+      joinedAt: Date,
+      couponCode: String,
+      leftAt: Date,
     },
     neighborhoodInsights: {
       monthlyCount: {
