@@ -10,9 +10,11 @@
   },
   "dependencies": {
     "@google/genai": "^1.27.0",
+    "@google/generative-ai": "^0.24.1",
     "@tanstack/react-query": "^5.90.11",
     "@tanstack/react-query-devtools": "^5.91.1",
     "browser-image-compression": "^2.0.2",
+    "cron": "^4.4.0",
     "framer-motion": "^12.23.25",
     "generative-ai": "^0.1.4",
     "heroku": "^8.7.1",
