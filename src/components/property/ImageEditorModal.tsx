@@ -192,7 +192,7 @@ export const ImageEditorModal: React.FC<ImageEditorModalProps> = ({ imageUrl, pr
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-95 flex flex-col">
+    <div className="fixed inset-0 z-[1100] bg-black bg-opacity-95 flex flex-col">
       {/* Toolbar */}
       <div className="bg-gray-900 p-4 flex items-center justify-between gap-4">
         <button onClick={onClose} className="text-white hover:text-gray-300">
