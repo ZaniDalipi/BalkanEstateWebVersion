@@ -161,8 +161,8 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             drawnBoundsJSON: null, // Don't lock to search bounds, let user modify view
         });
 
-        // Fly to the location's center
-        setFlyToTarget({ center: [Number(suggestion.lat), Number(suggestion.lon)], zoom: 12 });
+        // Fly to the location's center with a wider zoom to show nearby properties
+        setFlyToTarget({ center: [Number(suggestion.lat), Number(suggestion.lon)], zoom: 10 });
         setIsQueryInputFocused(false);
     };
 
@@ -303,6 +303,13 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             const withinDrawn = baseFilteredProperties.filter(p => drawnBounds.contains([p.lat, p.lng]));
             return withinDrawn;
         }
+
+        // If there's an active search query, show all matching properties
+        // without restricting to map bounds (so nearby properties are visible)
+        if (activeFilters.query && activeFilters.query.trim()) {
+            return baseFilteredProperties;
+        }
+
         // Filter to show only properties visible in the current map view
         if (mapBounds) {
             const withinView = baseFilteredProperties.filter(p => mapBounds.contains([p.lat, p.lng]));
@@ -310,7 +317,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         }
         // Fallback to all filtered properties if no bounds set
         return baseFilteredProperties;
-    }, [baseFilteredProperties, drawnBounds, mapBounds]);
+    }, [baseFilteredProperties, drawnBounds, mapBounds, activeFilters.query]);
 
 
     const handleFilterChange = useCallback(<K extends keyof Filters>(name: K, value: Filters[K]) => {
