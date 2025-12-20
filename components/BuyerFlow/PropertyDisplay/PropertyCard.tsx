@@ -158,19 +158,37 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
             )}
           </div>
 
-          {/* Favorite Button */}
-          <button
-            onClick={handleFavoriteClick}
-            className={`p-2 rounded-full shadow-lg transition-all duration-300 ${
-              isFavorited
-                ? 'bg-red-500 text-white scale-110'
-                : 'bg-white/95 backdrop-blur-sm text-neutral-600 hover:bg-red-500 hover:text-white hover:scale-110'
-            }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-transform duration-300 ${isFavorited ? 'fill-current scale-110' : ''}`} fill={isFavorited ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          </button>
+          {/* Right side buttons/badges */}
+          <div className="flex flex-col gap-1.5 items-end">
+            {/* 360° Tour Badge */}
+            {property.virtualTour360Url && (
+              <div
+                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1"
+                title="360° Virtual Tour Available"
+              >
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                  <path d="M2 12h20" />
+                </svg>
+                <span>360°</span>
+              </div>
+            )}
+
+            {/* Favorite Button */}
+            <button
+              onClick={handleFavoriteClick}
+              className={`p-2 rounded-full shadow-lg transition-all duration-300 ${
+                isFavorited
+                  ? 'bg-red-500 text-white scale-110'
+                  : 'bg-white/95 backdrop-blur-sm text-neutral-600 hover:bg-red-500 hover:text-white hover:scale-110'
+              }`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-transform duration-300 ${isFavorited ? 'fill-current scale-110' : ''}`} fill={isFavorited ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Bottom info bar on image */}
