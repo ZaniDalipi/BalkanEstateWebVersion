@@ -600,23 +600,20 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             <div className={`flex h-full w-full flex-col md:flex-row transition-all duration-300 relative ${isMobile && isFiltersOpen ? 'blur-sm pointer-events-none' : ''}`}>
                 {/* --- Left Panel: List & Filters --- */}
                  <div className={`absolute inset-0 z-10 h-full w-full bg-white md:relative md:w-[55%] md:flex-shrink-0 md:border-r md:border-neutral-200 md:flex md:flex-col ${ isMobile && mobileView === 'list' ? 'translate-x-0' : 'translate-x-full md:translate-x-0' } transition-transform duration-300`}>
-                    <div className="hidden md:block p-3 border-b border-neutral-200 flex-shrink-0">
-                        <h2 className="text-base font-semibold text-neutral-800 mb-3">Properties for Sale</h2>
-                        <div className="flex gap-2 items-start">
-                            {renderSearchInput(false)}
-                            <select
-                                value={filters.country}
-                                onChange={(e) => handleFilterChange('country', e.target.value)}
-                                className="flex-shrink-0 bg-white border border-neutral-300 rounded-xl text-neutral-900 text-sm px-3 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all appearance-none cursor-pointer"
-                                style={{ backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")", backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
-                            >
-                                {COUNTRY_OPTIONS.map(option => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                    <div className="hidden md:flex p-3 border-b border-neutral-200 flex-shrink-0 items-center justify-between">
+                        <h2 className="text-base font-semibold text-neutral-800">Properties for Sale</h2>
+                        <select
+                            value={filters.country}
+                            onChange={(e) => handleFilterChange('country', e.target.value)}
+                            className="bg-white border border-neutral-300 rounded-xl text-neutral-900 text-sm px-3 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all appearance-none cursor-pointer"
+                            style={{ backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")", backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
+                        >
+                            {COUNTRY_OPTIONS.map(option => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                     <PropertyList {...propertyListProps} isMobile={isMobile} showList={true} showFilters={!isMobile} />
                 </div>
@@ -624,6 +621,50 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
 
                 {/* --- Right Panel: Map --- */}
                 <div className="h-full w-full md:w-[45%] relative z-0 flex flex-col">
+                    {/* Search Bar Above Map - Desktop Only */}
+                    <div className="hidden md:block p-3 bg-white border-b border-neutral-200 flex-shrink-0">
+                        <div className="relative" ref={searchWrapperRef}>
+                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <SearchIcon className="h-5 w-5 text-neutral-400" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Search by city, address, or neighborhood..."
+                                value={filters.query}
+                                onChange={(e) => handleFilterChange('query', e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                onFocus={() => setIsQueryInputFocused(true)}
+                                className="block w-full bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 text-sm px-4 py-2.5 pl-10 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all placeholder:text-neutral-400"
+                            />
+                            {filters.query && !isSearchingLocation && (
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <button onClick={() => handleFilterChange('query', '')} className="text-neutral-400 hover:text-neutral-800 transition-colors">
+                                        <XMarkIcon className="h-5 w-5" />
+                                    </button>
+                                </div>
+                            )}
+                            {isSearchingLocation && (
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <SpinnerIcon className="h-5 w-5 text-primary animate-spin" />
+                                </div>
+                            )}
+                            {suggestions.length > 0 && isQueryInputFocused && (
+                                <ul className="absolute z-30 w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                    {suggestions.map((suggestion) => (
+                                        <li
+                                            key={suggestion.place_id}
+                                            onMouseDown={() => handleSuggestionClick(suggestion)}
+                                            className="px-4 py-3 text-sm text-neutral-700 hover:bg-primary/5 cursor-pointer flex items-center gap-3 transition-colors"
+                                        >
+                                            <MapPinIcon className="w-5 h-5 text-primary flex-shrink-0" />
+                                            <span>{suggestion.display_name}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="flex-grow relative">
                         <MapComponent {...mapProps} searchMode={searchMode} />
                     </div>
