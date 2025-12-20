@@ -298,19 +298,15 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     }, [properties, activeFilters]);
 
     const listProperties = useMemo(() => {
-        // If a specific area is drawn, use it exclusively.
+        // If a specific area is drawn by the user, filter to that area exclusively
         if (drawnBounds) {
             const withinDrawn = baseFilteredProperties.filter(p => drawnBounds.contains([p.lat, p.lng]));
-            // If drawn bounds exists but no properties inside, still return the filtered results
             return withinDrawn;
         }
-        // Otherwise, filter by the current map view if available.
-        if (mapBounds) {
-            return baseFilteredProperties.filter(p => mapBounds.contains([p.lat, p.lng]));
-        }
-        // As a fallback (e.g., on initial load before map bounds are set), show all properties matching text filters.
+        // Show all filtered properties regardless of current map view
+        // This ensures properties are always visible in the list even when map is panned
         return baseFilteredProperties;
-    }, [baseFilteredProperties, mapBounds, drawnBounds]);
+    }, [baseFilteredProperties, drawnBounds]);
 
 
     const handleFilterChange = useCallback(<K extends keyof Filters>(name: K, value: Filters[K]) => {
