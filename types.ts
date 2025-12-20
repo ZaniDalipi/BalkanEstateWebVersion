@@ -241,6 +241,7 @@ export interface Property {
     sellerId: string;
     status: PropertyStatus;
     soldAt?: number;
+    title?: string; // Property listing title
     price: number;
     address: string;
     city: string;
