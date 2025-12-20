@@ -22,7 +22,7 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "types": ["leaflet", "leaflet.markercluster"]
+    "types": ["leaflet"]
   },
   "include": ["**/*.ts", "**/*.tsx", "vite-env.d.ts"]
 }

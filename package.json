@@ -19,7 +19,6 @@
     "generative-ai": "^0.1.4",
     "heroku": "^8.7.1",
     "leaflet": "^1.9.4",
-    "leaflet.markercluster": "^1.5.3",
     "lucide-react": "^0.553.0",
     "ngrok": "^5.0.0-beta.2",
     "node-cron": "^4.2.1",
@@ -32,7 +31,6 @@
   },
   "devDependencies": {
     "@types/leaflet": "^1.9.21",
-    "@types/leaflet.markercluster": "^1.5.6",
     "@types/node": "^22.19.3",
     "@types/react": "^19.2.4",
     "@types/react-dom": "^19.2.3",

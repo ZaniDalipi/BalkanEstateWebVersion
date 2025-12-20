@@ -1,10 +1,9 @@
 // MapPropertyMarker
-// Property markers and popups for map display with clustering support
+// Property markers and popups for map display
 
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useMap, useMapEvents } from 'react-leaflet';
+import React, { useState } from 'react';
+import { Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import 'leaflet.markercluster';
 import { Property } from '../../../types';
 import { formatPrice } from '../../../utils/currency';
 
@@ -140,46 +139,6 @@ const createCustomMarkerIcon = (property: Property, zoom: number, isHovered: boo
 };
 
 /**
- * Create cluster icon with count and styling
- */
-const createClusterIcon = (cluster: L.MarkerCluster): L.DivIcon => {
-  const count = cluster.getChildCount();
-
-  // Determine size and color based on count
-  let size = 40;
-  let bgColor = '#0252CD';
-  let fontSize = 12;
-
-  if (count >= 100) {
-    size = 55;
-    bgColor = '#6f42c1'; // purple for large clusters
-    fontSize = 14;
-  } else if (count >= 50) {
-    size = 50;
-    bgColor = '#c084fc'; // lighter purple
-    fontSize = 13;
-  } else if (count >= 20) {
-    size = 45;
-    bgColor = '#28a745'; // green
-    fontSize = 12;
-  }
-
-  const svgHtml = `
-    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 3px 8px rgba(0,0,0,0.35));">
-      <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${bgColor}" stroke="#FFFFFF" stroke-width="3"/>
-      <text x="${size/2}" y="${size/2 + 1}" font-family="Inter, sans-serif" font-size="${fontSize}" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">${count}</text>
-    </svg>
-  `;
-
-  return L.divIcon({
-    html: svgHtml,
-    className: 'marker-cluster-custom',
-    iconSize: [size, size],
-    iconAnchor: [size/2, size/2],
-  });
-};
-
-/**
  * PropertyPopup Component
  *
  * Displays property information in map popup with image carousel.
@@ -307,10 +266,9 @@ const PropertyPopup: React.FC<{
 };
 
 /**
- * Clustered Markers Component
+ * Markers Component
  *
- * Renders all property markers on the map with clustering for better performance.
- * Uses Leaflet.markercluster for efficient rendering of large numbers of markers.
+ * Renders all property markers on the map with zoom-responsive icons.
  */
 interface MarkersProps {
   properties: Property[];
@@ -321,10 +279,7 @@ interface MarkersProps {
 export const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick, hoveredPropertyId }) => {
   const map = useMap();
   const [zoom, setZoom] = useState(map.getZoom());
-  const clusterGroupRef = useRef<L.MarkerClusterGroup | null>(null);
-  const markersRef = useRef<Map<string, L.Marker>>(new Map());
-  const prevPropertyIdsRef = useRef<Set<string>>(new Set());
-  const isInitializedRef = useRef(false);
+  const markerRefsMap = React.useRef<Map<string, L.Marker>>(new Map());
 
   useMapEvents({
     zoomend: () => {
@@ -332,194 +287,38 @@ export const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick, hove
     },
   });
 
-  // Create stable property map for quick lookups
-  const propertyMap = useMemo(() => {
-    const map = new Map<string, Property>();
-    properties.forEach(p => map.set(p.id, p));
-    return map;
-  }, [properties]);
-
-  // Initialize cluster group once
-  useEffect(() => {
-    if (isInitializedRef.current) return;
-
-    clusterGroupRef.current = L.markerClusterGroup({
-      chunkedLoading: true,
-      chunkInterval: 200,
-      chunkDelay: 100,
-      spiderfyOnMaxZoom: true,
-      showCoverageOnHover: false,
-      zoomToBoundsOnClick: true,
-      maxClusterRadius: 60,
-      disableClusteringAtZoom: 16,
-      animate: true,
-      animateAddingMarkers: false,
-      iconCreateFunction: createClusterIcon,
-      removeOutsideVisibleBounds: true,
-      spiderLegPolylineOptions: { weight: 1.5, color: '#0252CD', opacity: 0.5 },
-    });
-    map.addLayer(clusterGroupRef.current);
-    isInitializedRef.current = true;
-
-    return () => {
-      if (clusterGroupRef.current) {
-        clusterGroupRef.current.clearLayers();
-        map.removeLayer(clusterGroupRef.current);
-        clusterGroupRef.current = null;
-        isInitializedRef.current = false;
-      }
-      markersRef.current.clear();
-      prevPropertyIdsRef.current.clear();
-    };
-  }, [map]);
-
-  // Create popup content
-  const createPopupContent = useCallback((property: Property): HTMLElement => {
-    const container = document.createElement('div');
-    container.className = 'property-popup-container';
-    container.innerHTML = `
-      <div class="w-56 cursor-pointer" data-property-id="${property.id}">
-        <div class="relative mb-2">
-          <img src="${property.images?.[0]?.url || property.imageUrl}" alt="${property.address}" class="w-full h-28 object-cover rounded" onerror="this.src='https://via.placeholder.com/224x112?text=No+Image'" />
-        </div>
-        ${property.title ? `<p class="font-bold text-sm text-neutral-900 mb-1 line-clamp-1">${property.title}</p>` : ''}
-        <div class="mb-1.5">
-          <div class="flex items-center justify-between">
-            <p class="font-bold text-base" style="color: #0252CD;">${formatPrice(property.price, property.country)}</p>
-            <span class="text-xs font-semibold px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-700 capitalize">${property.propertyType}</span>
-          </div>
-        </div>
-        <p class="text-xs text-neutral-600 mb-2 line-clamp-1">${property.address}, ${property.city}</p>
-        <div class="grid grid-cols-3 gap-1.5 mb-2 text-center">
-          <div class="bg-neutral-50 rounded py-1.5">
-            <div class="text-xs text-neutral-500">Beds</div>
-            <div class="font-bold text-sm text-neutral-800">${property.beds}</div>
-          </div>
-          <div class="bg-neutral-50 rounded py-1.5">
-            <div class="text-xs text-neutral-500">Baths</div>
-            <div class="font-bold text-sm text-neutral-800">${property.baths}</div>
-          </div>
-          <div class="bg-neutral-50 rounded py-1.5">
-            <div class="text-xs text-neutral-500">m²</div>
-            <div class="font-bold text-sm text-neutral-800">${property.sqft}</div>
-          </div>
-        </div>
-        <div class="text-center pt-1.5 border-t border-neutral-200">
-          <p class="text-xs font-semibold" style="color: #0252CD;">Click for details →</p>
-        </div>
-      </div>
-    `;
-
-    container.addEventListener('click', () => {
-      onPopupClick(property.id);
-    });
-
-    return container;
-  }, [onPopupClick]);
-
-  // Sync markers with properties - only add/remove when needed
-  useEffect(() => {
-    if (!clusterGroupRef.current || !isInitializedRef.current) return;
-
-    const clusterGroup = clusterGroupRef.current;
-    const currentMarkers = markersRef.current;
-    const prevIds = prevPropertyIdsRef.current;
-    const currentIds = new Set(properties.map(p => p.id));
-
-    // Find markers to remove (in prev but not in current)
-    const toRemove: string[] = [];
-    prevIds.forEach(id => {
-      if (!currentIds.has(id)) {
-        toRemove.push(id);
+  // Update marker icon when hover state changes
+  React.useEffect(() => {
+    properties.forEach((prop) => {
+      const marker = markerRefsMap.current.get(prop.id);
+      if (marker) {
+        const isHovered = prop.id === hoveredPropertyId;
+        const newIcon = createCustomMarkerIcon(prop, zoom, isHovered);
+        marker.setIcon(newIcon);
       }
     });
+  }, [hoveredPropertyId, zoom, properties]);
 
-    // Find properties to add (in current but not in prev)
-    const toAdd: Property[] = [];
-    properties.forEach(prop => {
-      if (!prevIds.has(prop.id)) {
-        toAdd.push(prop);
-      }
-    });
-
-    // Batch remove markers
-    if (toRemove.length > 0) {
-      const markersToRemove: L.Marker[] = [];
-      toRemove.forEach(id => {
-        const marker = currentMarkers.get(id);
-        if (marker) {
-          markersToRemove.push(marker);
-          currentMarkers.delete(id);
-        }
-      });
-      if (markersToRemove.length > 0) {
-        clusterGroup.removeLayers(markersToRemove);
-      }
-    }
-
-    // Batch add new markers
-    if (toAdd.length > 0) {
-      const newMarkers: L.Marker[] = [];
-      toAdd.forEach(property => {
-        const marker = L.marker([property.lat, property.lng], {
-          icon: createCustomMarkerIcon(property, zoom, false),
-        });
-
-        const popupContent = createPopupContent(property);
-        marker.bindPopup(popupContent, { maxWidth: 230, minWidth: 220 });
-
-        // Store property reference
-        (marker as any)._propertyId = property.id;
-
-        currentMarkers.set(property.id, marker);
-        newMarkers.push(marker);
-      });
-
-      clusterGroup.addLayers(newMarkers);
-    }
-
-    // Update previous IDs reference
-    prevPropertyIdsRef.current = currentIds;
-  }, [properties, zoom, createPopupContent]);
-
-  // Handle zoom changes - update all marker icons
-  useEffect(() => {
-    const currentMarkers = markersRef.current;
-
-    currentMarkers.forEach((marker, id) => {
-      const property = propertyMap.get(id);
-      if (property) {
-        const isHovered = id === hoveredPropertyId;
-        marker.setIcon(createCustomMarkerIcon(property, zoom, isHovered));
-      }
-    });
-  }, [zoom, propertyMap, hoveredPropertyId]);
-
-  // Handle hover state changes - only update affected markers
-  useEffect(() => {
-    const currentMarkers = markersRef.current;
-
-    // Update only the hovered marker and previously hovered marker
-    currentMarkers.forEach((marker, id) => {
-      const property = propertyMap.get(id);
-      if (property) {
-        const isHovered = id === hoveredPropertyId;
-        marker.setIcon(createCustomMarkerIcon(property, zoom, isHovered));
-
-        // Adjust z-index for hovered marker
-        if (isHovered && clusterGroupRef.current) {
-          const visibleMarker = clusterGroupRef.current.getVisibleParent(marker);
-          if (visibleMarker === marker) {
-            marker.setZIndexOffset(1000);
-          }
-        } else {
-          marker.setZIndexOffset(0);
-        }
-      }
-    });
-  }, [hoveredPropertyId, propertyMap, zoom]);
-
-  return null; // Rendering is handled imperatively via Leaflet
+  return (
+    <>
+      {properties.map((prop) => (
+        <Marker
+          key={prop.id}
+          position={[prop.lat, prop.lng]}
+          icon={createCustomMarkerIcon(prop, zoom, prop.id === hoveredPropertyId)}
+          ref={(marker) => {
+            if (marker) {
+              markerRefsMap.current.set(prop.id, marker);
+            }
+          }}
+        >
+          <Popup maxWidth={230} minWidth={220}>
+            <PropertyPopup property={prop} onPopupClick={onPopupClick} />
+          </Popup>
+        </Marker>
+      ))}
+    </>
+  );
 };
 
 /**

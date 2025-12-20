@@ -1,6 +1,5 @@
 /// <reference types="vite/client" />
 /// <reference types="@types/leaflet" />
-/// <reference types="@types/leaflet.markercluster" />
 
 interface ImportMetaEnv {
   readonly VITE_API_URL: string;
