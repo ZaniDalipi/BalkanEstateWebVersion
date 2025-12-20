@@ -303,10 +303,14 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             const withinDrawn = baseFilteredProperties.filter(p => drawnBounds.contains([p.lat, p.lng]));
             return withinDrawn;
         }
-        // Show all filtered properties regardless of current map view
-        // This ensures properties are always visible in the list even when map is panned
+        // Filter to show only properties visible in the current map view
+        if (mapBounds) {
+            const withinView = baseFilteredProperties.filter(p => mapBounds.contains([p.lat, p.lng]));
+            return withinView;
+        }
+        // Fallback to all filtered properties if no bounds set
         return baseFilteredProperties;
-    }, [baseFilteredProperties, drawnBounds]);
+    }, [baseFilteredProperties, drawnBounds, mapBounds]);
 
 
     const handleFilterChange = useCallback(<K extends keyof Filters>(name: K, value: Filters[K]) => {
