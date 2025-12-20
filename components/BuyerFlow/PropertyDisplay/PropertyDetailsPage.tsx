@@ -47,8 +47,30 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
   // State for contact
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
 
+  // State for share
+  const [showCopiedToast, setShowCopiedToast] = useState(false);
+
   // Computed values
   const isFavorited = state.savedHomes.some((p) => p.id === property.id);
+
+  // Calculate days since listing
+  const daysListed = React.useMemo(() => {
+    if (!property.createdAt) return null;
+    const now = Date.now();
+    const created = property.createdAt;
+    const diffDays = Math.floor((now - created) / (1000 * 60 * 60 * 24));
+    return diffDays;
+  }, [property.createdAt]);
+
+  // Format days listed text
+  const daysListedText = React.useMemo(() => {
+    if (daysListed === null) return null;
+    if (daysListed === 0) return 'Listed today';
+    if (daysListed === 1) return 'Listed yesterday';
+    if (daysListed < 7) return `Listed ${daysListed} days ago`;
+    if (daysListed < 30) return `Listed ${Math.floor(daysListed / 7)} week${Math.floor(daysListed / 7) > 1 ? 's' : ''} ago`;
+    return `Listed ${Math.floor(daysListed / 30)} month${Math.floor(daysListed / 30) > 1 ? 's' : ''} ago`;
+  }, [daysListed]);
 
   // Get current image URL for editor
   const allImages = React.useMemo(() => {
@@ -137,6 +159,26 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
     setCurrentImageIndex(0);
   }, []);
 
+  const handleShare = async () => {
+    const url = `${window.location.origin}/property/${property.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `${property.address}, ${property.city}`,
+          text: `Check out this property: ${property.beds} beds, ${property.baths} baths, ${property.sqft}m²`,
+          url,
+        });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShowCopiedToast(true);
+        setTimeout(() => setShowCopiedToast(false), 2000);
+      }
+    } catch (err) {
+      // User cancelled share or error occurred
+      console.log('Share cancelled or failed');
+    }
+  };
+
   // Scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -176,45 +218,104 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
         />
       )}
 
-      {/* Header */}
-      <div className="p-4 bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 z-10 flex items-center justify-between">
-        <button
-          onClick={handleBack}
-          className="flex items-center gap-2 text-primary font-semibold hover:underline"
-          aria-label="Go back to search results"
-        >
-          <ArrowLeftIcon className="w-5 h-5" />
-          Back
-        </button>
-        <div
-          onClick={property.status === 'sold' ? undefined : handleFavoriteClick}
-          className={`bg-white p-2 rounded-full border border-neutral-200 ${
-            property.status === 'sold'
-              ? 'opacity-50 cursor-not-allowed'
-              : 'cursor-pointer hover:shadow-md'
-          }`}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={`h-6 w-6 transition-colors duration-300 ${
-              property.status === 'sold'
-                ? 'text-neutral-300'
-                : isFavorited
-                ? 'text-red-500 fill-current'
-                : 'text-neutral-500 hover:text-red-500'
-            }`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-            />
-          </svg>
+      {/* Copied Toast */}
+      {showCopiedToast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-neutral-800 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium animate-fade-in">
+          Link copied to clipboard
         </div>
+      )}
+
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 z-10">
+        <div className="p-4 flex items-center justify-between">
+          <button
+            onClick={handleBack}
+            className="flex items-center gap-2 text-primary font-semibold hover:underline"
+            aria-label="Go back to search results"
+          >
+            <ArrowLeftIcon className="w-5 h-5" />
+            Back
+          </button>
+
+          <div className="flex items-center gap-2">
+            {/* Share Button */}
+            <button
+              onClick={handleShare}
+              className="bg-white p-2 rounded-full border border-neutral-200 cursor-pointer hover:shadow-md hover:border-primary/30 transition-all"
+              aria-label="Share this property"
+              title="Share"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 text-neutral-500 hover:text-primary transition-colors"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                />
+              </svg>
+            </button>
+
+            {/* Favorite Button */}
+            <div
+              onClick={property.status === 'sold' ? undefined : handleFavoriteClick}
+              className={`bg-white p-2 rounded-full border border-neutral-200 ${
+                property.status === 'sold'
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'cursor-pointer hover:shadow-md'
+              }`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className={`h-6 w-6 transition-colors duration-300 ${
+                  property.status === 'sold'
+                    ? 'text-neutral-300'
+                    : isFavorited
+                    ? 'text-red-500 fill-current'
+                    : 'text-neutral-500 hover:text-red-500'
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Bar */}
+        {(daysListedText || property.views) && (
+          <div className="px-4 pb-3 flex items-center gap-4 text-xs text-neutral-500">
+            {daysListedText && (
+              <span className="flex items-center gap-1">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {daysListedText}
+              </span>
+            )}
+            {property.views !== undefined && property.views > 0 && (
+              <span className="flex items-center gap-1">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                {property.views.toLocaleString()} views
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Main Content */}
