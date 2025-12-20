@@ -15,6 +15,7 @@ import {
   PropertyContact,
   PropertyPhotos,
   PropertyMapLink,
+  NeighborhoodInsights,
 } from '../../../src/components/property';
 
 /**
@@ -25,6 +26,7 @@ import {
  * - Image gallery with street view
  * - Property information
  * - Photo thumbnail gallery
+ * - Neighborhood insights
  * - Contact seller sidebar
  * - Map link
  *
@@ -386,6 +388,15 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
 
             {/* Map Link */}
             <PropertyMapLink property={property} onNavigateToMap={handleNavigateToMap} />
+
+            {/* Neighborhood Insights */}
+            <NeighborhoodInsights
+              lat={property.lat}
+              lng={property.lng}
+              address={property.address}
+              city={property.city}
+              country={property.country}
+            />
 
             {/* Featured Agencies */}
             <div className="mt-4 sm:mt-6 lg:mt-8">
