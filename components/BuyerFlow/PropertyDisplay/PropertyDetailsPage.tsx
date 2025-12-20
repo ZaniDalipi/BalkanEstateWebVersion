@@ -16,6 +16,7 @@ import {
   PropertyContact,
   PropertyPhotos,
   PropertyMapLink,
+  PropertyGuide,
 } from '../../../src/components/property';
 
 /**
@@ -46,6 +47,9 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
 
   // State for contact
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
+
+  // State for guide mascot
+  const [showGuide, setShowGuide] = useState(true);
 
   // Computed values
   const isFavorited = state.savedHomes.some((p) => p.id === property.id);
@@ -154,6 +158,14 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
 
   return (
     <div className="bg-neutral-50 h-full overflow-y-auto animate-fade-in">
+      {/* Property Guide Mascot */}
+      {showGuide && (
+        <PropertyGuide
+          property={property}
+          onDismiss={() => setShowGuide(false)}
+        />
+      )}
+
       {/* Modals */}
       {isEditorOpen && (
         <ImageEditorModal
@@ -223,45 +235,55 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
           {/* Left Column - Property Details */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6 lg:space-y-8">
             {/* Image Gallery */}
-            <PropertyGallery
-              property={property}
-              onOpenEditor={(url) => setIsEditorOpen(true)}
-              onOpenViewer={() => setIsViewerOpen(true)}
-            />
+            <div className="animate-slide-up" style={{ animationDelay: '0ms' }}>
+              <PropertyGallery
+                property={property}
+                onOpenEditor={(url) => setIsEditorOpen(true)}
+                onOpenViewer={() => setIsViewerOpen(true)}
+              />
+            </div>
 
             {/* Property Info */}
-            <PropertyInfo property={property} onOpenFloorPlan={() => setIsFloorPlanOpen(true)} />
+            <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
+              <PropertyInfo property={property} onOpenFloorPlan={() => setIsFloorPlanOpen(true)} />
+            </div>
 
             {/* Photo Thumbnails */}
-            <PropertyPhotos
-              property={property}
-              activeCategory={activeCategory}
-              currentImageIndex={currentImageIndex}
-              onCategorySelect={handleCategorySelect}
-              onImageSelect={setCurrentImageIndex}
-            />
+            <div className="animate-slide-up" style={{ animationDelay: '200ms' }}>
+              <PropertyPhotos
+                property={property}
+                activeCategory={activeCategory}
+                currentImageIndex={currentImageIndex}
+                onCategorySelect={handleCategorySelect}
+                onImageSelect={setCurrentImageIndex}
+              />
+            </div>
 
             {/* Map Link */}
-            <PropertyMapLink property={property} onNavigateToMap={handleNavigateToMap} />
+            <div className="animate-slide-up" style={{ animationDelay: '300ms' }}>
+              <PropertyMapLink property={property} onNavigateToMap={handleNavigateToMap} />
+            </div>
 
             {/* Neighborhood Insights */}
-            <NeighborhoodInsights
-              lat={property.lat}
-              lng={property.lng}
-              address={property.address}
-              city={property.city}
-              country={property.country}
-            />
+            <div className="animate-slide-up" style={{ animationDelay: '400ms' }}>
+              <NeighborhoodInsights
+                lat={property.lat}
+                lng={property.lng}
+                address={property.address}
+                city={property.city}
+                country={property.country}
+              />
+            </div>
 
             {/* Featured Agencies */}
-            <div className="mt-4 sm:mt-6 lg:mt-8">
+            <div className="mt-4 sm:mt-6 lg:mt-8 animate-slide-up" style={{ animationDelay: '500ms' }}>
               <h3 className="text-xl sm:text-2xl font-bold text-neutral-800 mb-3 sm:mb-4">Featured Agencies</h3>
               <FeaturedAgencies />
             </div>
           </div>
 
           {/* Right Column - Contact Sidebar */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 animate-slide-up" style={{ animationDelay: '150ms' }}>
             <PropertyContact
               property={property}
               isCreatingConversation={isCreatingConversation}
@@ -270,6 +292,24 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
           </div>
         </div>
       </main>
+
+      {/* Animation styles */}
+      <style>{`
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-slide-up {
+          animation: slide-up 0.6s ease-out forwards;
+          opacity: 0;
+        }
+      `}</style>
     </div>
   );
 };

@@ -80,27 +80,27 @@ export const PropertyInfo: React.FC<PropertyInfoProps> = ({ property, onOpenFloo
           </a>
 
           <div className="mt-6 flex flex-wrap justify-around text-base sm:text-lg text-neutral-800 border-t border-neutral-200 pt-4 gap-4">
-            <div className="flex items-center gap-3">
-              <BedIcon className="w-6 h-6 text-primary" />
+            <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-primary-light/50 transition-all duration-200 cursor-default group">
+              <BedIcon className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
               <span>
                 <span className="font-bold">{property.beds}</span> beds
               </span>
             </div>
-            <div className="flex items-center gap-3">
-              <BathIcon className="w-6 h-6 text-primary" />
+            <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-primary-light/50 transition-all duration-200 cursor-default group">
+              <BathIcon className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
               <span>
                 <span className="font-bold">{property.baths}</span> baths
               </span>
             </div>
-            <div className="flex items-center gap-3">
-              <LivingRoomIcon className="w-6 h-6 text-primary" />
+            <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-primary-light/50 transition-all duration-200 cursor-default group">
+              <LivingRoomIcon className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
               <span>
                 <span className="font-bold">{property.livingRooms}</span>{' '}
                 {property.livingRooms === 1 ? 'living room' : 'living rooms'}
               </span>
             </div>
-            <div className="flex items-center gap-3">
-              <SqftIcon className="w-6 h-6 text-primary" />
+            <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-primary-light/50 transition-all duration-200 cursor-default group">
+              <SqftIcon className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
               <span>
                 <span className="font-bold">{property.sqft}</span> m²
               </span>
@@ -242,7 +242,7 @@ export const PropertyInfo: React.FC<PropertyInfoProps> = ({ property, onOpenFloo
                 {property.amenities.map((amenity, index) => (
                   <span
                     key={index}
-                    className="inline-flex items-center px-4 py-2 bg-primary-light text-primary-dark font-semibold rounded-full text-sm border border-primary/20 hover:bg-primary/20 transition-colors"
+                    className="inline-flex items-center px-4 py-2 bg-primary-light text-primary-dark font-semibold rounded-full text-sm border border-primary/20 hover:bg-primary/20 hover:scale-105 hover:shadow-md transition-all duration-200 cursor-default"
                   >
                     {amenity.startsWith('#') ? amenity : `#${amenity}`}
                   </span>
@@ -264,10 +264,10 @@ export const PropertyInfo: React.FC<PropertyInfoProps> = ({ property, onOpenFloo
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {property.hasBalcony !== undefined && (
                   <div
-                    className={`flex items-center gap-3 p-3 rounded-lg border ${
+                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-default ${
                       property.hasBalcony
-                        ? 'bg-green-50 border-green-200'
-                        : 'bg-red-50 border-red-200'
+                        ? 'bg-green-50 border-green-200 hover:bg-green-100'
+                        : 'bg-red-50 border-red-200 hover:bg-red-100'
                     }`}
                   >
                     <span className="text-2xl">{property.hasBalcony ? '✓' : '✗'}</span>
@@ -285,10 +285,10 @@ export const PropertyInfo: React.FC<PropertyInfoProps> = ({ property, onOpenFloo
                 )}
                 {property.hasGarden !== undefined && (
                   <div
-                    className={`flex items-center gap-3 p-3 rounded-lg border ${
+                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-default ${
                       property.hasGarden
-                        ? 'bg-green-50 border-green-200'
-                        : 'bg-red-50 border-red-200'
+                        ? 'bg-green-50 border-green-200 hover:bg-green-100'
+                        : 'bg-red-50 border-red-200 hover:bg-red-100'
                     }`}
                   >
                     <span className="text-2xl">{property.hasGarden ? '✓' : '✗'}</span>
@@ -306,10 +306,10 @@ export const PropertyInfo: React.FC<PropertyInfoProps> = ({ property, onOpenFloo
                 )}
                 {property.hasElevator !== undefined && (
                   <div
-                    className={`flex items-center gap-3 p-3 rounded-lg border ${
+                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-default ${
                       property.hasElevator
-                        ? 'bg-green-50 border-green-200'
-                        : 'bg-red-50 border-red-200'
+                        ? 'bg-green-50 border-green-200 hover:bg-green-100'
+                        : 'bg-red-50 border-red-200 hover:bg-red-100'
                     }`}
                   >
                     <span className="text-2xl">{property.hasElevator ? '✓' : '✗'}</span>
@@ -327,10 +327,10 @@ export const PropertyInfo: React.FC<PropertyInfoProps> = ({ property, onOpenFloo
                 )}
                 {property.hasSecurity !== undefined && (
                   <div
-                    className={`flex items-center gap-3 p-3 rounded-lg border ${
+                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-default ${
                       property.hasSecurity
-                        ? 'bg-green-50 border-green-200'
-                        : 'bg-red-50 border-red-200'
+                        ? 'bg-green-50 border-green-200 hover:bg-green-100'
+                        : 'bg-red-50 border-red-200 hover:bg-red-100'
                     }`}
                   >
                     <span className="text-2xl">{property.hasSecurity ? '✓' : '✗'}</span>
@@ -348,10 +348,10 @@ export const PropertyInfo: React.FC<PropertyInfoProps> = ({ property, onOpenFloo
                 )}
                 {property.hasAirConditioning !== undefined && (
                   <div
-                    className={`flex items-center gap-3 p-3 rounded-lg border ${
+                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-default ${
                       property.hasAirConditioning
-                        ? 'bg-green-50 border-green-200'
-                        : 'bg-red-50 border-red-200'
+                        ? 'bg-green-50 border-green-200 hover:bg-green-100'
+                        : 'bg-red-50 border-red-200 hover:bg-red-100'
                     }`}
                   >
                     <span className="text-2xl">{property.hasAirConditioning ? '✓' : '✗'}</span>
@@ -369,8 +369,8 @@ export const PropertyInfo: React.FC<PropertyInfoProps> = ({ property, onOpenFloo
                 )}
                 {property.hasPool !== undefined && (
                   <div
-                    className={`flex items-center gap-3 p-3 rounded-lg border ${
-                      property.hasPool ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-default ${
+                      property.hasPool ? 'bg-green-50 border-green-200 hover:bg-green-100' : 'bg-red-50 border-red-200 hover:bg-red-100'
                     }`}
                   >
                     <span className="text-2xl">{property.hasPool ? '✓' : '✗'}</span>
@@ -388,10 +388,10 @@ export const PropertyInfo: React.FC<PropertyInfoProps> = ({ property, onOpenFloo
                 )}
                 {property.petsAllowed !== undefined && (
                   <div
-                    className={`flex items-center gap-3 p-3 rounded-lg border ${
+                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-default ${
                       property.petsAllowed
-                        ? 'bg-green-50 border-green-200'
-                        : 'bg-red-50 border-red-200'
+                        ? 'bg-green-50 border-green-200 hover:bg-green-100'
+                        : 'bg-red-50 border-red-200 hover:bg-red-100'
                     }`}
                   >
                     <span className="text-2xl">{property.petsAllowed ? '✓' : '✗'}</span>
@@ -422,7 +422,7 @@ export const PropertyInfo: React.FC<PropertyInfoProps> = ({ property, onOpenFloo
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {property.distanceToCenter !== undefined && (
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 hover:bg-blue-100 cursor-default">
                     <span className="text-2xl">🏙️</span>
                     <div>
                       <span className="font-medium text-neutral-800">City Center</span>
@@ -433,7 +433,7 @@ export const PropertyInfo: React.FC<PropertyInfoProps> = ({ property, onOpenFloo
                   </div>
                 )}
                 {property.distanceToSea !== undefined && (
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 hover:bg-blue-100 cursor-default">
                     <span className="text-2xl">🌊</span>
                     <div>
                       <span className="font-medium text-neutral-800">Sea/Beach</span>
@@ -444,7 +444,7 @@ export const PropertyInfo: React.FC<PropertyInfoProps> = ({ property, onOpenFloo
                   </div>
                 )}
                 {property.distanceToSchool !== undefined && (
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 hover:bg-blue-100 cursor-default">
                     <span className="text-2xl">🏫</span>
                     <div>
                       <span className="font-medium text-neutral-800">School</span>
@@ -455,7 +455,7 @@ export const PropertyInfo: React.FC<PropertyInfoProps> = ({ property, onOpenFloo
                   </div>
                 )}
                 {property.distanceToHospital !== undefined && (
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 hover:bg-blue-100 cursor-default">
                     <span className="text-2xl">🏥</span>
                     <div>
                       <span className="font-medium text-neutral-800">Hospital</span>

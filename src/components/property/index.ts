@@ -9,6 +9,7 @@ export { PropertyInfo } from './PropertyInfo';
 export { PropertyContact } from './PropertyContact';
 export { PropertyPhotos } from './PropertyPhotos';
 export { PropertyMapLink } from './PropertyMapLink';
+export { PropertyGuide } from './PropertyGuide';
 export {
   DetailItem,
   Thumbnail,
