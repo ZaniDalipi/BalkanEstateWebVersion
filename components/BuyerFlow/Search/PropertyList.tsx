@@ -29,6 +29,10 @@ interface PropertyListProps {
   isDrawing: boolean;
   isSearchingLocation: boolean;
   onPropertyHover?: (propertyId: string | null) => void;
+  suggestions?: { place_id: number; display_name: string }[];
+  onSuggestionClick?: (suggestion: { place_id: number; display_name: string; lat: string; lon: string; boundingbox: string[] }) => void;
+  isQueryInputFocused?: boolean;
+  onQueryInputFocusChange?: (focused: boolean) => void;
 }
 
 const FilterButton: React.FC<{
@@ -112,7 +116,7 @@ const ToggleSwitch: React.FC<{
 );
 
 const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList' | 'aiChatHistory' | 'onAiChatHistoryChange'>> = ({
-    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, isMobile, isAreaDrawn, onDrawStart, isDrawing, isSearchingLocation
+    filters, onFilterChange, onSearchClick, onResetFilters, onSaveSearch, isSaving, isMobile, isAreaDrawn, onDrawStart, isDrawing, isSearchingLocation, suggestions = [], onSuggestionClick, isQueryInputFocused, onQueryInputFocusChange
 }) => {
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     
@@ -127,7 +131,7 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
          <div className="space-y-4">
             {!isMobile && (
                 <div className="flex items-center gap-2">
-                        <button 
+                        <button
                             onClick={onResetFilters}
                             className="flex-grow py-2.5 px-4 border border-neutral-300 text-neutral-600 rounded-lg text-sm font-bold bg-white hover:bg-neutral-100 transition-colors"
                         >
@@ -135,6 +139,51 @@ const FilterControls: React.FC<Omit<PropertyListProps, 'properties' | 'showList'
                         </button>
                     </div>
             )}
+
+            {/* Search by Address */}
+            <div className="relative">
+                <label className="block text-xs font-medium text-neutral-700 mb-1">Search Location</label>
+                <div className="relative">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <MapPinIcon className="h-4 w-4 text-neutral-400" />
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="City, address, neighborhood..."
+                        value={filters.query}
+                        onChange={(e) => onFilterChange('query', e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && onSearchClick()}
+                        onFocus={() => onQueryInputFocusChange?.(true)}
+                        className={`${inputBaseClasses} pl-9`}
+                    />
+                    {filters.query && !isSearchingLocation && (
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                            <button onClick={() => onFilterChange('query', '')} className="text-neutral-400 hover:text-neutral-800 transition-colors">
+                                <XMarkIcon className="h-4 w-4" />
+                            </button>
+                        </div>
+                    )}
+                    {isSearchingLocation && (
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                            <SpinnerIcon className="h-4 w-4 text-primary" />
+                        </div>
+                    )}
+                </div>
+                {suggestions.length > 0 && isQueryInputFocused && (
+                    <ul className="absolute z-30 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {suggestions.map((suggestion) => (
+                            <li
+                                key={suggestion.place_id}
+                                onMouseDown={() => onSuggestionClick?.(suggestion as any)}
+                                className="px-3 py-2 text-xs text-neutral-700 hover:bg-primary/5 cursor-pointer flex items-center gap-2 transition-colors"
+                            >
+                                <MapPinIcon className="w-4 h-4 text-primary flex-shrink-0" />
+                                <span className="truncate">{suggestion.display_name}</span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
 
             <div>
                 <label className="block text-xs font-medium text-neutral-700 mb-1">Price Range</label>

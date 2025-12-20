@@ -549,6 +549,10 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         isDrawing,
         isSearchingLocation: isSearchingLocation,
         onPropertyHover: setHoveredPropertyId,
+        suggestions: suggestions,
+        onSuggestionClick: handleSuggestionClick,
+        isQueryInputFocused: isQueryInputFocused,
+        onQueryInputFocusChange: setIsQueryInputFocused,
     };
     
     const renderSearchInput = (isMobileInput: boolean) => (
@@ -621,50 +625,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
 
                 {/* --- Right Panel: Map --- */}
                 <div className="h-full w-full md:w-[45%] relative z-0 flex flex-col">
-                    {/* Search Bar Above Map - Desktop Only */}
-                    <div className="hidden md:block p-3 bg-white border-b border-neutral-200 flex-shrink-0">
-                        <div className="relative" ref={searchWrapperRef}>
-                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                <SearchIcon className="h-5 w-5 text-neutral-400" />
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Search by city, address, or neighborhood..."
-                                value={filters.query}
-                                onChange={(e) => handleFilterChange('query', e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                onFocus={() => setIsQueryInputFocused(true)}
-                                className="block w-full bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 text-sm px-4 py-2.5 pl-10 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all placeholder:text-neutral-400"
-                            />
-                            {filters.query && !isSearchingLocation && (
-                                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                                    <button onClick={() => handleFilterChange('query', '')} className="text-neutral-400 hover:text-neutral-800 transition-colors">
-                                        <XMarkIcon className="h-5 w-5" />
-                                    </button>
-                                </div>
-                            )}
-                            {isSearchingLocation && (
-                                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                                    <SpinnerIcon className="h-5 w-5 text-primary animate-spin" />
-                                </div>
-                            )}
-                            {suggestions.length > 0 && isQueryInputFocused && (
-                                <ul className="absolute z-30 w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                                    {suggestions.map((suggestion) => (
-                                        <li
-                                            key={suggestion.place_id}
-                                            onMouseDown={() => handleSuggestionClick(suggestion)}
-                                            className="px-4 py-3 text-sm text-neutral-700 hover:bg-primary/5 cursor-pointer flex items-center gap-3 transition-colors"
-                                        >
-                                            <MapPinIcon className="w-5 h-5 text-primary flex-shrink-0" />
-                                            <span>{suggestion.display_name}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    </div>
-
                     <div className="flex-grow relative">
                         <MapComponent {...mapProps} searchMode={searchMode} />
                     </div>
