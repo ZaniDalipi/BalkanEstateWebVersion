@@ -146,28 +146,18 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     const handleSuggestionClick = (suggestion: NominatimResult) => {
         setSuggestions([]);
 
-        // Use the bounding box from the API but expand it to show nearby properties
-        const [south, north, west, east] = suggestion.boundingbox.map(Number);
-        // Expand bounds by ~20% to include properties in the surrounding area
-        const latPadding = (north - south) * 0.3;
-        const lngPadding = (east - west) * 0.3;
-        const expandedBounds = L.latLngBounds([
-            [south - latPadding, west - lngPadding],
-            [north + latPadding, east + lngPadding],
-        ]);
-
-        // Clear the query text filter - location search uses geographic bounds, not text matching
+        // Clear the search input - we're navigating to the location visually
         const newFilters = { ...filters, query: '' };
 
         updateSearchPageState({
             filters: newFilters,
-            activeFilters: { ...initialFilters, query: '' }, // Don't use text filter for location search
-            mapBoundsJSON: JSON.stringify(expandedBounds),
-            drawnBoundsJSON: JSON.stringify(expandedBounds), // Use as drawn bounds to filter properties to this area
+            activeFilters: newFilters,
+            drawnBoundsJSON: null, // Clear any drawn bounds - show all visible properties
         });
 
-        // Fly to the location's center and zoom into the city
-        setFlyToTarget({ center: [Number(suggestion.lat), Number(suggestion.lon)], zoom: 13 });
+        // Fly to the location's center - mapBounds will update automatically
+        // and properties visible on the map will show in the list
+        setFlyToTarget({ center: [Number(suggestion.lat), Number(suggestion.lon)], zoom: 12 });
         setIsQueryInputFocused(false);
     };
 
