@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
@@ -91,6 +93,41 @@
       img {
         max-width: 100%;
         height: auto;
+      }
+
+      /* Custom marker cluster styles */
+      .marker-cluster-custom {
+        background: transparent !important;
+      }
+
+      .marker-cluster-custom div {
+        background: transparent !important;
+      }
+
+      /* Override default cluster styles */
+      .marker-cluster {
+        background-clip: padding-box;
+        border-radius: 50%;
+      }
+
+      .marker-cluster div {
+        width: 100%;
+        height: 100%;
+        text-align: center;
+        border-radius: 50%;
+        font-family: 'Inter', sans-serif;
+        font-weight: bold;
+      }
+
+      /* Cluster animation */
+      .leaflet-cluster-anim .leaflet-marker-icon,
+      .leaflet-cluster-anim .leaflet-marker-shadow {
+        transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+      }
+
+      /* Spider leg animation */
+      .leaflet-cluster-spider-leg {
+        transition: stroke-dashoffset 0.25s ease-out, stroke-opacity 0.25s ease-out;
       }
     </style>
   </body>
