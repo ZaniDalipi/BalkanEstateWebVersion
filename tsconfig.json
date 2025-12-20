@@ -21,6 +21,8 @@
       ]
     },
     "allowImportingTsExtensions": true,
-    "noEmit": true
-  }
+    "noEmit": true,
+    "types": ["leaflet"]
+  },
+  "include": ["**/*.ts", "**/*.tsx", "vite-env.d.ts"]
 }

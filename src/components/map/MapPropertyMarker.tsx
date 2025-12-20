@@ -279,7 +279,7 @@ interface MarkersProps {
 export const Markers: React.FC<MarkersProps> = ({ properties, onPopupClick, hoveredPropertyId }) => {
   const map = useMap();
   const [zoom, setZoom] = useState(map.getZoom());
-  const markerRefsMap = React.useRef<Map<string, any>>(new Map());
+  const markerRefsMap = React.useRef<Map<string, L.Marker>>(new Map());
 
   useMapEvents({
     zoomend: () => {

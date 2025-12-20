@@ -241,6 +241,7 @@ export interface Property {
     sellerId: string;
     status: PropertyStatus;
     soldAt?: number;
+    title?: string; // Property listing title
     price: number;
     address: string;
     city: string;
@@ -256,6 +257,8 @@ export interface Property {
     materials: string[];
     amenities: string[];
     tourUrl?: string;
+    virtualTour360Url?: string; // URL for 360 virtual tour
+    hasVirtualTour360?: boolean; // Flag indicating if 360 virtual tour is available
     imageUrl: string;
     images?: PropertyImage[];
     lat: number;

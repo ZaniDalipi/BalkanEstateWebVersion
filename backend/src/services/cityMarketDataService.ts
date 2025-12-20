@@ -1,6 +1,10 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import CityMarketData, { ICityMarketData } from '../models/CityMarketData';
 import Property from '../models/Property';
+import { FlattenMaps } from 'mongoose';
+
+// Type for lean documents (plain objects without Mongoose methods)
+export type CityMarketDataLean = FlattenMaps<ICityMarketData> & { _id: string };
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY || '');
 
@@ -323,7 +327,7 @@ async function calculateMarketDataFromProperties(city: string, country: string):
     });
 
     if (properties.length < 3) {
-      return null; // Not enough data
+      return null; // Not enough data for price calculations
     }
 
     const prices = properties.map(p => p.price / (p.sqft || 70)); // Price per sqft, default 70 if missing
@@ -337,13 +341,16 @@ async function calculateMarketDataFromProperties(city: string, country: string):
       ? activeDays.reduce((a, b) => a + b, 0) / activeDays.length
       : 45;
 
+    // Count only active listings (available properties)
+    const listingsCount = properties.filter(p => p.status === 'active').length;
+
     const soldLastMonth = properties.filter(
       p => p.status === 'sold' && p.updatedAt && p.updatedAt > thirtyDaysAgo
     ).length;
 
     return {
       avgPricePerSqm: Math.round(avgPricePerSqm),
-      listingsCount: properties.length,
+      listingsCount,
       averageDaysOnMarket: Math.round(averageDaysOnMarket),
       soldLastMonth,
       dataSource: 'calculated',
@@ -351,6 +358,37 @@ async function calculateMarketDataFromProperties(city: string, country: string):
   } catch (error) {
     console.error(`Error calculating market data for ${city}:`, error);
     return null;
+  }
+}
+
+/**
+ * Get live listing counts from the Property collection for a city
+ * This is always current and doesn't depend on scheduled updates
+ */
+async function getLiveListingCounts(city: string, country: string): Promise<{ listingsCount: number; soldLastMonth: number }> {
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // Count active listings
+    const listingsCount = await Property.countDocuments({
+      city: { $regex: new RegExp(`^${city}$`, 'i') },
+      country: { $regex: new RegExp(`^${country}$`, 'i') },
+      status: 'active',
+    });
+
+    // Count properties sold in the last 30 days
+    const soldLastMonth = await Property.countDocuments({
+      city: { $regex: new RegExp(`^${city}$`, 'i') },
+      country: { $regex: new RegExp(`^${country}$`, 'i') },
+      status: 'sold',
+      updatedAt: { $gte: thirtyDaysAgo },
+    });
+
+    return { listingsCount, soldLastMonth };
+  } catch (error) {
+    console.error(`Error getting live listing counts for ${city}:`, error);
+    return { listingsCount: 0, soldLastMonth: 0 };
   }
 }
 
@@ -438,15 +476,28 @@ export async function updateAllCityMarketData(): Promise<void> {
 }
 
 /**
- * Get featured city recommendations
+ * Get featured city recommendations with live listing counts
  */
-export async function getFeaturedCities(limit: number = 12): Promise<ICityMarketData[]> {
+export async function getFeaturedCities(limit: number = 12): Promise<CityMarketDataLean[]> {
   try {
     const cities = await CityMarketData.find({ featured: true })
       .sort({ displayOrder: 1 })
-      .limit(limit);
+      .limit(limit)
+      .lean<CityMarketDataLean[]>();
 
-    return cities;
+    // Enrich each city with live listing counts from the Property collection
+    const enrichedCities = await Promise.all(
+      cities.map(async (city) => {
+        const liveCounts = await getLiveListingCounts(city.city, city.country);
+        return {
+          ...city,
+          listingsCount: liveCounts.listingsCount,
+          soldLastMonth: liveCounts.soldLastMonth,
+        };
+      })
+    );
+
+    return enrichedCities;
   } catch (error) {
     console.error('Error fetching featured cities:', error);
     return [];
@@ -454,14 +505,27 @@ export async function getFeaturedCities(limit: number = 12): Promise<ICityMarket
 }
 
 /**
- * Get city recommendations by country
+ * Get city recommendations by country with live listing counts
  */
-export async function getCitiesByCountry(country: string): Promise<ICityMarketData[]> {
+export async function getCitiesByCountry(country: string): Promise<CityMarketDataLean[]> {
   try {
     const cities = await CityMarketData.find({ country })
-      .sort({ demandScore: -1, avgPricePerSqm: 1 });
+      .sort({ demandScore: -1, avgPricePerSqm: 1 })
+      .lean<CityMarketDataLean[]>();
 
-    return cities;
+    // Enrich each city with live listing counts from the Property collection
+    const enrichedCities = await Promise.all(
+      cities.map(async (city) => {
+        const liveCounts = await getLiveListingCounts(city.city, city.country);
+        return {
+          ...city,
+          listingsCount: liveCounts.listingsCount,
+          soldLastMonth: liveCounts.soldLastMonth,
+        };
+      })
+    );
+
+    return enrichedCities;
   } catch (error) {
     console.error(`Error fetching cities for ${country}:`, error);
     return [];
@@ -469,12 +533,23 @@ export async function getCitiesByCountry(country: string): Promise<ICityMarketDa
 }
 
 /**
- * Get market data for a specific city
+ * Get market data for a specific city with live listing counts
  */
-export async function getCityMarketData(city: string, country: string): Promise<ICityMarketData | null> {
+export async function getCityMarketData(city: string, country: string): Promise<CityMarketDataLean | null> {
   try {
-    const data = await CityMarketData.findOne({ city, country });
-    return data;
+    const data = await CityMarketData.findOne({ city, country }).lean<CityMarketDataLean>();
+
+    if (!data) {
+      return null;
+    }
+
+    // Enrich with live listing counts
+    const liveCounts = await getLiveListingCounts(city, country);
+    return {
+      ...data,
+      listingsCount: liveCounts.listingsCount,
+      soldLastMonth: liveCounts.soldLastMonth,
+    };
   } catch (error) {
     console.error(`Error fetching market data for ${city}:`, error);
     return null;

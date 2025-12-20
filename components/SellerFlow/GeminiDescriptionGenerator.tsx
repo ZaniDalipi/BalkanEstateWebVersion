@@ -34,6 +34,7 @@ interface ListingData {
     description: string;
     image_tags: { index: number; tag: string; }[];
     tourUrl: string;
+    virtualTour360Url: string; // URL for 360 virtual tour (Matterport, Kuula, etc.)
     propertyType: 'house' | 'apartment' | 'villa' | 'other';
     floorNumber: number;
     totalFloors: number;
@@ -76,6 +77,7 @@ const initialListingData: ListingData = {
     description: '',
     image_tags: [],
     tourUrl: '',
+    virtualTour360Url: '',
     propertyType: 'house',
     floorNumber: 1,
     totalFloors: 1,
@@ -396,6 +398,7 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 amenities: propertyToEdit.amenities || [],
                 description: propertyToEdit.description,
                 tourUrl: propertyToEdit.tourUrl || '',
+                virtualTour360Url: propertyToEdit.virtualTour360Url || '',
                 propertyType: propertyToEdit.propertyType || 'house',
                 floorNumber: propertyToEdit.floorNumber || 0,
                 totalFloors: propertyToEdit.totalFloors || 0,
@@ -921,6 +924,8 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                 materials: listingData.materials,
                 amenities: listingData.amenities,
                 tourUrl: listingData.tourUrl,
+                virtualTour360Url: listingData.virtualTour360Url || undefined,
+                hasVirtualTour360: !!listingData.virtualTour360Url,
                 imageUrl: imageUrls.length > 0 ? imageUrls[0].url : 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=500',
                 images: imageUrls,
                 lat: lat,
@@ -1606,6 +1611,39 @@ const GeminiDescriptionGenerator: React.FC<{ propertyToEdit: Property | null }> 
                             <div className="mt-2 relative inline-block"><img src={floorplanImage.previewUrl} alt="floorplan" className="w-32 h-32 object-cover rounded-md" /><button type="button" onClick={() => setFloorplanImage({file: null, previewUrl: ''})} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">&times;</button></div>
                         )}
                     </div>
+
+                    {/* 360 Virtual Tour URL */}
+                    <fieldset className="space-y-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                        <div className="flex items-center gap-2 mb-2">
+                            <svg className="w-6 h-6 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                <path d="M2 12h20" />
+                            </svg>
+                            <h3 className="text-base font-semibold text-purple-900">360° Virtual Tour (Optional)</h3>
+                        </div>
+                        <p className="text-sm text-purple-700 mb-3">
+                            Add an immersive 360° virtual tour to help buyers explore your property remotely.
+                            Supports Matterport, Kuula, Zillow 3D Home, and other 360 tour providers.
+                        </p>
+                        <div className="relative">
+                            <input
+                                type="url"
+                                id="virtualTour360Url"
+                                name="virtualTour360Url"
+                                value={listingData.virtualTour360Url}
+                                onChange={handleInputChange}
+                                placeholder="https://my.matterport.com/show/?m=... or https://kuula.co/share/..."
+                                className={`${floatingInputClasses} border-purple-300 focus:border-purple-500 focus:ring-purple-500`}
+                            />
+                            <label htmlFor="virtualTour360Url" className={`${floatingLabelClasses} text-purple-700 peer-focus:text-purple-600`}>
+                                360° Tour URL
+                            </label>
+                        </div>
+                        <p className="text-xs text-purple-600">
+                            Paste the embed or share URL from your 360 tour provider. The tour will be displayed as an interactive iframe on your listing.
+                        </p>
+                    </fieldset>
 
                     {/* Progress Indicators */}
                     {(isCompressing || isUploading || isSubmitting) && (

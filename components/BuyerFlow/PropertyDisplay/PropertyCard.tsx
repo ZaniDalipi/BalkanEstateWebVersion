@@ -156,6 +156,21 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, showToast, showCo
                 🔥 URGENT
               </div>
             )}
+
+            {/* 360° Tour Badge */}
+            {property.virtualTour360Url && (
+              <div
+                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg flex items-center gap-1"
+                title="360° Virtual Tour Available"
+              >
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                  <path d="M2 12h20" />
+                </svg>
+                <span>360°</span>
+              </div>
+            )}
           </div>
 
           {/* Favorite Button */}

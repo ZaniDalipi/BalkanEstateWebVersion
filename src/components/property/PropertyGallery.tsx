@@ -210,6 +210,23 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
                   <span className="hidden sm:inline">3D Tour</span>
                 </a>
               )}
+
+              {property.virtualTour360Url && (
+                <a
+                  href={property.virtualTour360Url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold px-4 py-2 rounded-full hover:scale-105 transition-transform shadow-md"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                    <path d="M2 12h20" />
+                  </svg>
+                  <span className="hidden sm:inline">360° Tour</span>
+                </a>
+              )}
             </div>
 
             {/* Navigation Controls */}
