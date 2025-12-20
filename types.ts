@@ -238,6 +238,7 @@ export type EnergyRating = 'any' | 'A+' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G
 
 export interface Property {
     id: string;
+    title?: string;
     sellerId: string;
     status: PropertyStatus;
     soldAt?: number;
