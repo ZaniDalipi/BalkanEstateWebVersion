@@ -145,23 +145,18 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
 
     const handleSuggestionClick = (suggestion: NominatimResult) => {
         setSuggestions([]);
-        const newFilters = { ...filters, query: suggestion.display_name };
 
-        // Use the bounding box from the API for a precise map view
-        const [south, north, west, east] = suggestion.boundingbox.map(Number);
-        const searchBounds = L.latLngBounds([
-            [south, west],
-            [north, east],
-        ]);
+        // Clear the search input - we're navigating to the location visually
+        const newFilters = { ...filters, query: '' };
 
         updateSearchPageState({
             filters: newFilters,
-            activeFilters: { ...initialFilters, query: suggestion.display_name }, // Keep query in active filters for proper saving
-            mapBoundsJSON: JSON.stringify(searchBounds), // Save to mapBounds so user can modify and save current view
-            drawnBoundsJSON: null, // Don't lock to search bounds, let user modify view
+            activeFilters: newFilters,
+            drawnBoundsJSON: null, // Clear any drawn bounds - show all visible properties
         });
 
-        // Fly to the location's center
+        // Fly to the location's center - mapBounds will update automatically
+        // and properties visible on the map will show in the list
         setFlyToTarget({ center: [Number(suggestion.lat), Number(suggestion.lon)], zoom: 12 });
         setIsQueryInputFocused(false);
     };
@@ -298,11 +293,12 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
     }, [properties, activeFilters]);
 
     const listProperties = useMemo(() => {
-        // If a specific area is drawn by the user, filter to that area exclusively
+        // If a specific area is drawn/searched by the user, filter to that area
         if (drawnBounds) {
             const withinDrawn = baseFilteredProperties.filter(p => drawnBounds.contains([p.lat, p.lng]));
             return withinDrawn;
         }
+
         // Filter to show only properties visible in the current map view
         if (mapBounds) {
             const withinView = baseFilteredProperties.filter(p => mapBounds.contains([p.lat, p.lng]));
@@ -549,6 +545,10 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
         isDrawing,
         isSearchingLocation: isSearchingLocation,
         onPropertyHover: setHoveredPropertyId,
+        suggestions: suggestions,
+        onSuggestionClick: handleSuggestionClick,
+        isQueryInputFocused: isQueryInputFocused,
+        onQueryInputFocusChange: setIsQueryInputFocused,
     };
     
     const renderSearchInput = (isMobileInput: boolean) => (
@@ -600,23 +600,20 @@ const SearchPage: React.FC<SearchPageProps> = ({ onToggleSidebar }) => {
             <div className={`flex h-full w-full flex-col md:flex-row transition-all duration-300 relative ${isMobile && isFiltersOpen ? 'blur-sm pointer-events-none' : ''}`}>
                 {/* --- Left Panel: List & Filters --- */}
                  <div className={`absolute inset-0 z-10 h-full w-full bg-white md:relative md:w-[55%] md:flex-shrink-0 md:border-r md:border-neutral-200 md:flex md:flex-col ${ isMobile && mobileView === 'list' ? 'translate-x-0' : 'translate-x-full md:translate-x-0' } transition-transform duration-300`}>
-                    <div className="hidden md:block p-3 border-b border-neutral-200 flex-shrink-0">
-                        <h2 className="text-base font-semibold text-neutral-800 mb-3">Properties for Sale</h2>
-                        <div className="flex gap-2 items-start">
-                            {renderSearchInput(false)}
-                            <select
-                                value={filters.country}
-                                onChange={(e) => handleFilterChange('country', e.target.value)}
-                                className="flex-shrink-0 bg-white border border-neutral-300 rounded-xl text-neutral-900 text-sm px-3 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all appearance-none cursor-pointer"
-                                style={{ backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")", backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
-                            >
-                                {COUNTRY_OPTIONS.map(option => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                    <div className="hidden md:flex p-3 border-b border-neutral-200 flex-shrink-0 items-center justify-between">
+                        <h2 className="text-base font-semibold text-neutral-800">Properties for Sale</h2>
+                        <select
+                            value={filters.country}
+                            onChange={(e) => handleFilterChange('country', e.target.value)}
+                            className="bg-white border border-neutral-300 rounded-xl text-neutral-900 text-sm px-3 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all appearance-none cursor-pointer"
+                            style={{ backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")", backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
+                        >
+                            {COUNTRY_OPTIONS.map(option => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                     <PropertyList {...propertyListProps} isMobile={isMobile} showList={true} showFilters={!isMobile} />
                 </div>

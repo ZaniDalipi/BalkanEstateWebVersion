@@ -46,7 +46,9 @@ export const ImageEditorModal: React.FC<ImageEditorModalProps> = ({ imageUrl, pr
   const [currentPath, setCurrentPath] = useState<Path | null>(null);
   const [color, setColor] = useState('#FF0000'); // Red
   const [lineWidth, setLineWidth] = useState(5);
-  const [showToast, setShowToast] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [sentConversationId, setSentConversationId] = useState<string | null>(null);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -154,41 +156,64 @@ export const ImageEditorModal: React.FC<ImageEditorModalProps> = ({ imageUrl, pr
   };
 
   const handleSendToAgent = async () => {
+    if (isSending) return;
+
     try {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
+      setIsSending(true);
+
       // Create blob from canvas
       canvas.toBlob(async (blob) => {
-        if (!blob) return;
-
-        // Find or create conversation
-        let conversationId = state.conversations.find(c => c.property.id === property.id)?.id;
-
-        if (!conversationId) {
-          const newConv = await createConversation(property.id);
-          conversationId = newConv.id;
+        if (!blob) {
+          setIsSending(false);
+          return;
         }
 
-        // Upload image
-        const file = new File([blob], 'annotated-image.png', { type: 'image/png' });
-        const imageUrl = await uploadMessageImage(conversationId, file);
+        try {
+          // Find or create conversation
+          let conversationId = state.conversations.find(c => c.property.id === property.id)?.id;
 
-        // Send message with image
-        await sendMessage(conversationId, {
-          text: 'I have some questions about this property. Please see my annotations:',
-          imageUrl,
-          sender: state.currentUser?.id || '',
-          timestamp: Date.now(),
-        });
+          if (!conversationId) {
+            const newConv = await createConversation(property.id);
+            conversationId = newConv.id;
+          }
 
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
+          // Upload image
+          const file = new File([blob], 'annotated-image.png', { type: 'image/png' });
+          const imageUrl = await uploadMessageImage(conversationId, file);
+
+          // Send message with image
+          await sendMessage(conversationId, {
+            text: 'I have some questions about this property. Please see my annotations:',
+            imageUrl,
+            sender: state.currentUser?.id || '',
+            timestamp: Date.now(),
+          });
+
+          setSentConversationId(conversationId);
+          setShowSuccessDialog(true);
+        } catch (error) {
+          console.error('Failed to send to agent:', error);
+          alert('Failed to send annotated image. Please try again.');
+        } finally {
+          setIsSending(false);
+        }
       }, 'image/png');
     } catch (error) {
       console.error('Failed to send to agent:', error);
       alert('Failed to send annotated image. Please try again.');
+      setIsSending(false);
     }
+  };
+
+  const handleGoToChat = () => {
+    if (sentConversationId) {
+      dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: sentConversationId });
+      dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'inbox' });
+    }
+    onClose();
   };
 
   return (
@@ -239,9 +264,24 @@ export const ImageEditorModal: React.FC<ImageEditorModalProps> = ({ imageUrl, pr
 
           <button
             onClick={handleSendToAgent}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            disabled={isSending}
+            className={`px-4 py-2 text-white rounded flex items-center gap-2 ${
+              isSending
+                ? 'bg-green-400 cursor-not-allowed'
+                : 'bg-green-600 hover:bg-green-700'
+            }`}
           >
-            Send to Agent
+            {isSending ? (
+              <>
+                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Sending...
+              </>
+            ) : (
+              'Send to Agent'
+            )}
           </button>
         </div>
       </div>
@@ -258,10 +298,49 @@ export const ImageEditorModal: React.FC<ImageEditorModalProps> = ({ imageUrl, pr
         />
       </div>
 
-      {/* Toast */}
-      {showToast && (
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg">
-          ✓ Sent to agent successfully!
+      {/* Success Dialog */}
+      {showSuccessDialog && (
+        <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-10">
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-fade-in">
+            {/* Success Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Message */}
+            <h3 className="text-xl font-semibold text-gray-900 text-center mb-2">
+              Sent Successfully!
+            </h3>
+            <p className="text-gray-600 text-center mb-6">
+              Your annotated image has been sent to the agent. They will respond shortly.
+            </p>
+
+            {/* Buttons */}
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleGoToChat}
+                className="w-full py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 transition-all duration-200 flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                Go to Chat
+              </button>
+              <button
+                onClick={() => {
+                  setShowSuccessDialog(false);
+                  onClose();
+                }}
+                className="w-full py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all duration-200"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
