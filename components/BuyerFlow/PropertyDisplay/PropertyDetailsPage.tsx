@@ -196,11 +196,12 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
 
   return (
     <div className="bg-neutral-50 h-full overflow-y-auto animate-fade-in">
-      {/* Property Guide Mascot */}
-      {showGuide && (
-        <PropertyGuide
+      {/* Modals */}
+      {isEditorOpen && (
+        <ImageEditorModal
+          imageUrl={currentImageUrl}
           property={property}
-          onDismiss={() => setShowGuide(false)}
+          onClose={() => setIsEditorOpen(false)}
         />
       )}
 
