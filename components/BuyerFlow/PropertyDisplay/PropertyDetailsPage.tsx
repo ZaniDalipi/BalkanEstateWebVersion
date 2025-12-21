@@ -47,13 +47,8 @@ const PropertyDetailsPage: React.FC<{ property: Property }> = ({ property }) => 
   // State for contact
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
 
-<<<<<<< HEAD
-  // State for guide mascot
-  const [showGuide, setShowGuide] = useState(true);
-=======
   // State for share
   const [showCopiedToast, setShowCopiedToast] = useState(false);
->>>>>>> claude/integrate-listings-data-nKzSK
 
   // Computed values
   const isFavorited = state.savedHomes.some((p) => p.id === property.id);
